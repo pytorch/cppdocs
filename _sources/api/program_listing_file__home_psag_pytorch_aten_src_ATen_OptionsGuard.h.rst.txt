@@ -1,0 +1,48 @@
+:github_url: https://github.com/pytorch/pytorch
+
+
+.. _program_listing_file__home_psag_pytorch_aten_src_ATen_OptionsGuard.h:
+
+Program Listing for File OptionsGuard.h
+=======================================
+
+- Return to documentation for :ref:`file__home_psag_pytorch_aten_src_ATen_OptionsGuard.h`
+
+.. code-block:: cpp
+
+   #pragma once
+   
+   #include <ATen/Device.h>
+   #include <ATen/core/Layout.h>
+   #include <ATen/ScalarType.h>
+   #include <ATen/core/TensorOptions.h>
+   #include <ATen/core/optional.h>
+   
+   namespace at {
+   
+   struct DefaultTensorOptions {
+     AT_API static TensorOptions& get();
+   
+    private:
+     static thread_local at::optional<TensorOptions> options_;
+   };
+   
+   struct OptionsGuard {
+     explicit OptionsGuard(const TensorOptions& options)
+         : original_(DefaultTensorOptions::get()) {
+       DefaultTensorOptions::get() = options;
+     }
+   
+     ~OptionsGuard() {
+       DefaultTensorOptions::get() = original_;
+     }
+   
+     const TensorOptions& original() {
+       return original_;
+     }
+   
+    private:
+     TensorOptions original_;
+   };
+   
+   } // namespace at
