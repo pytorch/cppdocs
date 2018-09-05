@@ -43,6 +43,8 @@ Program Listing for File rnn.h
      TORCH_ARG(int64_t, layers) = 1;
      TORCH_ARG(bool, with_bias) = true;
      TORCH_ARG(double, dropout) = 0.0;
+     TORCH_ARG(bool, bidirectional) = false;
+     TORCH_ARG(bool, batch_first) = false;
    };
    
    template <typename Derived>
@@ -52,24 +54,19 @@ Program Listing for File rnn.h
      // https://docs.nvidia.com/deeplearning/sdk/cudnn-developer-guide/index.html#cudnnRNNMode_t
      enum class CuDNNMode { RNN_RELU = 0, RNN_TANH = 1, LSTM = 2, GRU = 3 };
    
-     RNNImplBase(
+     explicit RNNImplBase(
          RNNOptionsBase options_,
          at::optional<CuDNNMode> cudnn_mode = at::nullopt,
-         int64_t number_of_gates = 1,
-         bool has_cell_state = false);
-   
-     RNNOutput forward(Tensor input, Tensor state = {});
+         int64_t number_of_gates = 1);
    
      void reset() override;
    
      void to(torch::Device device, torch::Dtype dtype, bool non_blocking = false)
          override;
-   
      void to(torch::Dtype dtype, bool non_blocking = false) override;
-   
      void to(torch::Device device, bool non_blocking = false) override;
    
-     void flatten_parameters_for_cudnn();
+     void flatten_parameters();
    
      RNNOptionsBase options;
    
@@ -78,36 +75,36 @@ Program Listing for File rnn.h
      std::vector<Tensor> b_ih;
      std::vector<Tensor> b_hh;
    
-     Dropout dropout;
-   
     protected:
-     virtual Tensor cell_forward(Tensor input, Tensor state, int64_t layer) = 0;
+     using RNNFunctionSignature = std::tuple<Tensor, Tensor>(
+         /*input=*/const Tensor&,
+         /*state=*/const Tensor&,
+         /*params=*/TensorList,
+         /*has_biases=*/bool,
+         /*layers=*/int64_t,
+         /*dropout=*/double,
+         /*train=*/bool,
+         /*bidirectional=*/bool,
+         /*batch_first=*/bool);
    
-     RNNOutput CUDNN_forward(Tensor input, Tensor state);
-     RNNOutput autograd_forward(Tensor input, Tensor state);
+     RNNOutput generic_forward(
+         std::function<RNNFunctionSignature> function,
+         Tensor input,
+         Tensor state);
    
      std::vector<Tensor> flat_weights() const;
-     bool use_cudnn(Tensor sample) const;
-     Tensor create_dropout_state(Tensor input) const;
+   
+     bool any_parameters_alias() const;
    
      int64_t number_of_gates_;
-     bool has_cell_state_;
+   
      at::optional<CuDNNMode> cudnn_mode_;
    
-     // This is copied from pytorch, to determine whether weights are flat for the
-     // fast CUDNN route. Otherwise, we have to use non flattened weights, which
-     // are much slower.
-     // https://github.com/pytorch/pytorch/blob/1848cad10802db9fa0aa066d9de195958120d863/torch/nn/modules/rnn.py#L159-L165
-     // TODO Actually since we are in C++ we can probably just actually check if
-     // the parameters are flat, instead of relying on data pointers and stuff.
-     std::vector<void*> data_ptrs_;
-     Tensor flat_weights_;
+     std::vector<Tensor> flat_weights_;
    };
    } // namespace detail
    
    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ RNN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-   
-   // TODO: Replace this with passing an activation module.
    
    enum class RNNActivation { ReLU, Tanh };
    
@@ -122,6 +119,8 @@ Program Listing for File rnn.h
      TORCH_ARG(int64_t, layers) = 1;
      TORCH_ARG(bool, with_bias) = true;
      TORCH_ARG(double, dropout) = 0.0;
+     TORCH_ARG(bool, bidirectional) = false;
+     TORCH_ARG(bool, batch_first) = false;
      TORCH_ARG(RNNActivation, activation) = RNNActivation::ReLU;
    };
    
@@ -131,11 +130,9 @@ Program Listing for File rnn.h
          : RNNImpl(RNNOptions(input_size, hidden_size)) {}
      explicit RNNImpl(RNNOptions options);
    
-     RNNOptions options;
+     RNNOutput forward(Tensor input, Tensor state = {});
    
-    private:
-     Tensor cell_forward(Tensor input, Tensor state, int64_t layer) override;
-     std::function<Tensor(Tensor)> activation_function_;
+     RNNOptions options;
    };
    
    TORCH_MODULE(RNN);
@@ -150,8 +147,7 @@ Program Listing for File rnn.h
          : LSTMImpl(LSTMOptions(input_size, hidden_size)) {}
      explicit LSTMImpl(LSTMOptions options);
    
-    private:
-     Tensor cell_forward(Tensor input, Tensor state, int64_t layer) override;
+     RNNOutput forward(Tensor input, Tensor state = {});
    };
    
    TORCH_MODULE(LSTM);
@@ -166,8 +162,7 @@ Program Listing for File rnn.h
          : GRUImpl(GRUOptions(input_size, hidden_size)) {}
      explicit GRUImpl(GRUOptions options);
    
-    private:
-     Tensor cell_forward(Tensor input, Tensor state, int64_t layer) override;
+     RNNOutput forward(Tensor input, Tensor state = {});
    };
    
    TORCH_MODULE(GRU);

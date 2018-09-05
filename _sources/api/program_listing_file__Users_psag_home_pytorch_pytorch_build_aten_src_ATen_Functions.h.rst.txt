@@ -18,18 +18,20 @@ Program Listing for File Functions.h
    #include "ATen/Type.h"
    #include "ATen/Tensor.h"
    #include "ATen/Storage.h"
-   #include "ATen/Generator.h"
-   #include "ATen/Deprecated.h"
+   #include "ATen/core/Generator.h"
+   #include "ATen/core/Deprecated.h"
    #include "ATen/NativeFunctions.h"
    #include "ATen/DeviceGuard.h"
    #include "ATen/TensorOptions.h"
-   #include "THNN/Reduction.h"
+   #include "ATen/core/Reduction.h"
    
    namespace at {
    
    using native::from_blob;
    using native::tensor;
    
+   static inline Tensor & _fill_(Tensor & self, Scalar value);
+   static inline Tensor & _fill_(Tensor & self, const Tensor & value);
    static inline Tensor & masked_select_out(Tensor & result, const Tensor & self, const Tensor & mask);
    static inline Tensor masked_select(const Tensor & self, const Tensor & mask);
    static inline Tensor & nonzero_out(Tensor & result, const Tensor & self);
@@ -38,6 +40,7 @@ Program Listing for File Functions.h
    static inline Tensor & th_resize_as_(Tensor & self, const Tensor & the_template);
    static inline Tensor & index_select_out(Tensor & result, const Tensor & self, int64_t dim, const Tensor & index);
    static inline Tensor index_select(const Tensor & self, int64_t dim, const Tensor & index);
+   static inline Tensor & _indexCopy_(Tensor & self, int64_t dim, const Tensor & index, const Tensor & source);
    static inline Tensor & take_out(Tensor & result, const Tensor & self, const Tensor & index);
    static inline Tensor take(const Tensor & self, const Tensor & index);
    static inline Tensor & _range_out(Tensor & result, Scalar start, Scalar end, Scalar step=1);
@@ -250,8 +253,10 @@ Program Listing for File Functions.h
    static inline Tensor & th_addmm_(Tensor & self, const Tensor & mat1, const Tensor & mat2, Scalar beta=1, Scalar alpha=1);
    static inline Tensor & _addmv_out(Tensor & result, const Tensor & self, const Tensor & mat, const Tensor & vec, Scalar beta=1, Scalar alpha=1);
    static inline Tensor _addmv(const Tensor & self, const Tensor & mat, const Tensor & vec, Scalar beta=1, Scalar alpha=1);
+   static inline Tensor & _addmv_(Tensor & self, const Tensor & mat, const Tensor & vec, Scalar beta=1, Scalar alpha=1);
    static inline Tensor & _addr_out(Tensor & result, const Tensor & self, const Tensor & vec1, const Tensor & vec2, Scalar beta=1, Scalar alpha=1);
    static inline Tensor _addr(const Tensor & self, const Tensor & vec1, const Tensor & vec2, Scalar beta=1, Scalar alpha=1);
+   static inline Tensor & _addr_(Tensor & self, const Tensor & vec1, const Tensor & vec2, Scalar beta=1, Scalar alpha=1);
    static inline Tensor & _ger_out(Tensor & result, const Tensor & self, const Tensor & vec2);
    static inline Tensor _ger(const Tensor & self, const Tensor & vec2);
    static inline Tensor & _mv_out(Tensor & result, const Tensor & self, const Tensor & vec);
@@ -312,11 +317,13 @@ Program Listing for File Functions.h
    static inline Tensor normal(double mean, const Tensor & std, Generator * generator=nullptr);
    static inline Tensor & normal_out(Tensor & output, const Tensor & mean, const Tensor & std, Generator * generator=nullptr);
    static inline Tensor normal(const Tensor & mean, const Tensor & std, Generator * generator=nullptr);
+   static inline Tensor & _bernoulli_(Tensor & self, double p, Generator * generator=nullptr);
    static inline Tensor & _th_bernoulli_out(Tensor & output, const Tensor & self, Generator * generator=nullptr);
    static inline Tensor _th_bernoulli(const Tensor & self, Generator * generator=nullptr);
    static inline Tensor & _dirichlet_grad_out(Tensor & output, const Tensor & x, const Tensor & alpha, const Tensor & total);
    static inline Tensor _dirichlet_grad(const Tensor & x, const Tensor & alpha, const Tensor & total);
    static inline Tensor alias(const Tensor & self);
+   static inline Tensor & _copy_ignoring_overlaps_(Tensor & self, const Tensor & src);
    static inline Tensor & _cat_out(Tensor & self, TensorList tensors, int64_t dim=0);
    static inline Tensor _cat(TensorList tensors, int64_t dim=0);
    static inline Tensor & binary_cross_entropy_out(Tensor & output, const Tensor & self, const Tensor & target, const Tensor & weight={}, int64_t reduction=Reduction::ElementwiseMean);
@@ -325,12 +332,6 @@ Program Listing for File Functions.h
    static inline Tensor binary_cross_entropy_forward(const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction);
    static inline Tensor & binary_cross_entropy_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction);
    static inline Tensor binary_cross_entropy_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction);
-   static inline Tensor & kl_div_out(Tensor & output, const Tensor & self, const Tensor & target, int64_t reduction=Reduction::ElementwiseMean);
-   static inline Tensor kl_div(const Tensor & self, const Tensor & target, int64_t reduction=Reduction::ElementwiseMean);
-   static inline Tensor & kl_div_forward_out(Tensor & output, const Tensor & self, const Tensor & target, int64_t reduction);
-   static inline Tensor kl_div_forward(const Tensor & self, const Tensor & target, int64_t reduction);
-   static inline Tensor & kl_div_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
-   static inline Tensor kl_div_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
    static inline Tensor & l1_loss_out(Tensor & output, const Tensor & self, const Tensor & target, int64_t reduction=Reduction::ElementwiseMean);
    static inline Tensor l1_loss(const Tensor & self, const Tensor & target, int64_t reduction=Reduction::ElementwiseMean);
    static inline Tensor & l1_loss_forward_out(Tensor & output, const Tensor & self, const Tensor & target, int64_t reduction);
@@ -880,9 +881,12 @@ Program Listing for File Functions.h
    static inline bool is_same_size(const Tensor & self, const Tensor & other);
    static inline bool is_signed(const Tensor & self);
    static inline bool is_sparse(const Tensor & self);
+   static inline Tensor kl_div(const Tensor & self, const Tensor & target, int64_t reduction=Reduction::ElementwiseMean);
+   static inline Tensor kl_div_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction=Reduction::ElementwiseMean);
    static inline std::tuple<Tensor,Tensor> kthvalue(const Tensor & self, int64_t k, int64_t dim=-1, bool keepdim=false);
    static inline std::tuple<Tensor &,Tensor &> kthvalue_out(Tensor & values, Tensor & indices, const Tensor & self, int64_t k, int64_t dim=-1, bool keepdim=false);
    static inline Tensor layer_norm(const Tensor & input, IntList normalized_shape, const Tensor & weight={}, const Tensor & bias={}, double eps=1e-05, bool cudnn_enable=true);
+   static inline Tensor linear(const Tensor & input, const Tensor & weight, const Tensor & bias={});
    static inline Tensor linspace(Scalar start, Scalar end, const TensorOptions & options={});
    static inline Tensor linspace(Scalar start, Scalar end, int64_t steps, const TensorOptions & options={});
    static inline Tensor & linspace_out(Tensor & result, Scalar start, Scalar end);
@@ -913,6 +917,8 @@ Program Listing for File Functions.h
    static inline Tensor margin_ranking_loss(const Tensor & input1, const Tensor & input2, const Tensor & target, double margin=0.0, int64_t reduction=Reduction::ElementwiseMean);
    static inline Tensor matmul(const Tensor & self, const Tensor & other);
    static inline Tensor & matmul_out(Tensor & result, const Tensor & self, const Tensor & other);
+   static inline Tensor matrix_rank(const Tensor & self, double tol, bool symmetric=false);
+   static inline Tensor matrix_rank(const Tensor & self, bool symmetric=false);
    static inline std::tuple<Tensor,Tensor> max(const Tensor & self, int64_t dim, bool keepdim=false);
    static inline std::tuple<Tensor &,Tensor &> max_out(Tensor & max, Tensor & max_values, const Tensor & self, int64_t dim, bool keepdim=false);
    static inline Tensor max_values(const Tensor & self, int64_t dim, bool keepdim=false);
@@ -937,6 +943,17 @@ Program Listing for File Functions.h
    static inline Tensor mkldnn_convolution_backward_input(IntList self_size, const Tensor & grad_output, const Tensor & weight, IntList padding, IntList stride, IntList dilation, int64_t groups, bool bias_defined);
    static inline std::tuple<Tensor,Tensor> mkldnn_convolution_backward_weights(IntList weight_size, const Tensor & grad_output, const Tensor & self, IntList padding, IntList stride, IntList dilation, int64_t groups, bool bias_defined);
    static inline std::tuple<Tensor,Tensor,Tensor> mkldnn_convolution_backward(const Tensor & self, const Tensor & grad_output, const Tensor & weight, IntList padding, IntList stride, IntList dilation, int64_t groups, std::array<bool,3> output_mask);
+   static inline std::tuple<Tensor,Tensor,Tensor> miopen_batch_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double exponential_average_factor, double epsilon);
+   static inline std::tuple<Tensor,Tensor,Tensor> miopen_batch_norm_backward(const Tensor & input, const Tensor & grad_output, const Tensor & weight, const Tensor & running_mean, const Tensor & running_var, const Tensor & save_mean, const Tensor & save_var, double epsilon);
+   static inline Tensor miopen_convolution(const Tensor & self, const Tensor & weight, const Tensor & bias, IntList padding, IntList stride, IntList dilation, int64_t groups, bool benchmark, bool deterministic);
+   static inline Tensor miopen_convolution_backward_input(IntList self_size, const Tensor & grad_output, const Tensor & weight, IntList padding, IntList stride, IntList dilation, int64_t groups, bool benchmark, bool deterministic);
+   static inline std::tuple<Tensor,Tensor,Tensor> miopen_convolution_backward(const Tensor & self, const Tensor & grad_output, const Tensor & weight, IntList padding, IntList stride, IntList dilation, int64_t groups, bool benchmark, bool deterministic, std::array<bool,3> output_mask);
+   static inline Tensor miopen_convolution_backward_bias(const Tensor & grad_output);
+   static inline Tensor miopen_convolution_backward_weight(IntList weight_size, const Tensor & grad_output, const Tensor & self, IntList padding, IntList stride, IntList dilation, int64_t groups, bool benchmark, bool deterministic);
+   static inline Tensor miopen_convolution_transpose(const Tensor & self, const Tensor & weight, const Tensor & bias, IntList padding, IntList output_padding, IntList stride, IntList dilation, int64_t groups, bool benchmark, bool deterministic);
+   static inline std::tuple<Tensor,Tensor,Tensor> miopen_convolution_transpose_backward(const Tensor & self, const Tensor & grad_output, const Tensor & weight, IntList padding, IntList output_padding, IntList stride, IntList dilation, int64_t groups, bool benchmark, bool deterministic, std::array<bool,3> output_mask);
+   static inline Tensor miopen_convolution_transpose_backward_input(const Tensor & grad_output, const Tensor & weight, IntList padding, IntList stride, IntList dilation, int64_t groups, bool benchmark, bool deterministic);
+   static inline Tensor miopen_convolution_transpose_backward_weight(IntList weight_size, const Tensor & grad_output, const Tensor & self, IntList padding, IntList stride, IntList dilation, int64_t groups, bool benchmark, bool deterministic);
    static inline Tensor mm(const Tensor & self, const Tensor & mat2);
    static inline Tensor & mm_out(Tensor & result, const Tensor & self, const Tensor & mat2);
    static inline std::tuple<Tensor,Tensor> mode(const Tensor & self, int64_t dim=-1, bool keepdim=false);
@@ -954,6 +971,9 @@ Program Listing for File Functions.h
    static inline Tensor ones_like(const Tensor & self, const TensorOptions & options);
    AT_DEPRECATED(static inline Tensor ones(const Type & dtype, IntList size));
    static inline Tensor pairwise_distance(const Tensor & x1, const Tensor & x2, double p=2, double eps=1e-06, bool keepdim=false);
+   static inline Tensor pdist(const Tensor & self, double p=2);
+   static inline Tensor _pdist_forward(const Tensor & self, double p=2);
+   static inline Tensor _pdist_backward(const Tensor & grad, const Tensor & self, double p, const Tensor & pdist);
    static inline Tensor pin_memory(const Tensor & self);
    static inline Tensor pinverse(const Tensor & self, double rcond=1e-15);
    static inline Tensor rand(IntList size, const TensorOptions & options={});
@@ -1031,8 +1051,10 @@ Program Listing for File Functions.h
    static inline Tensor softmax_backward_data(const Tensor & grad_output, const Tensor & output, int64_t dim, const Tensor & self);
    static inline Tensor & _sparse_add_out(Tensor & result, const Tensor & self, const Tensor & other, Scalar alpha=1);
    static inline Tensor & _sparse_dense_add_out(Tensor & result, const Tensor & self, SparseTensorRef other, Scalar alpha=1);
-   static inline Tensor & _sparse_div_out(Tensor & result, const Tensor & self, Scalar other);
+   static inline Tensor & _sparse_div_zerodim_out(Tensor & result, const Tensor & self, const Tensor & other);
+   static inline Tensor & _sparse_div_scalar_out(Tensor & result, const Tensor & self, Scalar other);
    static inline Tensor & _sparse_mul_out(Tensor & result, const Tensor & self, const Tensor & other);
+   static inline Tensor & _sparse_mul_zerodim_out(Tensor & result, const Tensor & self, const Tensor & other);
    static inline Tensor & _sparse_mul_scalar_out(Tensor & result, const Tensor & self, Scalar other);
    static inline std::vector<Tensor> split(const Tensor & self, int64_t split_size, int64_t dim=0);
    static inline std::vector<Tensor> split_with_sizes(const Tensor & self, IntList split_sizes, int64_t dim=0);
@@ -1089,6 +1111,7 @@ Program Listing for File Functions.h
    static inline Tensor & trunc_(Tensor & self);
    static inline Tensor & trunc_out(Tensor & result, const Tensor & self);
    static inline std::tuple<Tensor,Tensor> _unique(const Tensor & self, bool sorted=false, bool return_inverse=false);
+   static inline std::tuple<Tensor,Tensor> _unique_dim(const Tensor & self, int64_t dim, bool sorted=false, bool return_inverse=false);
    static inline Tensor _unsafe_view(const Tensor & self, IntList size);
    static inline Tensor unsqueeze(const Tensor & self, int64_t dim);
    static inline Tensor var(const Tensor & self, bool unbiased=true);
@@ -1129,6 +1152,14 @@ Program Listing for File Functions.h
    static inline Tensor native_tensor(const Type & self_ty);
    static inline Tensor native_tensor(const Type & self_ty, IntList size);
    static inline Tensor _sparse_coo_tensor_unsafe(const Tensor & indices, const Tensor & values, IntList size);
+   static inline Tensor _sparse_mask(const Tensor & self, SparseTensorRef mask);
+   static inline int64_t _sparseDims(const Tensor & self);
+   static inline int64_t _dimI(const Tensor & self);
+   static inline int64_t _denseDims(const Tensor & self);
+   static inline int64_t _dimV(const Tensor & self);
+   static inline int64_t _nnz(const Tensor & self);
+   static inline Tensor _indices(const Tensor & self);
+   static inline Tensor _values(const Tensor & self);
    static inline Tensor & hspmm_out(Tensor & result, const Tensor & mat1, const Tensor & mat2);
    static inline Tensor hspmm(const Tensor & mat1, const Tensor & mat2);
    static inline Tensor & raw_copy_sparse_(Tensor & self, const Tensor & src);
@@ -1143,14 +1174,14 @@ Program Listing for File Functions.h
    static inline std::tuple<Tensor,Tensor,Tensor,Tensor,Tensor> _thnn_fused_lstm_cell_backward(const Tensor & grad_hy, const Tensor & grad_cy, const Tensor & cx, const Tensor & cy, const Tensor & workspace, bool has_bias);
    static inline std::tuple<Tensor,Tensor> _thnn_fused_gru_cell(const Tensor & input_gates, const Tensor & hidden_gates, const Tensor & hx, const Tensor & input_bias={}, const Tensor & hidden_bias={});
    static inline std::tuple<Tensor,Tensor,Tensor,Tensor,Tensor> _thnn_fused_gru_cell_backward(const Tensor & grad_hy, const Tensor & workspace, bool has_bias);
-   static inline std::tuple<Tensor,Tensor,Tensor> lstm(const Tensor & input, TensorList hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, bool batch_first, const Tensor & cudnn_weight_buf={}, const Tensor & cudnn_dropout_state={});
-   static inline std::tuple<Tensor,Tensor,Tensor> lstm(const Tensor & data, const Tensor & batch_sizes, TensorList hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, const Tensor & cudnn_weight_buf={}, const Tensor & cudnn_dropout_state={});
-   static inline std::tuple<Tensor,Tensor> gru(const Tensor & input, const Tensor & hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, bool batch_first, const Tensor & cudnn_weight_buf={}, const Tensor & cudnn_dropout_state={});
-   static inline std::tuple<Tensor,Tensor> gru(const Tensor & data, const Tensor & batch_sizes, const Tensor & hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, const Tensor & cudnn_weight_buf={}, const Tensor & cudnn_dropout_state={});
-   static inline std::tuple<Tensor,Tensor> rnn_tanh(const Tensor & input, const Tensor & hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, bool batch_first, const Tensor & cudnn_weight_buf={}, const Tensor & cudnn_dropout_state={});
-   static inline std::tuple<Tensor,Tensor> rnn_tanh(const Tensor & data, const Tensor & batch_sizes, const Tensor & hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, const Tensor & cudnn_weight_buf={}, const Tensor & cudnn_dropout_state={});
-   static inline std::tuple<Tensor,Tensor> rnn_relu(const Tensor & input, const Tensor & hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, bool batch_first, const Tensor & cudnn_weight_buf={}, const Tensor & cudnn_dropout_state={});
-   static inline std::tuple<Tensor,Tensor> rnn_relu(const Tensor & data, const Tensor & batch_sizes, const Tensor & hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, const Tensor & cudnn_weight_buf={}, const Tensor & cudnn_dropout_state={});
+   static inline std::tuple<Tensor,Tensor,Tensor> lstm(const Tensor & input, TensorList hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, bool batch_first);
+   static inline std::tuple<Tensor,Tensor,Tensor> lstm(const Tensor & data, const Tensor & batch_sizes, TensorList hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional);
+   static inline std::tuple<Tensor,Tensor> gru(const Tensor & input, const Tensor & hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, bool batch_first);
+   static inline std::tuple<Tensor,Tensor> gru(const Tensor & data, const Tensor & batch_sizes, const Tensor & hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional);
+   static inline std::tuple<Tensor,Tensor> rnn_tanh(const Tensor & input, const Tensor & hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, bool batch_first);
+   static inline std::tuple<Tensor,Tensor> rnn_tanh(const Tensor & data, const Tensor & batch_sizes, const Tensor & hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional);
+   static inline std::tuple<Tensor,Tensor> rnn_relu(const Tensor & input, const Tensor & hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, bool batch_first);
+   static inline std::tuple<Tensor,Tensor> rnn_relu(const Tensor & data, const Tensor & batch_sizes, const Tensor & hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional);
    static inline std::tuple<Tensor,Tensor> lstm_cell(const Tensor & input, TensorList hx, const Tensor & w_ih, const Tensor & w_hh, const Tensor & b_ih={}, const Tensor & b_hh={});
    static inline Tensor gru_cell(const Tensor & input, const Tensor & hx, const Tensor & w_ih, const Tensor & w_hh, const Tensor & b_ih={}, const Tensor & b_hh={});
    static inline Tensor rnn_tanh_cell(const Tensor & input, const Tensor & hx, const Tensor & w_ih, const Tensor & w_hh, const Tensor & b_ih={}, const Tensor & b_hh={});
@@ -1167,6 +1198,12 @@ Program Listing for File Functions.h
    // function definitions are all static inline because
    // they are one-line statically dispatched functions that
    // invoke the actual dynamic dispatch on the correct argument
+   static inline Tensor & _fill_(Tensor & self, Scalar value) {
+       return infer_type(self)._fill_(self, value);
+   }
+   static inline Tensor & _fill_(Tensor & self, const Tensor & value) {
+       return infer_type(self)._fill_(self, value);
+   }
    static inline Tensor & masked_select_out(Tensor & result, const Tensor & self, const Tensor & mask) {
        return infer_type(self).masked_select_out(result, self, mask);
    }
@@ -1190,6 +1227,9 @@ Program Listing for File Functions.h
    }
    static inline Tensor index_select(const Tensor & self, int64_t dim, const Tensor & index) {
        return infer_type(self).index_select(self, dim, index);
+   }
+   static inline Tensor & _indexCopy_(Tensor & self, int64_t dim, const Tensor & index, const Tensor & source) {
+       return infer_type(self)._indexCopy_(self, dim, index, source);
    }
    static inline Tensor & take_out(Tensor & result, const Tensor & self, const Tensor & index) {
        return infer_type(self).take_out(result, self, index);
@@ -1827,11 +1867,17 @@ Program Listing for File Functions.h
    static inline Tensor _addmv(const Tensor & self, const Tensor & mat, const Tensor & vec, Scalar beta, Scalar alpha) {
        return infer_type(self)._addmv(self, mat, vec, beta, alpha);
    }
+   static inline Tensor & _addmv_(Tensor & self, const Tensor & mat, const Tensor & vec, Scalar beta, Scalar alpha) {
+       return infer_type(self)._addmv_(self, mat, vec, beta, alpha);
+   }
    static inline Tensor & _addr_out(Tensor & result, const Tensor & self, const Tensor & vec1, const Tensor & vec2, Scalar beta, Scalar alpha) {
        return infer_type(self)._addr_out(result, self, vec1, vec2, beta, alpha);
    }
    static inline Tensor _addr(const Tensor & self, const Tensor & vec1, const Tensor & vec2, Scalar beta, Scalar alpha) {
        return infer_type(self)._addr(self, vec1, vec2, beta, alpha);
+   }
+   static inline Tensor & _addr_(Tensor & self, const Tensor & vec1, const Tensor & vec2, Scalar beta, Scalar alpha) {
+       return infer_type(self)._addr_(self, vec1, vec2, beta, alpha);
    }
    static inline Tensor & _ger_out(Tensor & result, const Tensor & self, const Tensor & vec2) {
        return infer_type(self)._ger_out(result, self, vec2);
@@ -2013,6 +2059,9 @@ Program Listing for File Functions.h
    static inline Tensor normal(const Tensor & mean, const Tensor & std, Generator * generator) {
        return infer_type(mean).normal(mean, std, generator);
    }
+   static inline Tensor & _bernoulli_(Tensor & self, double p, Generator * generator) {
+       return infer_type(self)._bernoulli_(self, p, generator);
+   }
    static inline Tensor & _th_bernoulli_out(Tensor & output, const Tensor & self, Generator * generator) {
        return infer_type(self)._th_bernoulli_out(output, self, generator);
    }
@@ -2027,6 +2076,9 @@ Program Listing for File Functions.h
    }
    static inline Tensor alias(const Tensor & self) {
        return infer_type(self).alias(self);
+   }
+   static inline Tensor & _copy_ignoring_overlaps_(Tensor & self, const Tensor & src) {
+       return infer_type(self)._copy_ignoring_overlaps_(self, src);
    }
    static inline Tensor & _cat_out(Tensor & self, TensorList tensors, int64_t dim) {
        return infer_type(self)._cat_out(self, tensors, dim);
@@ -2051,24 +2103,6 @@ Program Listing for File Functions.h
    }
    static inline Tensor binary_cross_entropy_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction) {
        return infer_type(self).binary_cross_entropy_backward(grad_output, self, target, weight, reduction);
-   }
-   static inline Tensor & kl_div_out(Tensor & output, const Tensor & self, const Tensor & target, int64_t reduction) {
-       return infer_type(self).kl_div_out(output, self, target, reduction);
-   }
-   static inline Tensor kl_div(const Tensor & self, const Tensor & target, int64_t reduction) {
-       return infer_type(self).kl_div(self, target, reduction);
-   }
-   static inline Tensor & kl_div_forward_out(Tensor & output, const Tensor & self, const Tensor & target, int64_t reduction) {
-       return infer_type(self).kl_div_forward_out(output, self, target, reduction);
-   }
-   static inline Tensor kl_div_forward(const Tensor & self, const Tensor & target, int64_t reduction) {
-       return infer_type(self).kl_div_forward(self, target, reduction);
-   }
-   static inline Tensor & kl_div_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction) {
-       return infer_type(self).kl_div_backward_out(grad_input, grad_output, self, target, reduction);
-   }
-   static inline Tensor kl_div_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction) {
-       return infer_type(self).kl_div_backward(grad_output, self, target, reduction);
    }
    static inline Tensor & l1_loss_out(Tensor & output, const Tensor & self, const Tensor & target, int64_t reduction) {
        return infer_type(self).l1_loss_out(output, self, target, reduction);
@@ -3736,6 +3770,12 @@ Program Listing for File Functions.h
    static inline bool is_sparse(const Tensor & self) {
        return infer_type(self).is_sparse(self);
    }
+   static inline Tensor kl_div(const Tensor & self, const Tensor & target, int64_t reduction) {
+       return infer_type(self).kl_div(self, target, reduction);
+   }
+   static inline Tensor kl_div_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction) {
+       return infer_type(self).kl_div_backward(grad_output, self, target, reduction);
+   }
    static inline std::tuple<Tensor,Tensor> kthvalue(const Tensor & self, int64_t k, int64_t dim, bool keepdim) {
        return infer_type(self).kthvalue(self, k, dim, keepdim);
    }
@@ -3744,6 +3784,9 @@ Program Listing for File Functions.h
    }
    static inline Tensor layer_norm(const Tensor & input, IntList normalized_shape, const Tensor & weight, const Tensor & bias, double eps, bool cudnn_enable) {
        return infer_type(input).layer_norm(input, normalized_shape, weight, bias, eps, cudnn_enable);
+   }
+   static inline Tensor linear(const Tensor & input, const Tensor & weight, const Tensor & bias) {
+       return infer_type(input).linear(input, weight, bias);
    }
    static inline Tensor linspace(Scalar start, Scalar end, const TensorOptions & options) {
        const DeviceGuard guard(options.device());
@@ -3839,6 +3882,12 @@ Program Listing for File Functions.h
    static inline Tensor & matmul_out(Tensor & result, const Tensor & self, const Tensor & other) {
        return infer_type(self).matmul_out(result, self, other);
    }
+   static inline Tensor matrix_rank(const Tensor & self, double tol, bool symmetric) {
+       return infer_type(self).matrix_rank(self, tol, symmetric);
+   }
+   static inline Tensor matrix_rank(const Tensor & self, bool symmetric) {
+       return infer_type(self).matrix_rank(self, symmetric);
+   }
    static inline std::tuple<Tensor,Tensor> max(const Tensor & self, int64_t dim, bool keepdim) {
        return infer_type(self).max(self, dim, keepdim);
    }
@@ -3911,6 +3960,39 @@ Program Listing for File Functions.h
    static inline std::tuple<Tensor,Tensor,Tensor> mkldnn_convolution_backward(const Tensor & self, const Tensor & grad_output, const Tensor & weight, IntList padding, IntList stride, IntList dilation, int64_t groups, std::array<bool,3> output_mask) {
        return infer_type(self).mkldnn_convolution_backward(self, grad_output, weight, padding, stride, dilation, groups, output_mask);
    }
+   static inline std::tuple<Tensor,Tensor,Tensor> miopen_batch_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double exponential_average_factor, double epsilon) {
+       return infer_type(input).miopen_batch_norm(input, weight, bias, running_mean, running_var, training, exponential_average_factor, epsilon);
+   }
+   static inline std::tuple<Tensor,Tensor,Tensor> miopen_batch_norm_backward(const Tensor & input, const Tensor & grad_output, const Tensor & weight, const Tensor & running_mean, const Tensor & running_var, const Tensor & save_mean, const Tensor & save_var, double epsilon) {
+       return infer_type(input).miopen_batch_norm_backward(input, grad_output, weight, running_mean, running_var, save_mean, save_var, epsilon);
+   }
+   static inline Tensor miopen_convolution(const Tensor & self, const Tensor & weight, const Tensor & bias, IntList padding, IntList stride, IntList dilation, int64_t groups, bool benchmark, bool deterministic) {
+       return infer_type(self).miopen_convolution(self, weight, bias, padding, stride, dilation, groups, benchmark, deterministic);
+   }
+   static inline Tensor miopen_convolution_backward_input(IntList self_size, const Tensor & grad_output, const Tensor & weight, IntList padding, IntList stride, IntList dilation, int64_t groups, bool benchmark, bool deterministic) {
+       return infer_type(grad_output).miopen_convolution_backward_input(self_size, grad_output, weight, padding, stride, dilation, groups, benchmark, deterministic);
+   }
+   static inline std::tuple<Tensor,Tensor,Tensor> miopen_convolution_backward(const Tensor & self, const Tensor & grad_output, const Tensor & weight, IntList padding, IntList stride, IntList dilation, int64_t groups, bool benchmark, bool deterministic, std::array<bool,3> output_mask) {
+       return infer_type(self).miopen_convolution_backward(self, grad_output, weight, padding, stride, dilation, groups, benchmark, deterministic, output_mask);
+   }
+   static inline Tensor miopen_convolution_backward_bias(const Tensor & grad_output) {
+       return infer_type(grad_output).miopen_convolution_backward_bias(grad_output);
+   }
+   static inline Tensor miopen_convolution_backward_weight(IntList weight_size, const Tensor & grad_output, const Tensor & self, IntList padding, IntList stride, IntList dilation, int64_t groups, bool benchmark, bool deterministic) {
+       return infer_type(self).miopen_convolution_backward_weight(weight_size, grad_output, self, padding, stride, dilation, groups, benchmark, deterministic);
+   }
+   static inline Tensor miopen_convolution_transpose(const Tensor & self, const Tensor & weight, const Tensor & bias, IntList padding, IntList output_padding, IntList stride, IntList dilation, int64_t groups, bool benchmark, bool deterministic) {
+       return infer_type(self).miopen_convolution_transpose(self, weight, bias, padding, output_padding, stride, dilation, groups, benchmark, deterministic);
+   }
+   static inline std::tuple<Tensor,Tensor,Tensor> miopen_convolution_transpose_backward(const Tensor & self, const Tensor & grad_output, const Tensor & weight, IntList padding, IntList output_padding, IntList stride, IntList dilation, int64_t groups, bool benchmark, bool deterministic, std::array<bool,3> output_mask) {
+       return infer_type(self).miopen_convolution_transpose_backward(self, grad_output, weight, padding, output_padding, stride, dilation, groups, benchmark, deterministic, output_mask);
+   }
+   static inline Tensor miopen_convolution_transpose_backward_input(const Tensor & grad_output, const Tensor & weight, IntList padding, IntList stride, IntList dilation, int64_t groups, bool benchmark, bool deterministic) {
+       return infer_type(grad_output).miopen_convolution_transpose_backward_input(grad_output, weight, padding, stride, dilation, groups, benchmark, deterministic);
+   }
+   static inline Tensor miopen_convolution_transpose_backward_weight(IntList weight_size, const Tensor & grad_output, const Tensor & self, IntList padding, IntList stride, IntList dilation, int64_t groups, bool benchmark, bool deterministic) {
+       return infer_type(self).miopen_convolution_transpose_backward_weight(weight_size, grad_output, self, padding, stride, dilation, groups, benchmark, deterministic);
+   }
    static inline Tensor mm(const Tensor & self, const Tensor & mat2) {
        return infer_type(self).mm(self, mat2);
    }
@@ -3963,6 +4045,15 @@ Program Listing for File Functions.h
    }
    static inline Tensor pairwise_distance(const Tensor & x1, const Tensor & x2, double p, double eps, bool keepdim) {
        return infer_type(x1).pairwise_distance(x1, x2, p, eps, keepdim);
+   }
+   static inline Tensor pdist(const Tensor & self, double p) {
+       return infer_type(self).pdist(self, p);
+   }
+   static inline Tensor _pdist_forward(const Tensor & self, double p) {
+       return infer_type(self)._pdist_forward(self, p);
+   }
+   static inline Tensor _pdist_backward(const Tensor & grad, const Tensor & self, double p, const Tensor & pdist) {
+       return infer_type(self)._pdist_backward(grad, self, p, pdist);
    }
    static inline Tensor pin_memory(const Tensor & self) {
        return infer_type(self).pin_memory(self);
@@ -4211,11 +4302,17 @@ Program Listing for File Functions.h
    static inline Tensor & _sparse_dense_add_out(Tensor & result, const Tensor & self, SparseTensorRef other, Scalar alpha) {
        return infer_type(self)._sparse_dense_add_out(result, self, other, alpha);
    }
-   static inline Tensor & _sparse_div_out(Tensor & result, const Tensor & self, Scalar other) {
-       return infer_type(self)._sparse_div_out(result, self, other);
+   static inline Tensor & _sparse_div_zerodim_out(Tensor & result, const Tensor & self, const Tensor & other) {
+       return infer_type(self)._sparse_div_zerodim_out(result, self, other);
+   }
+   static inline Tensor & _sparse_div_scalar_out(Tensor & result, const Tensor & self, Scalar other) {
+       return infer_type(self)._sparse_div_scalar_out(result, self, other);
    }
    static inline Tensor & _sparse_mul_out(Tensor & result, const Tensor & self, const Tensor & other) {
        return infer_type(self)._sparse_mul_out(result, self, other);
+   }
+   static inline Tensor & _sparse_mul_zerodim_out(Tensor & result, const Tensor & self, const Tensor & other) {
+       return infer_type(self)._sparse_mul_zerodim_out(result, self, other);
    }
    static inline Tensor & _sparse_mul_scalar_out(Tensor & result, const Tensor & self, Scalar other) {
        return infer_type(self)._sparse_mul_scalar_out(result, self, other);
@@ -4385,6 +4482,9 @@ Program Listing for File Functions.h
    static inline std::tuple<Tensor,Tensor> _unique(const Tensor & self, bool sorted, bool return_inverse) {
        return infer_type(self)._unique(self, sorted, return_inverse);
    }
+   static inline std::tuple<Tensor,Tensor> _unique_dim(const Tensor & self, int64_t dim, bool sorted, bool return_inverse) {
+       return infer_type(self)._unique_dim(self, dim, sorted, return_inverse);
+   }
    static inline Tensor _unsafe_view(const Tensor & self, IntList size) {
        return infer_type(self)._unsafe_view(self, size);
    }
@@ -4507,6 +4607,30 @@ Program Listing for File Functions.h
    static inline Tensor _sparse_coo_tensor_unsafe(const Tensor & indices, const Tensor & values, IntList size) {
        return infer_type(values)._sparse_coo_tensor_unsafe(indices, values, size);
    }
+   static inline Tensor _sparse_mask(const Tensor & self, SparseTensorRef mask) {
+       return infer_type(self)._sparse_mask(self, mask);
+   }
+   static inline int64_t _sparseDims(const Tensor & self) {
+       return infer_type(self)._sparseDims(self);
+   }
+   static inline int64_t _dimI(const Tensor & self) {
+       return infer_type(self)._dimI(self);
+   }
+   static inline int64_t _denseDims(const Tensor & self) {
+       return infer_type(self)._denseDims(self);
+   }
+   static inline int64_t _dimV(const Tensor & self) {
+       return infer_type(self)._dimV(self);
+   }
+   static inline int64_t _nnz(const Tensor & self) {
+       return infer_type(self)._nnz(self);
+   }
+   static inline Tensor _indices(const Tensor & self) {
+       return infer_type(self)._indices(self);
+   }
+   static inline Tensor _values(const Tensor & self) {
+       return infer_type(self)._values(self);
+   }
    static inline Tensor & hspmm_out(Tensor & result, const Tensor & mat1, const Tensor & mat2) {
        return infer_type(result).hspmm_out(result, mat1, mat2);
    }
@@ -4549,29 +4673,29 @@ Program Listing for File Functions.h
    static inline std::tuple<Tensor,Tensor,Tensor,Tensor,Tensor> _thnn_fused_gru_cell_backward(const Tensor & grad_hy, const Tensor & workspace, bool has_bias) {
        return infer_type(grad_hy)._thnn_fused_gru_cell_backward(grad_hy, workspace, has_bias);
    }
-   static inline std::tuple<Tensor,Tensor,Tensor> lstm(const Tensor & input, TensorList hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, bool batch_first, const Tensor & cudnn_weight_buf, const Tensor & cudnn_dropout_state) {
-       return infer_type(input).lstm(input, hx, params, has_biases, num_layers, dropout, train, bidirectional, batch_first, cudnn_weight_buf, cudnn_dropout_state);
+   static inline std::tuple<Tensor,Tensor,Tensor> lstm(const Tensor & input, TensorList hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, bool batch_first) {
+       return infer_type(input).lstm(input, hx, params, has_biases, num_layers, dropout, train, bidirectional, batch_first);
    }
-   static inline std::tuple<Tensor,Tensor,Tensor> lstm(const Tensor & data, const Tensor & batch_sizes, TensorList hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, const Tensor & cudnn_weight_buf, const Tensor & cudnn_dropout_state) {
-       return infer_type(data).lstm(data, batch_sizes, hx, params, has_biases, num_layers, dropout, train, bidirectional, cudnn_weight_buf, cudnn_dropout_state);
+   static inline std::tuple<Tensor,Tensor,Tensor> lstm(const Tensor & data, const Tensor & batch_sizes, TensorList hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional) {
+       return infer_type(data).lstm(data, batch_sizes, hx, params, has_biases, num_layers, dropout, train, bidirectional);
    }
-   static inline std::tuple<Tensor,Tensor> gru(const Tensor & input, const Tensor & hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, bool batch_first, const Tensor & cudnn_weight_buf, const Tensor & cudnn_dropout_state) {
-       return infer_type(input).gru(input, hx, params, has_biases, num_layers, dropout, train, bidirectional, batch_first, cudnn_weight_buf, cudnn_dropout_state);
+   static inline std::tuple<Tensor,Tensor> gru(const Tensor & input, const Tensor & hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, bool batch_first) {
+       return infer_type(input).gru(input, hx, params, has_biases, num_layers, dropout, train, bidirectional, batch_first);
    }
-   static inline std::tuple<Tensor,Tensor> gru(const Tensor & data, const Tensor & batch_sizes, const Tensor & hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, const Tensor & cudnn_weight_buf, const Tensor & cudnn_dropout_state) {
-       return infer_type(data).gru(data, batch_sizes, hx, params, has_biases, num_layers, dropout, train, bidirectional, cudnn_weight_buf, cudnn_dropout_state);
+   static inline std::tuple<Tensor,Tensor> gru(const Tensor & data, const Tensor & batch_sizes, const Tensor & hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional) {
+       return infer_type(data).gru(data, batch_sizes, hx, params, has_biases, num_layers, dropout, train, bidirectional);
    }
-   static inline std::tuple<Tensor,Tensor> rnn_tanh(const Tensor & input, const Tensor & hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, bool batch_first, const Tensor & cudnn_weight_buf, const Tensor & cudnn_dropout_state) {
-       return infer_type(input).rnn_tanh(input, hx, params, has_biases, num_layers, dropout, train, bidirectional, batch_first, cudnn_weight_buf, cudnn_dropout_state);
+   static inline std::tuple<Tensor,Tensor> rnn_tanh(const Tensor & input, const Tensor & hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, bool batch_first) {
+       return infer_type(input).rnn_tanh(input, hx, params, has_biases, num_layers, dropout, train, bidirectional, batch_first);
    }
-   static inline std::tuple<Tensor,Tensor> rnn_tanh(const Tensor & data, const Tensor & batch_sizes, const Tensor & hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, const Tensor & cudnn_weight_buf, const Tensor & cudnn_dropout_state) {
-       return infer_type(data).rnn_tanh(data, batch_sizes, hx, params, has_biases, num_layers, dropout, train, bidirectional, cudnn_weight_buf, cudnn_dropout_state);
+   static inline std::tuple<Tensor,Tensor> rnn_tanh(const Tensor & data, const Tensor & batch_sizes, const Tensor & hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional) {
+       return infer_type(data).rnn_tanh(data, batch_sizes, hx, params, has_biases, num_layers, dropout, train, bidirectional);
    }
-   static inline std::tuple<Tensor,Tensor> rnn_relu(const Tensor & input, const Tensor & hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, bool batch_first, const Tensor & cudnn_weight_buf, const Tensor & cudnn_dropout_state) {
-       return infer_type(input).rnn_relu(input, hx, params, has_biases, num_layers, dropout, train, bidirectional, batch_first, cudnn_weight_buf, cudnn_dropout_state);
+   static inline std::tuple<Tensor,Tensor> rnn_relu(const Tensor & input, const Tensor & hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, bool batch_first) {
+       return infer_type(input).rnn_relu(input, hx, params, has_biases, num_layers, dropout, train, bidirectional, batch_first);
    }
-   static inline std::tuple<Tensor,Tensor> rnn_relu(const Tensor & data, const Tensor & batch_sizes, const Tensor & hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, const Tensor & cudnn_weight_buf, const Tensor & cudnn_dropout_state) {
-       return infer_type(data).rnn_relu(data, batch_sizes, hx, params, has_biases, num_layers, dropout, train, bidirectional, cudnn_weight_buf, cudnn_dropout_state);
+   static inline std::tuple<Tensor,Tensor> rnn_relu(const Tensor & data, const Tensor & batch_sizes, const Tensor & hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional) {
+       return infer_type(data).rnn_relu(data, batch_sizes, hx, params, has_biases, num_layers, dropout, train, bidirectional);
    }
    static inline std::tuple<Tensor,Tensor> lstm_cell(const Tensor & input, TensorList hx, const Tensor & w_ih, const Tensor & w_hh, const Tensor & b_ih, const Tensor & b_hh) {
        return infer_type(input).lstm_cell(input, hx, w_ih, w_hh, b_ih, b_hh);

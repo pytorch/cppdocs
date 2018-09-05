@@ -17,6 +17,7 @@ Program Listing for File any.h
    #include <torch/nn/pimpl.h>
    #include <torch/tensor.h>
    
+   #include <torch/csrc/autograd/variable.h>
    #include <torch/csrc/utils/memory.h>
    #include <torch/csrc/utils/variadic.h>
    
@@ -148,18 +149,14 @@ Program Listing for File any.h
    
      template <
          typename T,
-         typename = torch::disable_if_t<std::is_same<at::Tensor, T>::value>>
+         typename =
+             torch::disable_if_t<std::is_same<autograd::Variable, T>::value>>
      explicit Value(T&& value)
          : content_(
                torch::make_unique<Holder<decay_t<T>>>(std::forward<T>(value))) {}
    
-     explicit Value(at::Tensor tensor) {
-       if (tensor.is_variable()) {
-         content_ = torch::make_unique<Holder<torch::Tensor>>(std::move(tensor));
-       } else {
-         content_ = torch::make_unique<Holder<at::Tensor>>(std::move(tensor));
-       }
-     }
+     explicit Value(autograd::Variable variable)
+         : Value(Tensor(std::move(variable))) {}
    
      struct Placeholder {
        explicit Placeholder(const std::type_info& type_info_) noexcept

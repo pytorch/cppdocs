@@ -12,11 +12,12 @@ Program Listing for File TensorOptions.h
 
    #pragma once
    
+   #include <ATen/core/Backend.h>
    #include <ATen/Context.h>
-   #include <ATen/Device.h>
+   #include <ATen/core/Device.h>
    #include <ATen/DeviceGuard.h>
-   #include <ATen/Layout.h>
-   #include <ATen/ScalarType.h>
+   #include <ATen/core/Layout.h>
+   #include <ATen/core/ScalarType.h>
    #include <ATen/Tensor.h>
    #include <ATen/Type.h>
    
@@ -48,7 +49,7 @@ Program Listing for File TensorOptions.h
          type_ = &type;
        }
        this->dtype(type.scalarType());
-       this->device({type.backend(), device_index});
+       this->device({backendToDeviceType(type.backend()), device_index});
        this->layout(type.layout());
      }
    
@@ -61,7 +62,10 @@ Program Listing for File TensorOptions.h
      }
    
      /* implicit */ TensorOptions(Backend backend)
-         : TensorOptions(Device(backend)) {}
+         : TensorOptions(Device(backendToDeviceType(backend))) {}
+   
+     /* implicit */ TensorOptions(DeviceType device_type)
+         : TensorOptions(Device(device_type)) {}
    
      /* implicit */ TensorOptions(ScalarType dtype) : TensorOptions() {
        this->dtype(dtype);
@@ -146,9 +150,9 @@ Program Listing for File TensorOptions.h
      Backend backend() const noexcept {
        Backend backend;
        if (device_.type() == Device::Type::CPU) {
-         backend = (layout_ == kStrided) ? kCPU : kSparseCPU;
+         backend = (layout_ == kStrided) ? Backend::CPU : Backend::SparseCPU;
        } else {
-         backend = (layout_ == kStrided) ? kCUDA : kSparseCUDA;
+         backend = (layout_ == kStrided) ? Backend::CUDA : Backend::SparseCUDA;
        }
        return backend;
      }
