@@ -1,0 +1,53 @@
+:github_url: https://github.com/pytorch/pytorch
+
+
+.. _program_listing_file__var_log_chronos_job_2018-09-06-06_798925102_2848497021_pytorch_torch_csrc_api_include_torch_nn_modules_batchnorm.h:
+
+Program Listing for File batchnorm.h
+====================================
+
+- Return to documentation for :ref:`file__var_log_chronos_job_2018-09-06-06_798925102_2848497021_pytorch_torch_csrc_api_include_torch_nn_modules_batchnorm.h`
+
+.. code-block:: cpp
+
+   #pragma once
+   
+   #include <torch/nn/cloneable.h>
+   #include <torch/nn/pimpl.h>
+   #include <torch/tensor.h>
+   
+   #include <cstdint>
+   
+   namespace torch {
+   namespace nn {
+   struct BatchNormOptions {
+     /* implicit */ BatchNormOptions(int64_t features);
+     TORCH_ARG(int64_t, features);
+     TORCH_ARG(bool, affine) = true;
+     TORCH_ARG(bool, stateful) = false;
+     TORCH_ARG(double, eps) = 1e-5;
+     TORCH_ARG(double, momentum) = 0.1;
+   };
+   
+   class BatchNormImpl : public torch::nn::Cloneable<BatchNormImpl> {
+    public:
+     explicit BatchNormImpl(int64_t features)
+         : BatchNormImpl(BatchNormOptions(features)) {}
+     explicit BatchNormImpl(BatchNormOptions options);
+   
+     void reset() override;
+   
+     Tensor forward(Tensor input);
+     Tensor pure_forward(Tensor input, Tensor mean, Tensor variance);
+   
+     BatchNormOptions options;
+     Tensor weight;
+     Tensor bias;
+     Tensor running_mean;
+     Tensor running_variance;
+   };
+   
+   TORCH_MODULE(BatchNorm);
+   
+   } // namespace nn
+   } // namespace torch
