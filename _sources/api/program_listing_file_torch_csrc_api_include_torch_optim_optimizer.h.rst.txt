@@ -13,18 +13,22 @@ Program Listing for File optimizer.h
    #pragma once
    
    #include <torch/csrc/autograd/generated/variable_factories.h>
+   #include <torch/csrc/utils/variadic.h>
    #include <torch/nn/cursor.h>
+   #include <torch/optim/serialize.h>
+   #include <torch/serialize/archive.h>
    #include <torch/tensor.h>
    
    #include <algorithm>
    #include <functional>
+   #include <iterator>
    #include <memory>
+   #include <string>
    #include <vector>
    
    namespace torch {
    namespace optim {
    namespace detail {
-   
    class OptimizerBase {
     public:
      using ParameterCursor = torch::detail::CursorBase<Tensor>;
@@ -46,6 +50,9 @@ Program Listing for File optimizer.h
      std::vector<Tensor>& parameters() noexcept;
    
      size_t size() const noexcept;
+   
+     virtual void save(serialize::OutputArchive& archive) const;
+     virtual void load(serialize::InputArchive& archive);
    
     protected:
      OptimizerBase() = default;

@@ -1,0 +1,75 @@
+:github_url: https://github.com/pytorch/pytorch
+
+
+.. _program_listing_file_torch_csrc_api_include_torch_optim_serialize.h:
+
+Program Listing for File serialize.h
+====================================
+
+- Return to documentation for :ref:`file_torch_csrc_api_include_torch_optim_serialize.h`
+
+.. code-block:: cpp
+
+   #pragma once
+   
+   #include <torch/serialize/archive.h>
+   #include <torch/tensor.h>
+   
+   #include <cstddef>
+   #include <cstdint>
+   #include <deque>
+   #include <string>
+   #include <vector>
+   
+   namespace torch {
+   namespace optim {
+   namespace detail {
+   
+   // Note: These functions are all called `serialize()` so they can be called
+   // inside a template where the archive type is a template type and can thus be
+   // passed such that the appropriate overload is selected.
+   
+   void serialize(
+       serialize::OutputArchive& archive,
+       const std::string& key,
+       const std::vector<int64_t>& steps);
+   
+   void serialize(
+       serialize::InputArchive& archive,
+       const std::string& key,
+       std::vector<int64_t>& steps);
+   
+   template <typename BufferContainer>
+   void serialize(
+       serialize::OutputArchive& archive,
+       const std::string& key,
+       const BufferContainer& buffers) {
+     archive.write(
+         key + "/size", torch::tensor(static_cast<int64_t>(buffers.size())));
+     for (size_t index = 0; index < buffers.size(); ++index) {
+       archive.write(
+           key + "/" + std::to_string(index), buffers[index], /*is_buffer=*/true);
+     }
+   }
+   
+   template <typename BufferContainer>
+   void serialize(
+       serialize::InputArchive& archive,
+       const std::string& key,
+       BufferContainer& buffers) {
+     torch::Tensor size_tensor;
+     archive.read(key + "/size", size_tensor);
+     const size_t size = size_tensor.toCLong();
+     for (size_t index = 0; index < size; ++index) {
+       buffers.emplace_back();
+       archive.read(
+           key + "/" + std::to_string(index), buffers.back(), /*is_buffer=*/true);
+     }
+   }
+   
+   #define TORCH_OPTIM_SERIALIZE(name) \
+     torch::optim::detail::serialize(archive, #name, self.name)
+   
+   } // namespace detail
+   } // namespace optim
+   } // namespace torch
