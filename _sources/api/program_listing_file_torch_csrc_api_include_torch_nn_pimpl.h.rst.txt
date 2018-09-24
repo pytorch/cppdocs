@@ -22,13 +22,8 @@ Program Listing for File pimpl.h
    
    namespace torch {
    namespace detail {
-   struct ModuleHolderIndicator {};
-   
-   template <typename T>
-   using is_module_holder = std::is_base_of<ModuleHolderIndicator, decay_t<T>>;
-   
-   template <typename T>
-   using disable_if_module_holder_t = disable_if_t<is_module_holder<T>::value>;
+   // Dump all the template metaprogramming in this file.
+   #include "pimpl-inl.h"
    } // namespace detail
    
    namespace nn {
@@ -51,9 +46,16 @@ Program Listing for File pimpl.h
    
      /* implicit */ ModuleHolder(std::nullptr_t) : impl_(nullptr) {}
    
-     template <typename... Ts>
-     explicit ModuleHolder(Ts&&... ts)
-         : impl_(new Contained(std::forward<Ts>(ts)...)) {}
+     template <
+         typename Head,
+         typename... Tail,
+         typename = torch::disable_if_t<
+             detail::is_module_holder_of<Head, ContainedType>::value &&
+             (sizeof...(Tail) == 0)>>
+     explicit ModuleHolder(Head&& head, Tail&&... tail)
+         : impl_(new Contained(
+               std::forward<Head>(head),
+               std::forward<Tail>(tail)...)) {}
    
      /* implicit */ ModuleHolder(std::shared_ptr<Contained> module)
          : impl_(std::move(module)) {}
@@ -128,15 +130,10 @@ Program Listing for File pimpl.h
    } // namespace nn
    } // namespace torch
    
-   #define TORCH_MODULE_IMPL(Name, Impl)                                         \
-     class Name : public torch::nn::ModuleHolder<Impl> { /* NOLINT */            \
-      public:                                                                    \
-       using torch::nn::ModuleHolder<Impl>::ModuleHolder;                        \
-       Name(const Name&) = default; /* NOLINT */                                 \
-       Name(Name&&) = default; /* NOLINT */                                      \
-       Name(Name& other) : Name(static_cast<const Name&>(other)) {} /* NOLINT */ \
-       Name& operator=(const Name&) = default; /* NOLINT */                      \
-       Name& operator=(Name&&) = default; /* NOLINT */                           \
+   #define TORCH_MODULE_IMPL(Name, Impl)                              \
+     class Name : public torch::nn::ModuleHolder<Impl> { /* NOLINT */ \
+      public:                                                         \
+       using torch::nn::ModuleHolder<Impl>::ModuleHolder;             \
      }
    
    #define TORCH_MODULE(Name) TORCH_MODULE_IMPL(Name, Name##Impl)
