@@ -804,6 +804,7 @@ Program Listing for File Functions.h
    static inline Tensor & empty_out(Tensor & result, IntList size);
    static inline Tensor empty_like(const Tensor & self);
    static inline Tensor empty_like(const Tensor & self, const TensorOptions & options);
+   static inline Tensor empty_strided(IntList size, IntList stride, const TensorOptions & options={});
    static inline Tensor erf(const Tensor & self);
    static inline Tensor & erf_(Tensor & self);
    static inline Tensor & erf_out(Tensor & result, const Tensor & self);
@@ -1147,8 +1148,6 @@ Program Listing for File Functions.h
    static inline Tensor & s_native_addmm_(Tensor & self, const Tensor & mat1, const Tensor & mat2, Scalar beta=1, Scalar alpha=1);
    static inline Tensor & addmm_out(Tensor & result, const Tensor & self, const Tensor & mat1, const Tensor & mat2, Scalar beta=1, Scalar alpha=1);
    static inline Tensor addmm(const Tensor & self, const Tensor & mat1, const Tensor & mat2, Scalar beta=1, Scalar alpha=1);
-   static inline Tensor native_tensor(const Type & self_ty);
-   static inline Tensor native_tensor(const Type & self_ty, IntList size);
    static inline Tensor _sparse_coo_tensor_unsafe(const Tensor & indices, const Tensor & values, IntList size);
    static inline int64_t _dimI(const Tensor & self);
    static inline int64_t _dimV(const Tensor & self);
@@ -3526,6 +3525,10 @@ Program Listing for File Functions.h
        const DeviceGuard guard(options.device());
        return at::native::empty_like(self, options);
    }
+   static inline Tensor empty_strided(IntList size, IntList stride, const TensorOptions & options) {
+       const DeviceGuard guard(options.device());
+       return at::native::empty_strided(size, stride, options);
+   }
    static inline Tensor erf(const Tensor & self) {
        return detail::infer_type(self).erf(self);
    }
@@ -4588,12 +4591,6 @@ Program Listing for File Functions.h
    }
    static inline Tensor addmm(const Tensor & self, const Tensor & mat1, const Tensor & mat2, Scalar beta, Scalar alpha) {
        return detail::infer_type(self).addmm(self, mat1, mat2, beta, alpha);
-   }
-   static inline Tensor native_tensor(const Type & self_ty) {
-       return static_cast<const TypeExtendedInterface&>(self_ty).native_tensor();
-   }
-   static inline Tensor native_tensor(const Type & self_ty, IntList size) {
-       return static_cast<const TypeExtendedInterface&>(self_ty).native_tensor(size);
    }
    static inline Tensor _sparse_coo_tensor_unsafe(const Tensor & indices, const Tensor & values, IntList size) {
        return detail::infer_type(values)._sparse_coo_tensor_unsafe(indices, values, size);
