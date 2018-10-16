@@ -6,19 +6,25 @@
 Program Listing for File input-archive.h
 ========================================
 
-- Return to documentation for :ref:`file_torch_csrc_api_include_torch_serialize_input-archive.h`
+|exhale_lsh| :ref:`Return to documentation for file <file_torch_csrc_api_include_torch_serialize_input-archive.h>` (``torch/csrc/api/include/torch/serialize/input-archive.h``)
 
-.. code-block:: cpp
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: none
 
    #pragma once
    
-   #include <torch/tensor.h>
-   
+   #include <iosfwd>
    #include <memory>
    #include <string>
    #include <utility>
    
+   namespace at {
+   class Tensor;
+   } // namespace at
+   
    namespace torch {
+   using at::Tensor;
    namespace jit {
    namespace script {
    struct Module;
@@ -28,12 +34,28 @@ Program Listing for File input-archive.h
    
    namespace torch {
    namespace serialize {
+   
    class InputArchive final {
     public:
      InputArchive();
    
+     // Move is allowed.
+     InputArchive(InputArchive&&) = default;
+     InputArchive& operator=(InputArchive&&) = default;
+   
+     // Copy is disallowed.
+     InputArchive(InputArchive&) = delete;
+     InputArchive& operator=(InputArchive&) = delete;
+   
+     ~InputArchive() = default;
+   
      void read(const std::string& key, Tensor& tensor, bool is_buffer = false);
+   
      void read(const std::string& key, InputArchive& archive);
+   
+     void load_from(const std::string& filename);
+   
+     void load_from(std::istream& stream);
    
      template <typename... Ts>
      void operator()(Ts&&... ts) {
@@ -41,13 +63,7 @@ Program Listing for File input-archive.h
      }
    
     private:
-     friend InputArchive load_from_file(const std::string& filename);
-   
-     InputArchive(std::shared_ptr<jit::script::Module> module);
-   
      std::shared_ptr<jit::script::Module> module_;
    };
-   
-   InputArchive load_from_file(const std::string& filename);
    } // namespace serialize
    } // namespace torch

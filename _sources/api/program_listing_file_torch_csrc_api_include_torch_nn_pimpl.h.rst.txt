@@ -6,15 +6,19 @@
 Program Listing for File pimpl.h
 ================================
 
-- Return to documentation for :ref:`file_torch_csrc_api_include_torch_nn_pimpl.h`
+|exhale_lsh| :ref:`Return to documentation for file <file_torch_csrc_api_include_torch_nn_pimpl.h>` (``torch/csrc/api/include/torch/nn/pimpl.h``)
 
-.. code-block:: cpp
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: none
 
    #pragma once
    
    #include <torch/arg.h>
-   #include <torch/csrc/utils/variadic.h>
+   #include <torch/serialize/archive.h>
    #include <torch/tensor.h>
+   
+   #include <torch/csrc/utils/variadic.h>
    
    #include <memory>
    #include <type_traits>
@@ -127,6 +131,23 @@ Program Listing for File pimpl.h
        return nullptr;
      }
    };
+   
+   template <typename ModuleType>
+   serialize::OutputArchive& operator<<(
+       serialize::OutputArchive& archive,
+       const nn::ModuleHolder<ModuleType>& module) {
+     module->save(archive);
+     return archive;
+   }
+   
+   template <typename ModuleType>
+   serialize::InputArchive& operator>>(
+       serialize::InputArchive& archive,
+       nn::ModuleHolder<ModuleType>& module) {
+     module->load(archive);
+     return archive;
+   }
+   
    } // namespace nn
    } // namespace torch
    

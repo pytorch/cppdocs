@@ -6,9 +6,11 @@
 Program Listing for File Functions.h
 ====================================
 
-- Return to documentation for :ref:`file_build_aten_src_ATen_Functions.h`
+|exhale_lsh| :ref:`Return to documentation for file <file_build_aten_src_ATen_Functions.h>` (``build/aten/src/ATen/Functions.h``)
 
-.. code-block:: cpp
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: none
 
    #pragma once
    
@@ -646,7 +648,7 @@ Program Listing for File Functions.h
    static inline Tensor _cudnn_rnn_flatten_weight(TensorList weight_arr, int64_t weight_stride0, int64_t input_size, int64_t mode, int64_t hidden_size, int64_t num_layers, bool batch_first, bool bidirectional);
    static inline std::tuple<Tensor,Tensor,Tensor,Tensor,Tensor> _cudnn_rnn(const Tensor & input, TensorList weight, int64_t weight_stride0, const Tensor & weight_buf, const Tensor & hx, const Tensor & cx, int64_t mode, int64_t hidden_size, int64_t num_layers, bool batch_first, double dropout, bool train, bool bidirectional, IntList batch_sizes, const Tensor & dropout_state);
    static inline std::tuple<Tensor,Tensor,Tensor,std::vector<Tensor>> _cudnn_rnn_backward(const Tensor & input, TensorList weight, int64_t weight_stride0, const Tensor & weight_buf, const Tensor & hx, const Tensor & cx, const Tensor & output, const Tensor & grad_output, const Tensor & grad_hy, const Tensor & grad_cy, int64_t mode, int64_t hidden_size, int64_t num_layers, bool batch_first, double dropout, bool train, bool bidirectional, IntList batch_sizes, const Tensor & dropout_state, const Tensor & reserve, std::array<bool,4> output_mask);
-   static inline Tensor _cudnn_init_dropout_state(const Type & self_ty, double dropout, bool train, int64_t dropout_seed);
+   static inline Tensor _cudnn_init_dropout_state(double dropout, bool train, int64_t dropout_seed, const TensorOptions & options);
    static inline std::tuple<Tensor,Tensor> _fused_dropout(const Tensor & self, double p, Generator * generator=nullptr);
    static inline Tensor _masked_scale(const Tensor & self, const Tensor & mask, double scale);
    static inline Tensor dropout(const Tensor & input, double p, bool train);
@@ -3054,8 +3056,8 @@ Program Listing for File Functions.h
    static inline std::tuple<Tensor,Tensor,Tensor,std::vector<Tensor>> _cudnn_rnn_backward(const Tensor & input, TensorList weight, int64_t weight_stride0, const Tensor & weight_buf, const Tensor & hx, const Tensor & cx, const Tensor & output, const Tensor & grad_output, const Tensor & grad_hy, const Tensor & grad_cy, int64_t mode, int64_t hidden_size, int64_t num_layers, bool batch_first, double dropout, bool train, bool bidirectional, IntList batch_sizes, const Tensor & dropout_state, const Tensor & reserve, std::array<bool,4> output_mask) {
        return detail::infer_type(input)._cudnn_rnn_backward(input, weight, weight_stride0, weight_buf, hx, cx, output, grad_output, grad_hy, grad_cy, mode, hidden_size, num_layers, batch_first, dropout, train, bidirectional, batch_sizes, dropout_state, reserve, output_mask);
    }
-   static inline Tensor _cudnn_init_dropout_state(const Type & self_ty, double dropout, bool train, int64_t dropout_seed) {
-       return static_cast<const TypeExtendedInterface&>(self_ty)._cudnn_init_dropout_state(dropout, train, dropout_seed);
+   static inline Tensor _cudnn_init_dropout_state(double dropout, bool train, int64_t dropout_seed, const TensorOptions & options) {
+       return at::getType(options)._cudnn_init_dropout_state(dropout, train, dropout_seed, options);
    }
    static inline std::tuple<Tensor,Tensor> _fused_dropout(const Tensor & self, double p, Generator * generator) {
        return detail::infer_type(self)._fused_dropout(self, p, generator);
@@ -3533,8 +3535,7 @@ Program Listing for File Functions.h
        return detail::infer_type(grad)._embedding_bag_dense_backward(grad, indices, offsets, offset2bag, bag_size, maximum_indices, num_weights, scale_grad_by_freq, mode);
    }
    static inline Tensor empty(IntList size, const TensorOptions & options) {
-       const DeviceGuard guard(options.device());
-       return at::native::empty(size, options);
+       return at::getType(options).empty(size, options);
    }
    static inline Tensor & empty_out(Tensor & result, IntList size) {
        return detail::infer_type(result).empty_out(result, size);

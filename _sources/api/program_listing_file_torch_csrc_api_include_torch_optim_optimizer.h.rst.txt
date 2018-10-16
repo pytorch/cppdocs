@@ -6,18 +6,13 @@
 Program Listing for File optimizer.h
 ====================================
 
-- Return to documentation for :ref:`file_torch_csrc_api_include_torch_optim_optimizer.h`
+|exhale_lsh| :ref:`Return to documentation for file <file_torch_csrc_api_include_torch_optim_optimizer.h>` (``torch/csrc/api/include/torch/optim/optimizer.h``)
 
-.. code-block:: cpp
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: none
 
    #pragma once
-   
-   #include <torch/csrc/autograd/generated/variable_factories.h>
-   #include <torch/csrc/utils/variadic.h>
-   #include <torch/nn/cursor.h>
-   #include <torch/optim/serialize.h>
-   #include <torch/serialize/archive.h>
-   #include <torch/tensor.h>
    
    #include <algorithm>
    #include <functional>
@@ -25,6 +20,22 @@ Program Listing for File optimizer.h
    #include <memory>
    #include <string>
    #include <vector>
+   
+   namespace at {
+   class Tensor;
+   } // namespace at
+   
+   namespace torch {
+   using at::Tensor;
+   namespace detail {
+   template <typename T>
+   class CursorBase;
+   } // namespace detail
+   namespace serialize {
+   class OutputArchive;
+   class InputArchive;
+   } // namespace serialize
+   } // namespace torch
    
    namespace torch {
    namespace optim {
@@ -67,25 +78,18 @@ Program Listing for File optimizer.h
        return buffers[index];
      }
    
-     Tensor& buffer_at(std::vector<Tensor>& buffers, size_t index) {
-       if (buffers.size() <= index) {
-         buffers.reserve(index);
-         for (auto i = buffers.size(); i <= index; ++i) {
-           buffers.push_back(torch::zeros_like(parameters_.at(i)));
-         }
-       }
-       // Copy the buffer to the device and dtype of the parameter.
-       const auto& parameter = parameters_.at(index);
-       const auto& buffer = buffers.at(index);
-       if (buffer.device() != parameter.device() ||
-           buffer.dtype() != parameter.dtype()) {
-         buffers[index] = buffer.to(parameter.device(), parameter.dtype());
-       }
-       return buffers[index];
-     }
+     Tensor& buffer_at(std::vector<Tensor>& buffers, size_t index);
    
      std::vector<Tensor> parameters_;
    };
+   
+   serialize::OutputArchive& operator<<(
+       serialize::OutputArchive& archive,
+       const OptimizerBase& optimizer);
+   
+   serialize::InputArchive& operator>>(
+       serialize::InputArchive& archive,
+       OptimizerBase& optimizer);
    } // namespace detail
    
    class Optimizer : public detail::OptimizerBase {

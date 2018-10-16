@@ -6,19 +6,25 @@
 Program Listing for File output-archive.h
 =========================================
 
-- Return to documentation for :ref:`file_torch_csrc_api_include_torch_serialize_output-archive.h`
+|exhale_lsh| :ref:`Return to documentation for file <file_torch_csrc_api_include_torch_serialize_output-archive.h>` (``torch/csrc/api/include/torch/serialize/output-archive.h``)
 
-.. code-block:: cpp
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: none
 
    #pragma once
    
-   #include <torch/tensor.h>
-   
+   #include <iosfwd>
    #include <memory>
    #include <string>
    #include <utility>
    
+   namespace at {
+   class Tensor;
+   } // namespace at
+   
    namespace torch {
+   using at::Tensor;
    namespace jit {
    namespace script {
    struct Module;
@@ -32,11 +38,24 @@ Program Listing for File output-archive.h
     public:
      OutputArchive();
    
+     // Move is allowed.
+     OutputArchive(OutputArchive&&) = default;
+     OutputArchive& operator=(OutputArchive&&) = default;
+   
+     // Copy is disallowed.
+     OutputArchive(OutputArchive&) = delete;
+     OutputArchive& operator=(OutputArchive&) = delete;
+   
      void write(
          const std::string& key,
          const Tensor& tensor,
          bool is_buffer = false);
+   
      void write(const std::string& key, OutputArchive& nested_archive);
+   
+     void save_to(const std::string& filename);
+   
+     void save_to(std::ostream& stream);
    
      template <typename... Ts>
      void operator()(Ts&&... ts) {
@@ -44,11 +63,7 @@ Program Listing for File output-archive.h
      }
    
     private:
-     friend void save_to_file(const OutputArchive&, const std::string&);
-   
      std::shared_ptr<jit::script::Module> module_;
    };
-   
-   void save_to_file(const OutputArchive& archive, const std::string& filename);
    } // namespace serialize
    } // namespace torch
