@@ -24,6 +24,7 @@ Program Listing for File module.h
    #include "torch/csrc/jit/source_range.h"
    
    #include <torch/csrc/api/include/torch/detail/ordered_dict.h>
+   #include <torch/csrc/utils/memory.h>
    
    #include <ATen/core/ArrayRef.h>
    #include "c10/util/Optional.h"
@@ -274,7 +275,7 @@ Program Listing for File module.h
      NamedParameter(std::string name, at::Tensor tensor, bool is_buffer)
      : name(std::move(name))
      , is_buffer(is_buffer)
-     , parameter(new at::Tensor(std::move(tensor))) {}
+     , parameter(torch::make_unique<at::Tensor>(std::move(tensor))) {}
    
      const std::string name;
      bool is_buffer; // buffers are part of the module state but
@@ -375,6 +376,15 @@ Program Listing for File module.h
        return nullptr;
      }
    
+     void to(
+         at::Device device,
+         at::ScalarType dtype,
+         bool non_blocking = false);
+   
+     void to(at::ScalarType dtype, bool non_blocking = false);
+   
+     void to(at::Device device, bool non_blocking = false);
+   
      template <typename... Types>
      IValue run_method(const std::string& method_name, Types&&... args) {
        return get_method(method_name)({IValue(std::forward<Types>(args))...});
@@ -385,6 +395,10 @@ Program Listing for File module.h
      void save(const std::string& filename);
    
     private:
+      void to_impl(
+          at::optional<at::Device> device,
+          at::optional<at::ScalarType> dtype,
+          bool non_blocking);
    
      // invariant: to ensure member_inputs of Methods stay valid,
      // it is only legal to _add_ new modules and parameters.
