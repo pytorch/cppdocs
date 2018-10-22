@@ -1,0 +1,58 @@
+:github_url: https://github.com/pytorch/pytorch
+
+
+.. _program_listing_file_torch_csrc_api_include_torch_data_samplers_sequential.h:
+
+Program Listing for File sequential.h
+=====================================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_torch_csrc_api_include_torch_data_samplers_sequential.h>` (``torch/csrc/api/include/torch/data/samplers/sequential.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: none
+
+   #pragma once
+   
+   #include <torch/data/samplers/base.h>
+   #include <torch/tensor.h>
+   
+   #include <ATen/optional.h>
+   
+   #include <algorithm>
+   #include <cstddef>
+   #include <random>
+   #include <vector>
+   
+   namespace torch {
+   namespace data {
+   namespace samplers {
+   
+   class SequentialSampler : public Sampler {
+    public:
+     explicit SequentialSampler(size_t size) : size_(size) {}
+   
+     void reset() override {
+       index_ = 0;
+     }
+   
+     optional<std::vector<size_t>> next(size_t batch_size) override {
+       const auto remaining_indices = size_ - index_;
+       if (remaining_indices == 0) {
+         return nullopt;
+       }
+       std::vector<size_t> index_batch(std::min(batch_size, remaining_indices));
+       for (auto& i : index_batch) {
+         i = index_++;
+       }
+       return index_batch;
+     }
+   
+    private:
+     size_t size_;
+     size_t index_{0};
+   };
+   
+   } // namespace samplers
+   } // namespace data
+   } // namespace torch
