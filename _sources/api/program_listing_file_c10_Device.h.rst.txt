@@ -1,0 +1,106 @@
+:github_url: https://github.com/pytorch/pytorch
+
+
+.. _program_listing_file_c10_Device.h:
+
+Program Listing for File Device.h
+=================================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_c10_Device.h>` (``c10/Device.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: none
+
+   #pragma once
+   
+   #include <c10/DeviceType.h>
+   #include <c10/macros/Macros.h>
+   #include <c10/util/Exception.h>
+   
+   #include <cstddef>
+   #include <functional>
+   #include <iosfwd>
+   #include <string>
+   
+   namespace c10 {
+   
+   using DeviceIndex = int32_t;
+   
+   struct C10_API Device {
+     using Type = DeviceType;
+   
+     /* implicit */ Device(DeviceType type, DeviceIndex index = -1)
+         : type_(type), index_(index) {
+       AT_CHECK(
+           index == -1 || index >= 0,
+           "Device index must be -1 or non-negative, got ",
+           index);
+       AT_CHECK(
+           !is_cpu() || index <= 0,
+           "CPU device index must be -1 or zero, got ",
+           index);
+     }
+   
+     /* implicit */ Device(const std::string& device_string);
+   
+     bool operator==(const Device& other) const noexcept {
+       return this->type_ == other.type_ && this->index_ == other.index_;
+     }
+   
+     bool operator!=(const Device& other) const noexcept {
+       return !(*this == other);
+     }
+   
+     void set_index(DeviceIndex index) {
+       index_ = index;
+     }
+   
+     DeviceType type() const noexcept {
+       return type_;
+     }
+   
+     DeviceIndex index() const noexcept {
+       return index_;
+     }
+   
+     bool has_index() const noexcept {
+       return index_ != -1;
+     }
+   
+     bool is_cuda() const noexcept {
+       return type_ == DeviceType::CUDA;
+     }
+   
+     bool is_cpu() const noexcept {
+       return type_ == DeviceType::CPU;
+     }
+   
+    private:
+     DeviceType type_;
+     DeviceIndex index_ = -1;
+   };
+   
+   C10_API std::ostream& operator<<(
+       std::ostream& stream,
+       const Device& device);
+   
+   } // namespace c10
+   
+   namespace std {
+   template <>
+   struct hash<c10::Device> {
+     size_t operator()(c10::Device device) const noexcept {
+       size_t hash_val = static_cast<size_t>(device.index() + 1);
+       if (device.is_cuda()) {
+         hash_val += 2;
+       }
+       return hash_val;
+     }
+   };
+   } // namespace std
+   
+   // TODO: Remove when we add global namespace include
+   namespace at {
+   using c10::Device;
+   }
