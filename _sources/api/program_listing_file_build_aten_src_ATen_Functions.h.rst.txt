@@ -1159,14 +1159,12 @@ Program Listing for File Functions.h
    static inline Tensor & s_native_addmm_(Tensor & self, const Tensor & mat1, const Tensor & mat2, Scalar beta=1, Scalar alpha=1);
    static inline Tensor & addmm_out(Tensor & result, const Tensor & self, const Tensor & mat1, const Tensor & mat2, Scalar beta=1, Scalar alpha=1);
    static inline Tensor addmm(const Tensor & self, const Tensor & mat1, const Tensor & mat2, Scalar beta=1, Scalar alpha=1);
-   static inline Tensor sparse_coo_tensor(const Tensor & indices, const Tensor & values);
-   static inline Tensor sparse_coo_tensor(const Tensor & indices, const Tensor & values, IntList size);
    static inline Tensor sparse_coo_tensor(IntList size, const TensorOptions & options);
-   static inline Tensor sparse_coo_tensor(const Tensor & indices, const Tensor & values, const TensorOptions & options);
-   static inline Tensor sparse_coo_tensor(const Tensor & indices, const Tensor & values, IntList size, const TensorOptions & options);
-   static inline Tensor _sparse_coo_tensor_unsafe(const Tensor & indices, const Tensor & values, IntList size);
-   static inline int64_t _dimI(const Tensor & self);
-   static inline int64_t _dimV(const Tensor & self);
+   static inline Tensor sparse_coo_tensor(const Tensor & indices, const Tensor & values, const TensorOptions & options={});
+   static inline Tensor sparse_coo_tensor(const Tensor & indices, const Tensor & values, IntList size, const TensorOptions & options={});
+   static inline Tensor _sparse_coo_tensor_unsafe(const Tensor & indices, const Tensor & values, IntList size, const TensorOptions & options={});
+   static inline Tensor _sparse_coo_tensor_with_dims(int64_t sparse_dim, int64_t dense_dim, IntList size, const TensorOptions & options);
+   static inline Tensor _sparse_coo_tensor_with_dims_and_tensors(int64_t sparse_dim, int64_t dense_dim, IntList size, const Tensor & indices, const Tensor & values, const TensorOptions & options);
    static inline Tensor & hspmm_out(Tensor & result, const Tensor & mat1, const Tensor & mat2);
    static inline Tensor hspmm(const Tensor & mat1, const Tensor & mat2);
    static inline Tensor & copy_sparse_to_sparse_(Tensor & self, const Tensor & src, bool non_blocking=false);
@@ -4634,12 +4632,6 @@ Program Listing for File Functions.h
    static inline Tensor addmm(const Tensor & self, const Tensor & mat1, const Tensor & mat2, Scalar beta, Scalar alpha) {
        return detail::infer_type(self).addmm(self, mat1, mat2, beta, alpha);
    }
-   static inline Tensor sparse_coo_tensor(const Tensor & indices, const Tensor & values) {
-       return detail::infer_type(values).sparse_coo_tensor(indices, values);
-   }
-   static inline Tensor sparse_coo_tensor(const Tensor & indices, const Tensor & values, IntList size) {
-       return detail::infer_type(values).sparse_coo_tensor(indices, values, size);
-   }
    static inline Tensor sparse_coo_tensor(IntList size, const TensorOptions & options) {
        const DeviceGuard guard(options.device());
        return at::native::sparse_coo_tensor(size, options);
@@ -4652,14 +4644,15 @@ Program Listing for File Functions.h
        const DeviceGuard guard(options.device());
        return at::native::sparse_coo_tensor(indices, values, size, options);
    }
-   static inline Tensor _sparse_coo_tensor_unsafe(const Tensor & indices, const Tensor & values, IntList size) {
-       return detail::infer_type(values)._sparse_coo_tensor_unsafe(indices, values, size);
+   static inline Tensor _sparse_coo_tensor_unsafe(const Tensor & indices, const Tensor & values, IntList size, const TensorOptions & options) {
+       const DeviceGuard guard(options.device());
+       return at::native::_sparse_coo_tensor_unsafe(indices, values, size, options);
    }
-   static inline int64_t _dimI(const Tensor & self) {
-       return detail::infer_type(self)._dimI(self);
+   static inline Tensor _sparse_coo_tensor_with_dims(int64_t sparse_dim, int64_t dense_dim, IntList size, const TensorOptions & options) {
+       return at::getType(options)._sparse_coo_tensor_with_dims(sparse_dim, dense_dim, size, options);
    }
-   static inline int64_t _dimV(const Tensor & self) {
-       return detail::infer_type(self)._dimV(self);
+   static inline Tensor _sparse_coo_tensor_with_dims_and_tensors(int64_t sparse_dim, int64_t dense_dim, IntList size, const Tensor & indices, const Tensor & values, const TensorOptions & options) {
+       return at::getType(options)._sparse_coo_tensor_with_dims_and_tensors(sparse_dim, dense_dim, size, indices, values, options);
    }
    static inline Tensor & hspmm_out(Tensor & result, const Tensor & mat1, const Tensor & mat2) {
        return detail::infer_type(result).hspmm_out(result, mat1, mat2);
