@@ -21,7 +21,6 @@ Program Listing for File module.h
    #include <torch/tensor.h>
    
    #include <ATen/ATen.h>
-   #include "c10/util/Optional.h"
    
    #include <map>
    #include <memory>
@@ -46,7 +45,7 @@ Program Listing for File module.h
     public:
      explicit Module(std::string name);
    
-     Module() = default;
+     Module();
    
      virtual ~Module() = default;
    
@@ -165,6 +164,12 @@ Program Listing for File module.h
    std::shared_ptr<ModuleType> Module::register_module(
        std::string name,
        std::shared_ptr<ModuleType> module) {
+     AT_CHECK(!name.empty(), "Submodule name must not be empty");
+     AT_CHECK(
+         name.find('.') == std::string::npos,
+         "Submodule name must not contain a dot (got '",
+         name,
+         "')");
      auto& base_module = children_.insert(std::move(name), std::move(module));
      return std::dynamic_pointer_cast<ModuleType>(base_module);
    }

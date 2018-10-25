@@ -1905,7 +1905,6 @@
 #include &lt;torch/tensor.h&gt;
 
 #include &lt;ATen/ATen.h&gt;
-#include &quot;c10/util/Optional.h&quot;
 
 #include &lt;map&gt;
 #include &lt;memory&gt;
@@ -1930,7 +1929,7 @@ class Module {
  public:
   explicit Module(std::string name);
 
-  Module() = default;
+  Module();
 
   virtual ~Module() = default;
 
@@ -2049,6 +2048,12 @@ template &lt;typename ModuleType&gt;
 std::shared_ptr&lt;ModuleType&gt; Module::register_module(
     std::string name,
     std::shared_ptr&lt;ModuleType&gt; module) {
+  AT_CHECK(!name.empty(), &quot;Submodule name must not be empty&quot;);
+  AT_CHECK(
+      name.find(&#39;.&#39;) == std::string::npos,
+      &quot;Submodule name must not contain a dot (got &#39;&quot;,
+      name,
+      &quot;&#39;)&quot;);
   auto&amp; base_module = children_.insert(std::move(name), std::move(module));
   return std::dynamic_pointer_cast&lt;ModuleType&gt;(base_module);
 }
