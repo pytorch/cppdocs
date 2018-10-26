@@ -1580,8 +1580,8 @@
 <li class="toctree-l4"><a class="reference internal" href="function_namespacetorch_1_1nn_1_1init_1af7e7736ba2d050adc0523d84285564e8.html">Function torch::nn::init::zeros_</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespacetorch_1_1nn_1ae0ce735085f6a02354c23edd4009adbc.html">Template Function torch::nn::operator&lt;&lt;</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespacetorch_1_1nn_1ad6e85876b16959035d78e0f520902996.html">Template Function torch::nn::operator&gt;&gt;</a></li>
-<li class="toctree-l4"><a class="reference internal" href="function_namespacetorch_1_1nn_1_1parallel_1a8a0bf436f09e46c46566447fea3f30f2.html">Template Function torch::nn::parallel::data_parallel</a></li>
-<li class="toctree-l4"><a class="reference internal" href="function_namespacetorch_1_1nn_1_1parallel_1af8b7f9b169312c5a275131054e435f7c.html">Template Function torch::nn::parallel::parallel_apply</a></li>
+<li class="toctree-l4"><a class="reference internal" href="function_namespacetorch_1_1nn_1_1parallel_1afcf04d9b87a197c3a734bfb721dd67b0.html">Template Function torch::nn::parallel::data_parallel</a></li>
+<li class="toctree-l4"><a class="reference internal" href="function_namespacetorch_1_1nn_1_1parallel_1a3332f579e4976bdca83194a10ed68bd3.html">Template Function torch::nn::parallel::parallel_apply</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespacetorch_1_1nn_1_1parallel_1a3fb9b74758c39b577bbaf9c9444922ad.html">Template Function torch::nn::parallel::replicate(const std::shared_ptr&lt;ModuleType&gt;&amp;, const std::vector&lt;Device&gt;&amp;)</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespacetorch_1_1nn_1_1parallel_1a78d09f760ffa82af211c7658d4eee806.html">Template Function torch::nn::parallel::replicate(const ModuleHolder&lt;ModuleType&gt;&amp;, const std::vector&lt;Device&gt;&amp;)</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespacetorch_1a210cf3f87b1e4307563b4b704cd8ef54.html">Function torch::operator&lt;&lt;</a></li>
@@ -1903,7 +1903,6 @@
 #include &lt;ATen/Parallel.h&gt;
 #include &lt;ATen/core/TensorOptions.h&gt;
 #include &lt;c10/util/Exception.h&gt;
-#include &quot;c10/util/Optional.h&quot;
 
 #include &lt;cstddef&gt;
 #include &lt;exception&gt;
@@ -1940,7 +1939,7 @@ template &lt;typename ModuleType&gt;
 std::vector&lt;Tensor&gt; parallel_apply(
     std::vector&lt;ModuleType&gt;&amp; modules,
     const std::vector&lt;Tensor&gt;&amp; inputs,
-    const c10::optional&lt;std::vector&lt;Device&gt;&gt;&amp; devices = c10::nullopt) {
+    const optional&lt;std::vector&lt;Device&gt;&gt;&amp; devices = nullopt) {
   AT_CHECK(
       modules.size() == inputs.size(), &quot;Must have as many inputs as modules&quot;);
   if (devices) {
@@ -1991,8 +1990,8 @@ template &lt;typename ModuleType&gt;
 Tensor data_parallel(
     ModuleType module,
     Tensor input,
-    c10::optional&lt;std::vector&lt;Device&gt;&gt; devices = c10::nullopt,
-    c10::optional&lt;Device&gt; output_device = c10::nullopt,
+    optional&lt;std::vector&lt;Device&gt;&gt; devices = nullopt,
+    optional&lt;Device&gt; output_device = nullopt,
     int64_t dim = 0) {
   if (!devices) {
     const auto device_count = torch::cuda::device_count();
@@ -2013,7 +2012,7 @@ Tensor data_parallel(
   }
 
 #ifdef USE_CUDA
-  autograd::Scatter scatter(*devices, /*chunk_sizes=*/c10::nullopt, dim);
+  autograd::Scatter scatter(*devices, /*chunk_sizes=*/nullopt, dim);
   auto scattered_inputs = fmap&lt;Tensor&gt;(scatter.apply({std::move(input)}));
 
   auto replicas = replicate(module, *devices);
