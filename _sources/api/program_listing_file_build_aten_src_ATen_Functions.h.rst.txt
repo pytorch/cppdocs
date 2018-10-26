@@ -582,12 +582,6 @@ Program Listing for File Functions.h
    static inline Tensor _tanh_forward(const Tensor & self);
    static inline Tensor & _tanh_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & output);
    static inline Tensor _tanh_backward(const Tensor & grad_output, const Tensor & output);
-   static inline Tensor & thnn_batch_norm_out(Tensor & output, const Tensor & self, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps);
-   static inline Tensor thnn_batch_norm(const Tensor & self, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps);
-   static inline std::tuple<Tensor &,Tensor &,Tensor &> thnn_batch_norm_forward_out(Tensor & output, Tensor & save_mean, Tensor & save_std, const Tensor & self, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps);
-   static inline std::tuple<Tensor,Tensor,Tensor> thnn_batch_norm_forward(const Tensor & self, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps);
-   static inline std::tuple<Tensor &,Tensor &,Tensor &> thnn_batch_norm_backward_out(Tensor & grad_input, Tensor & grad_weight, Tensor & grad_bias, const Tensor & grad_output, const Tensor & self, const Tensor & weight, const Tensor & running_mean, const Tensor & running_var, bool training, double eps, const Tensor & save_mean, const Tensor & save_std);
-   static inline std::tuple<Tensor,Tensor,Tensor> thnn_batch_norm_backward(const Tensor & grad_output, const Tensor & self, const Tensor & weight, const Tensor & running_mean, const Tensor & running_var, bool training, double eps, const Tensor & save_mean, const Tensor & save_std, std::array<bool,3> output_mask={{true, true, true}});
    static inline Tensor & thnn_conv_transpose2d_out(Tensor & output, const Tensor & self, const Tensor & weight, IntList kernel_size, const Tensor & bias={}, IntList stride=1, IntList padding=0, IntList output_padding=0, IntList dilation=1);
    static inline Tensor thnn_conv_transpose2d(const Tensor & self, const Tensor & weight, IntList kernel_size, const Tensor & bias={}, IntList stride=1, IntList padding=0, IntList output_padding=0, IntList dilation=1);
    static inline std::tuple<Tensor &,Tensor &,Tensor &> thnn_conv_transpose2d_forward_out(Tensor & output, Tensor & columns, Tensor & ones, const Tensor & self, const Tensor & weight, IntList kernel_size, const Tensor & bias, IntList stride, IntList padding, IntList output_padding, IntList dilation);
@@ -957,6 +951,8 @@ Program Listing for File Functions.h
    static inline Tensor & mv_out(Tensor & result, const Tensor & self, const Tensor & vec);
    static inline Tensor mvlgamma(const Tensor & self, int64_t p);
    static inline Tensor narrow(const Tensor & self, int64_t dim, int64_t start, int64_t length);
+   static inline std::tuple<Tensor,Tensor,Tensor> native_batch_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps);
+   static inline std::tuple<Tensor,Tensor,Tensor> native_batch_norm_backward(const Tensor & grad_out, const Tensor & input, const Tensor & weight, const Tensor & running_mean, const Tensor & running_var, const Tensor & save_mean, const Tensor & save_invstd, bool train, double eps, std::array<bool,3> output_mask);
    static inline Tensor ones(IntList size, const TensorOptions & options={});
    static inline Tensor & ones_out(Tensor & result, IntList size);
    static inline Tensor ones_like(const Tensor & self);
@@ -2838,24 +2834,6 @@ Program Listing for File Functions.h
    static inline Tensor _tanh_backward(const Tensor & grad_output, const Tensor & output) {
        return detail::infer_type(grad_output)._tanh_backward(grad_output, output);
    }
-   static inline Tensor & thnn_batch_norm_out(Tensor & output, const Tensor & self, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps) {
-       return detail::infer_type(self).thnn_batch_norm_out(output, self, weight, bias, running_mean, running_var, training, momentum, eps);
-   }
-   static inline Tensor thnn_batch_norm(const Tensor & self, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps) {
-       return detail::infer_type(self).thnn_batch_norm(self, weight, bias, running_mean, running_var, training, momentum, eps);
-   }
-   static inline std::tuple<Tensor &,Tensor &,Tensor &> thnn_batch_norm_forward_out(Tensor & output, Tensor & save_mean, Tensor & save_std, const Tensor & self, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps) {
-       return detail::infer_type(self).thnn_batch_norm_forward_out(output, save_mean, save_std, self, weight, bias, running_mean, running_var, training, momentum, eps);
-   }
-   static inline std::tuple<Tensor,Tensor,Tensor> thnn_batch_norm_forward(const Tensor & self, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps) {
-       return detail::infer_type(self).thnn_batch_norm_forward(self, weight, bias, running_mean, running_var, training, momentum, eps);
-   }
-   static inline std::tuple<Tensor &,Tensor &,Tensor &> thnn_batch_norm_backward_out(Tensor & grad_input, Tensor & grad_weight, Tensor & grad_bias, const Tensor & grad_output, const Tensor & self, const Tensor & weight, const Tensor & running_mean, const Tensor & running_var, bool training, double eps, const Tensor & save_mean, const Tensor & save_std) {
-       return detail::infer_type(self).thnn_batch_norm_backward_out(grad_input, grad_weight, grad_bias, grad_output, self, weight, running_mean, running_var, training, eps, save_mean, save_std);
-   }
-   static inline std::tuple<Tensor,Tensor,Tensor> thnn_batch_norm_backward(const Tensor & grad_output, const Tensor & self, const Tensor & weight, const Tensor & running_mean, const Tensor & running_var, bool training, double eps, const Tensor & save_mean, const Tensor & save_std, std::array<bool,3> output_mask) {
-       return detail::infer_type(self).thnn_batch_norm_backward(grad_output, self, weight, running_mean, running_var, training, eps, save_mean, save_std, output_mask);
-   }
    static inline Tensor & thnn_conv_transpose2d_out(Tensor & output, const Tensor & self, const Tensor & weight, IntList kernel_size, const Tensor & bias, IntList stride, IntList padding, IntList output_padding, IntList dilation) {
        return detail::infer_type(self).thnn_conv_transpose2d_out(output, self, weight, kernel_size, bias, stride, padding, output_padding, dilation);
    }
@@ -3985,6 +3963,12 @@ Program Listing for File Functions.h
    }
    static inline Tensor narrow(const Tensor & self, int64_t dim, int64_t start, int64_t length) {
        return detail::infer_type(self).narrow(self, dim, start, length);
+   }
+   static inline std::tuple<Tensor,Tensor,Tensor> native_batch_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps) {
+       return detail::infer_type(input).native_batch_norm(input, weight, bias, running_mean, running_var, training, momentum, eps);
+   }
+   static inline std::tuple<Tensor,Tensor,Tensor> native_batch_norm_backward(const Tensor & grad_out, const Tensor & input, const Tensor & weight, const Tensor & running_mean, const Tensor & running_var, const Tensor & save_mean, const Tensor & save_invstd, bool train, double eps, std::array<bool,3> output_mask) {
+       return detail::infer_type(grad_out).native_batch_norm_backward(grad_out, input, weight, running_mean, running_var, save_mean, save_invstd, train, eps, output_mask);
    }
    static inline Tensor ones(IntList size, const TensorOptions & options) {
        const DeviceGuard guard(options.device());

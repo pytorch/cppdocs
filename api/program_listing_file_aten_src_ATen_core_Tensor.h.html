@@ -1065,6 +1065,8 @@
 <li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1_1native_1a87a2e96ae531020599198dbe44d7b535.html">Function at::native::getCudnnDataType</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1_1native_1a1e61dbcd974df3c718a65ec57077f2f2.html">Function at::native::operator&lt;&lt;</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1_1native_1af839a6fe2f661871679d39bbbec58bb4.html">Function at::native::setCuDNNStreamToCurrent</a></li>
+<li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1ac5620e80091a609bb6fd8c330e2cce75.html">Function at::native_batch_norm</a></li>
+<li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1a113380148232a0b1ed2e67d9ce11f5b0.html">Function at::native_batch_norm_backward</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1a76c1548f327a6e0d39b0c0519acca332.html">Function at::native_clone</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1a7fdc0e6795f72adba51f0ab61f3b0b04.html">Function at::native_norm</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1a07c51abd12aac4d095a67170a559e170.html">Function at::native_pow</a></li>
@@ -1363,12 +1365,6 @@
 <li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1a65260ffc9d416f3b5fab6113b811dd2d.html">Function at::th_pow_out</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1a47d4c1627c176690995e7d2c27baf91e.html">Function at::th_resize_as_</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1a4e12332d0701933abe8ade7dedcb1a34.html">Function at::th_zero_</a></li>
-<li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1a785d5ebbc89b2137cb8d3f1be504975b.html">Function at::thnn_batch_norm</a></li>
-<li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1a7a73ac7d45e43a9401a101cfdecddf87.html">Function at::thnn_batch_norm_backward</a></li>
-<li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1a4c27d146ef0294e51bb10d823e875852.html">Function at::thnn_batch_norm_backward_out</a></li>
-<li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1a1fc43bd79c263bc62b8dffaff7684b81.html">Function at::thnn_batch_norm_forward</a></li>
-<li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1aea9c2a3f6e293fa0e1bb2926bfd7f6f9.html">Function at::thnn_batch_norm_forward_out</a></li>
-<li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1a077e077fba02be91c116830c01d1a1f3.html">Function at::thnn_batch_norm_out</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1a7c12ba09e4511b1ee37cfd684ccb31ca.html">Function at::thnn_conv2d</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1a595851874dc4bf96386076efcc075c89.html">Function at::thnn_conv2d_backward</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1a0948fc963e33c60d033e2bf8c1dde88b.html">Function at::thnn_conv2d_backward_out</a></li>
@@ -2087,13 +2083,13 @@ public:
   // cast the data pointer to a __restrict__ pointer.
   // In order to use this, your CUDA kernel has to take a corresponding PackedTensorAccessor
   // as an argument.
-  template&lt;typename T, size_t N, template &lt;typename U&gt; class PtrTraits = DefaultPtrTraits&gt;
-    PackedTensorAccessor&lt;T,N,PtrTraits&gt; packed_accessor() const&amp; {
+  template&lt;typename T, size_t N, template &lt;typename U&gt; class PtrTraits = DefaultPtrTraits, typename index_t = int64_t&gt;
+  PackedTensorAccessor&lt;T,N,PtrTraits,index_t&gt; packed_accessor() const&amp; {
     static_assert(N &gt; 0, &quot;accessor is used for indexing tensor, for scalars use *data&lt;T&gt;()&quot;);
     AT_CHECK(dim() == N, &quot;expected &quot;, N, &quot; dims but tensor has &quot;, dim());
-    return PackedTensorAccessor&lt;T,N,PtrTraits&gt;(static_cast&lt;typename PtrTraits&lt;T&gt;::PtrType&gt;(data&lt;T&gt;()),sizes().data(),strides().data());
+    return PackedTensorAccessor&lt;T,N,PtrTraits,index_t&gt;(static_cast&lt;typename PtrTraits&lt;T&gt;::PtrType&gt;(data&lt;T&gt;()),sizes().data(),strides().data());
   }
-  template&lt;typename T, size_t N,  template &lt;typename U&gt; class PtrTraits = DefaultPtrTraits&gt;
+  template&lt;typename T, size_t N,  template &lt;typename U&gt; class PtrTraits = DefaultPtrTraits, typename index_t = int64_t&gt;
   PackedTensorAccessor&lt;T,N&gt; packed_accessor() &amp;&amp; = delete;
 
   Tensor operator-() const;
