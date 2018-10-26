@@ -653,15 +653,15 @@
 <li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1a3fda86bf9e1087d829e6b03720197931.html">Function at::chain_matmul</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1ab155a118d8db4feaa9b919dd83320230.html">Template Function at::checked_convert</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1af9736d4f1a4249746eb5df4e8ccbafab.html">Function at::chunk</a></li>
-<li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1a03f6ec17e197d99c98bba6b1634f3adf.html">Function at::clamp</a></li>
-<li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1a42e80bf4cb763e232dda02d34d1ac0b9.html">Function at::clamp_</a></li>
+<li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1a20be2de650096933b7c01c4d943fda11.html">Function at::clamp</a></li>
+<li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1a9c4df86bcfa02d68734b7034c5ed2c8a.html">Function at::clamp_</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1ab838000b4810bff416dce47af5604d3b.html">Function at::clamp_max</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1ad3c6587beb497f07dcb6fde61955c821.html">Function at::clamp_max_</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1a5a5778bc3c4b4d969874a1db5d5b1723.html">Function at::clamp_max_out</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1a6252024ab4dff4edb47ed33c3ffbf987.html">Function at::clamp_min</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1af2898a24cf72e3c0675af33e6dea5a1d.html">Function at::clamp_min_</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1aa8d25a7418059bbcaacf9d6c60023fd1.html">Function at::clamp_min_out</a></li>
-<li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1a02d12e2b9a6c27b17b5143c867dd76d8.html">Function at::clamp_out</a></li>
+<li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1aab1452c88d2db30c6f36aae8dee6056b.html">Function at::clamp_out</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1ae95ab7c4c78aa08fb714021ceda2b375.html">Function at::clone</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1a5c5d14a6cd79452d889abc675c7f0ed6.html">Function at::conv1d</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1ae62019b4bbc1dd91b8cdc17c8784a4a5.html">Function at::conv2d</a></li>
@@ -1911,6 +1911,11 @@
 // - Move to `c10` namespace.
 // - Remove macro use in line 478 because the nvcc device compiler cannot handle
 // it.
+// - revise constructor logic so that it is consistent with c++ 17 standard documented
+// here in (8): https://en.cppreference.com/w/cpp/utility/optional/optional, and
+// could be able to support initialization of optionals from convertible type U, also
+// remove two old constructors optional(const T&amp;) and optional(T&amp;&amp;) as it could be
+// handled by the template&lt;U=T&gt; case with default template argument.
 
 #ifndef C10_UTIL_OPTIONAL_H_
 #define C10_UTIL_OPTIONAL_H_
@@ -2297,9 +2302,34 @@ class optional : private OptionalBase&lt;T&gt; {
     }
   }
 
-  constexpr optional(const T&amp; v) : OptionalBase&lt;T&gt;(v) {}
+  // see https://github.com/akrzemi1/Optional/issues/16
+  // and https://en.cppreference.com/w/cpp/utility/optional/optional,
+  // in constructor 8, the std::optional spec can allow initialization
+  // of optionals from convertible type U
+  //
+  // 8 - implicit move construct from value
+  template&lt;
+      typename U = T,
+      TR2_OPTIONAL_REQUIRES(
+          std::is_constructible&lt;T, U&amp;&amp;&gt;::value
+          &amp;&amp; !std::is_same&lt;typename std::decay&lt;U&gt;::type, in_place_t&gt;::value
+          &amp;&amp; !std::is_same&lt;typename std::decay&lt;U&gt;::type, optional&lt;T&gt;&gt;::value
+          &amp;&amp; std::is_convertible&lt;U&amp;&amp;, T&gt;
+      )
+    &gt;
+  constexpr optional(U&amp;&amp; u) : OptionalBase&lt;T&gt;(std::forward&lt;U&gt;(u)) {}
 
-  constexpr optional(T&amp;&amp; v) : OptionalBase&lt;T&gt;(constexpr_move(v)) {}
+  // 8 - explicit move construct from value
+  template&lt;
+      typename U = T,
+      TR2_OPTIONAL_REQUIRES(
+          std::is_constructible&lt;T, U&amp;&amp;&gt;::value
+          &amp;&amp; !std::is_same&lt;typename std::decay&lt;U&gt;::type, in_place_t&gt;::value
+          &amp;&amp; !std::is_same&lt;typename std::decay&lt;U&gt;::type, optional&lt;T&gt;&gt;::value
+          &amp;&amp; !std::is_convertible&lt;U&amp;&amp;, T&gt;
+      )
+    &gt;
+  explicit constexpr optional(U&amp;&amp; u) : OptionalBase&lt;T&gt;(std::forward&lt;U&gt;(u)) {}
 
   template &lt;class... Args&gt;
   explicit constexpr optional(in_place_t, Args&amp;&amp;... args)
@@ -2346,9 +2376,12 @@ class optional : private OptionalBase&lt;T&gt; {
     return *this;
   }
 
-  template &lt;class U&gt;
+  template&lt;class U = T&gt;
   auto operator=(U&amp;&amp; v) -&gt; typename std::enable_if&lt;
-      std::is_same&lt;typename std::decay&lt;U&gt;::type, T&gt;::value,
+          std::is_constructible&lt;T, U&gt;::value
+          &amp;&amp; !std::is_same&lt;typename std::decay&lt;U&gt;::type, optional&lt;T&gt;&gt;::value
+          &amp;&amp; (std::is_scalar&lt;T&gt;::value || std::is_same&lt;typename std::decay&lt;U&gt;::type, T&gt;::value)
+          &amp;&amp; std::is_assignable&lt;T&amp;, U&gt;::value,
       optional&amp;&gt;::type {
     if (initialized()) {
       contained_val() = std::forward&lt;U&gt;(v);
@@ -2510,8 +2543,21 @@ class optional : private OptionalBase&lt;T&gt; {
   }
 };
 
+
+// XXX: please refrain from using optional&lt;T&amp;&gt;, since it is being against with
+// the optional standard in c++ 17, see the debate and the details here:
+// http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2012/n3406#rationale.refs
+// if you need it, consider using optional&lt;std::reference_wrapper&lt;T&gt;&gt; or * pointer
+//
+// we leave the implementation here in case we want to reconsider using it in the
+// future if it becomes a definitely necessary case.
 template &lt;class T&gt;
 class optional&lt;T&amp;&gt; {
+  // add this assert to prevent user from using optional reference as indicated above
+  static_assert(sizeof(T) == 0, &quot;optional references is ill-formed, \
+    consider use optional of a std::reference_wrapper of type T to \
+    hold a reference if you really need to&quot;);
+
   static_assert(!std::is_same&lt;T, nullopt_t&gt;::value, &quot;bad T&quot;);
   static_assert(!std::is_same&lt;T, in_place_t&gt;::value, &quot;bad T&quot;);
   T* ref;
@@ -2522,9 +2568,11 @@ class optional&lt;T&amp;&gt; {
 
   constexpr optional(nullopt_t) noexcept : ref(nullptr) {}
 
-  constexpr optional(T&amp; v) noexcept : ref(detail_::static_addressof(v)) {}
+  template&lt;typename U = T&gt;
+  constexpr optional(U&amp; u) noexcept : ref(detail_::static_addressof(u)) {}
 
-  optional(T&amp;&amp;) = delete;
+  template&lt;typename U = T&gt;
+  optional(U&amp;&amp;) = delete;
 
   constexpr optional(const optional&amp; rhs) noexcept : ref(rhs.ref) {}
 
