@@ -28,28 +28,22 @@ Program Listing for File DeviceGuard.h
      DeviceGuard() = default;
    
      explicit DeviceGuard(Device device) {
-       if (device.is_cuda()) {
-         set_index(device.index());
-       }
+       set_device(device);
      }
    
      explicit DeviceGuard(c10::optional<Device> device_opt) {
-       if (device_opt.has_value() && device_opt.value().is_cuda()) {
-         set_index(device_opt.value().index());
+       if (device_opt.has_value()) {
+         set_device(device_opt.value());
        }
      }
    
-     explicit DeviceGuard(int16_t index) {
-       set_index(index);
-     }
-   
      explicit DeviceGuard(const Tensor& tensor) {
-       set_index_from(tensor);
+       set_device_from(tensor);
      }
    
      explicit DeviceGuard(const TensorList& tensors) {
        if (!tensors.empty()) {
-         set_index_from(tensors.front());
+         set_device_from(tensors.front());
        }
      }
    
@@ -77,7 +71,12 @@ Program Listing for File DeviceGuard.h
        }
      }
    
-     void set_index(int16_t index) {
+     void set_device(at::Device device) {
+       if (device.type() == at::kCPU) {
+         return;
+       }
+       AT_ASSERT(device.type() == at::kCUDA);
+       auto index = device.index();
        if (index == -1) {
          return;
        }
@@ -95,21 +94,26 @@ Program Listing for File DeviceGuard.h
        last_index_ = index;
      }
    
-     void set_index_from(const Tensor& tensor) {
-       if (tensor.defined() && tensor.is_cuda()) {
-         set_index(tensor.get_device());
+     void set_device_from(const Tensor& tensor) {
+       if (tensor.defined()) {
+         set_device(tensor.device());
        }
      }
    
-     int16_t original_index() const noexcept {
-       return original_index_;
+     at::Device original_device() const noexcept {
+       return original_index_ == -1 ? at::kCPU : at::Device(at::kCUDA, original_index_);
      }
    
-     int16_t last_index() const noexcept {
-       return last_index_;
+     at::Device last_device() const noexcept {
+       return last_index_ == -1 ? at::kCPU : at::Device(at::kCUDA, last_index_);
      }
    
     private:
+     // This representation only works under the assumption that the DeviceType
+     // is only CUDA.  I think a reasonable invariant to assert for DeviceGuard
+     // is that once you've "picked" a device type, you can't mix set_device
+     // with other device types.
+   
      int16_t original_index_ = -1;
      int16_t last_index_ = -1;
    };

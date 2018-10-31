@@ -55,7 +55,7 @@ Program Listing for File CUDAGuard.h
      }
    
      void set_stream(const CUDAStream& stream) {
-       device_guard_.set_index(stream.device());
+       set_index(stream.device_index());
        // If we haven't stored the current stream yet, store it now.
        if (original_streams_.empty()) {
          const size_t device_count = getNumGPUs();
@@ -67,20 +67,24 @@ Program Listing for File CUDAGuard.h
        setCurrentCUDAStream(stream);
      }
    
-     void set_device(int32_t device) {
-       device_guard_.set_index(device);
+     void set_device(int32_t device_index) {
+       set_index(device_index);
+     }
+   
+     void set_index(int32_t device_index) {
+       device_guard_.set_device(at::Device(at::kCUDA, device_index));
      }
    
      ArrayRef<CUDAStream> original_streams() const noexcept {
        return original_streams_;
      }
    
-     int32_t original_device() const noexcept {
-       return device_guard_.original_index();
+     Device original_device() const noexcept {
+       return device_guard_.original_device();
      }
    
-     int32_t last_device() const noexcept {
-       return device_guard_.last_index();
+     Device last_device() const noexcept {
+       return device_guard_.last_device();
      }
    
     private:
