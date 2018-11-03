@@ -2109,7 +2109,7 @@ struct Method {
   , graph_(std::move(graph))
   , optimize(optimize)
   , member_inputs(std::move(initial_members))
-  , method_creator(method_creator) {
+  , method_creator(std::move(method_creator)) {
     JIT_ASSERT(graph_-&gt;inputs().size() &gt;= member_inputs.size());
     int i = graph_-&gt;inputs().size() - member_inputs.size();
     for(at::Tensor* member : member_inputs) {
@@ -2214,13 +2214,13 @@ struct Method {
   }
 
   Method&amp; setSchema(FunctionSchema schema_) {
-    schema = torch::make_unique&lt;FunctionSchema&gt;(std::move(schema_));
+    schema = make_unique&lt;FunctionSchema&gt;(std::move(schema_));
     return *this;
   }
 
   const FunctionSchema&amp; getSchema() const {
     if(schema == nullptr) {
-      schema.reset(new FunctionSchema(defaultSchemaFor(*this)));
+      schema = make_unique&lt;FunctionSchema&gt;(defaultSchemaFor(*this));
     }
     return *schema;
   }
@@ -2254,10 +2254,10 @@ private:
     for(size_t i = 0; i &lt; num_inputs; ++i) {
       const Value* v = g.inputs().at(i);
       std::string name = v-&gt;hasUniqueName() ? v-&gt;uniqueName() : (&quot;argument_&quot;  + std::to_string(i));
-      args.push_back({std::move(name), unshapedType(g.inputs()[i]-&gt;type())});
+      args.emplace_back(std::move(name), unshapedType(g.inputs()[i]-&gt;type()));
     }
     for(size_t i = 0; i &lt; g.outputs().size(); ++i) {
-      returns.push_back({&quot;&quot;, unshapedType(g.outputs()[i]-&gt;type())});
+      returns.emplace_back(&quot;&quot;, unshapedType(g.outputs()[i]-&gt;type()));
     }
     return { method.name(), std::move(args), std::move(returns) };
   }
