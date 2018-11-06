@@ -40,17 +40,21 @@ Program Listing for File base.h
    namespace data {
    namespace datasets {
    
-   template <typename Self, typename Batch = std::vector<Example<>>>
+   template <
+       typename Self,
+       typename Batch = std::vector<Example<>>,
+       typename BatchRequest = ArrayRef<size_t>>
    class BatchDataset {
     public:
      using SelfType = Self;
      using BatchType = Batch;
+     using BatchRequestType = BatchRequest;
    
      virtual ~BatchDataset() = default;
    
-     virtual Batch get_batch(ArrayRef<size_t> indices) = 0;
+     virtual Batch get_batch(BatchRequest request) = 0;
    
-     virtual size_t size() const = 0;
+     virtual optional<size_t> size() const = 0;
    
      template <typename TransformType>
      MapDataset<Self, TransformType> map(TransformType transform) & {
@@ -80,6 +84,9 @@ Program Listing for File base.h
        return batch;
      }
    };
+   
+   template <typename Self, typename Batch = std::vector<Example<>>>
+   using StreamDataset = BatchDataset<Self, Batch, /*BatchRequest=*/size_t>;
    } // namespace datasets
    } // namespace data
    } // namespace torch
