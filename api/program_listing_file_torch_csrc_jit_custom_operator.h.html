@@ -1695,7 +1695,7 @@
 <li class="toctree-l4"><a class="reference internal" href="function_namespacetorch_1_1data_1_1samplers_1afa8c78b13a6b4ef91cc596c02dc01a4a.html">Template Function torch::data::samplers::operator&gt;&gt;</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespacetorch_1_1jit_1a176d99fd5bf0233119a5f49c07a1d01d.html">Function torch::jit::compile</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespacetorch_1_1jit_1a4f82a6b2ce928e37b5cee25df68c2076.html">Template Function torch::jit::createOperator</a></li>
-<li class="toctree-l4"><a class="reference internal" href="function_namespacetorch_1_1jit_1_1detail_1a7b52fbd80c60d85528ef9fdfb3a76a80.html">Template Function torch::jit::detail::callOperatorWithTuple</a></li>
+<li class="toctree-l4"><a class="reference internal" href="function_namespacetorch_1_1jit_1_1detail_1a3ddb95b24660c5b75e50347818be6ed2.html">Template Function torch::jit::detail::callOperatorWithTuple</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespacetorch_1_1jit_1_1detail_1ab53789f0326c59957400e89f18219076.html">Function torch::jit::detail::checkArgumentVector</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespacetorch_1_1jit_1_1detail_1aaf96f7d324d82cc3308f19367650362b.html">Template Function torch::jit::detail::createArgumentVectorFromTraits</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespacetorch_1_1jit_1_1detail_1a70f88301f2d563ddabf647451f93daf2.html">Template Function torch::jit::detail::createArgumentVectorFromTypes</a></li>
@@ -2128,8 +2128,11 @@ Node* getTracedNode(
 
   // Hack to call addInputs for the parameter pack in a sequenced fashion.
   // https://stackoverflow.com/questions/12030538/calling-a-function-for-each-variadic-template-argument-and-an-array
-  int _[] = {(tracer::addInputs(node, schema.arguments()[Is].name().c_str(), std::get&lt;Is&gt;(tuple)), 0)...};
-  (void)_;
+  int _[] = {
+      (tracer::addInputs(
+           node, schema.arguments()[Is].name().c_str(), std::get&lt;Is&gt;(tuple)),
+       0)...};
+  (void)_; // ignore
 
   graph-&gt;appendNode(node);
 
@@ -2141,22 +2144,28 @@ void callOperatorWithTuple(
     const FunctionSchema&amp; schema,
     Implementation&amp;&amp; implementation,
     Stack&amp; stack,
-    std::tuple&lt;Types...&gt;&amp; tuple,
+    std::tuple&lt;Types...&gt;&amp; arguments,
     Indices&lt;Is...&gt;) {
+  AT_ASSERT(stack.size() == sizeof...(Is));
+
+  // Pop values from the stack into the elements of the tuple.
+  pop(stack, std::get&lt;Is&gt;(arguments)...);
+
   Node* node = nullptr;
   if (jit::tracer::isTracing()) {
-    node = getTracedNode&lt;Is...&gt;(schema, tuple);
+    node = getTracedNode&lt;Is...&gt;(schema, arguments);
   }
 
-  pop(stack, std::get&lt;Is&gt;(tuple)...);
-  auto result =
-      std::forward&lt;Implementation&gt;(implementation)(std::get&lt;Is&gt;(tuple)...);
+  // Call into the actual, original, user-supplied function.
+  auto return_value =
+      std::forward&lt;Implementation&gt;(implementation)(std::get&lt;Is&gt;(arguments)...);
 
   if (jit::tracer::isTracing()) {
-    jit::tracer::addOutput(node, result);
+    jit::tracer::addOutput(node, return_value);
   }
 
-  push(stack, IValue(std::move(result)));
+  // Push the return value back onto the stack.
+  push(stack, IValue(std::move(return_value)));
 }
 
 inline void checkArgumentVector(
@@ -2165,20 +2174,23 @@ inline void checkArgumentVector(
     const std::vector&lt;Argument&gt;&amp; provided,
     const FunctionSchema&amp; inferredSchema,
     const FunctionSchema&amp; providedSchema) {
+  // clang-format off
   AT_CHECK(
       inferred.size() == provided.size(),
       &quot;Inferred &quot;, inferred.size(), &quot; &quot;, what,
       &quot;(s) for operator implementation, but the provided schema specified &quot;,
-      provided.size(), &quot; &quot;, what, &quot;(s). Inferred schema: &quot;,
-      inferredSchema, &quot; | Provided schema: &quot;, providedSchema);
+      provided.size(), &quot; &quot;, what, &quot;(s). Inferred schema: &quot;, inferredSchema,
+      &quot; | Provided schema: &quot;, providedSchema);
+  // clang-format on
   for (size_t i = 0; i &lt; provided.size(); ++i) {
+    // clang-format off
     AT_CHECK(
         provided[i].type()-&gt;isSubtypeOf(inferred[i].type()),
-        &quot;Inferred type for &quot;, what, &quot; #&quot;, i, &quot; was &quot;,
-        *inferred[i].type(), &quot;, but the provided schema specified type &quot;,
-        *provided[i].type(), &quot; for the &quot;, what,
-        &quot; in that position. Inferred schema: &quot;,
+        &quot;Inferred type for &quot;, what, &quot; #&quot;, i, &quot; was &quot;, *inferred[i].type(),
+        &quot;, but the provided schema specified type &quot;, *provided[i].type(),
+        &quot; for the &quot;, what, &quot; in that position. Inferred schema: &quot;,
         inferredSchema, &quot; | Provided schema: &quot;, providedSchema);
+    // clang-format on
   }
 }
 
@@ -2227,6 +2239,8 @@ Operator createOperator(
       c10::guts::typelist::map_t&lt;decay_t, typename Traits::parameter_types&gt;;
   using ArgumentTuple =
       typename c10::guts::typelist::to_tuple&lt;ArgumentTypes&gt;::type;
+  static constexpr auto kNumberOfArguments =
+      std::tuple_size&lt;ArgumentTuple&gt;::value;
 
   auto schema = torch::jit::detail::inferAndCheckSchema&lt;Traits&gt;(schemaOrName);
 
@@ -2237,7 +2251,7 @@ Operator createOperator(
         std::move(implementation), // NOLINT(bugprone-move-forwarding-reference)
         stack,
         tuple,
-        typename MakeIndices&lt;std::tuple_size&lt;ArgumentTuple&gt;::value&gt;::indices{});
+        typename MakeIndices&lt;kNumberOfArguments&gt;::indices{});
     return 0;
   });
 }
