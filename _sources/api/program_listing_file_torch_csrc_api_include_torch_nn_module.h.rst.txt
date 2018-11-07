@@ -14,35 +14,35 @@ Program Listing for File module.h
 
    #pragma once
    
-   #include <torch/detail/ordered_dict.h>
-   #include <torch/nn/cursor.h>
    #include <torch/nn/pimpl.h>
+   #include <torch/ordered_dict.h>
    #include <torch/serialize/archive.h>
    #include <torch/types.h>
    
    #include <ATen/ATen.h>
    
+   #include <functional>
    #include <map>
    #include <memory>
    #include <string>
    #include <type_traits>
-   #include <unordered_map>
-   
-   // forward declarations confuse doxygen
-   #ifndef DOXYGEN_SHOULD_SKIP_THIS
-   namespace torch {
-   namespace detail {
-   template <typename T>
-   class CursorBase;
-   } // namespace detail
-   } // namespace torch
-   #endif // DOXYGEN_SHOULD_SKIP_THIS
    
    namespace torch {
    namespace nn {
    
-   class Module {
+   class Module : public std::enable_shared_from_this<Module> {
     public:
+     using ModuleApplyFunction = std::function<void(Module&)>;
+     using ConstModuleApplyFunction = std::function<void(const Module&)>;
+     using NamedModuleApplyFunction =
+         std::function<void(const std::string&, Module&)>;
+     using ConstNamedModuleApplyFunction =
+         std::function<void(const std::string&, const Module&)>;
+     using ModulePointerApplyFunction =
+         std::function<void(const std::shared_ptr<Module>&)>;
+     using NamedModulePointerApplyFunction =
+         std::function<void(const std::string&, const std::shared_ptr<Module>&)>;
+   
      explicit Module(std::string name);
    
      Module();
@@ -54,21 +54,41 @@ Program Listing for File module.h
      virtual std::shared_ptr<Module> clone(
          optional<Device> device = nullopt) const;
    
-     ModuleCursor modules();
+     void apply(ModuleApplyFunction function);
    
-     ConstModuleCursor modules() const;
+     void apply(ConstModuleApplyFunction function) const;
    
-     ModuleCursor children();
+     void apply(
+         NamedModuleApplyFunction function,
+         std::string name_prefix = std::string());
    
-     ConstModuleCursor children() const;
+     void apply(
+         ConstNamedModuleApplyFunction function,
+         std::string name_prefix = std::string()) const;
    
-     ParameterCursor parameters();
+     void apply(ModulePointerApplyFunction function) const;
    
-     ConstParameterCursor parameters() const;
+     void apply(
+         NamedModulePointerApplyFunction function,
+         std::string name_prefix = std::string()) const;
    
-     BufferCursor buffers();
+     std::vector<Tensor> parameters(bool recurse = true) const;
    
-     ConstBufferCursor buffers() const;
+     OrderedDict<std::string, Tensor> named_parameters(bool recurse = true) const;
+   
+     std::vector<Tensor> buffers(bool recurse = true) const;
+   
+     OrderedDict<std::string, Tensor> named_buffers(bool recurse = true) const;
+   
+     std::vector<std::shared_ptr<Module>> modules(bool include_self = true) const;
+   
+     OrderedDict<std::string, std::shared_ptr<Module>> named_modules(
+         std::string name_prefix = std::string(),
+         bool include_self = true) const;
+   
+     std::vector<std::shared_ptr<Module>> children() const;
+   
+     OrderedDict<std::string, std::shared_ptr<Module>> named_children() const;
    
      virtual void train();
    
@@ -90,10 +110,18 @@ Program Listing for File module.h
      template <typename ModuleType>
      typename ModuleType::ContainedType* as() noexcept;
    
+     template <typename ModuleType>
+     const typename ModuleType::ContainedType* as() const noexcept;
+   
      template <
          typename ModuleType,
          typename = torch::detail::disable_if_module_holder_t<ModuleType>>
      ModuleType* as() noexcept;
+   
+     template <
+         typename ModuleType,
+         typename = torch::detail::disable_if_module_holder_t<ModuleType>>
+     const ModuleType* as() const noexcept;
    
      virtual void save(serialize::OutputArchive& archive) const;
    
@@ -118,15 +146,10 @@ Program Listing for File module.h
          ModuleHolder<ModuleType> module_holder);
    
     private:
-     template <typename T>
-     using OrderedDict = torch::detail::OrderedDict<std::string, T>;
-   
      // Friend classes.
    
      template <typename Derived>
      friend class Cloneable;
-     template <typename T>
-     friend class detail::CursorBase;
    
      // Private methods.
    
@@ -135,11 +158,17 @@ Program Listing for File module.h
      template <typename... Ts>
      void to_impl(Ts&&... ts);
    
-     OrderedDict<Tensor> parameters_;
+     void apply_to_submodules(
+         const NamedModulePointerApplyFunction& function,
+         std::string name_name_prefix = std::string()) const;
    
-     OrderedDict<Tensor> buffers_;
+     std::shared_ptr<Module> shared_from_this_checked() const;
    
-     OrderedDict<std::shared_ptr<Module>> children_;
+     OrderedDict<std::string, Tensor> parameters_;
+   
+     OrderedDict<std::string, Tensor> buffers_;
+   
+     OrderedDict<std::string, std::shared_ptr<Module>> children_;
    
      mutable optional<std::string> name_;
    
@@ -155,9 +184,21 @@ Program Listing for File module.h
      return as<typename ModuleType::ContainedType>();
    }
    
+   template <typename ModuleType>
+   const typename ModuleType::ContainedType* Module::as() const noexcept {
+     // Use the contained type of the `ModuleHolder`, e.g. `LinearImpl` for
+     // `Linear`, since `LinearImpl` inherits `nn::Module`.
+     return as<typename ModuleType::ContainedType>();
+   }
+   
    template <typename ModuleType, typename>
    ModuleType* Module::as() noexcept {
      return dynamic_cast<ModuleType*>(this);
+   }
+   
+   template <typename ModuleType, typename>
+   const ModuleType* Module::as() const noexcept {
+     return dynamic_cast<const ModuleType*>(this);
    }
    
    template <typename ModuleType>
@@ -185,7 +226,7 @@ Program Listing for File module.h
    void Module::to_impl(Ts&&... ts) {
      // First call `to()` on every child module.
      for (auto& child : children_) {
-       child.value->to(ts...);
+       child.value()->to(ts...);
      }
      // Then move every parameter to the new dtype/device.
      for (auto& parameter : parameters_) {
