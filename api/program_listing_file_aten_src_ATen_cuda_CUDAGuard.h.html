@@ -143,8 +143,11 @@
 </li>
 <li class="toctree-l3"><a class="reference internal" href="library_root.html#classes-and-structs">Classes and Structs</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="structat_1_1cuda_1_1_c_u_d_a_guard.html">Struct CUDAGuard</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structat_1_1cuda_1_1_c_u_d_a_multi_stream_guard.html">Struct CUDAMultiStreamGuard</a></li>
 <li class="toctree-l4"><a class="reference internal" href="structat_1_1cuda_1_1_c_u_d_a_stream.html">Struct CUDAStream</a></li>
-<li class="toctree-l4"><a class="reference internal" href="structat_1_1_device_guard.html">Struct DeviceGuard</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structat_1_1cuda_1_1_c_u_d_a_stream_guard.html">Struct CUDAStreamGuard</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structat_1_1cuda_1_1_optional_c_u_d_a_guard.html">Struct OptionalCUDAGuard</a></li>
+<li class="toctree-l4"><a class="reference internal" href="structat_1_1cuda_1_1_optional_c_u_d_a_stream_guard.html">Struct OptionalCUDAStreamGuard</a></li>
 <li class="toctree-l4"><a class="reference internal" href="structat_1_1native_1_1_convolution_descriptor.html">Struct ConvolutionDescriptor</a></li>
 <li class="toctree-l4"><a class="reference internal" href="structat_1_1native_1_1_c_t_c_loss_descriptor.html">Struct CTCLossDescriptor</a></li>
 <li class="toctree-l4"><a class="reference internal" href="structat_1_1native_1_1_descriptor_deleter.html">Template Struct DescriptorDeleter</a></li>
@@ -877,6 +880,8 @@
 <li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1_1detail_1ad508befd21f06a48257eb4c4f739837d.html">Function at::detail::infer_type(const Tensor&amp;)</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1_1detail_1a5dbe1b3022af5c84b69c4f74eb7deabc.html">Function at::detail::infer_type(const TensorList&amp;)</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1_1detail_1a751b3c7ca3b1fcf03196fafb38113424.html">Template Function at::detail::make_tensor</a></li>
+<li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1ac20320bf1ee0b0d52753139e2cb6ff44.html">Function at::device_of(Tensor)</a></li>
+<li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1affd492a47956a723ceecdc72708ad155.html">Function at::device_of(TensorList)</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1af9d5ff4161c027d2b8d6500633c200d6.html">Function at::diag</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1afe0edd4b49d4ea7ba669c3e9fa263245.html">Function at::diag_embed</a></li>
 <li class="toctree-l4"><a class="reference internal" href="function_namespaceat_1a28a429a2253c99f854afa3db6b482d68.html">Function at::diag_out</a></li>
@@ -2070,78 +2075,188 @@
 #include &lt;ATen/DeviceGuard.h&gt;
 #include &lt;ATen/core/ArrayRef.h&gt;
 #include &lt;ATen/cuda/CUDAContext.h&gt;
+#include &lt;ATen/cuda/detail/CUDAGuardImpl.h&gt;
+#include &lt;c10/DeviceType.h&gt;
+#include &lt;c10/detail/InlineDeviceGuard.h&gt;
+#include &lt;c10/detail/InlineStreamGuard.h&gt;
 
 #include &lt;cstddef&gt;
 #include &lt;vector&gt;
 
 namespace at { namespace cuda {
 
+// This code is kind of boilerplatey.  See Note [Whither the DeviceGuard boilerplate]
+
 struct CUDAGuard {
-  CUDAGuard() = default;
+  explicit CUDAGuard() = delete;
 
-  explicit CUDAGuard(const CUDAStream&amp; stream) {
-    set_stream(stream);
-  }
+  explicit CUDAGuard(DeviceIndex device_index) : guard_(device_index) {}
 
-  explicit CUDAGuard(int32_t device) {
-    set_device(device);
-  }
+  explicit CUDAGuard(Device device) : guard_(device) {}
 
+  // Copy is not allowed
   CUDAGuard(const CUDAGuard&amp;) = delete;
   CUDAGuard&amp; operator=(const CUDAGuard&amp;) = delete;
 
-  CUDAGuard(CUDAGuard&amp;&amp; other) noexcept = default;
+  // Move is not allowed (there is no uninitialized state)
+  CUDAGuard(CUDAGuard&amp;&amp; other) = delete;
+  CUDAGuard&amp; operator=(CUDAGuard&amp;&amp; other) = delete;
 
-  CUDAGuard&amp; operator=(CUDAGuard&amp;&amp; other) {
-    device_guard_ = std::move(other.device_guard_);
-    original_streams_ = std::move(other.original_streams_);
-    other.original_streams_.clear();
-    return *this;
+  void set_device(Device device) { guard_.set_device(device); }
+
+  void reset_device(Device device) { guard_.reset_device(device); }
+
+  void set_index(DeviceIndex device_index) { guard_.set_index(device_index); }
+
+  Device original_device() const { return guard_.original_device(); }
+
+  Device current_device() const { return guard_.current_device(); }
+
+ private:
+  c10::detail::InlineDeviceGuard&lt;detail::CUDAGuardImpl&gt; guard_;
+};
+
+struct OptionalCUDAGuard {
+  explicit OptionalCUDAGuard() : guard_() {}
+
+  explicit OptionalCUDAGuard(optional&lt;Device&gt; device_opt) : guard_(device_opt) {}
+
+  explicit OptionalCUDAGuard(optional&lt;DeviceIndex&gt; device_index_opt) : guard_(device_index_opt) {}
+
+  // Copy is not allowed
+  OptionalCUDAGuard(const OptionalCUDAGuard&amp;) = delete;
+  OptionalCUDAGuard&amp; operator=(const OptionalCUDAGuard&amp;) = delete;
+
+  // See Note [Move construction for RAII guards is tricky]
+  OptionalCUDAGuard(OptionalCUDAGuard&amp;&amp; other) = delete;
+
+  // See Note [Move assignment for RAII guards is tricky]
+  OptionalCUDAGuard&amp; operator=(OptionalCUDAGuard&amp;&amp; other) = delete;
+
+  void set_device(Device device) { guard_.set_device(device); }
+
+  void reset_device(Device device) { guard_.reset_device(device); }
+
+  void set_index(DeviceIndex device_index) { guard_.set_index(device_index); }
+
+  optional&lt;Device&gt; original_device() const { return guard_.original_device(); }
+
+  optional&lt;Device&gt; current_device() const { return guard_.current_device(); }
+
+  void reset() { guard_.reset(); }
+
+private:
+  c10::detail::InlineOptionalDeviceGuard&lt;detail::CUDAGuardImpl&gt; guard_;
+};
+
+struct CUDAStreamGuard {
+  explicit CUDAStreamGuard() = delete;
+
+  explicit CUDAStreamGuard(Stream stream) : guard_(stream) {}
+
+  CUDAStreamGuard(const CUDAStreamGuard&amp;) = delete;
+  CUDAStreamGuard&amp; operator=(const CUDAStreamGuard&amp;) = delete;
+
+  CUDAStreamGuard(CUDAStreamGuard&amp;&amp; other) = delete;
+  CUDAStreamGuard&amp; operator=(CUDAStreamGuard&amp;&amp; other) = delete;
+
+  void reset_stream(Stream stream) { guard_.reset_stream(stream); }
+
+  CUDAStream original_stream() const {
+    return CUDAStream(CUDAStream::UNCHECKED, guard_.original_stream());
   }
 
-  ~CUDAGuard() {
-    if (!original_streams_.empty()) {
-      for (size_t device = 0; device &lt; original_streams_.size(); ++device) {
-        uncheckedSetCurrentCUDAStream(original_streams_[device]);
-      }
+  CUDAStream current_stream() const {
+    return CUDAStream(CUDAStream::UNCHECKED, guard_.current_stream());
+  }
+
+  Device current_device() const { return guard_.current_device(); }
+
+  Device original_device() const { return guard_.original_device(); }
+
+private:
+  c10::detail::InlineStreamGuard&lt;detail::CUDAGuardImpl&gt; guard_;
+};
+
+struct OptionalCUDAStreamGuard {
+  explicit OptionalCUDAStreamGuard() : guard_() {}
+
+  explicit OptionalCUDAStreamGuard(Stream stream) : guard_(stream) {}
+
+  explicit OptionalCUDAStreamGuard(optional&lt;Stream&gt; stream_opt) : guard_(stream_opt) {}
+
+  OptionalCUDAStreamGuard(const OptionalCUDAStreamGuard&amp;) = delete;
+  OptionalCUDAStreamGuard&amp; operator=(const OptionalCUDAStreamGuard&amp;) = delete;
+
+  // See Note [Move construction for RAII guards is tricky]
+  OptionalCUDAStreamGuard(OptionalCUDAStreamGuard&amp;&amp; other) = delete;
+
+  // See Note [Move assignment for RAII guards is tricky]
+  OptionalCUDAStreamGuard&amp; operator=(OptionalCUDAStreamGuard&amp;&amp; other) = delete;
+
+  void reset_stream(Stream stream) { guard_.reset_stream(stream); }
+
+  optional&lt;CUDAStream&gt; original_stream() const {
+    auto r = guard_.original_stream();
+    if (r.has_value()) {
+      return make_optional(CUDAStream(CUDAStream::UNCHECKED, r.value()));
+    } else {
+      return nullopt;
     }
   }
 
-  void set_stream(const CUDAStream&amp; stream) {
-    set_index(stream.device_index());
-    // If we haven&#39;t stored the current stream yet, store it now.
-    if (original_streams_.empty()) {
-      const size_t device_count = getNumGPUs();
-      original_streams_.reserve(device_count);
-      for (size_t device = 0; device &lt; device_count; ++device) {
-        original_streams_.push_back(getCurrentCUDAStream(device));
-      }
+  optional&lt;CUDAStream&gt; current_stream() const {
+    auto r = guard_.current_stream();
+    if (r.has_value()) {
+      return make_optional(CUDAStream(CUDAStream::UNCHECKED, r.value()));
+    } else {
+      return nullopt;
     }
-    setCurrentCUDAStream(stream);
   }
 
-  void set_device(int32_t device_index) {
-    set_index(device_index);
+  void reset() { guard_.reset(); }
+
+private:
+  c10::detail::InlineOptionalStreamGuard&lt;detail::CUDAGuardImpl&gt; guard_;
+};
+
+// TODO: Implement this generically in c10.  You&#39;ll need some way to get
+// the number of GPUs from the GuardImpl, in that case.
+struct CUDAMultiStreamGuard {
+  explicit CUDAMultiStreamGuard(ArrayRef&lt;CUDAStream&gt; streams) : CUDAMultiStreamGuard() {
+    for (const auto&amp; s : streams) {
+      setCurrentCUDAStream(s);
+    }
   }
 
-  void set_index(int32_t device_index) {
-    device_guard_.set_device(at::Device(at::kCUDA, device_index));
+  CUDAMultiStreamGuard() {
+    const size_t device_count = getNumGPUs();
+    original_streams_.reserve(device_count);
+    for (size_t device = 0; device &lt; device_count; ++device) {
+      original_streams_.push_back(getCurrentCUDAStream(device));
+    }
   }
 
-  ArrayRef&lt;CUDAStream&gt; original_streams() const noexcept {
+  CUDAMultiStreamGuard(const CUDAGuard&amp;) = delete;
+  CUDAMultiStreamGuard&amp; operator=(const CUDAGuard&amp;) = delete;
+
+  // See Note [Move construction for RAII guards is tricky]
+  CUDAMultiStreamGuard(CUDAGuard&amp;&amp; other) = delete;
+
+  // See Note [Move assignment for RAII guards is tricky]
+  CUDAMultiStreamGuard&amp; operator=(CUDAGuard&amp;&amp; other) = delete;
+
+  ArrayRef&lt;CUDAStream&gt; original_streams() const {
     return original_streams_;
   }
 
-  Device original_device() const noexcept {
-    return device_guard_.original_device();
+  ~CUDAMultiStreamGuard() {
+    for (const auto&amp; s : original_streams_) {
+      uncheckedSetCurrentCUDAStream(s);
+    }
   }
 
-  Device last_device() const noexcept {
-    return device_guard_.last_device();
-  }
-
- private:
-  at::DeviceGuard device_guard_;
+private:
   std::vector&lt;CUDAStream&gt; original_streams_;
 };
 
