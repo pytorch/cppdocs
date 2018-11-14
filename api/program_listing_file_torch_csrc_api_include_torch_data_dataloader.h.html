@@ -2176,8 +2176,9 @@ class DataLoader {
       // has its own copy of the dataset. This means the dataset must be
       // trivially copiable, or else we don&#39;t expect more than one worker to
       // be in use.
-      workers_.emplace_back(
-          [this, dataset] { this-&gt;worker_thread(std::move(dataset)); });
+      workers_.emplace_back([this, dataset]() mutable {
+        this-&gt;worker_thread(std::move(dataset));
+      });
     }
     if (options_.workers == 0) {
       main_thread_dataset_ = torch::make_unique&lt;Dataset&gt;(std::move(dataset));
