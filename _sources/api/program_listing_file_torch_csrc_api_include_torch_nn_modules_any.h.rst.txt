@@ -94,15 +94,18 @@ Program Listing for File any.h
    
      template <
          typename ModuleType,
-         typename Class, // = std::remove_reference<ModuleType>::type
+         typename Class,
          typename ReturnType,
          typename... ArgumentTypes>
      std::unique_ptr<Placeholder> make_holder(
          std::shared_ptr<ModuleType>&& module,
          ReturnType (Class::*)(ArgumentTypes...));
    
-     template <typename T>
-     T& get_() const;
+     template <typename ModuleType, typename ReturnType, typename... ArgumentTypes>
+     ModuleType& get_(ReturnType (ModuleType::*)(ArgumentTypes...)) const;
+   
+     template <typename ModuleType>
+     ModuleType& get_() const;
    
      std::unique_ptr<Placeholder> content_;
    };
@@ -191,8 +194,7 @@ Program Listing for File any.h
    
      virtual std::unique_ptr<Placeholder> copy() const = 0;
    
-     virtual std::unique_ptr<Placeholder> clone(
-         optional<Device> device) const = 0;
+     virtual std::unique_ptr<Placeholder> clone(optional<Device> device) const = 0;
    };
    
    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ AnyModule::Holder ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -239,7 +241,7 @@ Program Listing for File any.h
            arguments.size());
        // FYI: During invocation of a module's `forward()` method, the values live
        // in the `arguments` vector inside this function.
-       return torch::unpack<ArgumentTypes...>(
+       return torch::unpack<Value, ArgumentTypes...>(
            InvokeForward{module}, CheckedGetter{arguments});
      }
    
@@ -251,8 +253,7 @@ Program Listing for File any.h
        return torch::make_unique<Holder>(*this);
      }
    
-     std::unique_ptr<Placeholder> clone(
-         optional<Device> device) const override {
+     std::unique_ptr<Placeholder> clone(optional<Device> device) const override {
        return torch::make_unique<Holder>(
            std::dynamic_pointer_cast<ModuleType>(module->clone(device)));
      }
@@ -376,16 +377,27 @@ Program Listing for File any.h
          std::move(module));
    }
    
-   template <typename T>
-   T& AnyModule::get_() const {
-     if (typeid(T).hash_code() == type_info().hash_code()) {
-       return *static_cast<Holder<T>&>(*content_).module;
+   template <typename ModuleType>
+   ModuleType& AnyModule::get_() const {
+     using M = typename std::remove_reference<ModuleType>::type;
+     static_assert(
+         torch::detail::has_forward<M>::value,
+         "Can only call AnyModule::get<T> with a type T that has a forward method");
+     return get_(&M::forward);
+   }
+   
+   template <typename ModuleType, typename ReturnType, typename... ArgumentTypes>
+   ModuleType& AnyModule::get_(
+       ReturnType (ModuleType::*)(ArgumentTypes...)) const {
+     if (typeid(ModuleType).hash_code() == type_info().hash_code()) {
+       return *static_cast<Holder<ModuleType, ArgumentTypes...>&>(*content_)
+                   .module;
      }
      AT_ERROR(
          "Attempted to cast module of type ",
          c10::demangle(type_info().name()),
          " to type ",
-         c10::demangle(typeid(T).name()));
+         c10::demangle(typeid(ModuleType).name()));
    }
    
    } // namespace nn

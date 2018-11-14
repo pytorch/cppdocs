@@ -283,7 +283,7 @@
 <li class="toctree-l3"><a class="reference internal" href="library_root.html#enums">Enums</a><ul>
 <li class="toctree-l4"><a class="reference internal" href="enum_namespaceat_1ad06ea98f6286528c3baac12e9be7263c.html">Enum ScalarType</a></li>
 <li class="toctree-l4"><a class="reference internal" href="enum_namespacec10_1a852e40db880b4c34cf496a7f5e5b997a.html">Enum DeviceType</a></li>
-<li class="toctree-l4"><a class="reference internal" href="enum_namespacetorch_1_1nn_1ae8e635d6e6763b2a73f7c38aafa2ba9d.html">Enum RNNActivation</a></li>
+<li class="toctree-l4"><a class="reference internal" href="enum_namespacetorch_1_1nn_1a7c24773bc01008c1ffc3ffa3f59dfa74.html">Enum RNNActivation</a></li>
 </ul>
 </li>
 <li class="toctree-l3"><a class="reference internal" href="library_root.html#unions">Unions</a><ul>
@@ -2218,15 +2218,18 @@ class AnyModule {
 
   template &lt;
       typename ModuleType,
-      typename Class, // = std::remove_reference&lt;ModuleType&gt;::type
+      typename Class,
       typename ReturnType,
       typename... ArgumentTypes&gt;
   std::unique_ptr&lt;Placeholder&gt; make_holder(
       std::shared_ptr&lt;ModuleType&gt;&amp;&amp; module,
       ReturnType (Class::*)(ArgumentTypes...));
 
-  template &lt;typename T&gt;
-  T&amp; get_() const;
+  template &lt;typename ModuleType, typename ReturnType, typename... ArgumentTypes&gt;
+  ModuleType&amp; get_(ReturnType (ModuleType::*)(ArgumentTypes...)) const;
+
+  template &lt;typename ModuleType&gt;
+  ModuleType&amp; get_() const;
 
   std::unique_ptr&lt;Placeholder&gt; content_;
 };
@@ -2315,8 +2318,7 @@ struct AnyModule::Placeholder : public AnyModule::Value::Placeholder {
 
   virtual std::unique_ptr&lt;Placeholder&gt; copy() const = 0;
 
-  virtual std::unique_ptr&lt;Placeholder&gt; clone(
-      optional&lt;Device&gt; device) const = 0;
+  virtual std::unique_ptr&lt;Placeholder&gt; clone(optional&lt;Device&gt; device) const = 0;
 };
 
 // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ AnyModule::Holder ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2363,7 +2365,7 @@ struct AnyModule::Holder : public AnyModule::Placeholder {
         arguments.size());
     // FYI: During invocation of a module&#39;s `forward()` method, the values live
     // in the `arguments` vector inside this function.
-    return torch::unpack&lt;ArgumentTypes...&gt;(
+    return torch::unpack&lt;Value, ArgumentTypes...&gt;(
         InvokeForward{module}, CheckedGetter{arguments});
   }
 
@@ -2375,8 +2377,7 @@ struct AnyModule::Holder : public AnyModule::Placeholder {
     return torch::make_unique&lt;Holder&gt;(*this);
   }
 
-  std::unique_ptr&lt;Placeholder&gt; clone(
-      optional&lt;Device&gt; device) const override {
+  std::unique_ptr&lt;Placeholder&gt; clone(optional&lt;Device&gt; device) const override {
     return torch::make_unique&lt;Holder&gt;(
         std::dynamic_pointer_cast&lt;ModuleType&gt;(module-&gt;clone(device)));
   }
@@ -2500,16 +2501,27 @@ std::unique_ptr&lt;AnyModule::Placeholder&gt; AnyModule::make_holder(
       std::move(module));
 }
 
-template &lt;typename T&gt;
-T&amp; AnyModule::get_() const {
-  if (typeid(T).hash_code() == type_info().hash_code()) {
-    return *static_cast&lt;Holder&lt;T&gt;&amp;&gt;(*content_).module;
+template &lt;typename ModuleType&gt;
+ModuleType&amp; AnyModule::get_() const {
+  using M = typename std::remove_reference&lt;ModuleType&gt;::type;
+  static_assert(
+      torch::detail::has_forward&lt;M&gt;::value,
+      &quot;Can only call AnyModule::get&lt;T&gt; with a type T that has a forward method&quot;);
+  return get_(&amp;M::forward);
+}
+
+template &lt;typename ModuleType, typename ReturnType, typename... ArgumentTypes&gt;
+ModuleType&amp; AnyModule::get_(
+    ReturnType (ModuleType::*)(ArgumentTypes...)) const {
+  if (typeid(ModuleType).hash_code() == type_info().hash_code()) {
+    return *static_cast&lt;Holder&lt;ModuleType, ArgumentTypes...&gt;&amp;&gt;(*content_)
+                .module;
   }
   AT_ERROR(
       &quot;Attempted to cast module of type &quot;,
       c10::demangle(type_info().name()),
       &quot; to type &quot;,
-      c10::demangle(typeid(T).name()));
+      c10::demangle(typeid(ModuleType).name()));
 }
 
 } // namespace nn
