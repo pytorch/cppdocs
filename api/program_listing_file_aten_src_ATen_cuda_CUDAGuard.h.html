@@ -233,16 +233,12 @@
 <p>↰ <a class="reference internal" href="file_aten_src_ATen_cuda_CUDAGuard.h.html#file-aten-src-aten-cuda-cudaguard-h"><span class="std std-ref">Return to documentation for file</span></a> (<code class="docutils literal notranslate"><span class="pre">aten/src/ATen/cuda/CUDAGuard.h</span></code>)</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>#pragma once
 
-#include &lt;ATen/DeviceGuard.h&gt;
-#include &lt;c10/util/ArrayRef.h&gt;
-#include &lt;ATen/cuda/CUDAContext.h&gt;
 #include &lt;ATen/cuda/detail/CUDAGuardImpl.h&gt;
 #include &lt;c10/DeviceType.h&gt;
 #include &lt;c10/impl/InlineDeviceGuard.h&gt;
 #include &lt;c10/impl/InlineStreamGuard.h&gt;
 
 #include &lt;cstddef&gt;
-#include &lt;vector&gt;
 
 namespace at { namespace cuda {
 
@@ -274,7 +270,7 @@ struct CUDAGuard {
   Device current_device() const { return guard_.current_device(); }
 
  private:
-  c10::impl::InlineDeviceGuard&lt;at::cuda::detail::CUDAGuardImpl&gt; guard_;
+  c10::impl::InlineDeviceGuard&lt;at::cuda::impl::CUDAGuardImpl&gt; guard_;
 };
 
 struct OptionalCUDAGuard {
@@ -307,7 +303,7 @@ struct OptionalCUDAGuard {
   void reset() { guard_.reset(); }
 
 private:
-  c10::impl::InlineOptionalDeviceGuard&lt;at::cuda::detail::CUDAGuardImpl&gt; guard_;
+  c10::impl::InlineOptionalDeviceGuard&lt;at::cuda::impl::CUDAGuardImpl&gt; guard_;
 };
 
 struct CUDAStreamGuard {
@@ -336,7 +332,7 @@ struct CUDAStreamGuard {
   Device original_device() const { return guard_.original_device(); }
 
 private:
-  c10::impl::InlineStreamGuard&lt;at::cuda::detail::CUDAGuardImpl&gt; guard_;
+  c10::impl::InlineStreamGuard&lt;at::cuda::impl::CUDAGuardImpl&gt; guard_;
 };
 
 struct OptionalCUDAStreamGuard {
@@ -378,47 +374,7 @@ struct OptionalCUDAStreamGuard {
   void reset() { guard_.reset(); }
 
 private:
-  c10::impl::InlineOptionalStreamGuard&lt;at::cuda::detail::CUDAGuardImpl&gt; guard_;
-};
-
-// TODO: Implement this generically in c10.  You&#39;ll need some way to get
-// the number of GPUs from the GuardImpl, in that case.
-struct CUDAMultiStreamGuard {
-  explicit CUDAMultiStreamGuard(ArrayRef&lt;CUDAStream&gt; streams) : CUDAMultiStreamGuard() {
-    for (const auto&amp; s : streams) {
-      setCurrentCUDAStream(s);
-    }
-  }
-
-  CUDAMultiStreamGuard() {
-    const size_t device_count = getNumGPUs();
-    original_streams_.reserve(device_count);
-    for (size_t device = 0; device &lt; device_count; ++device) {
-      original_streams_.push_back(getCurrentCUDAStream(device));
-    }
-  }
-
-  CUDAMultiStreamGuard(const CUDAGuard&amp;) = delete;
-  CUDAMultiStreamGuard&amp; operator=(const CUDAGuard&amp;) = delete;
-
-  // See Note [Move construction for RAII guards is tricky]
-  CUDAMultiStreamGuard(CUDAGuard&amp;&amp; other) = delete;
-
-  // See Note [Move assignment for RAII guards is tricky]
-  CUDAMultiStreamGuard&amp; operator=(CUDAGuard&amp;&amp; other) = delete;
-
-  ArrayRef&lt;CUDAStream&gt; original_streams() const {
-    return original_streams_;
-  }
-
-  ~CUDAMultiStreamGuard() {
-    for (const auto&amp; s : original_streams_) {
-      uncheckedSetCurrentCUDAStream(s);
-    }
-  }
-
-private:
-  std::vector&lt;CUDAStream&gt; original_streams_;
+  c10::impl::InlineOptionalStreamGuard&lt;at::cuda::impl::CUDAGuardImpl&gt; guard_;
 };
 
 } // namespace cuda
