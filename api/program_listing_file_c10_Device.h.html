@@ -246,7 +246,7 @@ namespace c10 {
 
 using DeviceIndex = int16_t;
 
-struct C10_API Device {
+struct C10_API Device final {
   using Type = DeviceType;
 
   /* implicit */ Device(DeviceType type, DeviceIndex index = -1)
@@ -309,12 +309,24 @@ C10_API std::ostream&amp; operator&lt;&lt;(
 namespace std {
 template &lt;&gt;
 struct hash&lt;c10::Device&gt; {
-  size_t operator()(c10::Device device) const noexcept {
-    size_t hash_val = static_cast&lt;size_t&gt;(device.index() + 1);
-    if (device.is_cuda()) {
-      hash_val += 2;
-    }
-    return hash_val;
+  size_t operator()(c10::Device d) const noexcept {
+    // Are you here because this static assert failed?  Make sure you ensure
+    // that the bitmasking code below is updated accordingly!
+    static_assert(sizeof(c10::DeviceType) == 2, &quot;DeviceType is not 16-bit&quot;);
+    static_assert(sizeof(c10::DeviceIndex) == 2, &quot;DeviceIndex is not 16-bit&quot;);
+    // Note [Hazard when concatenating signed integers]
+    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    // We must first convert to a same-sized unsigned type, before promoting to
+    // the result type, to prevent sign extension when any of the values is -1.
+    // If sign extension occurs, you&#39;ll clobber all of the values in the MSB
+    // half of the resulting integer.
+    //
+    // Technically, by C/C++ integer promotion rules, we only need one of the
+    // uint32_t casts to the result type, but we put in both for explicitness&#39;s sake.
+    uint32_t bits =
+        static_cast&lt;uint32_t&gt;(static_cast&lt;uint16_t&gt;(d.type())) &lt;&lt; 16
+      | static_cast&lt;uint32_t&gt;(static_cast&lt;uint16_t&gt;(d.index()));
+    return std::hash&lt;uint32_t&gt;{}(bits);
   }
 };
 } // namespace std
