@@ -243,7 +243,6 @@
 #include &lt;torch/csrc/utils/functional.h&gt;
 
 #include &lt;ATen/Device.h&gt;
-#include &lt;ATen/OptionsGuard.h&gt;
 #include &lt;ATen/Parallel.h&gt;
 #include &lt;ATen/core/TensorOptions.h&gt;
 #include &lt;c10/util/Exception.h&gt;
@@ -309,9 +308,9 @@ std::vector&lt;Tensor&gt; parallel_apply(
           int64_t index, int64_t stop) {
         for (; index &lt; stop; ++index) {
           try {
-            torch::OptionsGuard options_guard(
-                devices ? (*devices)[index] : inputs[index].device());
             auto output = modules[index]-&gt;forward(inputs[index]);
+            output =
+                output.to(devices ? (*devices)[index] : inputs[index].device());
             std::lock_guard&lt;std::mutex&gt; lock(mutex);
             outputs[index] = output;
           } catch (...) {
@@ -339,8 +338,9 @@ Tensor data_parallel(
     int64_t dim = 0) {
   if (!devices) {
     const auto device_count = torch::cuda::device_count();
-    AT_CHECK(device_count &gt; 0, &quot;Expected at least one CUDA device&quot;);
-    devices.emplace();
+    AT_CHECK(
+        device_count &gt; 0, &quot;Expected at least one CUDA device to be available&quot;);
+    devices = std::vector&lt;Device&gt;();
     devices-&gt;reserve(device_count);
     for (size_t index = 0; index &lt; device_count; ++index) {
       devices-&gt;emplace_back(kCUDA, index);
@@ -351,7 +351,8 @@ Tensor data_parallel(
   }
 
   if (devices-&gt;size() == 1) {
-    OptionsGuard guard(devices-&gt;front());
+    module-&gt;to(devices-&gt;front());
+    input = input.to(devices-&gt;front());
     return module-&gt;forward(std::move(input)).to(*output_device);
   }
 

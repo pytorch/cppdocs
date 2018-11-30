@@ -237,7 +237,6 @@
 #include &lt;torch/types.h&gt;
 #include &lt;torch/utils.h&gt;
 
-#include &lt;ATen/OptionsGuard.h&gt;
 #include &lt;ATen/core/TensorOptions.h&gt;
 #include &lt;c10/util/Exception.h&gt;
 
@@ -255,8 +254,6 @@ class Cloneable : public virtual Module {
 
   std::shared_ptr&lt;Module&gt; clone(
       optional&lt;Device&gt; device = nullopt) const override {
-    OptionsGuard options_guard(TensorOptions().device(device));
-
     NoGradGuard no_grad;
 
     const auto&amp; self = static_cast&lt;const Derived&amp;&gt;(*this);
@@ -272,13 +269,9 @@ class Cloneable : public virtual Module {
         &quot;Are you sure you called register_parameter() inside reset() &quot;
         &quot;and not the constructor?&quot;);
     for (const auto&amp; parameter : parameters_) {
-      if (device) {
-        copy-&gt;parameters_[parameter.key()].copy_(
-            *parameter, /*non_blocking=*/true);
-      } else {
-        copy-&gt;parameters_[parameter.key()].set_data(
-            autograd::Variable(*parameter).data().clone());
-      }
+      auto data = autograd::Variable(*parameter).data().clone();
+      copy-&gt;parameters_[parameter.key()].set_data(
+          device ? data.to(*device) : data);
     }
     AT_CHECK(
         copy-&gt;buffers_.size() == buffers_.size(),
@@ -287,12 +280,8 @@ class Cloneable : public virtual Module {
         &quot;Are you sure you called register_buffer() inside reset() &quot;
         &quot;and not the constructor?&quot;);
     for (const auto&amp; buffer : buffers_) {
-      if (device) {
-        copy-&gt;buffers_[buffer.key()].copy_(*buffer, /*non_blocking=*/true);
-      } else {
-        copy-&gt;buffers_[buffer.key()].set_data(
-            autograd::Variable(*buffer).data().clone());
-      }
+      auto data = autograd::Variable(*buffer).data().clone();
+      copy-&gt;buffers_[buffer.key()].set_data(device ? data.to(*device) : data);
     }
     AT_CHECK(
         copy-&gt;children_.size() == children_.size(),
