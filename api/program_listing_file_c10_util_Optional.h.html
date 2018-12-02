@@ -383,6 +383,13 @@ inline constexpr typename std::remove_reference&lt;T&gt;::type&amp;&amp; constex
 
 namespace detail_ {
 
+// VS 2015 doesn&#39;t handle constexpr well, so we need to skip these stuff.
+#if (defined _MSC_VER) &amp;&amp; (_MSC_VER &lt;= 1900)
+template &lt;typename T&gt;
+T* static_addressof(T&amp; ref) {
+  return std::addressof(ref);
+}
+#else
 // static_addressof: a constexpr version of addressof
 template &lt;typename T&gt;
 struct has_overloaded_addressof {
@@ -408,6 +415,7 @@ template &lt;typename T, TR2_OPTIONAL_REQUIRES(has_overloaded_addressof&lt;T&gt;
 T* static_addressof(T&amp; ref) {
   return std::addressof(ref);
 }
+#endif
 
 // the call to convert&lt;A&gt;(b) has return type A and converts b to type A iff b
 // decltype(b) is implicitly convertible to A
