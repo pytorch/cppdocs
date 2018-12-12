@@ -271,12 +271,8 @@ class ModuleHolder : torch::detail::ModuleHolderIndicator {
       typename Head,
       typename... Tail,
       typename = typename std::enable_if&lt;
-      !(
-          torch::detail::is_module_holder_of&lt;Head, ContainedType&gt;::value
-          &amp;&amp; (sizeof...(Tail) == 0)
-       )
-      &gt;::type
-          &gt;
+          !(torch::detail::is_module_holder_of&lt;Head, ContainedType&gt;::value &amp;&amp;
+            (sizeof...(Tail) == 0))&gt;::type&gt;
   explicit ModuleHolder(Head&amp;&amp; head, Tail&amp;&amp;... tail)
       : impl_(new Contained(
             std::forward&lt;Head&gt;(head),
@@ -357,16 +353,14 @@ template &lt;typename ModuleType&gt;
 serialize::OutputArchive&amp; operator&lt;&lt;(
     serialize::OutputArchive&amp; archive,
     const nn::ModuleHolder&lt;ModuleType&gt;&amp; module) {
-  module-&gt;save(archive);
-  return archive;
+  return archive &lt;&lt; module.ptr();
 }
 
 template &lt;typename ModuleType&gt;
 serialize::InputArchive&amp; operator&gt;&gt;(
     serialize::InputArchive&amp; archive,
     nn::ModuleHolder&lt;ModuleType&gt;&amp; module) {
-  module-&gt;load(archive);
-  return archive;
+  return archive &gt;&gt; module.ptr();
 }
 
 } // namespace nn

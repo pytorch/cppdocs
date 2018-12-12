@@ -54,12 +54,8 @@ Program Listing for File pimpl.h
          typename Head,
          typename... Tail,
          typename = typename std::enable_if<
-         !(
-             torch::detail::is_module_holder_of<Head, ContainedType>::value
-             && (sizeof...(Tail) == 0)
-          )
-         >::type
-             >
+             !(torch::detail::is_module_holder_of<Head, ContainedType>::value &&
+               (sizeof...(Tail) == 0))>::type>
      explicit ModuleHolder(Head&& head, Tail&&... tail)
          : impl_(new Contained(
                std::forward<Head>(head),
@@ -140,16 +136,14 @@ Program Listing for File pimpl.h
    serialize::OutputArchive& operator<<(
        serialize::OutputArchive& archive,
        const nn::ModuleHolder<ModuleType>& module) {
-     module->save(archive);
-     return archive;
+     return archive << module.ptr();
    }
    
    template <typename ModuleType>
    serialize::InputArchive& operator>>(
        serialize::InputArchive& archive,
        nn::ModuleHolder<ModuleType>& module) {
-     module->load(archive);
-     return archive;
+     return archive >> module.ptr();
    }
    
    } // namespace nn
