@@ -9,14 +9,14 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Program Listing for File CUDAStream.h &mdash; PyTorch master documentation</title>
+  <title>File CUDAStream.h &mdash; PyTorch master documentation</title>
   
 
   
   
   
   
-    <link rel="canonical" href="https://pytorch.org/docs/stable/api/program_listing_file_aten_src_ATen_cuda_CUDAStream.h.html"/>
+    <link rel="canonical" href="https://pytorch.org/docs/stable/api/file_c10_cuda_CUDAStream.h.html"/>
   
 
   
@@ -32,8 +32,8 @@
   <link rel="stylesheet" href="../_static/collapsible-lists/css/tree_view.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="File custom_batch_request.h" href="file_torch_csrc_api_include_torch_data_samplers_custom_batch_request.h.html" />
-    <link rel="prev" title="File CUDAStream.h" href="file_aten_src_ATen_cuda_CUDAStream.h.html" /> 
+    <link rel="next" title="Program Listing for File CUDAStream.h" href="program_listing_file_c10_cuda_CUDAStream.h.html" />
+    <link rel="prev" title="Program Listing for File CUDAGuard.h" href="program_listing_file_c10_cuda_CUDAGuard.h.html" /> 
 
   
   <script src="../_static/js/modernizr.min.js"></script>
@@ -191,9 +191,7 @@
         
           <li><a href="library_root.html">Library API</a> &gt;</li>
         
-          <li><a href="file_aten_src_ATen_cuda_CUDAStream.h.html">File CUDAStream.h</a> &gt;</li>
-        
-      <li>Program Listing for File CUDAStream.h</li>
+      <li>File CUDAStream.h</li>
     
     
       <li class="pytorch-breadcrumbs-aside">
@@ -226,141 +224,49 @@
             <div role="main" class="main-content" itemscope="itemscope" itemtype="http://schema.org/Article">
              <article itemprop="articleBody" id="pytorch-article" class="pytorch-article">
               
-  <div class="section" id="program-listing-for-file-cudastream-h">
-<span id="program-listing-file-aten-src-aten-cuda-cudastream-h"></span><h1>Program Listing for File CUDAStream.h<a class="headerlink" href="#program-listing-for-file-cudastream-h" title="Permalink to this headline">¶</a></h1>
-<p>↰ <a class="reference internal" href="file_aten_src_ATen_cuda_CUDAStream.h.html#file-aten-src-aten-cuda-cudastream-h"><span class="std std-ref">Return to documentation for file</span></a> (<code class="docutils literal notranslate"><span class="pre">aten/src/ATen/cuda/CUDAStream.h</span></code>)</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>#pragma once
-
-#include &lt;cstdint&gt;
-#include &lt;utility&gt;
-
-#include &lt;cuda_runtime_api.h&gt;
-
-#include &lt;ATen/cuda/ATenCUDAGeneral.h&gt;
-#include &lt;c10/util/Exception.h&gt;
-#include &lt;c10/Stream.h&gt;
-
-/*
-* Stream pool note.
-*
-* A CUDAStream is an abstraction of an actual cuStream on the GPU. CUDAStreams
-* are backed by cuStreams, but they use several pools to minimize the costs
-* associated with creating, retaining, and destroying cuStreams.
-*
-* There are three pools per device, and a device&#39;s pools are lazily created.
-*
-* The first pool contains only the default stream. When the default stream
-* is requested it&#39;s returned.
-*
-* The second pool is the &quot;low priority&quot; or &quot;default priority&quot; streams. In
-* HIP builds there is no distinction between streams in this pool and streams
-* in the third pool (below). There are 32 of these streams per device, and
-* when a stream is requested one of these streams is returned round-robin.
-* That is, the first stream requested is at index 0, the second at index 1...
-* to index 31, then index 0 again.
-*
-* This means that if 33 low priority streams are requested, the first and
-* last streams requested are actually the same stream (under the covers)
-* and kernels enqueued on them cannot run concurrently.
-*
-* The third pool is the &quot;high priority&quot; streams. The third pool acts like
-* the second pool except the streams are created with a higher priority.
-*
-* These pools suggest that stream users should prefer many short-lived streams,
-* as the cost of acquiring and releasing streams is effectively zero. If
-* many longer-lived streams are required in performance critical scenarios
-* then the functionality here may need to be extended to allow, for example,
-* &quot;reserving&quot; a subset of the pool so that other streams do not accidentally
-* overlap the performance critical streams.
-*
-* Note: although the notion of &quot;current stream for device&quot; is thread local
-* (every OS thread has a separate current stream, as one might expect),
-* the stream pool is global across all threads; stream 0 is always stream 0
-* no matter which thread you use it on.  Multiple threads can synchronize
-* on the same stream.  Although the CUDA documentation is not very clear
-* on the matter, streams are thread safe; e.g., it is safe to enqueue
-* a kernel on the same stream from two different threads.
-*/
-
-namespace at {
-namespace cuda {
-
-// Value object representing a CUDA stream.  This is just a wrapper
-// around c10::Stream, but it comes with a little extra CUDA-specific
-// functionality (conversion to cudaStream_t), and a guarantee that
-// the wrapped c10::Stream really is a CUDA stream.
-class AT_CUDA_API CUDAStream {
-public:
-
-  enum Unchecked { UNCHECKED };
-
-  explicit CUDAStream(Stream stream) : stream_(stream) {
-    AT_CHECK(stream_.device_type() == DeviceType::CUDA);
-  }
-
-  explicit CUDAStream(Unchecked, Stream stream) : stream_(stream) {}
-
-  bool operator==(const CUDAStream&amp; other) const noexcept {
-    return unwrap() == other.unwrap();
-  }
-
-  bool operator!=(const CUDAStream&amp; other) const noexcept {
-    return unwrap() != other.unwrap();
-  }
-
-  operator cudaStream_t() const { return stream(); }
-
-  operator Stream() const { return unwrap(); }
-
-  DeviceIndex device_index() const { return stream_.device_index(); }
-
-  Device device() const { return Device(DeviceType::CUDA, device_index()); }
-
-  StreamId id() const { return stream_.id(); }
-
-  cudaStream_t stream() const;
-
-  Stream unwrap() const { return stream_; }
-
-  uint64_t pack() const noexcept {
-    return stream_.pack();
-  }
-
-  // Unpack a CUDAStream from the uint64_t representation generated by pack().
-  static CUDAStream unpack(uint64_t bits) {
-    return CUDAStream(Stream::unpack(bits));
-  }
-
-  // Deleted for now; use CUDAEvent::block instead
-  // void synchronize_with(const CUDAEvent&amp; event) const;
-
-private:
-  Stream stream_;
-};
-
-CAFFE2_API CUDAStream
-getStreamFromPool(const bool isHighPriority = false, DeviceIndex device = -1);
-
-CAFFE2_API CUDAStream getDefaultCUDAStream(DeviceIndex device_index = -1);
-
-CAFFE2_API CUDAStream getCurrentCUDAStream(DeviceIndex device_index = -1);
-
-CAFFE2_API void setCurrentCUDAStream(CUDAStream stream);
-
-C10_API std::ostream&amp; operator&lt;&lt;(std::ostream&amp; stream, const CUDAStream&amp; s);
-
-} // namespace cuda
-} // namespace at
-
-namespace std {
-  template &lt;&gt;
-  struct hash&lt;at::cuda::CUDAStream&gt; {
-    size_t operator()(at::cuda::CUDAStream s) const noexcept {
-      return std::hash&lt;c10::Stream&gt;{}(s.unwrap());
-    }
-  };
-} // namespace std
-</pre></div>
+  <div class="section" id="file-cudastream-h">
+<span id="file-c10-cuda-cudastream-h"></span><h1>File CUDAStream.h<a class="headerlink" href="#file-cudastream-h" title="Permalink to this headline">¶</a></h1>
+<p>↰ <a class="reference internal" href="dir_c10_cuda.html#dir-c10-cuda"><span class="std std-ref">Parent directory</span></a> (<code class="docutils literal notranslate"><span class="pre">c10/cuda</span></code>)</p>
+<div class="contents local topic" id="page-contents">
+<p class="topic-title first">Page Contents</p>
+<ul class="simple">
+<li><a class="reference internal" href="#definition-c10-cuda-cudastream-h" id="id1">Definition (<code class="docutils literal notranslate"><span class="pre">c10/cuda/CUDAStream.h</span></code>)</a></li>
+<li><a class="reference internal" href="#includes" id="id2">Includes</a></li>
+<li><a class="reference internal" href="#included-by" id="id3">Included By</a></li>
+<li><a class="reference internal" href="#namespaces" id="id4">Namespaces</a></li>
+</ul>
+</div>
+<div class="section" id="definition-c10-cuda-cudastream-h">
+<h2>Definition (<code class="docutils literal notranslate"><span class="pre">c10/cuda/CUDAStream.h</span></code>)<a class="headerlink" href="#definition-c10-cuda-cudastream-h" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="program_listing_file_c10_cuda_CUDAStream.h.html">Program Listing for File CUDAStream.h</a></li>
+</ul>
+</div>
+</div>
+<div class="section" id="includes">
+<h2>Includes<a class="headerlink" href="#includes" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><code class="docutils literal notranslate"><span class="pre">c10/Stream.h</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">c10/cuda/CUDAMacros.h</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">c10/util/Exception.h</span></code> (<a class="reference internal" href="file_c10_util_Exception.h.html#file-c10-util-exception-h"><span class="std std-ref">File Exception.h</span></a>)</li>
+<li><code class="docutils literal notranslate"><span class="pre">cstdint</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">cuda_runtime_api.h</span></code></li>
+<li><code class="docutils literal notranslate"><span class="pre">utility</span></code></li>
+</ul>
+</div>
+<div class="section" id="included-by">
+<h2>Included By<a class="headerlink" href="#included-by" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference internal" href="file_aten_src_ATen_cuda_CUDAContext.h.html#file-aten-src-aten-cuda-cudacontext-h"><span class="std std-ref">File CUDAContext.h</span></a></li>
+</ul>
+</div>
+<div class="section" id="namespaces">
+<h2>Namespaces<a class="headerlink" href="#namespaces" title="Permalink to this headline">¶</a></h2>
+<ul class="simple">
+<li><a class="reference internal" href="namespace_c10.html#namespace-c10"><span class="std std-ref">Namespace c10</span></a></li>
+<li><a class="reference internal" href="namespace_std.html#namespace-std"><span class="std std-ref">Namespace std</span></a></li>
+</ul>
 </div>
 </div>
 
@@ -372,10 +278,10 @@ namespace std {
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="file_torch_csrc_api_include_torch_data_samplers_custom_batch_request.h.html" class="btn btn-neutral float-right" title="File custom_batch_request.h" accesskey="n" rel="next">Next <img src="../_static/images/chevron-right-orange.svg" class="next-page"></a>
+        <a href="program_listing_file_c10_cuda_CUDAStream.h.html" class="btn btn-neutral float-right" title="Program Listing for File CUDAStream.h" accesskey="n" rel="next">Next <img src="../_static/images/chevron-right-orange.svg" class="next-page"></a>
       
       
-        <a href="file_aten_src_ATen_cuda_CUDAStream.h.html" class="btn btn-neutral" title="File CUDAStream.h" accesskey="p" rel="prev"><img src="../_static/images/chevron-right-orange.svg" class="previous-page"> Previous</a>
+        <a href="program_listing_file_c10_cuda_CUDAGuard.h.html" class="btn btn-neutral" title="Program Listing for File CUDAGuard.h" accesskey="p" rel="prev"><img src="../_static/images/chevron-right-orange.svg" class="previous-page"> Previous</a>
       
     </div>
   
@@ -399,7 +305,13 @@ namespace std {
           <div class="pytorch-right-menu" id="pytorch-right-menu">
             <div class="pytorch-side-scroll" id="pytorch-side-scroll-right">
               <ul>
-<li><a class="reference internal" href="#">Program Listing for File CUDAStream.h</a></li>
+<li><a class="reference internal" href="#">File CUDAStream.h</a><ul>
+<li><a class="reference internal" href="#definition-c10-cuda-cudastream-h">Definition (<code class="docutils literal notranslate"><span class="pre">c10/cuda/CUDAStream.h</span></code>)</a></li>
+<li><a class="reference internal" href="#includes">Includes</a></li>
+<li><a class="reference internal" href="#included-by">Included By</a></li>
+<li><a class="reference internal" href="#namespaces">Namespaces</a></li>
+</ul>
+</li>
 </ul>
 
             </div>
