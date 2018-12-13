@@ -232,12 +232,15 @@
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>#pragma once
 
 #include &lt;torch/detail/static.h&gt;
+#include &lt;torch/nn/module.h&gt;
+#include &lt;torch/ordered_dict.h&gt;
 #include &lt;torch/types.h&gt;
 
+#include &lt;torch/csrc/Device.h&gt;
+#include &lt;torch/csrc/Dtype.h&gt;
+#include &lt;torch/csrc/DynamicTypes.h&gt;
 #include &lt;torch/csrc/python_headers.h&gt;
 #include &lt;torch/csrc/utils/pybind.h&gt;
-#include &lt;torch/types.h&gt;
-#include &lt;torch/ordered_dict.h&gt;
 
 #include &lt;iterator&gt;
 #include &lt;string&gt;
@@ -248,40 +251,180 @@
 namespace torch {
 namespace python {
 namespace detail {
-inline std::unordered_map&lt;std::string, Tensor&gt; ordered_dict_to_map(
-    const OrderedDict&lt;std::string, torch::Tensor&gt;&amp; dict) {
-  auto pairs = dict.pairs();
-  return {pairs.begin(), pairs.end()};
+inline Device py_object_to_device(py::object object) {
+  PyObject* obj = object.ptr();
+  if (THPDevice_Check(obj)) {
+    return reinterpret_cast&lt;THPDevice*&gt;(obj)-&gt;device;
+  }
+  throw TypeError(&quot;Expected device&quot;);
+}
+
+inline Dtype py_object_to_dtype(py::object object) {
+  PyObject* obj = object.ptr();
+  if (THPDtype_Check(obj)) {
+    return reinterpret_cast&lt;THPDtype*&gt;(obj)-&gt;scalar_type;
+  }
+  throw TypeError(&quot;Expected dtype&quot;);
+}
+
+template &lt;typename ModuleType&gt;
+using PyModuleClass =
+    py::class_&lt;ModuleType, torch::nn::Module, std::shared_ptr&lt;ModuleType&gt;&gt;;
+
+template &lt;typename ModuleType&gt;
+void bind_cpp_module_wrapper(
+    py::module module,
+    PyModuleClass&lt;ModuleType&gt; cpp_class,
+    const char* name) {
+  // Grab the `torch.nn.cpp.ModuleWrapper` class, which we&#39;ll subclass
+  // with a dynamically created class below.
+  py::object cpp_module =
+      py::module::import(&quot;torch.nn.cpp&quot;).attr(&quot;ModuleWrapper&quot;);
+
+  // Grab the `type` class which we&#39;ll use as a metaclass to create a new class
+  // dynamically.
+  py::object type_metaclass =
+      py::reinterpret_borrow&lt;py::object&gt;((PyObject*)&amp;PyType_Type);
+
+  // The `ModuleWrapper` constructor copies all functions to its own `__dict__`
+  // in its constructor, but we do need to give our dynamic class a constructor.
+  // Inside, we construct an instance of the original C++ module we&#39;re binding
+  // (the `torch::nn::Module` subclass), and then forward it to the
+  // `ModuleWrapper` constructor.
+  py::dict attributes;
+
+  // `type()` always needs a `str`, but pybind11&#39;s `str()` method always creates
+  // a `unicode` object.
+#if PY_MAJOR_VERSION &lt; 3
+  py::object name_str =
+      py::reinterpret_steal&lt;py::object&gt;(PyString_FromString(name));
+#else
+  py::object name_str = py::str(name);
+#endif
+
+  // Dynamically create the subclass of `ModuleWrapper`, which is a subclass of
+  // `torch.nn.Module`, and will delegate all calls to the C++ module we&#39;re
+  // binding.
+  py::object wrapper_class =
+      type_metaclass(name_str, py::make_tuple(cpp_module), attributes);
+
+  // The constructor of the dynamic class calls `ModuleWrapper.__init__()`,
+  // which replaces its methods with those of the C++ module.
+  wrapper_class.attr(&quot;__init__&quot;) = py::cpp_function(
+      [cpp_module, cpp_class](
+          py::object self, py::args args, py::kwargs kwargs) {
+        cpp_module.attr(&quot;__init__&quot;)(self, cpp_class(*args, **kwargs));
+      },
+      py::is_method(wrapper_class));
+
+  // Calling `my_module.my_class` now means that `my_class` is a subclass of
+  // `ModuleWrapper`, and whose methods call into the C++ module we&#39;re binding.
+  module.attr(name) = wrapper_class;
 }
 } // namespace detail
 
-template &lt;typename M, typename... Extra&gt;
-py::class_&lt;M, Extra...&gt; add_module_bindings(py::class_&lt;M, Extra...&gt; module) {
-  return module.def(&quot;train&quot;, [](M&amp; module) { module.train(); })
-      .def(&quot;eval&quot;, [](M&amp; module) { module.eval(); })
-      .def(&quot;clone&quot;, [](M&amp; module) { return module.clone(); })
+template &lt;typename ModuleType, typename... Extra&gt;
+py::class_&lt;ModuleType, Extra...&gt; add_module_bindings(
+    py::class_&lt;ModuleType, Extra...&gt; module) {
+  // clang-format off
+  return module
+      .def(&quot;train&quot;,
+          [](ModuleType&amp; module, bool mode) { module.train(mode); },
+          py::arg(&quot;mode&quot;) = true)
+      .def(&quot;eval&quot;, [](ModuleType&amp; module) { module.eval(); })
+      .def(&quot;clone&quot;, [](ModuleType&amp; module) { return module.clone(); })
       .def_property_readonly(
-          &quot;training&quot;, [](M&amp; module) { return module.is_training(); })
-      .def(&quot;zero_grad&quot;, [](M&amp; module) { module.zero_grad(); })
-      .def(&quot;cuda&quot;, [](M&amp; module) { module.to(torch::kCUDA); })
-      .def(&quot;cpu&quot;, [](M&amp; module) { module.to(torch::kCPU); })
-      .def(&quot;parameters&quot;, [](M&amp; module) { return module.parameters(); })
-      .def(
-          &quot;named_parameters&quot;,
-          [](M&amp; module) {
-            return detail::ordered_dict_to_map(module.named_parameters());
+          &quot;training&quot;, [](ModuleType&amp; module) { return module.is_training(); })
+      .def(&quot;zero_grad&quot;, [](ModuleType&amp; module) { module.zero_grad(); })
+      .def_property_readonly( &quot;_parameters&quot;, [](ModuleType&amp; module) {
+            return module.named_parameters(/*recurse=*/false);
           })
-      .def(&quot;buffers&quot;, [](M&amp; module) { return module.buffers(); })
-      .def(&quot;named_buffers&quot;, [](M&amp; module) {
-        return detail::ordered_dict_to_map(module.named_buffers());
-      });
+      .def(&quot;parameters&quot;, [](ModuleType&amp; module, bool recurse) {
+            return module.parameters(recurse);
+          },
+          py::arg(&quot;recurse&quot;) = true)
+      .def(&quot;named_parameters&quot;, [](ModuleType&amp; module, bool recurse) {
+            return module.named_parameters(recurse);
+          },
+          py::arg(&quot;recurse&quot;) = true)
+      .def_property_readonly(&quot;_buffers&quot;, [](ModuleType&amp; module) {
+            return module.named_buffers(/*recurse=*/false);
+          })
+      .def(&quot;buffers&quot;, [](ModuleType&amp; module, bool recurse) {
+            return module.buffers(recurse); },
+          py::arg(&quot;recurse&quot;) = true)
+      .def(&quot;named_buffers&quot;, [](ModuleType&amp; module, bool recurse) {
+            return module.named_buffers(recurse);
+          },
+          py::arg(&quot;recurse&quot;) = true)
+      .def_property_readonly(
+          &quot;_modules&quot;, [](ModuleType&amp; module) { return module.named_children(); })
+      .def(&quot;modules&quot;, [](ModuleType&amp; module) { return module.modules(); })
+      .def(&quot;named_modules&quot;,
+          [](ModuleType&amp; module, py::object /* unused */, std::string prefix) {
+            return module.named_modules(std::move(prefix));
+          },
+          py::arg(&quot;memo&quot;) = py::none(),
+          py::arg(&quot;prefix&quot;) = std::string())
+      .def(&quot;children&quot;, [](ModuleType&amp; module) { return module.children(); })
+      .def(&quot;named_children&quot;,
+          [](ModuleType&amp; module) { return module.named_children(); })
+      .def(&quot;to&quot;, [](ModuleType&amp; module, py::object object, bool non_blocking) {
+            if (THPDevice_Check(object.ptr())) {
+              module.to(
+                  reinterpret_cast&lt;THPDevice*&gt;(object.ptr())-&gt;device,
+                  non_blocking);
+            } else {
+              module.to(detail::py_object_to_dtype(object), non_blocking);
+            }
+          },
+          py::arg(&quot;dtype_or_device&quot;),
+          py::arg(&quot;non_blocking&quot;) = false)
+      .def(&quot;to&quot;,
+          [](ModuleType&amp; module,
+             py::object device,
+             py::object dtype,
+             bool non_blocking) {
+            module.to(
+                detail::py_object_to_device(device),
+                detail::py_object_to_dtype(dtype),
+                non_blocking);
+          },
+          py::arg(&quot;device&quot;),
+          py::arg(&quot;dtype&quot;),
+          py::arg(&quot;non_blocking&quot;) = false)
+      .def(&quot;cuda&quot;, [](ModuleType&amp; module) { module.to(kCUDA); })
+      .def(&quot;cpu&quot;, [](ModuleType&amp; module) { module.to(kCPU); })
+      .def(&quot;float&quot;, [](ModuleType&amp; module) { module.to(kFloat32); })
+      .def(&quot;double&quot;, [](ModuleType&amp; module) { module.to(kFloat64); })
+      .def(&quot;half&quot;, [](ModuleType&amp; module) { module.to(kFloat16); })
+      .def(&quot;__str__&quot;, [](ModuleType&amp; module) { return module.name(); })
+      .def(&quot;__repr__&quot;, [](ModuleType&amp; module) { return module.name(); });
+  // clang-format on
 }
 
-template &lt;typename M&gt;
-py::class_&lt;M, std::shared_ptr&lt;M&gt;&gt; bind_module(
+template &lt;typename ModuleType, bool force_enable = false&gt;
+torch::disable_if_t&lt;
+    torch::detail::has_forward&lt;ModuleType&gt;::value &amp;&amp; !force_enable,
+    detail::PyModuleClass&lt;ModuleType&gt;&gt;
+bind_module(py::module module, const char* name) {
+  py::module cpp = module.def_submodule(&quot;cpp&quot;);
+  auto cpp_class =
+      add_module_bindings(detail::PyModuleClass&lt;ModuleType&gt;(cpp, name));
+  detail::bind_cpp_module_wrapper(module, cpp_class, name);
+  return cpp_class;
+}
+
+template &lt;
+    typename ModuleType,
+    typename =
+        torch::enable_if_t&lt;torch::detail::has_forward&lt;ModuleType&gt;::value&gt;&gt;
+detail::PyModuleClass&lt;ModuleType&gt; bind_module(
     py::module module,
     const char* name) {
-  return add_module_bindings(py::class_&lt;M, std::shared_ptr&lt;M&gt;&gt;(module, name));
+  return bind_module&lt;ModuleType, /*force_enable=*/true&gt;(module, name)
+      .def(&quot;forward&quot;, &amp;ModuleType::forward)
+      .def(&quot;__call__&quot;, &amp;ModuleType::forward);
 }
 } // namespace python
 } // namespace torch
