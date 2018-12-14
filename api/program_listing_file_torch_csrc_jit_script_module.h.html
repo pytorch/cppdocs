@@ -323,7 +323,7 @@ struct Method {
   // adding any extra parameters necessary to do this call
 
   // defined here to keep details of member_input handling confined to this class
-  std::vector&lt;Value*&gt; emit_call_to(SourceRange loc, Method &amp; callee, ArrayRef&lt;NamedValue&gt; args, ArrayRef&lt;NamedValue&gt; kwargs);
+  std::vector&lt;Value*&gt; emit_call_to(const SourceRange&amp; loc, Method &amp; callee, ArrayRef&lt;NamedValue&gt; args, ArrayRef&lt;NamedValue&gt; kwargs);
 
   // if this isn&#39;t yet defined, run its method_creator function
   TORCH_API void ensure_defined();
@@ -565,7 +565,7 @@ struct Module {
   }
 
   IValue forward(std::vector&lt;IValue&gt; inputs) {
-    return get_method(&quot;forward&quot;)(inputs);
+    return get_method(&quot;forward&quot;)(std::move(inputs));
   }
 
   void register_parameter(const std::string &amp; name, autograd::Variable v, bool is_buffer) {
@@ -587,7 +587,7 @@ struct Module {
   }
 
   Method&amp; create_method(const std::string &amp; name, std::function&lt;void(Method&amp;)&gt; creator) {
-    std::unique_ptr&lt;Method&gt; method(new Method(this, name, optimize, std::make_shared&lt;Graph&gt;(), {}, creator));
+    std::unique_ptr&lt;Method&gt; method(new Method(this, name, optimize, std::make_shared&lt;Graph&gt;(), {}, std::move(creator)));
     return *methods.insert(name, std::move(method));
   }
 
@@ -662,8 +662,8 @@ struct Module {
 
  private:
   void to_impl(
-      c10::optional&lt;at::Device&gt; device,
-      c10::optional&lt;at::ScalarType&gt; dtype,
+      const c10::optional&lt;at::Device&gt;&amp; device,
+      const c10::optional&lt;at::ScalarType&gt;&amp; dtype,
       bool non_blocking);
 
   // invariant: to ensure member_inputs of Methods stay valid,
@@ -680,7 +680,7 @@ struct Module {
 // match the functions schema
 c10::optional&lt;std::vector&lt;Value*&gt;&gt; try_emit_call_to(
     Graph&amp; graph,
-    SourceRange loc,
+    const SourceRange&amp; loc,
     Method&amp; callee,
     c10::optional&lt;NamedValue&gt; self,
     ArrayRef&lt;NamedValue&gt; args,
