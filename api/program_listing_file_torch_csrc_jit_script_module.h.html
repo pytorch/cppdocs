@@ -300,9 +300,6 @@ struct Method {
   IValue operator()(std::vector&lt;IValue&gt; stack) {
     checkInputsAgainstSchema(stack);
     run(stack);
-    if (stack.size() != 1) {
-      return Tuple::create(std::move(stack));
-    }
     return stack.front();
   }
 
@@ -375,12 +372,18 @@ struct Method {
       auto type = torch::jit::CompleteTensorType::create(scalar_type, at::kCPU, sizes);
       retval-&gt;inputs()[i]-&gt;setType(type);
     }
-    JIT_ASSERT(retval-&gt;outputs().size() == outputs.size());
+    at::ArrayRef&lt;Value*&gt; output_values = retval-&gt;outputs();
+    // patch this to still work if we are returning a tuple of multiple values
+    if (output_values.at(0)-&gt;type()-&gt;kind() == TupleType::Kind) {
+      JIT_ASSERT(output_values.at(0)-&gt;node()-&gt;kind()== prim::TupleConstruct);
+      output_values = output_values.at(0)-&gt;node()-&gt;inputs();
+    }
+    JIT_ASSERT(output_values.size() == outputs.size());
     for (size_t i=0; i &lt; retval-&gt;outputs().size(); ++i) {
       auto scalar_type = outputs[i].type().scalarType();
       auto sizes = outputs[i].sizes();
       auto type = torch::jit::CompleteTensorType::create(scalar_type, at::kCPU, sizes);
-      retval-&gt;outputs()[i]-&gt;setType(type);
+      output_values[i]-&gt;setType(type);
     }
     return retval;
   }
@@ -444,7 +447,10 @@ private:
   }
 
   GraphExecutor&amp; get_executor() {
-    std::call_once(executor_init, [&amp;]{
+    std::call_once(executor_init, [&amp;] {
+      AT_CHECK(
+          graph()-&gt;outputs().size() == 1,
+          &quot;Method (but not graphs in general) require a single output. Use None/Tuple for 0 or 2+ outputs&quot;);
       executor = GraphExecutor(graph(), optimize);
     });
     return executor;
@@ -462,7 +468,10 @@ private:
     for (size_t pos = 0; pos &lt; schema.arguments().size(); ++pos) {
       const auto&amp; argument = schema.arguments()[pos];
       if (pos &lt; inputs.size()) {
-        const TypePtr inputType = inferTypeFrom(inputs[pos]);
+        // XXX - this fails to handle generic aggregates
+        // and should be replaced with a function isSubvalueOf(ivalue, type)
+        // That asks if the specific value is a valid instance of type.
+        const TypePtr inputType = incompleteInferTypeFrom(inputs[pos]);
         AT_CHECK(inputType-&gt;isSubtypeOf(argument.type()),
               &quot;Expected value of type &quot;, *argument.type(),
               &quot; for argument &#39;&quot;, argument.name(),
