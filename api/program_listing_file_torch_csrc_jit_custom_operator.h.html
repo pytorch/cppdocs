@@ -240,10 +240,30 @@
 #include &lt;c10/util/Metaprogramming.h&gt;
 #include &lt;c10/util/TypeList.h&gt;
 
-namespace torch { namespace jit {
+namespace torch {
+namespace jit {
 namespace detail {
+template &lt;typename T&gt;
+void checkStaticTypes() {
+  // Give nice error messages for some of the common error cases.
+  // Use a LOUD ERROR MESSAGE SO USERS SEE THE STATIC_ASSERT
+  static_assert(
+      !std::is_integral&lt;T&gt;::value || std::is_same&lt;T, int64_t&gt;::value,
+      &quot;INVALID TYPE: Only int64_t is supported as an integral argument type&quot;);
+  static_assert(
+      !std::is_same&lt;T, float&gt;::value,
+      &quot;INVALID TYPE: float is not supported as an argument type, use double instead&quot;);
+}
+
+template &lt;typename First, typename Second, typename... Rest&gt;
+void checkStaticTypes() {
+  checkStaticTypes&lt;First&gt;();
+  checkStaticTypes&lt;Second, Rest...&gt;();
+}
+
 template &lt;typename... Ts, size_t... Is&gt;
 std::vector&lt;Argument&gt; createArgumentVectorFromTypes(Indices&lt;Is...&gt; indices) {
+  checkStaticTypes&lt;decay_t&lt;Ts&gt;...&gt;();
   // Arguments are named &quot;_&lt;index&gt;&quot;
   return {Argument(&quot;_&quot; + std::to_string(Is), getTypePtr&lt;decay_t&lt;Ts&gt;&gt;())...};
 }
@@ -261,6 +281,7 @@ std::vector&lt;Argument&gt; createReturns(std::tuple&lt;Ts...&gt;* tuple) {
 
 template &lt;typename ReturnType&gt;
 std::vector&lt;Argument&gt; createReturns(ReturnType*) {
+  checkStaticTypes&lt;decay_t&lt;ReturnType&gt;&gt;();
   return {Argument(&quot;_1&quot;, getTypePtr&lt;decay_t&lt;ReturnType&gt;&gt;())};
 }
 
@@ -274,9 +295,11 @@ std::vector&lt;Argument&gt; createArgumentVectorFromTraits(Indices&lt;Is...&gt; 
 template &lt;typename FunctionTraits&gt;
 FunctionSchema createFunctionSchemaFromTraits(const std::string&amp; name) {
   using ReturnType = typename FunctionTraits::return_type;
+
   auto arguments = createArgumentVectorFromTraits&lt;FunctionTraits&gt;(
       typename MakeIndices&lt;FunctionTraits::number_of_parameters&gt;::indices{});
   auto returns = createReturns(static_cast&lt;ReturnType*&gt;(nullptr));
+
   return {name, arguments, returns};
 }
 
