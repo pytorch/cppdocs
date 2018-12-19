@@ -320,7 +320,7 @@ struct Method {
   // adding any extra parameters necessary to do this call
 
   // defined here to keep details of member_input handling confined to this class
-  std::vector&lt;Value*&gt; emit_call_to(const SourceRange&amp; loc, Method &amp; callee, ArrayRef&lt;NamedValue&gt; args, ArrayRef&lt;NamedValue&gt; kwargs);
+  Value* emit_call_to(const SourceRange&amp; loc, Method &amp; callee, ArrayRef&lt;NamedValue&gt; args, ArrayRef&lt;NamedValue&gt; kwargs);
 
   // if this isn&#39;t yet defined, run its method_creator function
   TORCH_API void ensure_defined();
@@ -428,6 +428,11 @@ struct Method {
     return *owner_;
   }
 
+  void check_single_output() {
+    AT_CHECK(
+        graph()-&gt;outputs().size() == 1,
+        &quot;Method (but not graphs in general) require a single output. Use None/Tuple for 0 or 2+ outputs&quot;);
+  }
 private:
 
   static FunctionSchema defaultSchemaFor(const Method&amp; method) {
@@ -448,9 +453,7 @@ private:
 
   GraphExecutor&amp; get_executor() {
     std::call_once(executor_init, [&amp;] {
-      AT_CHECK(
-          graph()-&gt;outputs().size() == 1,
-          &quot;Method (but not graphs in general) require a single output. Use None/Tuple for 0 or 2+ outputs&quot;);
+      check_single_output();
       executor = GraphExecutor(graph(), optimize);
     });
     return executor;
@@ -706,9 +709,9 @@ struct Module {
   bool optimize;
 };
 
-// returns c10::nullopt and fills in failure_messages if the callee does not
+// returns nullptr and fills in failure_messages if the callee does not
 // match the functions schema
-c10::optional&lt;std::vector&lt;Value*&gt;&gt; try_emit_call_to(
+Value* try_emit_call_to(
     Graph&amp; graph,
     const SourceRange&amp; loc,
     Method&amp; callee,
