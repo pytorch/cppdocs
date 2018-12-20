@@ -239,6 +239,7 @@
 #include &lt;ATen/ATen.h&gt;
 
 #include &lt;functional&gt;
+#include &lt;iosfwd&gt;
 #include &lt;map&gt;
 #include &lt;memory&gt;
 #include &lt;string&gt;
@@ -344,6 +345,8 @@ class TORCH_API Module : public std::enable_shared_from_this&lt;Module&gt; {
 
   virtual void load(serialize::InputArchive&amp; archive);
 
+  virtual void pretty_print(std::ostream&amp; stream) const;
+
  protected:
   Tensor&amp; register_parameter(
       std::string name,
@@ -368,12 +371,20 @@ class TORCH_API Module : public std::enable_shared_from_this&lt;Module&gt; {
   template &lt;typename Derived&gt;
   friend class Cloneable;
 
+  TORCH_API friend std::ostream&amp; operator&lt;&lt;(
+      std::ostream&amp; stream,
+      const nn::Module&amp; module);
+
   // Private methods.
 
   virtual void clone_(Module&amp; other, const optional&lt;Device&gt;&amp; device);
 
   template &lt;typename... Ts&gt;
   void to_impl(Ts&amp;&amp;... ts);
+
+  void pretty_print_recursive(
+      std::ostream&amp; stream,
+      const std::string&amp; indentation) const;
 
   void apply_to_submodules(
       const NamedModulePointerApplyFunction&amp; function,

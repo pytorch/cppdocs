@@ -246,15 +246,14 @@ template &lt;size_t D, typename T = int64_t&gt;
 class ExpandingArray {
  public:
   /*implicit*/ ExpandingArray(std::initializer_list&lt;T&gt; list)
-      : ExpandingArray(std::vector&lt;T&gt;(list)) {}
+      : ExpandingArray(at::ArrayRef&lt;T&gt;(list)) {}
 
-  /*implicit*/ ExpandingArray(const std::vector&lt;T&gt;&amp; values) {
+  /*implicit*/ ExpandingArray(at::ArrayRef&lt;T&gt; values) {
+    // clang-format off
     AT_CHECK(
         values.size() == D,
-        &quot;Expected &quot;,
-        D,
-        &quot; values, but instead got &quot;,
-        values.size());
+        &quot;Expected &quot;, D, &quot; values, but instead got &quot;, values.size());
+    // clang-format on
     std::copy(values.begin(), values.end(), values_.begin());
   }
 
@@ -293,6 +292,15 @@ class ExpandingArray {
   std::array&lt;T, D&gt; values_;
 };
 
+template &lt;size_t D, typename T&gt;
+std::ostream&amp; operator&lt;&lt;(
+    std::ostream&amp; stream,
+    const ExpandingArray&lt;D, T&gt;&amp; expanding_array) {
+  if (expanding_array.size() == 1) {
+    return stream &lt;&lt; expanding_array-&gt;at(0);
+  }
+  return stream &lt;&lt; static_cast&lt;at::ArrayRef&lt;T&gt;&gt;(expanding_array);
+}
 } // namespace torch
 </pre></div>
 </div>

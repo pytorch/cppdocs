@@ -22,6 +22,7 @@ Program Listing for File module.h
    #include <ATen/ATen.h>
    
    #include <functional>
+   #include <iosfwd>
    #include <map>
    #include <memory>
    #include <string>
@@ -127,6 +128,8 @@ Program Listing for File module.h
    
      virtual void load(serialize::InputArchive& archive);
    
+     virtual void pretty_print(std::ostream& stream) const;
+   
     protected:
      Tensor& register_parameter(
          std::string name,
@@ -151,12 +154,20 @@ Program Listing for File module.h
      template <typename Derived>
      friend class Cloneable;
    
+     TORCH_API friend std::ostream& operator<<(
+         std::ostream& stream,
+         const nn::Module& module);
+   
      // Private methods.
    
      virtual void clone_(Module& other, const optional<Device>& device);
    
      template <typename... Ts>
      void to_impl(Ts&&... ts);
+   
+     void pretty_print_recursive(
+         std::ostream& stream,
+         const std::string& indentation) const;
    
      void apply_to_submodules(
          const NamedModulePointerApplyFunction& function,
