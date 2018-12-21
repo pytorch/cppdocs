@@ -1068,6 +1068,10 @@ static inline std::tuple&lt;Tensor,Tensor&gt; kthvalue(const Tensor &amp; self, 
 static inline std::tuple&lt;Tensor &amp;,Tensor &amp;&gt; kthvalue_out(Tensor &amp; values, Tensor &amp; indices, const Tensor &amp; self, int64_t k, int64_t dim=-1, bool keepdim=false);
 static inline Tensor layer_norm(const Tensor &amp; input, IntList normalized_shape, const Tensor &amp; weight={}, const Tensor &amp; bias={}, double eps=1e-05, bool cudnn_enable=true);
 static inline Tensor linear(const Tensor &amp; input, const Tensor &amp; weight, const Tensor &amp; bias={});
+static inline Tensor fbgemm_linear_int8_weight(const Tensor &amp; input, const Tensor &amp; weight, const Tensor &amp; packed, const Tensor &amp; col_offsets, Scalar weight_scale, Scalar weight_zero_point, const Tensor &amp; bias);
+static inline std::tuple&lt;Tensor,Tensor,double,int64_t&gt; fbgemm_linear_quantize_weight(const Tensor &amp; input);
+static inline Tensor fbgemm_pack_quantized_matrix(const Tensor &amp; input, int64_t K, int64_t N);
+static inline bool fbgemm_is_cpu_supported();
 static inline Tensor linspace(Scalar start, Scalar end, int64_t steps=100, const TensorOptions &amp; options={});
 static inline Tensor &amp; linspace_out(Tensor &amp; result, Scalar start, Scalar end, int64_t steps=100);
 static inline Tensor log(const Tensor &amp; self);
@@ -4246,6 +4250,18 @@ static inline Tensor layer_norm(const Tensor &amp; input, IntList normalized_sha
 }
 static inline Tensor linear(const Tensor &amp; input, const Tensor &amp; weight, const Tensor &amp; bias) {
     return detail::infer_type(input).linear(input, weight, bias);
+}
+static inline Tensor fbgemm_linear_int8_weight(const Tensor &amp; input, const Tensor &amp; weight, const Tensor &amp; packed, const Tensor &amp; col_offsets, Scalar weight_scale, Scalar weight_zero_point, const Tensor &amp; bias) {
+    return detail::infer_type(input).fbgemm_linear_int8_weight(input, weight, packed, col_offsets, weight_scale, weight_zero_point, bias);
+}
+static inline std::tuple&lt;Tensor,Tensor,double,int64_t&gt; fbgemm_linear_quantize_weight(const Tensor &amp; input) {
+    return detail::infer_type(input).fbgemm_linear_quantize_weight(input);
+}
+static inline Tensor fbgemm_pack_quantized_matrix(const Tensor &amp; input, int64_t K, int64_t N) {
+    return detail::infer_type(input).fbgemm_pack_quantized_matrix(input, K, N);
+}
+static inline bool fbgemm_is_cpu_supported() {
+    return at::getNonVariableType(at::Backend::Undefined, at::ScalarType::Float).fbgemm_is_cpu_supported();
 }
 static inline Tensor linspace(Scalar start, Scalar end, int64_t steps, const TensorOptions &amp; options) {
     const DeviceGuard guard(options.device());
