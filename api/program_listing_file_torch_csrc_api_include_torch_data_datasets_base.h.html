@@ -246,7 +246,7 @@ namespace torch {
 namespace data {
 namespace datasets {
 template &lt;typename S, typename T&gt;
-struct MapDataset;
+class MapDataset;
 template &lt;typename D, typename T&gt;
 MapDataset&lt;D, T&gt; map(D, T); // NOLINT
 } // namespace datasets
@@ -256,6 +256,12 @@ MapDataset&lt;D, T&gt; map(D, T); // NOLINT
 namespace torch {
 namespace data {
 namespace datasets {
+namespace detail {
+template &lt;typename T&gt;
+struct is_optional : std::false_type {};
+template &lt;typename T&gt;
+struct is_optional&lt;optional&lt;T&gt;&gt; : std::true_type {};
+} // namespace detail
 
 template &lt;
     typename Self,
@@ -266,6 +272,7 @@ class BatchDataset {
   using SelfType = Self;
   using BatchType = Batch;
   using BatchRequestType = BatchRequest;
+  constexpr static bool is_stateful = detail::is_optional&lt;BatchType&gt;::value;
 
   virtual ~BatchDataset() = default;
 

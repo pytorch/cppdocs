@@ -237,35 +237,76 @@
 #include &lt;c10/util/ArrayRef.h&gt;
 
 #include &lt;cstddef&gt;
+#include &lt;type_traits&gt;
 #include &lt;utility&gt;
 
 namespace torch {
 namespace data {
 namespace datasets {
+namespace detail {
+template &lt;bool C, typename T&gt;
+using optional_if_t = typename std::conditional&lt;C, torch::optional&lt;T&gt;, T&gt;::type;
+} // namespace detail
 
 template &lt;typename SourceDataset, typename AppliedTransform&gt;
-struct MapDataset : BatchDataset&lt;
-                        MapDataset&lt;SourceDataset, AppliedTransform&gt;,
-                        typename AppliedTransform::OutputBatchType,
-                        typename SourceDataset::BatchRequestType&gt; {
+class MapDataset : public BatchDataset&lt;
+                       MapDataset&lt;SourceDataset, AppliedTransform&gt;,
+                       detail::optional_if_t&lt;
+                           SourceDataset::is_stateful,
+                           typename AppliedTransform::OutputBatchType&gt;,
+                       typename SourceDataset::BatchRequestType&gt; {
+ public:
   using DatasetType = SourceDataset;
   using TransformType = AppliedTransform;
   using BatchRequestType = typename SourceDataset::BatchRequestType;
-  using OutputBatchType = typename TransformType::OutputBatchType;
+  using OutputBatchType = detail::optional_if_t&lt;
+      SourceDataset::is_stateful,
+      typename AppliedTransform::OutputBatchType&gt;;
 
   MapDataset(DatasetType dataset, TransformType transform)
-      : dataset(std::move(dataset)), transform(std::move(transform)) {}
+      : dataset_(std::move(dataset)), transform_(std::move(transform)) {}
 
   OutputBatchType get_batch(BatchRequestType indices) override {
-    return transform.apply_batch(dataset.get_batch(indices));
+    return get_batch_impl(std::move(indices));
   }
 
-  optional&lt;size_t&gt; size() const noexcept {
-    return dataset.size();
+  optional&lt;size_t&gt; size() const noexcept override {
+    return dataset_.size();
   }
 
-  SourceDataset dataset;
-  AppliedTransform transform;
+  void reset() {
+    dataset_.reset();
+  }
+
+  const SourceDataset&amp; dataset() noexcept {
+    return dataset_;
+  }
+
+  const AppliedTransform&amp; transform() noexcept {
+    return transform_;
+  }
+
+ private:
+  template &lt;
+      typename D = SourceDataset,
+      typename = torch::disable_if_t&lt;D::is_stateful&gt;&gt;
+  OutputBatchType get_batch_impl(BatchRequestType indices) {
+    return transform_.apply_batch(dataset_.get_batch(std::move(indices)));
+  }
+
+  template &lt;typename D = SourceDataset&gt;
+  torch::enable_if_t&lt;D::is_stateful, OutputBatchType&gt; get_batch_impl(
+      BatchRequestType indices) {
+    if (auto batch = dataset_.get_batch(std::move(indices))) {
+      return transform_.apply_batch(std::move(*batch));
+    }
+    return nullopt;
+  }
+
+  SourceDataset dataset_;
+
+  // The transformation that is applied to batches received from the dataset.
+  AppliedTransform transform_;
 };
 
 template &lt;typename DatasetType, typename TransformType&gt;
@@ -274,7 +315,10 @@ MapDataset&lt;DatasetType, TransformType&gt; map(
     TransformType transform) {
   static_assert(
       std::is_same&lt;
-          typename DatasetType::BatchType,
+          typename std::conditional&lt;
+              DatasetType::is_stateful,
+              typename DatasetType::BatchType::value_type,
+              typename DatasetType::BatchType&gt;::type,
           typename TransformType::InputBatchType&gt;::value,
       &quot;BatchType type of dataset does not match input type of transform&quot;);
   return {std::move(dataset), std::move(transform)};

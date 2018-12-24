@@ -231,13 +231,8 @@
 <p>↰ <a class="reference internal" href="file_torch_csrc_api_include_torch_data_dataloader.h.html#file-torch-csrc-api-include-torch-data-dataloader-h"><span class="std std-ref">Return to documentation for file</span></a> (<code class="docutils literal notranslate"><span class="pre">torch/csrc/api/include/torch/data/dataloader.h</span></code>)</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>#pragma once
 
-#include &lt;torch/data/dataloader_options.h&gt;
-#include &lt;torch/data/detail/data_shuttle.h&gt;
-#include &lt;torch/data/detail/sequencers.h&gt;
-#include &lt;torch/data/iterator.h&gt;
-#include &lt;torch/data/samplers/random.h&gt;
-#include &lt;torch/data/worker_exception.h&gt;
-#include &lt;torch/types.h&gt;
+#include &lt;torch/data/dataloader/stateful.h&gt;
+#include &lt;torch/data/dataloader/stateless.h&gt;
 
 #include &lt;torch/csrc/utils/memory.h&gt;
 #include &lt;torch/csrc/utils/variadic.h&gt;
@@ -245,229 +240,27 @@
 #include &lt;c10/util/Exception.h&gt;
 
 #include &lt;cstddef&gt;
-#include &lt;exception&gt;
 #include &lt;memory&gt;
-#include &lt;thread&gt;
 #include &lt;type_traits&gt;
 #include &lt;utility&gt;
-#include &lt;vector&gt;
 
 namespace torch {
 namespace data {
-template &lt;typename Dataset, typename Sampler&gt;
-class DataLoader {
- public:
-  using Batch = typename Dataset::BatchType;
-  using BatchRequest = typename Sampler::BatchRequestType;
-
-  DataLoader(Dataset dataset, DataLoaderOptions options, Sampler sampler)
-      : options_(std::move(options)),
-        sampler_(std::move(sampler)),
-        sequencer_(new_sequencer()) {
-    for (size_t w = 0; w &lt; options_.workers; ++w) {
-      // Here we copy the dataset into the worker thread closure. Each worker
-      // has its own copy of the dataset. This means the dataset must be
-      // trivially copiable, or else we don&#39;t expect more than one worker to
-      // be in use.
-      workers_.emplace_back([this, dataset]() mutable {
-        this-&gt;worker_thread(std::move(dataset));
-      });
-    }
-    if (options_.workers == 0) {
-      main_thread_dataset_ = torch::make_unique&lt;Dataset&gt;(std::move(dataset));
-    }
-  }
-
-  virtual ~DataLoader() {
-    join();
-  }
-
-  Iterator&lt;Batch&gt; begin() {
-    AT_CHECK(
-        shuttle_.in_flight_jobs() == 0,
-        &quot;Attempted to get a new DataLoader iterator &quot;
-        &quot;while another iterator is not yet exhausted&quot;);
-    reset();
-    return Iterator&lt;Batch&gt;(torch::make_unique&lt;detail::ValidIterator&lt;Batch&gt;&gt;(
-        [this] { return this-&gt;next(); }));
-  }
-
-  Iterator&lt;Batch&gt; end() {
-    return Iterator&lt;Batch&gt;(
-        torch::make_unique&lt;detail::SentinelIterator&lt;Batch&gt;&gt;());
-  }
-
-  void join() {
-    if (joined_) {
-      return;
-    }
-    shuttle_.drain();
-    // Send one &#39;quit&#39; message per worker. Since a worker dies (exits its
-    // thread) after receiving this message, each `QuitWorker()` message will be
-    // read by exactly one worker.
-    for (size_t w = 0; w &lt; options_.workers; ++w) {
-      push_job(QuitWorker());
-    }
-    for (auto&amp; worker : workers_) {
-      worker.join();
-    }
-    joined_ = true;
-  }
-
-  const FullDataLoaderOptions&amp; options() const noexcept {
-    return options_;
-  }
-
-  const Sampler&amp; sampler() const noexcept {
-    return sampler_;
-  }
-
-  Sampler&amp; sampler() noexcept {
-    return sampler_;
-  }
-
- private:
-  struct Sequenced {
-    Sequenced() = default;
-    Sequenced(size_t sqn) : sequence_number(sqn) {}
-    size_t sequence_number;
-  };
-
-  struct QuitWorker {};
-
-  struct Job : Sequenced {
-    Job() = default;
-    Job(QuitWorker q, size_t sqn) : Sequenced(sqn), quit(q) {}
-    Job(BatchRequest&amp;&amp; i, size_t sqn)
-        : Sequenced(sqn), batch_request(std::move(i)) {}
-    optional&lt;QuitWorker&gt; quit;
-    optional&lt;BatchRequest&gt; batch_request;
-  };
-
-  struct Result : Sequenced {
-    Result() = default;
-    Result(Batch&amp;&amp; b, size_t sqn) : Sequenced(sqn), batch(std::move(b)) {}
-    Result(std::exception_ptr exception, size_t sqn)
-        : Sequenced(sqn), exception(std::move(exception)) {}
-    optional&lt;Batch&gt; batch;
-    std::exception_ptr exception;
-  };
-
-  void reset(bool prefetch = true) {
-    shuttle_.drain();
-    sampler_.reset();
-    sequence_number_ = 0;
-    sequencer_ = new_sequencer();
-    if (prefetch) {
-      this-&gt;prefetch();
-    }
-  }
-
-  void prefetch(size_t requested_jobs) {
-    while (requested_jobs-- &gt; 0) {
-      if (auto batch_request = get_batch_request()) {
-        push_job(std::move(*batch_request));
-      } else {
-        break;
-      }
-    }
-  }
-
-  void prefetch() {
-    prefetch(options_.max_jobs);
-  }
-
-  optional&lt;Batch&gt; next() {
-    optional&lt;Batch&gt; batch;
-    if (options_.workers &gt; 0) {
-      optional&lt;Result&gt; result = sequencer_-&gt;next(
-          [this] { return this-&gt;shuttle_.pop_result(this-&gt;options_.timeout); });
-      if (result) {
-        if (result-&gt;exception) {
-          throw WorkerException(result-&gt;exception);
-        } else {
-          AT_ASSERT(result-&gt;batch.has_value());
-          batch = std::move(result-&gt;batch);
-          prefetch(1);
-        }
-      }
-    } else if (auto batch_request = get_batch_request()) {
-      AT_ASSERT(main_thread_dataset_ != nullptr);
-      batch = main_thread_dataset_-&gt;get_batch(std::move(*batch_request));
-    }
-    return batch;
-  }
-
-  void worker_thread(Dataset dataset) {
-    while (true) {
-      auto job = shuttle_.pop_job();
-      if (job.quit) {
-        break;
-      }
-      try {
-        auto batch = dataset.get_batch(std::move(*job.batch_request));
-        shuttle_.push_result({std::move(batch), job.sequence_number});
-      } catch (...) {
-        shuttle_.push_result({std::current_exception(), job.sequence_number});
-      }
-    }
-  }
-
-  optional&lt;BatchRequest&gt; get_batch_request() {
-    auto indices = sampler_.next(options_.batch_size);
-    if (!indices ||
-        (indices-&gt;size() &lt; options_.batch_size &amp;&amp; options_.drop_last)) {
-      return nullopt;
-    }
-    AT_ASSERT(indices-&gt;size() &gt; 0);
-    return indices;
-  }
-
-  template &lt;typename T&gt;
-  void push_job(T value) {
-    shuttle_.push_job({std::move(value), sequence_number_++});
-  }
-
-  std::unique_ptr&lt;detail::sequencers::Sequencer&lt;Result&gt;&gt; new_sequencer() {
-    if (options_.enforce_ordering) {
-      return torch::make_unique&lt;detail::sequencers::OrderedSequencer&lt;Result&gt;&gt;(
-          options_.max_jobs);
-    }
-    return torch::make_unique&lt;detail::sequencers::NoSequencer&lt;Result&gt;&gt;();
-  }
-
-  const FullDataLoaderOptions options_;
-
-  std::unique_ptr&lt;Dataset&gt; main_thread_dataset_;
-
-  Sampler sampler_;
-
-  size_t sequence_number_ = 0;
-
-  std::vector&lt;std::thread&gt; workers_;
-
-  detail::DataShuttle&lt;Job, Result&gt; shuttle_;
-
-  std::unique_ptr&lt;detail::sequencers::Sequencer&lt;Result&gt;&gt; sequencer_;
-
-  bool joined_ = false;
-}; // namespace data
 
 template &lt;typename Dataset, typename Sampler&gt;
-std::unique_ptr&lt;DataLoader&lt;Dataset, Sampler&gt;&gt; make_data_loader(
-    Dataset dataset,
-    DataLoaderOptions options,
-    Sampler sampler) {
-  return torch::make_unique&lt;DataLoader&lt;Dataset, Sampler&gt;&gt;(
-      std::move(dataset), std::move(options), std::move(sampler));
+torch::disable_if_t&lt;
+    Dataset::is_stateful,
+    std::unique_ptr&lt;StatelessDataLoader&lt;Dataset, Sampler&gt;&gt;&gt;
+make_data_loader(Dataset dataset, Sampler sampler, DataLoaderOptions options) {
+  return torch::make_unique&lt;StatelessDataLoader&lt;Dataset, Sampler&gt;&gt;(
+      std::move(dataset), std::move(sampler), std::move(options));
 }
 
-template &lt;
-    typename Sampler = samplers::RandomSampler,
-    typename Dataset,
-    typename =
-        torch::enable_if_t&lt;std::is_constructible&lt;Sampler, size_t&gt;::value&gt;&gt;
-std::unique_ptr&lt;DataLoader&lt;Dataset, Sampler&gt;&gt; make_data_loader(
+template &lt;typename Sampler = samplers::RandomSampler, typename Dataset&gt;
+torch::disable_if_t&lt;
+    Dataset::is_stateful || !std::is_constructible&lt;Sampler, size_t&gt;::value,
+    std::unique_ptr&lt;StatelessDataLoader&lt;Dataset, Sampler&gt;&gt;&gt;
+make_data_loader(
     Dataset dataset,
     DataLoaderOptions options = DataLoaderOptions()) {
   const optional&lt;size_t&gt; size = dataset.size();
@@ -476,9 +269,16 @@ std::unique_ptr&lt;DataLoader&lt;Dataset, Sampler&gt;&gt; make_data_loader(
       &quot;Expected the dataset to be sized in &quot;
       &quot;order to construct the Sampler&quot;);
   return make_data_loader(
-      std::move(dataset), std::move(options), Sampler(*size));
+      std::move(dataset), Sampler(*size), std::move(options));
 }
 
+template &lt;typename Dataset, typename = torch::enable_if_t&lt;Dataset::is_stateful&gt;&gt;
+std::unique_ptr&lt;StatefulDataLoader&lt;Dataset&gt;&gt; make_data_loader(
+    Dataset dataset,
+    DataLoaderOptions options = DataLoaderOptions()) {
+  return torch::make_unique&lt;StatefulDataLoader&lt;Dataset&gt;&gt;(
+      std::move(dataset), std::move(options));
+}
 } // namespace data
 } // namespace torch
 </pre></div>
