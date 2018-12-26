@@ -230,19 +230,19 @@
 <span id="program-listing-file-torch-csrc-jit-script-module-h"></span><h1>Program Listing for File module.h<a class="headerlink" href="#program-listing-for-file-module-h" title="Permalink to this headline">¶</a></h1>
 <p>↰ <a class="reference internal" href="file_torch_csrc_jit_script_module.h.html#file-torch-csrc-jit-script-module-h"><span class="std std-ref">Return to documentation for file</span></a> (<code class="docutils literal notranslate"><span class="pre">torch/csrc/jit/script/module.h</span></code>)</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>#pragma once
-#include &lt;torch/csrc/jit/ir.h&gt;
-#include &lt;torch/csrc/jit/graph_executor.h&gt;
 #include &lt;torch/csrc/autograd/variable.h&gt;
-#include &lt;torch/csrc/jit/passes/shape_analysis.h&gt;
 #include &lt;torch/csrc/jit/argument_spec.h&gt;
-#include &lt;torch/csrc/jit/function_schema.h&gt;
 #include &lt;torch/csrc/jit/assertions.h&gt;
+#include &lt;torch/csrc/jit/function_schema.h&gt;
+#include &lt;torch/csrc/jit/graph_executor.h&gt;
+#include &lt;torch/csrc/jit/ir.h&gt;
 #include &lt;torch/csrc/jit/named_value.h&gt;
+#include &lt;torch/csrc/jit/passes/shape_analysis.h&gt;
 #include &lt;torch/csrc/jit/source_range.h&gt;
 
+#include &lt;torch/csrc/WindowsTorchApiMacro.h&gt;
 #include &lt;torch/csrc/api/include/torch/ordered_dict.h&gt;
 #include &lt;torch/csrc/utils/memory.h&gt;
-#include &lt;torch/csrc/WindowsTorchApiMacro.h&gt;
 
 #include &lt;c10/util/ArrayRef.h&gt;
 #include &lt;c10/util/Optional.h&gt;
@@ -250,16 +250,18 @@
 #include &lt;functional&gt;
 #include &lt;memory&gt;
 #include &lt;mutex&gt;
+#include &lt;ostream&gt;
 #include &lt;string&gt;
 #include &lt;unordered_map&gt;
 #include &lt;vector&gt;
-#include &lt;ostream&gt;
 
 // This file contains classes which assist in desugaring Python style
 // modules and their methods into flattened graphs which don&#39;t have any
 // function calls.
 
-namespace torch { namespace jit { namespace script {
+namespace torch {
+namespace jit {
+namespace script {
 
 // A method in a module, e.g. f in:
 //
@@ -273,25 +275,28 @@ namespace torch { namespace jit { namespace script {
 struct Module;
 
 struct Method {
-  Method(Module* owner, std::string name, bool optimize,
-         std::shared_ptr&lt;Graph&gt; graph,
-         std::vector&lt;at::Tensor*&gt; initial_members,
-         std::function&lt;void(Method&amp;)&gt; method_creator)
-  : owner_(owner)
-  , name_(std::move(name))
-  , graph_(std::move(graph))
-  , optimize(optimize)
-  , member_inputs(std::move(initial_members))
-  , method_creator(std::move(method_creator)) {
+  Method(
+      Module* owner,
+      std::string name,
+      bool optimize,
+      std::shared_ptr&lt;Graph&gt; graph,
+      std::vector&lt;at::Tensor*&gt; initial_members,
+      std::function&lt;void(Method&amp;)&gt; method_creator)
+      : owner_(owner),
+        name_(std::move(name)),
+        graph_(std::move(graph)),
+        optimize(optimize),
+        member_inputs(std::move(initial_members)),
+        method_creator(std::move(method_creator)) {
     JIT_ASSERT(graph_-&gt;inputs().size() &gt;= member_inputs.size());
     int i = graph_-&gt;inputs().size() - member_inputs.size();
-    for(at::Tensor* member : member_inputs) {
+    for (at::Tensor* member : member_inputs) {
       member_input_index[member] = i++;
     }
   }
 
-  void run(Stack &amp; stack) {
-    for(at::Tensor* tp : member_inputs) {
+  void run(Stack&amp; stack) {
+    for (at::Tensor* tp : member_inputs) {
       stack.emplace_back(*tp);
     }
     get_executor().run(stack);
@@ -304,7 +309,7 @@ struct Method {
   }
 
   std::shared_ptr&lt;Graph&gt; graph_for(Stack inputs) {
-    for(at::Tensor* tp : member_inputs) {
+    for (at::Tensor* tp : member_inputs) {
       inputs.emplace_back(*tp);
     }
     return get_executor().graphFor(inputs);
@@ -313,25 +318,29 @@ struct Method {
     return graph_;
   }
 
-  TORCH_API const std::string &amp; name() const {
+  TORCH_API const std::string&amp; name() const {
     return name_;
   }
   // emit a function call by inlining the callees Graph into this one
   // adding any extra parameters necessary to do this call
 
-  // defined here to keep details of member_input handling confined to this class
-  Value* emit_call_to(const SourceRange&amp; loc, Method &amp; callee, ArrayRef&lt;NamedValue&gt; args, ArrayRef&lt;NamedValue&gt; kwargs);
+  // defined here to keep details of member_input handling confined to this
+  // class
+  Value* emit_call_to(
+      const SourceRange&amp; loc,
+      Method&amp; callee,
+      ArrayRef&lt;NamedValue&gt; args,
+      ArrayRef&lt;NamedValue&gt; kwargs);
 
   // if this isn&#39;t yet defined, run its method_creator function
   TORCH_API void ensure_defined();
 
-
   size_t num_inputs() const {
     return graph()-&gt;inputs().size() - member_inputs.size();
   }
-  TORCH_API Value * get_or_add_parameter(at::Tensor* slot) {
+  TORCH_API Value* get_or_add_parameter(at::Tensor* slot) {
     auto it = member_input_index.find(slot);
-    if(it != member_input_index.end()) {
+    if (it != member_input_index.end()) {
       return graph()-&gt;inputs().at(it-&gt;second);
     }
     // add it as a new parameter
@@ -340,11 +349,13 @@ struct Method {
     return graph()-&gt;addInput();
   }
 
-  std::shared_ptr&lt;Graph&gt; propagate_shapes(std::vector&lt;at::Tensor&gt; inputs, bool with_grad=false) {
+  std::shared_ptr&lt;Graph&gt; propagate_shapes(
+      std::vector&lt;at::Tensor&gt; inputs,
+      bool with_grad = false) {
     auto retval = graph_-&gt;copy();
     Stack stack;
     stack.reserve(inputs.size() + member_inputs.size());
-    for (at::Tensor &amp; i : inputs) {
+    for (at::Tensor&amp; i : inputs) {
       stack.emplace_back(std::move(i));
     }
     for (at::Tensor* inp : member_inputs) {
@@ -356,33 +367,41 @@ struct Method {
     return retval;
   }
 
-  std::shared_ptr&lt;Graph&gt; propagate_and_assign_input_and_output_shapes(std::vector&lt;at::Tensor&gt; inputs, std::vector&lt;at::Tensor&gt; outputs, bool with_grad=false, bool propagate=true) {
+  std::shared_ptr&lt;Graph&gt; propagate_and_assign_input_and_output_shapes(
+      std::vector&lt;at::Tensor&gt; inputs,
+      std::vector&lt;at::Tensor&gt; outputs,
+      bool with_grad = false,
+      bool propagate = true) {
     auto retval = graph_-&gt;copy();
     for (auto inp : member_inputs) {
       inputs.push_back(*inp);
     }
     if (propagate) {
-      setInputTypes(*retval, ArgumentSpec(with_grad, fmap&lt;IValue&gt;(inputs), inputs.size()));
+      setInputTypes(
+          *retval,
+          ArgumentSpec(with_grad, fmap&lt;IValue&gt;(inputs), inputs.size()));
       PropagateInputShapes(retval);
     }
     JIT_ASSERT(retval-&gt;inputs().size() == inputs.size());
-    for (size_t i=0; i &lt; retval-&gt;inputs().size(); ++i) {
+    for (size_t i = 0; i &lt; retval-&gt;inputs().size(); ++i) {
       auto scalar_type = inputs[i].type().scalarType();
       auto sizes = inputs[i].sizes();
-      auto type = torch::jit::CompleteTensorType::create(scalar_type, at::kCPU, sizes);
+      auto type =
+          torch::jit::CompleteTensorType::create(scalar_type, at::kCPU, sizes);
       retval-&gt;inputs()[i]-&gt;setType(type);
     }
     at::ArrayRef&lt;Value*&gt; output_values = retval-&gt;outputs();
     // patch this to still work if we are returning a tuple of multiple values
     if (output_values.at(0)-&gt;type()-&gt;kind() == TupleType::Kind) {
-      JIT_ASSERT(output_values.at(0)-&gt;node()-&gt;kind()== prim::TupleConstruct);
+      JIT_ASSERT(output_values.at(0)-&gt;node()-&gt;kind() == prim::TupleConstruct);
       output_values = output_values.at(0)-&gt;node()-&gt;inputs();
     }
     JIT_ASSERT(output_values.size() == outputs.size());
-    for (size_t i=0; i &lt; retval-&gt;outputs().size(); ++i) {
+    for (size_t i = 0; i &lt; retval-&gt;outputs().size(); ++i) {
       auto scalar_type = outputs[i].type().scalarType();
       auto sizes = outputs[i].sizes();
-      auto type = torch::jit::CompleteTensorType::create(scalar_type, at::kCPU, sizes);
+      auto type =
+          torch::jit::CompleteTensorType::create(scalar_type, at::kCPU, sizes);
       output_values[i]-&gt;setType(type);
     }
     return retval;
@@ -398,7 +417,7 @@ struct Method {
   }
 
   TORCH_API const FunctionSchema&amp; getSchema() const {
-    if(schema == nullptr) {
+    if (schema == nullptr) {
       schema = make_unique&lt;FunctionSchema&gt;(defaultSchemaFor(*this));
     }
     return *schema;
@@ -433,22 +452,23 @@ struct Method {
         graph()-&gt;outputs().size() == 1,
         &quot;Method (but not graphs in general) require a single output. Use None/Tuple for 0 or 2+ outputs&quot;);
   }
-private:
 
+ private:
   static FunctionSchema defaultSchemaFor(const Method&amp; method) {
     std::vector&lt;Argument&gt; args;
     std::vector&lt;Argument&gt; returns;
     Graph&amp; g = *method.graph();
     size_t num_inputs = method.num_inputs();
-    for(size_t i = 0; i &lt; num_inputs; ++i) {
+    for (size_t i = 0; i &lt; num_inputs; ++i) {
       const Value* v = g.inputs().at(i);
-      std::string name = v-&gt;hasUniqueName() ? v-&gt;uniqueNameBase() : (&quot;argument_&quot;  + std::to_string(i));
+      std::string name = v-&gt;hasUniqueName() ? v-&gt;uniqueNameBase()
+                                            : (&quot;argument_&quot; + std::to_string(i));
       args.emplace_back(std::move(name), unshapedType(g.inputs()[i]-&gt;type()));
     }
-    for(size_t i = 0; i &lt; g.outputs().size(); ++i) {
+    for (size_t i = 0; i &lt; g.outputs().size(); ++i) {
       returns.emplace_back(&quot;&quot;, unshapedType(g.outputs()[i]-&gt;type()));
     }
-    return { method.name(), std::move(args), std::move(returns) };
+    return {method.name(), std::move(args), std::move(returns)};
   }
 
   GraphExecutor&amp; get_executor() {
@@ -464,9 +484,14 @@ private:
     // Do we have more inputs than the schema accepts?
     AT_CHECK(
         inputs.size() &lt;= schema.arguments().size(),
-        &quot;Expected at most &quot;, schema.arguments().size(),
-        &quot; argument(s) for operator &#39;&quot;, schema.name(), &quot;&#39;, but received &quot;,
-        inputs.size(), &quot; argument(s). Declaration: &quot;, schema);
+        &quot;Expected at most &quot;,
+        schema.arguments().size(),
+        &quot; argument(s) for operator &#39;&quot;,
+        schema.name(),
+        &quot;&#39;, but received &quot;,
+        inputs.size(),
+        &quot; argument(s). Declaration: &quot;,
+        schema);
 
     for (size_t pos = 0; pos &lt; schema.arguments().size(); ++pos) {
       const auto&amp; argument = schema.arguments()[pos];
@@ -475,21 +500,30 @@ private:
         // and should be replaced with a function isSubvalueOf(ivalue, type)
         // That asks if the specific value is a valid instance of type.
         const TypePtr inputType = incompleteInferTypeFrom(inputs[pos]);
-        AT_CHECK(inputType-&gt;isSubtypeOf(argument.type()),
-              &quot;Expected value of type &quot;, *argument.type(),
-              &quot; for argument &#39;&quot;, argument.name(),
-              &quot;&#39; in position &quot;, pos,
-              &quot;, but instead got value of type &quot;, *inputType,
-              &quot;. Declaration: &quot;, schema);
+        AT_CHECK(
+            inputType-&gt;isSubtypeOf(argument.type()),
+            &quot;Expected value of type &quot;,
+            *argument.type(),
+            &quot; for argument &#39;&quot;,
+            argument.name(),
+            &quot;&#39; in position &quot;,
+            pos,
+            &quot;, but instead got value of type &quot;,
+            *inputType,
+            &quot;. Declaration: &quot;,
+            schema);
       } else if (argument.default_value()) {
         inputs.push_back(*argument.default_value());
       } else {
-        AT_ERROR(schema.name(), &quot;() is missing value for argument &#39;&quot;,
-                argument.name(), &quot;&#39;. Declaration: &quot;, schema);
+        AT_ERROR(
+            schema.name(),
+            &quot;() is missing value for argument &#39;&quot;,
+            argument.name(),
+            &quot;&#39;. Declaration: &quot;,
+            schema);
       }
     }
   }
-
 
   // Methods are uniqued onwed by a single module. This raw pointer allows
   // looking up the module.
@@ -521,9 +555,9 @@ private:
 
   std::once_flag executor_init;
 
-  // an optional function that actually creates the method when emit_call_to(this,...)
-  // is first called.
-  // this is used by the compiler so that it can construct methods out of order
+  // an optional function that actually creates the method when
+  // emit_call_to(this,...) is first called. this is used by the compiler so
+  // that it can construct methods out of order
   std::function&lt;void(Method&amp;)&gt; method_creator;
 
   // if absent, then we generate a default schema based on the graph
@@ -541,17 +575,18 @@ struct NamedModule {
 
 struct NamedParameter {
   NamedParameter(std::string name, at::Tensor tensor, bool is_buffer)
-  : name(std::move(name))
-  , is_buffer(is_buffer)
-  , parameter(torch::make_unique&lt;at::Tensor&gt;(std::move(tensor))) {}
+      : name(std::move(name)),
+        is_buffer(is_buffer),
+        parameter(torch::make_unique&lt;at::Tensor&gt;(std::move(tensor))) {}
 
   const std::string name;
   bool is_buffer; // buffers are part of the module state but
-                        // are not modified by optimizers during SGD
+                  // are not modified by optimizers during SGD
   at::Tensor* slot() const {
     return parameter.get();
   }
-private:
+
+ private:
   // the extra level of indirection allows Methods to safely store pointers
   // to the slots where parameters are kept while also allow parameters
   // to be reassigned
@@ -561,10 +596,10 @@ private:
 struct Module {
   TH_DISALLOW_COPY_AND_ASSIGN(Module);
   Module()
-  : modules(&quot;Module&quot;)
-  , parameters(&quot;Parameter&quot;)
-  , methods(&quot;Method&quot;)
-  , optimize(true) {}
+      : modules(&quot;Module&quot;),
+        parameters(&quot;Parameter&quot;),
+        methods(&quot;Method&quot;),
+        optimize(true) {}
 
   // note this doesn&#39;t change the flags of existing methods just ones
   // added afterward.
@@ -580,34 +615,56 @@ struct Module {
     return get_method(&quot;forward&quot;)(std::move(inputs));
   }
 
-  void register_parameter(const std::string &amp; name, autograd::Variable v, bool is_buffer) {
-    if(auto p = parameters.find(name)){
+  void register_parameter(
+      const std::string&amp; name,
+      autograd::Variable v,
+      bool is_buffer) {
+    if (auto p = parameters.find(name)) {
       *p-&gt;slot() = v;
       p-&gt;is_buffer = is_buffer;
       return;
     }
     parameters.insert(name, NamedParameter(name, std::move(v), is_buffer));
   }
-  void register_module(const std::string&amp; name, std::shared_ptr&lt;Module&gt; module) {
+  void register_module(
+      const std::string&amp; name,
+      std::shared_ptr&lt;Module&gt; module) {
     modules.insert(name, {name, std::move(module)});
   }
 
-  Method&amp; create_method(const std::string &amp; name, std::shared_ptr&lt;Graph&gt; graph, std::vector&lt;at::Tensor*&gt; member_inputs) {
+  Method&amp; create_method(
+      const std::string&amp; name,
+      std::shared_ptr&lt;Graph&gt; graph,
+      std::vector&lt;at::Tensor*&gt; member_inputs) {
     JIT_ASSERT(graph);
-    std::unique_ptr&lt;Method&gt; method(new Method(this, name, optimize, std::move(graph), std::move(member_inputs), nullptr));
+    std::unique_ptr&lt;Method&gt; method(new Method(
+        this,
+        name,
+        optimize,
+        std::move(graph),
+        std::move(member_inputs),
+        nullptr));
     return *methods.insert(name, std::move(method));
   }
 
-  Method&amp; create_method(const std::string &amp; name, std::function&lt;void(Method&amp;)&gt; creator) {
-    std::unique_ptr&lt;Method&gt; method(new Method(this, name, optimize, std::make_shared&lt;Graph&gt;(), {}, std::move(creator)));
+  Method&amp; create_method(
+      const std::string&amp; name,
+      std::function&lt;void(Method&amp;)&gt; creator) {
+    std::unique_ptr&lt;Method&gt; method(new Method(
+        this,
+        name,
+        optimize,
+        std::make_shared&lt;Graph&gt;(),
+        {},
+        std::move(creator)));
     return *methods.insert(name, std::move(method));
   }
 
-  at::Tensor* parameter_slot(const std::string &amp; name) const {
+  at::Tensor* parameter_slot(const std::string&amp; name) const {
     return parameters[name].slot();
   }
 
-  void set_parameter(const std::string &amp; name, at::Tensor v) {
+  void set_parameter(const std::string&amp; name, at::Tensor v) {
     *parameter_slot(name) = std::move(v);
   }
 
@@ -628,10 +685,12 @@ struct Module {
   const torch::OrderedDict&lt;std::string, NamedModule&gt;&amp; get_modules() const {
     return modules;
   }
-  const torch::OrderedDict&lt;std::string, NamedParameter&gt;&amp; get_parameters() const {
+  const torch::OrderedDict&lt;std::string, NamedParameter&gt;&amp; get_parameters()
+      const {
     return parameters;
   }
-  const torch::OrderedDict&lt;std::string, std::unique_ptr&lt;Method&gt;&gt;&amp; get_methods() const {
+  const torch::OrderedDict&lt;std::string, std::unique_ptr&lt;Method&gt;&gt;&amp; get_methods()
+      const {
     return methods;
   }
 
@@ -648,7 +707,7 @@ struct Module {
     return nullptr;
   }
   void apply(std::function&lt;void(Module&amp;)&gt; fn) {
-    for (auto &amp;submod : get_modules()) {
+    for (auto&amp; submod : get_modules()) {
       submod.value().module-&gt;apply(fn);
     }
     fn(*this);
@@ -672,26 +731,29 @@ struct Module {
 
   void save(const std::string&amp; filename);
 
-  void copy_into(std::function&lt;std::shared_ptr&lt;Module&gt;(
-      std::vector&lt;std::string&gt;)&gt; module_lookup,
-      // parameter_remap is needed when a parent module uses a parameter of a submodule
+  void copy_into(
+      std::function&lt;std::shared_ptr&lt;Module&gt;(std::vector&lt;std::string&gt;)&gt;
+          module_lookup,
+      // parameter_remap is needed when a parent module uses a parameter of a
+      // submodule
       std::unordered_map&lt;at::Tensor*, at::Tensor*&gt;&amp; parameter_remap,
       std::vector&lt;std::string&gt; names = {}) const {
     auto curr = module_lookup(names);
-    for (auto &amp;kv : parameters) {
-      curr-&gt;register_parameter(kv.key(), *kv.value().slot(), kv.value().is_buffer);
+    for (auto&amp; kv : parameters) {
+      curr-&gt;register_parameter(
+          kv.key(), *kv.value().slot(), kv.value().is_buffer);
       parameter_remap[kv.value().slot()] = curr-&gt;parameter_slot(kv.key());
     }
-    for (auto &amp;kv : modules) {
+    for (auto&amp; kv : modules) {
       names.push_back(kv.key());
       // Submodules must be translated first, otherwise parameter_remap entries
       // will not be filled in for methods of this module.
       kv.value().module-&gt;copy_into(module_lookup, parameter_remap, names);
       names.pop_back();
     }
-    for (auto &amp;kv : methods) {
+    for (auto&amp; kv : methods) {
       std::vector&lt;at::Tensor*&gt; params;
-      for (auto &amp;p : kv.value()-&gt;params()) {
+      for (auto&amp; p : kv.value()-&gt;params()) {
         params.push_back(parameter_remap.at(p));
       }
       curr-&gt;create_method(kv.key(), kv.value()-&gt;graph()-&gt;copy(), params);
@@ -728,7 +790,9 @@ Value* try_emit_call_to(
     // unit, and not a method), then nullptr can be passed as caller.
     Method* caller,
     bool conv_tensors_to_nums);
-}}}
+} // namespace script
+} // namespace jit
+} // namespace torch
 </pre></div>
 </div>
 </div>
