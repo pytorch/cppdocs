@@ -62,7 +62,6 @@ Program Listing for File Functions.h
    static inline Tensor & _th_index_fill_(Tensor & self, int64_t dim, const Tensor & index, const Tensor & value);
    static inline Tensor & _th_unfold_out(Tensor & result, const Tensor & self, int64_t dimension, int64_t size, int64_t step);
    static inline Tensor _th_unfold(const Tensor & self, int64_t dimension, int64_t size, int64_t step);
-   static inline Tensor & _th_range_out(Tensor & result, Scalar start, Scalar end, Scalar step);
    static inline Tensor & _th_arange_out(Tensor & result, Scalar start, Scalar end, Scalar step);
    static inline Tensor & _th_arange_out(Tensor & result, Scalar end);
    static inline Tensor & _th_scatter_(Tensor & self, int64_t dim, const Tensor & index, const Tensor & src);
@@ -970,10 +969,9 @@ Program Listing for File Functions.h
    static inline Tensor randperm(int64_t n, Generator * generator, const TensorOptions & options={});
    static inline Tensor & randperm_out(Tensor & result, int64_t n);
    static inline Tensor & randperm_out(Tensor & result, int64_t n, Generator * generator);
+   static inline Tensor range(Scalar start, Scalar end, Scalar step=1, const TensorOptions & options={});
    static inline Tensor range(Scalar start, Scalar end, const TensorOptions & options={});
-   static inline Tensor range(Scalar start, Scalar end, Scalar step, const TensorOptions & options={});
-   static inline Tensor & range_out(Tensor & result, Scalar start, Scalar end);
-   static inline Tensor & range_out(Tensor & result, Scalar start, Scalar end, Scalar step);
+   static inline Tensor & range_out(Tensor & result, Scalar start, Scalar end, Scalar step=1);
    static inline Tensor reshape(const Tensor & self, IntList shape);
    static inline std::tuple<Tensor,Tensor> RoiPooling2d_forward(const Tensor & input, const Tensor & rois, int64_t pooledHeight, int64_t pooledWidth, double spatialScale);
    static inline Tensor RoiPooling2d_backward(const Tensor & input, const Tensor & rois, int64_t pooledHeight, int64_t pooledWidth, double spatialScale, const Tensor & gradOutput, const Tensor & argmaxes);
@@ -1643,9 +1641,6 @@ Program Listing for File Functions.h
    }
    static inline Tensor _th_unfold(const Tensor & self, int64_t dimension, int64_t size, int64_t step) {
        return detail::infer_type(self)._th_unfold(self, dimension, size, step);
-   }
-   static inline Tensor & _th_range_out(Tensor & result, Scalar start, Scalar end, Scalar step) {
-       return detail::infer_type(result)._th_range_out(result, start, end, step);
    }
    static inline Tensor & _th_arange_out(Tensor & result, Scalar start, Scalar end, Scalar step) {
        return detail::infer_type(result)._th_arange_out(result, start, end, step);
@@ -4406,16 +4401,13 @@ Program Listing for File Functions.h
    static inline Tensor & randperm_out(Tensor & result, int64_t n, Generator * generator) {
        return detail::infer_type(result).randperm_out(result, n, generator);
    }
-   static inline Tensor range(Scalar start, Scalar end, const TensorOptions & options) {
-       const DeviceGuard guard(options.device());
-       return at::native::range(start, end, options);
-   }
    static inline Tensor range(Scalar start, Scalar end, Scalar step, const TensorOptions & options) {
        const DeviceGuard guard(options.device());
        return at::native::range(start, end, step, options);
    }
-   static inline Tensor & range_out(Tensor & result, Scalar start, Scalar end) {
-       return detail::infer_type(result).range_out(result, start, end);
+   static inline Tensor range(Scalar start, Scalar end, const TensorOptions & options) {
+       const DeviceGuard guard(options.device());
+       return at::native::range(start, end, options);
    }
    static inline Tensor & range_out(Tensor & result, Scalar start, Scalar end, Scalar step) {
        return detail::infer_type(result).range_out(result, start, end, step);

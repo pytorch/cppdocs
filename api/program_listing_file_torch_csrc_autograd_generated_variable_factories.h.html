@@ -1474,32 +1474,7 @@ inline at::Tensor randperm(int64_t n, at::Generator * generator, const at::Tenso
   }
   return result;
 }
-inline at::Tensor range(at::Scalar start, at::Scalar end, const at::TensorOptions &amp; options = {}) {
-  torch::jit::Node* node = nullptr;
-  std::shared_ptr&lt;jit::tracer::TracingState&gt; tracer_state;
-  if (jit::tracer::isTracing()) {
-    tracer_state = jit::tracer::getTracingState();
-    at::Symbol op_name;
-    op_name = jit::Symbol::fromQualString(&quot;aten::range&quot;);
-    node = tracer_state-&gt;graph-&gt;create(op_name, /*num_outputs=*/0);
-    jit::tracer::recordSourceLocation(node);
-    jit::tracer::addInputs(node, &quot;start&quot;, start);
-    jit::tracer::addInputs(node, &quot;end&quot;, end);
-    jit::tracer::addInputs(node, &quot;options&quot;, options);
-    tracer_state-&gt;graph-&gt;appendNode(node);
-
-    jit::tracer::setTracingState(nullptr);
-  }
-  at::Tensor tensor = at::range(start, end, at::TensorOptions(options).is_variable(false));
-  at::Tensor result =
-    autograd::make_variable(tensor, /*requires_grad=*/options.requires_grad());
-  if (tracer_state) {
-    jit::tracer::setTracingState(std::move(tracer_state));
-    jit::tracer::addOutput(node, result);
-  }
-  return result;
-}
-inline at::Tensor range(at::Scalar start, at::Scalar end, at::Scalar step, const at::TensorOptions &amp; options = {}) {
+inline at::Tensor range(at::Scalar start, at::Scalar end, at::Scalar step = 1, const at::TensorOptions &amp; options = {}) {
   torch::jit::Node* node = nullptr;
   std::shared_ptr&lt;jit::tracer::TracingState&gt; tracer_state;
   if (jit::tracer::isTracing()) {
@@ -1517,6 +1492,31 @@ inline at::Tensor range(at::Scalar start, at::Scalar end, at::Scalar step, const
     jit::tracer::setTracingState(nullptr);
   }
   at::Tensor tensor = at::range(start, end, step, at::TensorOptions(options).is_variable(false));
+  at::Tensor result =
+    autograd::make_variable(tensor, /*requires_grad=*/options.requires_grad());
+  if (tracer_state) {
+    jit::tracer::setTracingState(std::move(tracer_state));
+    jit::tracer::addOutput(node, result);
+  }
+  return result;
+}
+inline at::Tensor range(at::Scalar start, at::Scalar end, const at::TensorOptions &amp; options = {}) {
+  torch::jit::Node* node = nullptr;
+  std::shared_ptr&lt;jit::tracer::TracingState&gt; tracer_state;
+  if (jit::tracer::isTracing()) {
+    tracer_state = jit::tracer::getTracingState();
+    at::Symbol op_name;
+    op_name = jit::Symbol::fromQualString(&quot;aten::range&quot;);
+    node = tracer_state-&gt;graph-&gt;create(op_name, /*num_outputs=*/0);
+    jit::tracer::recordSourceLocation(node);
+    jit::tracer::addInputs(node, &quot;start&quot;, start);
+    jit::tracer::addInputs(node, &quot;end&quot;, end);
+    jit::tracer::addInputs(node, &quot;options&quot;, options);
+    tracer_state-&gt;graph-&gt;appendNode(node);
+
+    jit::tracer::setTracingState(nullptr);
+  }
+  at::Tensor tensor = at::range(start, end, at::TensorOptions(options).is_variable(false));
   at::Tensor result =
     autograd::make_variable(tensor, /*requires_grad=*/options.requires_grad());
   if (tracer_state) {

@@ -279,7 +279,6 @@ static inline Tensor &amp; _th_index_fill_(Tensor &amp; self, int64_t dim, const
 static inline Tensor &amp; _th_index_fill_(Tensor &amp; self, int64_t dim, const Tensor &amp; index, const Tensor &amp; value);
 static inline Tensor &amp; _th_unfold_out(Tensor &amp; result, const Tensor &amp; self, int64_t dimension, int64_t size, int64_t step);
 static inline Tensor _th_unfold(const Tensor &amp; self, int64_t dimension, int64_t size, int64_t step);
-static inline Tensor &amp; _th_range_out(Tensor &amp; result, Scalar start, Scalar end, Scalar step);
 static inline Tensor &amp; _th_arange_out(Tensor &amp; result, Scalar start, Scalar end, Scalar step);
 static inline Tensor &amp; _th_arange_out(Tensor &amp; result, Scalar end);
 static inline Tensor &amp; _th_scatter_(Tensor &amp; self, int64_t dim, const Tensor &amp; index, const Tensor &amp; src);
@@ -1187,10 +1186,9 @@ static inline Tensor randperm(int64_t n, const TensorOptions &amp; options={});
 static inline Tensor randperm(int64_t n, Generator * generator, const TensorOptions &amp; options={});
 static inline Tensor &amp; randperm_out(Tensor &amp; result, int64_t n);
 static inline Tensor &amp; randperm_out(Tensor &amp; result, int64_t n, Generator * generator);
+static inline Tensor range(Scalar start, Scalar end, Scalar step=1, const TensorOptions &amp; options={});
 static inline Tensor range(Scalar start, Scalar end, const TensorOptions &amp; options={});
-static inline Tensor range(Scalar start, Scalar end, Scalar step, const TensorOptions &amp; options={});
-static inline Tensor &amp; range_out(Tensor &amp; result, Scalar start, Scalar end);
-static inline Tensor &amp; range_out(Tensor &amp; result, Scalar start, Scalar end, Scalar step);
+static inline Tensor &amp; range_out(Tensor &amp; result, Scalar start, Scalar end, Scalar step=1);
 static inline Tensor reshape(const Tensor &amp; self, IntList shape);
 static inline std::tuple&lt;Tensor,Tensor&gt; RoiPooling2d_forward(const Tensor &amp; input, const Tensor &amp; rois, int64_t pooledHeight, int64_t pooledWidth, double spatialScale);
 static inline Tensor RoiPooling2d_backward(const Tensor &amp; input, const Tensor &amp; rois, int64_t pooledHeight, int64_t pooledWidth, double spatialScale, const Tensor &amp; gradOutput, const Tensor &amp; argmaxes);
@@ -1860,9 +1858,6 @@ static inline Tensor &amp; _th_unfold_out(Tensor &amp; result, const Tensor &amp
 }
 static inline Tensor _th_unfold(const Tensor &amp; self, int64_t dimension, int64_t size, int64_t step) {
     return detail::infer_type(self)._th_unfold(self, dimension, size, step);
-}
-static inline Tensor &amp; _th_range_out(Tensor &amp; result, Scalar start, Scalar end, Scalar step) {
-    return detail::infer_type(result)._th_range_out(result, start, end, step);
 }
 static inline Tensor &amp; _th_arange_out(Tensor &amp; result, Scalar start, Scalar end, Scalar step) {
     return detail::infer_type(result)._th_arange_out(result, start, end, step);
@@ -4623,16 +4618,13 @@ static inline Tensor &amp; randperm_out(Tensor &amp; result, int64_t n) {
 static inline Tensor &amp; randperm_out(Tensor &amp; result, int64_t n, Generator * generator) {
     return detail::infer_type(result).randperm_out(result, n, generator);
 }
-static inline Tensor range(Scalar start, Scalar end, const TensorOptions &amp; options) {
-    const DeviceGuard guard(options.device());
-    return at::native::range(start, end, options);
-}
 static inline Tensor range(Scalar start, Scalar end, Scalar step, const TensorOptions &amp; options) {
     const DeviceGuard guard(options.device());
     return at::native::range(start, end, step, options);
 }
-static inline Tensor &amp; range_out(Tensor &amp; result, Scalar start, Scalar end) {
-    return detail::infer_type(result).range_out(result, start, end);
+static inline Tensor range(Scalar start, Scalar end, const TensorOptions &amp; options) {
+    const DeviceGuard guard(options.device());
+    return at::native::range(start, end, options);
 }
 static inline Tensor &amp; range_out(Tensor &amp; result, Scalar start, Scalar end, Scalar step) {
     return detail::infer_type(result).range_out(result, start, end, step);
