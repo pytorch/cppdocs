@@ -62,8 +62,6 @@ Program Listing for File Functions.h
    static inline Tensor & _th_index_fill_(Tensor & self, int64_t dim, const Tensor & index, const Tensor & value);
    static inline Tensor & _th_unfold_out(Tensor & result, const Tensor & self, int64_t dimension, int64_t size, int64_t step);
    static inline Tensor _th_unfold(const Tensor & self, int64_t dimension, int64_t size, int64_t step);
-   static inline Tensor & _th_arange_out(Tensor & result, Scalar start, Scalar end, Scalar step);
-   static inline Tensor & _th_arange_out(Tensor & result, Scalar end);
    static inline Tensor & _th_scatter_(Tensor & self, int64_t dim, const Tensor & index, const Tensor & src);
    static inline Tensor & _th_scatter_(Tensor & self, int64_t dim, const Tensor & index, Scalar value);
    static inline Tensor & _th_scatter_add_(Tensor & self, int64_t dim, const Tensor & index, const Tensor & src);
@@ -500,10 +498,6 @@ Program Listing for File Functions.h
    static inline Tensor _thnn_max_unpool3d_forward(const Tensor & self, const Tensor & indices, IntList output_size, IntList stride, IntList padding);
    static inline Tensor & _thnn_max_unpool3d_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & indices, IntList output_size, IntList stride, IntList padding);
    static inline Tensor _thnn_max_unpool3d_backward(const Tensor & grad_output, const Tensor & self, const Tensor & indices, IntList output_size, IntList stride, IntList padding);
-   static inline Tensor & _thnn_reflection_pad1d_forward_out(Tensor & output, const Tensor & self, IntList padding);
-   static inline Tensor _thnn_reflection_pad1d_forward(const Tensor & self, IntList padding);
-   static inline Tensor & _thnn_reflection_pad1d_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, IntList padding);
-   static inline Tensor _thnn_reflection_pad1d_backward(const Tensor & grad_output, const Tensor & self, IntList padding);
    static inline Tensor & _thnn_reflection_pad2d_forward_out(Tensor & output, const Tensor & self, IntList padding);
    static inline Tensor _thnn_reflection_pad2d_forward(const Tensor & self, IntList padding);
    static inline Tensor & _thnn_reflection_pad2d_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, IntList padding);
@@ -637,12 +631,11 @@ Program Listing for File Functions.h
    static inline bool allclose(const Tensor & self, const Tensor & other, double rtol=1e-05, double atol=1e-08, bool equal_nan=false);
    static inline Tensor any(const Tensor & self, int64_t dim, bool keepdim=false);
    static inline Tensor & any_out(Tensor & result, const Tensor & self, int64_t dim, bool keepdim=false);
+   static inline Tensor arange(Scalar end, const TensorOptions & options={});
    static inline Tensor arange(Scalar start, Scalar end, const TensorOptions & options={});
    static inline Tensor arange(Scalar start, Scalar end, Scalar step, const TensorOptions & options={});
-   static inline Tensor & arange_out(Tensor & result, Scalar start, Scalar end);
-   static inline Tensor & arange_out(Tensor & result, Scalar start, Scalar end, Scalar step);
-   static inline Tensor arange(Scalar end, const TensorOptions & options={});
    static inline Tensor & arange_out(Tensor & result, Scalar end);
+   static inline Tensor & arange_out(Tensor & result, Scalar start, Scalar end, Scalar step=1);
    static inline Tensor _dim_arange(const Tensor & like, int64_t dim);
    static inline Tensor argmax(const Tensor & self, int64_t dim, bool keepdim=false);
    static inline Tensor argmax(const Tensor & self);
@@ -1637,12 +1630,6 @@ Program Listing for File Functions.h
    }
    static inline Tensor _th_unfold(const Tensor & self, int64_t dimension, int64_t size, int64_t step) {
        return detail::infer_type(self)._th_unfold(self, dimension, size, step);
-   }
-   static inline Tensor & _th_arange_out(Tensor & result, Scalar start, Scalar end, Scalar step) {
-       return detail::infer_type(result)._th_arange_out(result, start, end, step);
-   }
-   static inline Tensor & _th_arange_out(Tensor & result, Scalar end) {
-       return detail::infer_type(result)._th_arange_out(result, end);
    }
    static inline Tensor & _th_scatter_(Tensor & self, int64_t dim, const Tensor & index, const Tensor & src) {
        return detail::infer_type(self)._th_scatter_(self, dim, index, src);
@@ -2952,18 +2939,6 @@ Program Listing for File Functions.h
    static inline Tensor _thnn_max_unpool3d_backward(const Tensor & grad_output, const Tensor & self, const Tensor & indices, IntList output_size, IntList stride, IntList padding) {
        return detail::infer_type(self)._thnn_max_unpool3d_backward(grad_output, self, indices, output_size, stride, padding);
    }
-   static inline Tensor & _thnn_reflection_pad1d_forward_out(Tensor & output, const Tensor & self, IntList padding) {
-       return detail::infer_type(self)._thnn_reflection_pad1d_forward_out(output, self, padding);
-   }
-   static inline Tensor _thnn_reflection_pad1d_forward(const Tensor & self, IntList padding) {
-       return detail::infer_type(self)._thnn_reflection_pad1d_forward(self, padding);
-   }
-   static inline Tensor & _thnn_reflection_pad1d_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, IntList padding) {
-       return detail::infer_type(self)._thnn_reflection_pad1d_backward_out(grad_input, grad_output, self, padding);
-   }
-   static inline Tensor _thnn_reflection_pad1d_backward(const Tensor & grad_output, const Tensor & self, IntList padding) {
-       return detail::infer_type(self)._thnn_reflection_pad1d_backward(grad_output, self, padding);
-   }
    static inline Tensor & _thnn_reflection_pad2d_forward_out(Tensor & output, const Tensor & self, IntList padding) {
        return detail::infer_type(self)._thnn_reflection_pad2d_forward_out(output, self, padding);
    }
@@ -3363,6 +3338,10 @@ Program Listing for File Functions.h
    static inline Tensor & any_out(Tensor & result, const Tensor & self, int64_t dim, bool keepdim) {
        return detail::infer_type(self).any_out(result, self, dim, keepdim);
    }
+   static inline Tensor arange(Scalar end, const TensorOptions & options) {
+       const DeviceGuard guard(options.device());
+       return at::native::arange(end, options);
+   }
    static inline Tensor arange(Scalar start, Scalar end, const TensorOptions & options) {
        const DeviceGuard guard(options.device());
        return at::native::arange(start, end, options);
@@ -3371,18 +3350,11 @@ Program Listing for File Functions.h
        const DeviceGuard guard(options.device());
        return at::native::arange(start, end, step, options);
    }
-   static inline Tensor & arange_out(Tensor & result, Scalar start, Scalar end) {
-       return detail::infer_type(result).arange_out(result, start, end);
+   static inline Tensor & arange_out(Tensor & result, Scalar end) {
+       return detail::infer_type(result).arange_out(result, end);
    }
    static inline Tensor & arange_out(Tensor & result, Scalar start, Scalar end, Scalar step) {
        return detail::infer_type(result).arange_out(result, start, end, step);
-   }
-   static inline Tensor arange(Scalar end, const TensorOptions & options) {
-       const DeviceGuard guard(options.device());
-       return at::native::arange(end, options);
-   }
-   static inline Tensor & arange_out(Tensor & result, Scalar end) {
-       return detail::infer_type(result).arange_out(result, end);
    }
    static inline Tensor _dim_arange(const Tensor & like, int64_t dim) {
        return detail::infer_type(like)._dim_arange(like, dim);
