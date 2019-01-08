@@ -236,7 +236,9 @@
 
 #include &lt;cuda_runtime_api.h&gt;
 
+#include &lt;c10/cuda/CUDAException.h&gt;
 #include &lt;c10/cuda/CUDAMacros.h&gt;
+#include &lt;c10/DeviceGuard.h&gt;
 #include &lt;c10/util/Exception.h&gt;
 #include &lt;c10/Stream.h&gt;
 
@@ -317,6 +319,19 @@ public:
   Device device() const { return Device(DeviceType::CUDA, device_index()); }
 
   StreamId id() const { return stream_.id(); }
+
+  bool query() const {
+    DeviceGuard device_guard{stream_.device()};
+    cudaError_t err = cudaStreamQuery(stream());
+
+    if (err == cudaErrorNotReady) {
+      return false;
+    } else if (err != cudaSuccess) {
+      C10_CUDA_CHECK(err);
+    }
+
+    return true;
+  }
 
   cudaStream_t stream() const;
 
