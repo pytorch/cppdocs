@@ -273,6 +273,23 @@ class TensorLambda : public TensorTransform&lt;Target&gt; {
  private:
   FunctionType function_;
 };
+
+template &lt;typename Target = Tensor&gt;
+struct Normalize : public TensorTransform&lt;Target&gt; {
+  Normalize(ArrayRef&lt;double&gt; mean, ArrayRef&lt;double&gt; stddev)
+      : mean(torch::tensor(mean, torch::kFloat32)
+                 .unsqueeze(/*dim=*/1)
+                 .unsqueeze(/*dim=*/2)),
+        stddev(torch::tensor(stddev, torch::kFloat32)
+                   .unsqueeze(/*dim=*/1)
+                   .unsqueeze(/*dim=*/2)) {}
+
+  torch::Tensor operator()(Tensor input) {
+    return input.sub(mean).div(stddev);
+  }
+
+  torch::Tensor mean, stddev;
+};
 } // namespace transforms
 } // namespace data
 } // namespace torch
