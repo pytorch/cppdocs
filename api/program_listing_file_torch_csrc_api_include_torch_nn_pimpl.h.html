@@ -232,6 +232,7 @@
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>#pragma once
 
 #include &lt;torch/arg.h&gt;
+#include &lt;torch/detail/static.h&gt;
 #include &lt;torch/serialize/archive.h&gt;
 #include &lt;torch/types.h&gt;
 
@@ -318,8 +319,12 @@ class ModuleHolder : torch::detail::ModuleHolderIndicator {
 
   template &lt;typename... Args&gt;
   auto operator()(Args&amp;&amp;... args)
-      -&gt; decltype((*impl_)(::std::forward&lt;Args&gt;(args)...)) {
-    return (*impl_)(::std::forward&lt;Args&gt;(args)...);
+      -&gt; torch::detail::return_type_of_forward_t&lt;Contained, Args...&gt; {
+    // This will not compile if the module does not have a `forward()` method
+    // (as expected).
+    // NOTE: `std::forward` is qualified to prevent VS2017 emitting
+    // error C2872: &#39;std&#39;: ambiguous symbol
+    return impl_-&gt;forward(::std::forward&lt;Args&gt;(args)...);
   }
 
   template &lt;typename Arg&gt;
