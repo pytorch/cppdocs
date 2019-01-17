@@ -229,9 +229,6 @@ Program Listing for File Functions.h
    static inline Tensor & _th_std_out(Tensor & result, const Tensor & self, int64_t dim, bool unbiased=true, bool keepdim=false);
    static inline Tensor _th_std(const Tensor & self, int64_t dim, bool unbiased=true, bool keepdim=false);
    static inline Tensor _th_std(const Tensor & self, bool unbiased=true);
-   static inline Tensor _th_norm(const Tensor & self, Scalar p=2);
-   static inline Tensor & _th_norm_out(Tensor & result, const Tensor & self, Scalar p, int64_t dim, bool keepdim=false);
-   static inline Tensor _th_norm(const Tensor & self, Scalar p, int64_t dim, bool keepdim=false);
    static inline Tensor & _th_renorm_out(Tensor & result, const Tensor & self, Scalar p, int64_t dim, Scalar maxnorm);
    static inline Tensor _th_renorm(const Tensor & self, Scalar p, int64_t dim, Scalar maxnorm);
    static inline Tensor & _th_renorm_(Tensor & self, Scalar p, int64_t dim, Scalar maxnorm);
@@ -1065,9 +1062,12 @@ Program Listing for File Functions.h
    static inline Tensor _sparse_sum(const Tensor & self, IntList dim);
    static inline Tensor _sparse_sum(const Tensor & self, IntList dim, ScalarType dtype);
    static inline Tensor _sparse_sum_backward(const Tensor & grad, const Tensor & self, IntList dim);
+   static inline Tensor norm(const Tensor & self, c10::optional<Scalar> p, ScalarType dtype);
    static inline Tensor norm(const Tensor & self, Scalar p=2);
-   static inline Tensor norm(const Tensor & self, c10::optional<Scalar> p, int64_t dim, bool keepdim=false);
-   static inline Tensor & norm_out(Tensor & result, const Tensor & self, c10::optional<Scalar> p, int64_t dim, bool keepdim=false);
+   static inline Tensor norm(const Tensor & self, c10::optional<Scalar> p, IntList dim, bool keepdim, ScalarType dtype);
+   static inline Tensor norm(const Tensor & self, c10::optional<Scalar> p, IntList dim, bool keepdim=false);
+   static inline Tensor & norm_out(Tensor & result, const Tensor & self, c10::optional<Scalar> p, IntList dim, bool keepdim, ScalarType dtype);
+   static inline Tensor & norm_out(Tensor & result, const Tensor & self, c10::optional<Scalar> p, IntList dim, bool keepdim=false);
    static inline Tensor frobenius_norm(const Tensor & self);
    static inline Tensor frobenius_norm(const Tensor & self, IntList dim, bool keepdim=false);
    static inline Tensor & frobenius_norm_out(Tensor & result, const Tensor & self, IntList dim, bool keepdim=false);
@@ -2117,15 +2117,6 @@ Program Listing for File Functions.h
    }
    static inline Tensor _th_std(const Tensor & self, bool unbiased) {
        return detail::infer_type(self)._th_std(self, unbiased);
-   }
-   static inline Tensor _th_norm(const Tensor & self, Scalar p) {
-       return detail::infer_type(self)._th_norm(self, p);
-   }
-   static inline Tensor & _th_norm_out(Tensor & result, const Tensor & self, Scalar p, int64_t dim, bool keepdim) {
-       return detail::infer_type(self)._th_norm_out(result, self, p, dim, keepdim);
-   }
-   static inline Tensor _th_norm(const Tensor & self, Scalar p, int64_t dim, bool keepdim) {
-       return detail::infer_type(self)._th_norm(self, p, dim, keepdim);
    }
    static inline Tensor & _th_renorm_out(Tensor & result, const Tensor & self, Scalar p, int64_t dim, Scalar maxnorm) {
        return detail::infer_type(self)._th_renorm_out(result, self, p, dim, maxnorm);
@@ -4667,13 +4658,22 @@ Program Listing for File Functions.h
    static inline Tensor _sparse_sum_backward(const Tensor & grad, const Tensor & self, IntList dim) {
        return detail::infer_type(self)._sparse_sum_backward(grad, self, dim);
    }
+   static inline Tensor norm(const Tensor & self, c10::optional<Scalar> p, ScalarType dtype) {
+       return detail::infer_type(self).norm(self, p, dtype);
+   }
    static inline Tensor norm(const Tensor & self, Scalar p) {
        return detail::infer_type(self).norm(self, p);
    }
-   static inline Tensor norm(const Tensor & self, c10::optional<Scalar> p, int64_t dim, bool keepdim) {
+   static inline Tensor norm(const Tensor & self, c10::optional<Scalar> p, IntList dim, bool keepdim, ScalarType dtype) {
+       return detail::infer_type(self).norm(self, p, dim, keepdim, dtype);
+   }
+   static inline Tensor norm(const Tensor & self, c10::optional<Scalar> p, IntList dim, bool keepdim) {
        return detail::infer_type(self).norm(self, p, dim, keepdim);
    }
-   static inline Tensor & norm_out(Tensor & result, const Tensor & self, c10::optional<Scalar> p, int64_t dim, bool keepdim) {
+   static inline Tensor & norm_out(Tensor & result, const Tensor & self, c10::optional<Scalar> p, IntList dim, bool keepdim, ScalarType dtype) {
+       return detail::infer_type(self).norm_out(result, self, p, dim, keepdim, dtype);
+   }
+   static inline Tensor & norm_out(Tensor & result, const Tensor & self, c10::optional<Scalar> p, IntList dim, bool keepdim) {
        return detail::infer_type(self).norm_out(result, self, p, dim, keepdim);
    }
    static inline Tensor frobenius_norm(const Tensor & self) {
