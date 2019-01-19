@@ -1103,6 +1103,11 @@ static inline Tensor narrow(const Tensor &amp; self, int64_t dim, int64_t start,
 static inline std::tuple&lt;Tensor,Tensor,Tensor&gt; native_batch_norm(const Tensor &amp; input, const Tensor &amp; weight, const Tensor &amp; bias, const Tensor &amp; running_mean, const Tensor &amp; running_var, bool training, double momentum, double eps);
 static inline std::tuple&lt;Tensor,Tensor,Tensor&gt; native_batch_norm_backward(const Tensor &amp; grad_out, const Tensor &amp; input, const Tensor &amp; weight, const Tensor &amp; running_mean, const Tensor &amp; running_var, const Tensor &amp; save_mean, const Tensor &amp; save_invstd, bool train, double eps, std::array&lt;bool,3&gt; output_mask);
 static inline std::tuple&lt;Tensor,Tensor&gt; batch_norm_update_stats(const Tensor &amp; input, const Tensor &amp; running_mean, const Tensor &amp; running_var, double momentum);
+static inline bool _nnpack_available();
+static inline Tensor _nnpack_spatial_convolution(const Tensor &amp; input, const Tensor &amp; weight, const Tensor &amp; bias, IntList padding);
+static inline std::tuple&lt;Tensor,Tensor,Tensor&gt; _nnpack_spatial_convolution_backward(const Tensor &amp; input, const Tensor &amp; grad_output, const Tensor &amp; weight, IntList padding, std::array&lt;bool,3&gt; output_mask);
+static inline Tensor _nnpack_spatial_convolution_backward_input(const Tensor &amp; input, const Tensor &amp; grad_output, const Tensor &amp; weight, IntList padding);
+static inline Tensor _nnpack_spatial_convolution_backward_weight(const Tensor &amp; input, IntList weightsize, const Tensor &amp; grad_output, IntList padding);
 static inline Tensor ones(IntList size, const TensorOptions &amp; options={});
 static inline Tensor &amp; ones_out(Tensor &amp; result, IntList size);
 static inline Tensor ones_like(const Tensor &amp; self);
@@ -4322,6 +4327,21 @@ static inline std::tuple&lt;Tensor,Tensor,Tensor&gt; native_batch_norm_backward(
 }
 static inline std::tuple&lt;Tensor,Tensor&gt; batch_norm_update_stats(const Tensor &amp; input, const Tensor &amp; running_mean, const Tensor &amp; running_var, double momentum) {
     return detail::infer_type(input).batch_norm_update_stats(input, running_mean, running_var, momentum);
+}
+static inline bool _nnpack_available() {
+    return at::getNonVariableType(at::Backend::Undefined, at::ScalarType::Float)._nnpack_available();
+}
+static inline Tensor _nnpack_spatial_convolution(const Tensor &amp; input, const Tensor &amp; weight, const Tensor &amp; bias, IntList padding) {
+    return detail::infer_type(input)._nnpack_spatial_convolution(input, weight, bias, padding);
+}
+static inline std::tuple&lt;Tensor,Tensor,Tensor&gt; _nnpack_spatial_convolution_backward(const Tensor &amp; input, const Tensor &amp; grad_output, const Tensor &amp; weight, IntList padding, std::array&lt;bool,3&gt; output_mask) {
+    return detail::infer_type(input)._nnpack_spatial_convolution_backward(input, grad_output, weight, padding, output_mask);
+}
+static inline Tensor _nnpack_spatial_convolution_backward_input(const Tensor &amp; input, const Tensor &amp; grad_output, const Tensor &amp; weight, IntList padding) {
+    return detail::infer_type(input)._nnpack_spatial_convolution_backward_input(input, grad_output, weight, padding);
+}
+static inline Tensor _nnpack_spatial_convolution_backward_weight(const Tensor &amp; input, IntList weightsize, const Tensor &amp; grad_output, IntList padding) {
+    return detail::infer_type(input)._nnpack_spatial_convolution_backward_weight(input, weightsize, grad_output, padding);
 }
 static inline Tensor ones(IntList size, const TensorOptions &amp; options) {
     const DeviceGuard guard(options.device());
