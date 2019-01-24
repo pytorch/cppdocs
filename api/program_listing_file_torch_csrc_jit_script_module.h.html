@@ -232,8 +232,7 @@
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>#pragma once
 #include &lt;torch/csrc/autograd/variable.h&gt;
 #include &lt;torch/csrc/jit/argument_spec.h&gt;
-#include &lt;torch/csrc/jit/assertions.h&gt;
-#include &lt;torch/csrc/jit/function_schema.h&gt;
+#include &lt;c10/util/Exception.h&gt;
 #include &lt;torch/csrc/jit/graph_executor.h&gt;
 #include &lt;torch/csrc/jit/ir.h&gt;
 #include &lt;torch/csrc/jit/named_value.h&gt;
@@ -244,6 +243,7 @@
 #include &lt;torch/csrc/api/include/torch/ordered_dict.h&gt;
 #include &lt;torch/csrc/utils/memory.h&gt;
 
+#include &lt;ATen/core/function_schema.h&gt;
 #include &lt;c10/util/ArrayRef.h&gt;
 #include &lt;c10/util/Optional.h&gt;
 
@@ -262,6 +262,9 @@
 namespace torch {
 namespace jit {
 namespace script {
+
+using ::c10::Argument;
+using ::c10::FunctionSchema;
 
 // A method in a module, e.g. f in:
 //
@@ -288,7 +291,7 @@ struct Method {
         optimize(optimize),
         member_inputs(std::move(initial_members)),
         method_creator(std::move(method_creator)) {
-    JIT_ASSERT(graph_-&gt;inputs().size() &gt;= member_inputs.size());
+    AT_ASSERT(graph_-&gt;inputs().size() &gt;= member_inputs.size());
     int i = graph_-&gt;inputs().size() - member_inputs.size();
     for (at::Tensor* member : member_inputs) {
       member_input_index[member] = i++;
@@ -382,7 +385,7 @@ struct Method {
           ArgumentSpec(with_grad, fmap&lt;IValue&gt;(inputs), inputs.size()));
       PropagateInputShapes(retval);
     }
-    JIT_ASSERT(retval-&gt;inputs().size() == inputs.size());
+    AT_ASSERT(retval-&gt;inputs().size() == inputs.size());
     for (size_t i = 0; i &lt; retval-&gt;inputs().size(); ++i) {
       auto scalar_type = inputs[i].type().scalarType();
       auto sizes = inputs[i].sizes();
@@ -393,10 +396,10 @@ struct Method {
     at::ArrayRef&lt;Value*&gt; output_values = retval-&gt;outputs();
     // patch this to still work if we are returning a tuple of multiple values
     if (output_values.at(0)-&gt;type()-&gt;kind() == TupleType::Kind) {
-      JIT_ASSERT(output_values.at(0)-&gt;node()-&gt;kind() == prim::TupleConstruct);
+      AT_ASSERT(output_values.at(0)-&gt;node()-&gt;kind() == prim::TupleConstruct);
       output_values = output_values.at(0)-&gt;node()-&gt;inputs();
     }
-    JIT_ASSERT(output_values.size() == outputs.size());
+    AT_ASSERT(output_values.size() == outputs.size());
     for (size_t i = 0; i &lt; retval-&gt;outputs().size(); ++i) {
       auto scalar_type = outputs[i].type().scalarType();
       auto sizes = outputs[i].sizes();
@@ -424,7 +427,7 @@ struct Method {
   }
 
   std::string pretty_print_schema() const {
-    JIT_ASSERT(schema);
+    AT_ASSERT(schema);
     std::stringstream ss;
     ss &lt;&lt; *schema;
     return ss.str();
@@ -636,7 +639,7 @@ struct Module {
       const std::string&amp; name,
       std::shared_ptr&lt;Graph&gt; graph,
       std::vector&lt;at::Tensor*&gt; member_inputs) {
-    JIT_ASSERT(graph);
+    AT_ASSERT(graph);
     std::unique_ptr&lt;Method&gt; method(new Method(
         this,
         name,
