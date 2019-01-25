@@ -20,6 +20,8 @@ Program Listing for File custom_operator.h
    #include <torch/csrc/utils/variadic.h>
    
    #include <ATen/core/function_schema.h>
+   #include <caffe2/core/operator.h>
+   
    #include <c10/util/Metaprogramming.h>
    #include <c10/util/TypeList.h>
    
@@ -229,6 +231,8 @@ Program Listing for File custom_operator.h
      });
    }
    
+   Operator createOperatorFromC2(const std::string& name);
+   
    struct TORCH_API RegisterOperators {
      RegisterOperators() = default;
    
@@ -241,6 +245,12 @@ Program Listing for File custom_operator.h
      template <typename Implementation>
      RegisterOperators(const std::string& name, Implementation&& implementation) {
        op(name, std::forward<Implementation>(implementation));
+     }
+   
+     static RegisterOperators&& Caffe2Operator(const std::string& name) {
+       auto r = RegisterOperators();
+       registerOperator(createOperatorFromC2(name));
+       return std::move(r);
      }
    
      template <typename Implementation>
