@@ -14,6 +14,7 @@ Program Listing for File custom_operator.h
 
    #pragma once
    
+   #include <torch/csrc/jit/caffe2_operator.h>
    #include <torch/csrc/jit/operator.h>
    #include <torch/csrc/jit/stack.h>
    #include <torch/csrc/jit/tracer.h>
@@ -241,6 +242,12 @@ Program Listing for File custom_operator.h
      template <typename Implementation>
      RegisterOperators(const std::string& name, Implementation&& implementation) {
        op(name, std::forward<Implementation>(implementation));
+     }
+   
+     static RegisterOperators&& Caffe2Operator(const std::string& name) {
+       auto r = RegisterOperators();
+       registerOperator(createOperatorFromCaffe2(name));
+       return std::move(r);
      }
    
      template <typename Implementation>

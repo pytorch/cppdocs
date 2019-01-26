@@ -231,6 +231,7 @@
 <p>↰ <a class="reference internal" href="file_torch_csrc_jit_custom_operator.h.html#file-torch-csrc-jit-custom-operator-h"><span class="std std-ref">Return to documentation for file</span></a> (<code class="docutils literal notranslate"><span class="pre">torch/csrc/jit/custom_operator.h</span></code>)</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>#pragma once
 
+#include &lt;torch/csrc/jit/caffe2_operator.h&gt;
 #include &lt;torch/csrc/jit/operator.h&gt;
 #include &lt;torch/csrc/jit/stack.h&gt;
 #include &lt;torch/csrc/jit/tracer.h&gt;
@@ -458,6 +459,12 @@ struct TORCH_API RegisterOperators {
   template &lt;typename Implementation&gt;
   RegisterOperators(const std::string&amp; name, Implementation&amp;&amp; implementation) {
     op(name, std::forward&lt;Implementation&gt;(implementation));
+  }
+
+  static RegisterOperators&amp;&amp; Caffe2Operator(const std::string&amp; name) {
+    auto r = RegisterOperators();
+    registerOperator(createOperatorFromCaffe2(name));
+    return std::move(r);
   }
 
   template &lt;typename Implementation&gt;
