@@ -9,14 +9,14 @@
   
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   
-  <title>Program Listing for File batchnorm.h &mdash; PyTorch master documentation</title>
+  <title>Program Listing for File chunk.h &mdash; PyTorch master documentation</title>
   
 
   
   
   
   
-    <link rel="canonical" href="https://pytorch.org/docs/stable/api/program_listing_file_torch_csrc_api_include_torch_nn_modules_batchnorm.h.html"/>
+    <link rel="canonical" href="https://pytorch.org/docs/stable/api/program_listing_file_torch_csrc_api_include_torch_data_datasets_chunk.h.html"/>
   
 
   
@@ -32,8 +32,8 @@
   <link rel="stylesheet" href="../_static/collapsible-lists/css/tree_view.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="File chunk.h" href="file_torch_csrc_api_include_torch_data_datasets_chunk.h.html" />
-    <link rel="prev" title="File batchnorm.h" href="file_torch_csrc_api_include_torch_nn_modules_batchnorm.h.html" /> 
+    <link rel="next" title="File cloneable.h" href="file_torch_csrc_api_include_torch_nn_cloneable.h.html" />
+    <link rel="prev" title="File chunk.h" href="file_torch_csrc_api_include_torch_data_datasets_chunk.h.html" /> 
 
   
   <script src="../_static/js/modernizr.min.js"></script>
@@ -191,9 +191,9 @@
         
           <li><a href="library_root.html">Library API</a> &gt;</li>
         
-          <li><a href="file_torch_csrc_api_include_torch_nn_modules_batchnorm.h.html">File batchnorm.h</a> &gt;</li>
+          <li><a href="file_torch_csrc_api_include_torch_data_datasets_chunk.h.html">File chunk.h</a> &gt;</li>
         
-      <li>Program Listing for File batchnorm.h</li>
+      <li>Program Listing for File chunk.h</li>
     
     
       <li class="pytorch-breadcrumbs-aside">
@@ -226,60 +226,392 @@
             <div role="main" class="main-content" itemscope="itemscope" itemtype="http://schema.org/Article">
              <article itemprop="articleBody" id="pytorch-article" class="pytorch-article">
               
-  <div class="section" id="program-listing-for-file-batchnorm-h">
-<span id="program-listing-file-torch-csrc-api-include-torch-nn-modules-batchnorm-h"></span><h1>Program Listing for File batchnorm.h<a class="headerlink" href="#program-listing-for-file-batchnorm-h" title="Permalink to this headline">¶</a></h1>
-<p>↰ <a class="reference internal" href="file_torch_csrc_api_include_torch_nn_modules_batchnorm.h.html#file-torch-csrc-api-include-torch-nn-modules-batchnorm-h"><span class="std std-ref">Return to documentation for file</span></a> (<code class="docutils literal notranslate"><span class="pre">torch/csrc/api/include/torch/nn/modules/batchnorm.h</span></code>)</p>
+  <div class="section" id="program-listing-for-file-chunk-h">
+<span id="program-listing-file-torch-csrc-api-include-torch-data-datasets-chunk-h"></span><h1>Program Listing for File chunk.h<a class="headerlink" href="#program-listing-for-file-chunk-h" title="Permalink to this headline">¶</a></h1>
+<p>↰ <a class="reference internal" href="file_torch_csrc_api_include_torch_data_datasets_chunk.h.html#file-torch-csrc-api-include-torch-data-datasets-chunk-h"><span class="std std-ref">Return to documentation for file</span></a> (<code class="docutils literal notranslate"><span class="pre">torch/csrc/api/include/torch/data/datasets/chunk.h</span></code>)</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>#pragma once
 
-#include &lt;torch/nn/cloneable.h&gt;
-#include &lt;torch/nn/pimpl.h&gt;
-#include &lt;torch/types.h&gt;
-
-#include &lt;cstdint&gt;
+#include &lt;torch/data/datasets/stateful.h&gt;
 
 namespace torch {
-namespace nn {
+namespace data {
+namespace datasets {
 
-struct TORCH_API BatchNormOptions {
-  /* implicit */ BatchNormOptions(int64_t features);
-  TORCH_ARG(int64_t, features);
-  TORCH_ARG(bool, affine) = true;
-  TORCH_ARG(bool, stateful) = true;
-  TORCH_ARG(double, eps) = 1e-5;
-  TORCH_ARG(double, momentum) = 0.1;
-};
-
-class TORCH_API BatchNormImpl : public torch::nn::Cloneable&lt;BatchNormImpl&gt; {
+template &lt;typename Chunk = std::vector&lt;Example&lt;&gt;&gt;&gt;
+class ChunkDataReader {
  public:
-  explicit BatchNormImpl(int64_t features)
-      : BatchNormImpl(BatchNormOptions(features)) {}
-  explicit BatchNormImpl(BatchNormOptions options);
+  using ChunkType = Chunk;
 
-  void reset() override;
+  virtual ChunkType read_chunk(size_t chunk_index) = 0;
 
-  void pretty_print(std::ostream&amp; stream) const override;
+  virtual size_t chunk_count() = 0;
 
-  Tensor forward(const Tensor&amp; input);
-
-  Tensor pure_forward(
-      const Tensor&amp; input,
-      const Tensor&amp; mean,
-      const Tensor&amp; variance);
-
-  BatchNormOptions options;
-
-  Tensor weight;
-
-  Tensor bias;
-
-  Tensor running_mean;
-
-  Tensor running_variance;
+  virtual void reset() = 0;
 };
 
-TORCH_MODULE(BatchNorm);
+namespace detail {
+template &lt;
+    typename UnwrappedBatch = std::vector&lt;Example&lt;&gt;&gt;,
+    typename ExampleSampler = samplers::RandomSampler&gt;
+class BatchDataBuffer {
+ public:
+  using UnwrappedBatchType = UnwrappedBatch;
+  using BatchType = torch::optional&lt;UnwrappedBatchType&gt;;
+  using BatchRequestType = typename ExampleSampler::BatchRequestType;
 
-} // namespace nn
+  BatchDataBuffer(
+      size_t num_chunks,
+      size_t batch_size,
+      ExampleSampler&amp; example_sampler,
+      size_t queue_capacity)
+      : remaining_chunk_count_(num_chunks),
+        batch_size_(batch_size),
+        example_sampler_(example_sampler),
+        queue_capacity_(queue_capacity),
+        stop_(false) {}
+
+  BatchType get_batch() {
+    std::unique_lock&lt;std::mutex&gt; lock(queue_mutex_);
+    cv_read_.wait(lock, [this] {
+      // wait till there is available data in the queue or if all chunks are
+      // loaded (i.e. the dataset is exhausted for this epoch)
+      return (
+          this-&gt;total_example_count_in_queue_ &gt;= batch_size_ ||
+          this-&gt;remaining_chunk_count_ == 0);
+    });
+    if (batch_queue_.empty()) {
+      AT_ASSERT(remaining_chunk_count_ == 0);
+
+      // All batches have been retrieved. Return an empty batch.
+      return nullopt;
+    }
+
+    UnwrappedBatchData batch = std::move(batch_queue_.front());
+    batch_queue_.pop();
+    if (batch.exception) {
+      throw WorkerException(batch.exception);
+    }
+
+    total_example_count_in_queue_ -= batch.batch_data.size();
+    lock.unlock();
+    cv_write_.notify_all();
+
+    return batch.batch_data;
+  }
+
+  // skip one chunk
+  void skip_chunk() {
+    std::unique_lock&lt;std::mutex&gt; lock(queue_mutex_);
+    AT_ASSERT(remaining_chunk_count_ &gt; 0);
+    remaining_chunk_count_--;
+    lock.unlock();
+    cv_read_.notify_all();
+  }
+
+  void add_chunk_data(UnwrappedBatchType data) {
+    std::unique_lock&lt;std::mutex&gt; lock(queue_mutex_);
+    cv_write_.wait(lock, [this] {
+      // stop loading if we have preloaded enough data.
+      return this-&gt;total_example_count_in_queue_ &lt; this-&gt;queue_capacity_ || stop_.load();
+    });
+
+    if (stop_.load()){
+      // When stop_ is true, it means this current thread needs to be tore down.
+      // Return without any further processing.
+      return;
+    }
+
+    auto data_size = data.size();
+    auto remaining_size = data_size;
+    example_sampler_.reset(data_size);
+
+    auto fill_batch = [&amp;](size_t example_count, UnwrappedBatchType&amp; batch) {
+      auto batch_example_indices = this-&gt;example_sampler_.next(example_count);
+      AT_ASSERT(
+          batch_example_indices &amp;&amp;
+          batch_example_indices.value().size() == example_count)
+      BatchRequestType&amp; indices = batch_example_indices.value();
+      for (size_t i : indices) {
+        AT_CHECK(i &lt; data_size, &quot;Index out of range&quot;);
+        batch.emplace_back(std::move(data[i]));
+      }
+      remaining_size -= example_count;
+    };
+
+    if (!batch_queue_.empty()) {
+      // if the queue has existing data, and the last batch doesn&#39;t have enough
+      // examples to fill a batch_size batch, add more example to this batch first.
+      auto&amp; batch = batch_queue_.back();
+      size_t current_count = batch.batch_data.size();
+      if (current_count &lt; batch_size_) {
+        auto example_count =
+            std::min(remaining_size, batch_size_ - current_count);
+        fill_batch(example_count, batch.batch_data);
+      }
+    }
+
+    // If we still have data remaining after filling the last pushed batch, add
+    // them to the queue too.
+    while (remaining_size &gt; 0) {
+      UnwrappedBatchType current_batch;
+
+      // Allocate the batch memory ahead of time.
+      current_batch.reserve(batch_size_);
+
+      auto example_count = std::min(remaining_size, batch_size_);
+      fill_batch(example_count, current_batch);
+      batch_queue_.emplace(std::move(current_batch));
+    }
+    total_example_count_in_queue_ += data_size;
+
+    AT_ASSERT(remaining_chunk_count_ &gt; 0);
+    remaining_chunk_count_--;
+
+    lock.unlock();
+    cv_read_.notify_all();
+  }
+
+  void add_chunk_data(std::exception_ptr e_ptr) {
+    std::unique_lock&lt;std::mutex&gt; lock(queue_mutex_);
+    cv_write_.wait(lock, [this] {
+      // stop loading if we have preloaded enough data.
+      return this-&gt;total_example_count_in_queue_ &lt; this-&gt;queue_capacity_ || stop_.load();
+    });
+
+    if (stop_.load()){
+      // When stop_ is true, it means this current thread needs to be tore down,
+      // the batch buffer will be discarded, so no need to enqueue any new
+      // exceptions.
+      return;
+    }
+
+    batch_queue_.emplace(e_ptr);
+
+    AT_ASSERT(remaining_chunk_count_ &gt; 0);
+    remaining_chunk_count_--;
+    lock.unlock();
+    cv_read_.notify_all();
+  }
+
+  void stop(){
+    stop_ = true;
+
+    // notify all writers, wake them from wait to exit current method.
+    cv_write_.notify_all();
+  }
+
+  size_t remaining_chunk_count_ = 0;
+
+  size_t batch_size_ = 0;
+
+  size_t total_example_count_in_queue_ = 0;
+
+  struct UnwrappedBatchData {
+    explicit UnwrappedBatchData(UnwrappedBatchType data) : batch_data(std::move(data)) {}
+
+    explicit UnwrappedBatchData(std::exception_ptr e) : exception(e) {}
+
+    UnwrappedBatchType batch_data;
+
+    std::exception_ptr exception;
+  };
+
+  std::queue&lt;UnwrappedBatchData&gt; batch_queue_;
+
+  // sync batch_queue_ update.
+  std::mutex queue_mutex_;
+
+  std::condition_variable cv_read_;
+  std::condition_variable cv_write_;
+
+  ExampleSampler&amp; example_sampler_;
+
+  // configurable maximun number of elements the queue can hold at one time.
+  size_t queue_capacity_;
+
+  // When set to true, it wakes the writer threads from the wait and exit current
+  // function call. This is needed when ChunkDataSet.Reset is called while the
+  // previous epoch is not exhausted yet. When ChunkDataset is waiting its
+  // preloader to finish previous work before tearing down the thread, the
+  // preloader could be still waiting for the conditional variable, thus cause
+  // the program to hang. This boolean is used to break this waiting condition.
+  std::atomic&lt;bool&gt; stop_;
+};
+} // namespace detail
+
+struct ChunkDatasetOptions {
+  ChunkDatasetOptions() = delete;
+  ChunkDatasetOptions(
+      size_t preloader_count,
+      size_t batch_size,
+      size_t cache_size = 2048)
+      : preloader_count_(preloader_count),
+        batch_size_(batch_size),
+        cache_size_(cache_size) {
+    AT_CHECK(
+        preloader_count_ &gt; 0,
+        &quot;Preloader count is 0. At least one preloader needs to be specified.&quot;);
+    AT_CHECK(
+        batch_size_ &gt; 0,
+        &quot;Batch size is 0. A positive batch size needs to be specified.&quot;);
+    AT_CHECK(
+        cache_size_ &gt; 0,
+        &quot;Cache size is 0. A positive cache size needs to be specified.&quot;);
+    AT_CHECK(
+        cache_size_ &gt;= batch_size_,
+        &quot;Cache size is less than batch size. Cache needs to be large enough to &quot;
+        &quot;hold at least one batch.&quot;);
+  }
+
+  TORCH_ARG(size_t, preloader_count);
+
+  TORCH_ARG(size_t, batch_size);
+
+  // the capacity of the queue for batch caching.
+  TORCH_ARG(size_t, cache_size) = 2048;
+};
+
+template &lt;
+    typename ChunkReader,
+    typename ChunkSampler = samplers::RandomSampler,
+    typename ExampleSampler = samplers::RandomSampler&gt;
+class ChunkDataset final
+    : public StatefulDataset&lt;
+          ChunkDataset&lt;ChunkReader, ChunkSampler, ExampleSampler&gt;,
+          typename ChunkReader::BatchType,
+          size_t&gt; {
+ public:
+  using BatchType = torch::optional&lt;typename ChunkReader::BatchType&gt;;
+  using UnwrappedBatchType = typename ChunkReader::BatchType;
+  using BatchRequestType = size_t;
+  using ChunkSamplerType = ChunkSampler;
+  using ExampleSamplerType = ExampleSampler;
+
+  ChunkDataset(
+      ChunkReader chunk_reader,
+      ChunkSampler chunk_sampler,
+      ExampleSampler example_sampler,
+      ChunkDatasetOptions options)
+      : chunk_reader_(std::move(chunk_reader)),
+        chunk_sampler_(std::move(chunk_sampler)),
+        example_sampler_(std::move(example_sampler)),
+        options_(std::move(options)),
+        quit_worker_(false) {
+  }
+
+  virtual ~ChunkDataset() {
+    free_workers();
+  }
+
+  BatchType get_batch(size_t batch_size) override {
+    AT_CHECK(
+      batch_buffer_ != nullptr,
+      &quot;Dataset needs to call reset() before calling get_batch().&quot;);
+
+    AT_CHECK(
+      batch_size == options_.batch_size_,
+      &quot;The requested batch size does not match with the initialized batch size.\n&quot;
+      &quot; The requested batch size is &quot;, batch_size,
+      &quot;, while the dataset is created with batch size equal to &quot;, options_.batch_size_);
+
+    return batch_buffer_-&gt;get_batch();
+  }
+
+  void reset() override {
+    // free workers from previous reset if there is any.
+    free_workers();
+    preload_threads_.clear();
+
+    chunk_reader_.reset();
+
+    size_t chunks_to_load = chunk_reader_.chunk_count();
+    chunk_sampler_.reset(chunks_to_load);
+
+    // Throw out any existing cached batch in the buffer and re-creates a new
+    // chunk buffer.
+    batch_buffer_ = torch::make_unique&lt;
+        detail::BatchDataBuffer&lt;UnwrappedBatchType, ExampleSamplerType&gt;&gt;(
+        chunks_to_load,
+        options_.batch_size_,
+        example_sampler_,
+        options_.cache_size_);
+
+    // create new workers for this new epoch.
+    quit_worker_ = false;
+
+    for (size_t i = 0; i &lt; options_.preloader_count_; ++i) {
+      preload_threads_.emplace_back(
+          [this, i]() { this-&gt;preloader(i); });
+    }
+  }
+
+  optional&lt;size_t&gt; size() const override {
+    return torch::nullopt;
+  }
+
+ private:
+  void preloader(size_t id) {
+    while (!quit_worker_.load()) {
+      try {
+        size_t chunk_id = 0;
+        if (auto chunk_sampler_result = chunk_sampler_.next(1)) {
+          chunk_id = chunk_sampler_result.value()[0];
+        } else {
+          break;
+        }
+        UnwrappedBatchType data = chunk_reader_.read_chunk(chunk_id);
+        if (data.empty()) {
+          // if the chunk is empty, skip the current chunk data and move on to
+          // the next.
+          batch_buffer_-&gt;skip_chunk();
+        }
+        else {
+          batch_buffer_-&gt;add_chunk_data(std::move(data));
+        }
+      } catch (...) {
+        batch_buffer_-&gt;add_chunk_data(std::current_exception());
+      }
+    }
+  }
+
+  void free_workers() {
+    if (!quit_worker_.load()) {
+      quit_worker_ = true;
+      if(batch_buffer_){
+        batch_buffer_-&gt;stop();
+      }
+      for (auto&amp; worker_thread : preload_threads_) {
+        worker_thread.join();
+      }
+    }
+  }
+
+ private:
+  // Templated class that defines what is a chunk and how to read chunk data.
+  // When a chunk is returned by chunk_reader_, ChunkDataset split it into
+  // batches and caches them in batch_buffer_.
+  ChunkReader chunk_reader_;
+
+  // chunk sampler to shuffle different chunks
+  samplers::LockedSampler&lt;ChunkSamplerType&gt; chunk_sampler_;
+
+  // example sampler to shuffle examples in a specific chunk
+  ExampleSamplerType example_sampler_;
+
+  // batch data buffer which holds chunk data from preloading thread.
+  std::shared_ptr&lt;detail::BatchDataBuffer&lt;UnwrappedBatchType, ExampleSamplerType&gt;&gt;
+      batch_buffer_;
+
+  // worker thread pool
+  std::vector&lt;std::thread&gt; preload_threads_;
+
+  const ChunkDatasetOptions options_;
+
+  // indicate whether the worker thread can be teared down
+  std::atomic&lt;bool&gt; quit_worker_;
+};
+} // namespace datasets
+} // namespace data
 } // namespace torch
 </pre></div>
 </div>
@@ -293,10 +625,10 @@ TORCH_MODULE(BatchNorm);
   
     <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
       
-        <a href="file_torch_csrc_api_include_torch_data_datasets_chunk.h.html" class="btn btn-neutral float-right" title="File chunk.h" accesskey="n" rel="next">Next <img src="../_static/images/chevron-right-orange.svg" class="next-page"></a>
+        <a href="file_torch_csrc_api_include_torch_nn_cloneable.h.html" class="btn btn-neutral float-right" title="File cloneable.h" accesskey="n" rel="next">Next <img src="../_static/images/chevron-right-orange.svg" class="next-page"></a>
       
       
-        <a href="file_torch_csrc_api_include_torch_nn_modules_batchnorm.h.html" class="btn btn-neutral" title="File batchnorm.h" accesskey="p" rel="prev"><img src="../_static/images/chevron-right-orange.svg" class="previous-page"> Previous</a>
+        <a href="file_torch_csrc_api_include_torch_data_datasets_chunk.h.html" class="btn btn-neutral" title="File chunk.h" accesskey="p" rel="prev"><img src="../_static/images/chevron-right-orange.svg" class="previous-page"> Previous</a>
       
     </div>
   
@@ -320,7 +652,7 @@ TORCH_MODULE(BatchNorm);
           <div class="pytorch-right-menu" id="pytorch-right-menu">
             <div class="pytorch-side-scroll" id="pytorch-side-scroll-right">
               <ul>
-<li><a class="reference internal" href="#">Program Listing for File batchnorm.h</a></li>
+<li><a class="reference internal" href="#">Program Listing for File chunk.h</a></li>
 </ul>
 
             </div>
