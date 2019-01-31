@@ -499,12 +499,8 @@ struct Method {
     for (size_t pos = 0; pos &lt; schema.arguments().size(); ++pos) {
       const auto&amp; argument = schema.arguments()[pos];
       if (pos &lt; inputs.size()) {
-        // XXX - this fails to handle generic aggregates
-        // and should be replaced with a function isSubvalueOf(ivalue, type)
-        // That asks if the specific value is a valid instance of type.
-        const TypePtr inputType = incompleteInferTypeFrom(inputs[pos]);
-        AT_CHECK(
-            inputType-&gt;isSubtypeOf(argument.type()),
+        if (!isSubvalueOf(inputs[pos], argument.type())) {
+          AT_ERROR(
             &quot;Expected value of type &quot;,
             *argument.type(),
             &quot; for argument &#39;&quot;,
@@ -512,9 +508,10 @@ struct Method {
             &quot;&#39; in position &quot;,
             pos,
             &quot;, but instead got value of type &quot;,
-            *inputType,
+            attemptToRecoverType(inputs[pos])-&gt;str(),
             &quot;. Declaration: &quot;,
             schema);
+        }
       } else if (argument.default_value()) {
         inputs.push_back(*argument.default_value());
       } else {
