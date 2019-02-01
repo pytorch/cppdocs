@@ -231,6 +231,7 @@
 <p>↰ <a class="reference internal" href="file_torch_csrc_jit_script_module.h.html#file-torch-csrc-jit-script-module-h"><span class="std std-ref">Return to documentation for file</span></a> (<code class="docutils literal notranslate"><span class="pre">torch/csrc/jit/script/module.h</span></code>)</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>#pragma once
 #include &lt;torch/csrc/autograd/variable.h&gt;
+#include &lt;torch/csrc/autograd/generated/variable_factories.h&gt;
 #include &lt;torch/csrc/jit/argument_spec.h&gt;
 #include &lt;c10/util/Exception.h&gt;
 #include &lt;torch/csrc/jit/graph_executor.h&gt;
@@ -711,6 +712,22 @@ struct Module {
       submod.value().module-&gt;apply(fn);
     }
     fn(*this);
+  }
+  void train(bool on = true) {
+    for (auto&amp; submod : get_modules()) {
+      submod-&gt;module-&gt;train(on);
+    }
+    register_parameter(&quot;training&quot;, torch::tensor(on ? 1 : 0, at::kLong), /*is_buffer=*/true);
+  }
+  void eval() {
+    train(/*on=*/false);
+  }
+  bool is_training() {
+    if (auto p = find_parameter(&quot;training&quot;)) {
+      return p-&gt;slot()-&gt;item&lt;int64_t&gt;() == 1;
+    }
+    // We are in training mode by default
+    return true;
   }
 
   TORCH_API void to(
