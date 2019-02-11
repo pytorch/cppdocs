@@ -774,7 +774,7 @@ static inline Tensor _cast_Int(const Tensor &amp; self, bool non_blocking=false)
 static inline Tensor _cast_Long(const Tensor &amp; self, bool non_blocking=false);
 static inline Tensor _cast_Short(const Tensor &amp; self, bool non_blocking=false);
 static inline Tensor _cast_Half(const Tensor &amp; self, bool non_blocking=false);
-static inline std::tuple&lt;Tensor,Tensor&gt; _cudnn_ctc_loss(const Tensor &amp; log_probs, const Tensor &amp; targets, IntArrayRef input_lengths, IntArrayRef target_lengths, int64_t blank, bool deterministic);
+static inline std::tuple&lt;Tensor,Tensor&gt; _cudnn_ctc_loss(const Tensor &amp; log_probs, const Tensor &amp; targets, IntArrayRef input_lengths, IntArrayRef target_lengths, int64_t blank, bool deterministic, bool zero_infinity);
 static inline Tensor _cudnn_rnn_flatten_weight(TensorList weight_arr, int64_t weight_stride0, int64_t input_size, int64_t mode, int64_t hidden_size, int64_t num_layers, bool batch_first, bool bidirectional);
 static inline std::tuple&lt;Tensor,Tensor,Tensor,Tensor,Tensor&gt; _cudnn_rnn(const Tensor &amp; input, TensorList weight, int64_t weight_stride0, const Tensor &amp; weight_buf, const Tensor &amp; hx, const Tensor &amp; cx, int64_t mode, int64_t hidden_size, int64_t num_layers, bool batch_first, double dropout, bool train, bool bidirectional, IntArrayRef batch_sizes, const Tensor &amp; dropout_state);
 static inline std::tuple&lt;Tensor,Tensor,Tensor,std::vector&lt;Tensor&gt;&gt; _cudnn_rnn_backward(const Tensor &amp; input, TensorList weight, int64_t weight_stride0, const Tensor &amp; weight_buf, const Tensor &amp; hx, const Tensor &amp; cx, const Tensor &amp; output, const Tensor &amp; grad_output, const Tensor &amp; grad_hy, const Tensor &amp; grad_cy, int64_t mode, int64_t hidden_size, int64_t num_layers, bool batch_first, double dropout, bool train, bool bidirectional, IntArrayRef batch_sizes, const Tensor &amp; dropout_state, const Tensor &amp; reserve, std::array&lt;bool,4&gt; output_mask);
@@ -917,10 +917,10 @@ static inline Tensor cumprod(const Tensor &amp; self, int64_t dim, ScalarType dt
 static inline Tensor cumprod(const Tensor &amp; self, int64_t dim);
 static inline Tensor &amp; cumprod_out(Tensor &amp; out, const Tensor &amp; self, int64_t dim, ScalarType dtype);
 static inline Tensor &amp; cumprod_out(Tensor &amp; out, const Tensor &amp; self, int64_t dim);
-static inline Tensor ctc_loss(const Tensor &amp; log_probs, const Tensor &amp; targets, IntArrayRef input_lengths, IntArrayRef target_lengths, int64_t blank=0, int64_t reduction=Reduction::Mean);
-static inline Tensor ctc_loss(const Tensor &amp; log_probs, const Tensor &amp; targets, const Tensor &amp; input_lengths, const Tensor &amp; target_lengths, int64_t blank=0, int64_t reduction=Reduction::Mean);
-static inline std::tuple&lt;Tensor,Tensor&gt; _ctc_loss(const Tensor &amp; log_probs, const Tensor &amp; targets, IntArrayRef input_lengths, IntArrayRef target_lengths, int64_t blank=0);
-static inline Tensor _ctc_loss_backward(const Tensor &amp; grad, const Tensor &amp; log_probs, const Tensor &amp; targets, IntArrayRef input_lengths, IntArrayRef target_lengths, const Tensor &amp; neg_log_likelihood, const Tensor &amp; log_alpha, int64_t blank);
+static inline Tensor ctc_loss(const Tensor &amp; log_probs, const Tensor &amp; targets, IntArrayRef input_lengths, IntArrayRef target_lengths, int64_t blank=0, int64_t reduction=Reduction::Mean, bool zero_infinity=false);
+static inline Tensor ctc_loss(const Tensor &amp; log_probs, const Tensor &amp; targets, const Tensor &amp; input_lengths, const Tensor &amp; target_lengths, int64_t blank=0, int64_t reduction=Reduction::Mean, bool zero_infinity=false);
+static inline std::tuple&lt;Tensor,Tensor&gt; _ctc_loss(const Tensor &amp; log_probs, const Tensor &amp; targets, IntArrayRef input_lengths, IntArrayRef target_lengths, int64_t blank=0, bool zero_infinity=false);
+static inline Tensor _ctc_loss_backward(const Tensor &amp; grad, const Tensor &amp; log_probs, const Tensor &amp; targets, IntArrayRef input_lengths, IntArrayRef target_lengths, const Tensor &amp; neg_log_likelihood, const Tensor &amp; log_alpha, int64_t blank, bool zero_infinity=false);
 static inline Tensor det(const Tensor &amp; self);
 static inline Tensor diag_embed(const Tensor &amp; self, int64_t offset=0, int64_t dim1=-2, int64_t dim2=-1);
 static inline Tensor diagflat(const Tensor &amp; self, int64_t offset=0);
@@ -3322,8 +3322,8 @@ static inline Tensor _cast_Short(const Tensor &amp; self, bool non_blocking) {
 static inline Tensor _cast_Half(const Tensor &amp; self, bool non_blocking) {
     return detail::infer_type(self)._cast_Half(self, non_blocking);
 }
-static inline std::tuple&lt;Tensor,Tensor&gt; _cudnn_ctc_loss(const Tensor &amp; log_probs, const Tensor &amp; targets, IntArrayRef input_lengths, IntArrayRef target_lengths, int64_t blank, bool deterministic) {
-    return detail::infer_type(log_probs)._cudnn_ctc_loss(log_probs, targets, input_lengths, target_lengths, blank, deterministic);
+static inline std::tuple&lt;Tensor,Tensor&gt; _cudnn_ctc_loss(const Tensor &amp; log_probs, const Tensor &amp; targets, IntArrayRef input_lengths, IntArrayRef target_lengths, int64_t blank, bool deterministic, bool zero_infinity) {
+    return detail::infer_type(log_probs)._cudnn_ctc_loss(log_probs, targets, input_lengths, target_lengths, blank, deterministic, zero_infinity);
 }
 static inline Tensor _cudnn_rnn_flatten_weight(TensorList weight_arr, int64_t weight_stride0, int64_t input_size, int64_t mode, int64_t hidden_size, int64_t num_layers, bool batch_first, bool bidirectional) {
     return detail::infer_type(weight_arr)._cudnn_rnn_flatten_weight(weight_arr, weight_stride0, input_size, mode, hidden_size, num_layers, batch_first, bidirectional);
@@ -3751,17 +3751,17 @@ static inline Tensor &amp; cumprod_out(Tensor &amp; out, const Tensor &amp; self
 static inline Tensor &amp; cumprod_out(Tensor &amp; out, const Tensor &amp; self, int64_t dim) {
     return detail::infer_type(self).cumprod_out(out, self, dim);
 }
-static inline Tensor ctc_loss(const Tensor &amp; log_probs, const Tensor &amp; targets, IntArrayRef input_lengths, IntArrayRef target_lengths, int64_t blank, int64_t reduction) {
-    return detail::infer_type(log_probs).ctc_loss(log_probs, targets, input_lengths, target_lengths, blank, reduction);
+static inline Tensor ctc_loss(const Tensor &amp; log_probs, const Tensor &amp; targets, IntArrayRef input_lengths, IntArrayRef target_lengths, int64_t blank, int64_t reduction, bool zero_infinity) {
+    return detail::infer_type(log_probs).ctc_loss(log_probs, targets, input_lengths, target_lengths, blank, reduction, zero_infinity);
 }
-static inline Tensor ctc_loss(const Tensor &amp; log_probs, const Tensor &amp; targets, const Tensor &amp; input_lengths, const Tensor &amp; target_lengths, int64_t blank, int64_t reduction) {
-    return detail::infer_type(log_probs).ctc_loss(log_probs, targets, input_lengths, target_lengths, blank, reduction);
+static inline Tensor ctc_loss(const Tensor &amp; log_probs, const Tensor &amp; targets, const Tensor &amp; input_lengths, const Tensor &amp; target_lengths, int64_t blank, int64_t reduction, bool zero_infinity) {
+    return detail::infer_type(log_probs).ctc_loss(log_probs, targets, input_lengths, target_lengths, blank, reduction, zero_infinity);
 }
-static inline std::tuple&lt;Tensor,Tensor&gt; _ctc_loss(const Tensor &amp; log_probs, const Tensor &amp; targets, IntArrayRef input_lengths, IntArrayRef target_lengths, int64_t blank) {
-    return detail::infer_type(log_probs)._ctc_loss(log_probs, targets, input_lengths, target_lengths, blank);
+static inline std::tuple&lt;Tensor,Tensor&gt; _ctc_loss(const Tensor &amp; log_probs, const Tensor &amp; targets, IntArrayRef input_lengths, IntArrayRef target_lengths, int64_t blank, bool zero_infinity) {
+    return detail::infer_type(log_probs)._ctc_loss(log_probs, targets, input_lengths, target_lengths, blank, zero_infinity);
 }
-static inline Tensor _ctc_loss_backward(const Tensor &amp; grad, const Tensor &amp; log_probs, const Tensor &amp; targets, IntArrayRef input_lengths, IntArrayRef target_lengths, const Tensor &amp; neg_log_likelihood, const Tensor &amp; log_alpha, int64_t blank) {
-    return detail::infer_type(grad)._ctc_loss_backward(grad, log_probs, targets, input_lengths, target_lengths, neg_log_likelihood, log_alpha, blank);
+static inline Tensor _ctc_loss_backward(const Tensor &amp; grad, const Tensor &amp; log_probs, const Tensor &amp; targets, IntArrayRef input_lengths, IntArrayRef target_lengths, const Tensor &amp; neg_log_likelihood, const Tensor &amp; log_alpha, int64_t blank, bool zero_infinity) {
+    return detail::infer_type(grad)._ctc_loss_backward(grad, log_probs, targets, input_lengths, target_lengths, neg_log_likelihood, log_alpha, blank, zero_infinity);
 }
 static inline Tensor det(const Tensor &amp; self) {
     return detail::infer_type(self).det(self);
