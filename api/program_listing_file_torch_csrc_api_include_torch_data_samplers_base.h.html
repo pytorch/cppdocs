@@ -264,40 +264,6 @@ class Sampler {
   TORCH_API virtual void load(serialize::InputArchive&amp; archive) = 0;
 };
 
-template &lt;typename OriginalSampler&gt;
-class LockedSampler
-    : public Sampler&lt;typename OriginalSampler::BatchRequestType&gt; {
- public:
-  using BatchRequestType = typename OriginalSampler::BatchRequestType;
-
-  explicit LockedSampler(OriginalSampler sampler) : sampler_(std::move(sampler)) {}
-
-  void reset(optional&lt;size_t&gt; new_size) override {
-    std::lock_guard&lt;std::mutex&gt; lock(this-&gt;mutex_);
-    sampler_.reset(new_size);
-  }
-
-  optional&lt;BatchRequestType&gt; next(size_t batch_size) override {
-    std::lock_guard&lt;std::mutex&gt; lock(this-&gt;mutex_);
-    return sampler_.next(batch_size);
-  }
-
-  void save(serialize::OutputArchive&amp; archive) const override {
-    std::lock_guard&lt;std::mutex&gt; lock(this-&gt;mutex_);
-    sampler_.save(archive);
-  }
-
-  void load(serialize::InputArchive&amp; archive) override {
-    std::lock_guard&lt;std::mutex&gt; lock(this-&gt;mutex_);
-    sampler_.load(archive);
-  }
-
- private:
-  // member variable for multi-threading lock.
-  // declare it to be mutable for locking in const member function.
-  mutable std::mutex mutex_;
-  OriginalSampler sampler_;
-};
 } // namespace samplers
 } // namespace data
 } // namespace torch
