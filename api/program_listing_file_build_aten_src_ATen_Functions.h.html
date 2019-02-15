@@ -779,6 +779,8 @@ static inline Tensor _cudnn_rnn_flatten_weight(TensorList weight_arr, int64_t we
 static inline std::tuple&lt;Tensor,Tensor,Tensor,Tensor,Tensor&gt; _cudnn_rnn(const Tensor &amp; input, TensorList weight, int64_t weight_stride0, const Tensor &amp; weight_buf, const Tensor &amp; hx, const Tensor &amp; cx, int64_t mode, int64_t hidden_size, int64_t num_layers, bool batch_first, double dropout, bool train, bool bidirectional, IntArrayRef batch_sizes, const Tensor &amp; dropout_state);
 static inline std::tuple&lt;Tensor,Tensor,Tensor,std::vector&lt;Tensor&gt;&gt; _cudnn_rnn_backward(const Tensor &amp; input, TensorList weight, int64_t weight_stride0, const Tensor &amp; weight_buf, const Tensor &amp; hx, const Tensor &amp; cx, const Tensor &amp; output, const Tensor &amp; grad_output, const Tensor &amp; grad_hy, const Tensor &amp; grad_cy, int64_t mode, int64_t hidden_size, int64_t num_layers, bool batch_first, double dropout, bool train, bool bidirectional, IntArrayRef batch_sizes, const Tensor &amp; dropout_state, const Tensor &amp; reserve, std::array&lt;bool,4&gt; output_mask);
 static inline Tensor _cudnn_init_dropout_state(double dropout, bool train, int64_t dropout_seed, const TensorOptions &amp; options);
+static inline Tensor index_select_backward(const Tensor &amp; grad, int64_t dim, const Tensor &amp; indices, IntArrayRef sizes, bool keepdim);
+static inline Tensor select_backward(const Tensor &amp; grad, IntArrayRef input_sizes, int64_t dim, int64_t index);
 static inline std::tuple&lt;Tensor,Tensor&gt; _fused_dropout(const Tensor &amp; self, double p, Generator * generator=nullptr);
 static inline Tensor _masked_scale(const Tensor &amp; self, const Tensor &amp; mask, double scale);
 static inline Tensor _reshape_from_tensor(const Tensor &amp; self, const Tensor &amp; shape);
@@ -1047,6 +1049,7 @@ static inline Tensor _log_softmax(const Tensor &amp; self, int64_t dim, bool hal
 static inline Tensor _log_softmax_backward_data(const Tensor &amp; grad_output, const Tensor &amp; output, int64_t dim, const Tensor &amp; self);
 static inline Tensor logsumexp(const Tensor &amp; self, IntArrayRef dim, bool keepdim=false);
 static inline Tensor &amp; logsumexp_out(Tensor &amp; out, const Tensor &amp; self, IntArrayRef dim, bool keepdim=false);
+static inline Tensor logsumexp_backward(const Tensor &amp; grad, const Tensor &amp; self, const Tensor &amp; res, IntArrayRef dim, bool keepdim);
 static inline Tensor margin_ranking_loss(const Tensor &amp; input1, const Tensor &amp; input2, const Tensor &amp; target, double margin=0.0, int64_t reduction=Reduction::Mean);
 static inline Tensor matmul(const Tensor &amp; self, const Tensor &amp; other);
 static inline Tensor &amp; matmul_out(Tensor &amp; out, const Tensor &amp; self, const Tensor &amp; other);
@@ -1068,6 +1071,7 @@ static inline Tensor mean(const Tensor &amp; self, IntArrayRef dim, ScalarType d
 static inline Tensor &amp; mean_out(Tensor &amp; out, const Tensor &amp; self, IntArrayRef dim, bool keepdim, ScalarType dtype);
 static inline Tensor &amp; mean_out(Tensor &amp; out, const Tensor &amp; self, IntArrayRef dim, bool keepdim=false);
 static inline Tensor &amp; mean_out(Tensor &amp; out, const Tensor &amp; self, IntArrayRef dim, ScalarType dtype);
+static inline Tensor sum_backward(const Tensor &amp; grad, IntArrayRef sizes, IntArrayRef dims, bool keepdim);
 static inline std::tuple&lt;Tensor,Tensor&gt; median(const Tensor &amp; self, int64_t dim, bool keepdim=false);
 static inline std::tuple&lt;Tensor &amp;,Tensor &amp;&gt; median_out(Tensor &amp; values, Tensor &amp; indices, const Tensor &amp; self, int64_t dim, bool keepdim=false);
 static inline std::tuple&lt;Tensor,Tensor&gt; min(const Tensor &amp; self, int64_t dim, bool keepdim=false);
@@ -1118,6 +1122,7 @@ static inline Tensor pdist(const Tensor &amp; self, double p=2);
 static inline Tensor _pdist_forward(const Tensor &amp; self, double p=2);
 static inline Tensor _pdist_backward(const Tensor &amp; grad, const Tensor &amp; self, double p, const Tensor &amp; pdist);
 static inline Tensor cosine_similarity(const Tensor &amp; x1, const Tensor &amp; x2, int64_t dim=1, double eps=1e-08);
+static inline Tensor permute_backwards(const Tensor &amp; grad, IntArrayRef fwd_dims);
 static inline Tensor pixel_shuffle(const Tensor &amp; self, int64_t upscale_factor);
 static inline Tensor pin_memory(const Tensor &amp; self);
 static inline Tensor pinverse(const Tensor &amp; self, double rcond=1e-15);
@@ -1187,7 +1192,9 @@ static inline Tensor &amp; sinh_out(Tensor &amp; out, const Tensor &amp; self);
 static inline Tensor detach(const Tensor &amp; self);
 static inline Tensor &amp; detach_(Tensor &amp; self);
 static inline int64_t size(const Tensor &amp; self, int64_t dim);
+static inline int64_t _safe_size(IntArrayRef sizes, IntArrayRef dim);
 static inline Tensor slice(const Tensor &amp; self, int64_t dim=0, int64_t start=0, int64_t end=9223372036854775807, int64_t step=1);
+static inline Tensor slice_backward(const Tensor &amp; grad, IntArrayRef input_sizes, int64_t dim, int64_t start, int64_t end, int64_t step);
 static inline std::tuple&lt;Tensor,Tensor&gt; slogdet(const Tensor &amp; self);
 static inline Tensor smm(const Tensor &amp; self, const Tensor &amp; mat2);
 static inline Tensor softmax(const Tensor &amp; self, int64_t dim, ScalarType dtype);
@@ -1205,6 +1212,8 @@ static inline std::vector&lt;Tensor&gt; split(const Tensor &amp; self, int64_t s
 static inline std::vector&lt;Tensor&gt; split_with_sizes(const Tensor &amp; self, IntArrayRef split_sizes, int64_t dim=0);
 static inline Tensor squeeze(const Tensor &amp; self);
 static inline Tensor squeeze(const Tensor &amp; self, int64_t dim);
+static inline Tensor unsqueeze_to(const Tensor &amp; self, IntArrayRef sizes);
+static inline Tensor unsqueeze_to(const Tensor &amp; self, int64_t dim, IntArrayRef sizes);
 static inline Tensor sspaddmm(const Tensor &amp; self, const Tensor &amp; mat1, const Tensor &amp; mat2, Scalar beta=1, Scalar alpha=1);
 static inline Tensor &amp; sspaddmm_out(Tensor &amp; out, const Tensor &amp; self, const Tensor &amp; mat1, const Tensor &amp; mat2, Scalar beta=1, Scalar alpha=1);
 static inline Tensor stack(TensorList tensors, int64_t dim=0);
@@ -1262,6 +1271,8 @@ static inline Tensor unsqueeze(const Tensor &amp; self, int64_t dim);
 static inline Tensor var(const Tensor &amp; self, bool unbiased=true);
 static inline Tensor var(const Tensor &amp; self, IntArrayRef dim, bool unbiased=true, bool keepdim=false);
 static inline Tensor &amp; var_out(Tensor &amp; out, const Tensor &amp; self, IntArrayRef dim, bool unbiased=true, bool keepdim=false);
+static inline Tensor var_backward(const Tensor &amp; grad, const Tensor &amp; self, bool unbiased);
+static inline Tensor var_backward(const Tensor &amp; grad, const Tensor &amp; self, IntArrayRef dim, bool unbiased, bool keepdim);
 static inline Tensor where(const Tensor &amp; condition, const Tensor &amp; self, const Tensor &amp; other);
 static inline Tensor _s_where(const Tensor &amp; condition, const Tensor &amp; self, const Tensor &amp; other);
 static inline Tensor norm_except_dim(const Tensor &amp; v, int64_t pow=2, int64_t dim=0);
@@ -3337,6 +3348,12 @@ static inline std::tuple&lt;Tensor,Tensor,Tensor,std::vector&lt;Tensor&gt;&gt; _
 static inline Tensor _cudnn_init_dropout_state(double dropout, bool train, int64_t dropout_seed, const TensorOptions &amp; options) {
     return at::getType(options)._cudnn_init_dropout_state(dropout, train, dropout_seed, options);
 }
+static inline Tensor index_select_backward(const Tensor &amp; grad, int64_t dim, const Tensor &amp; indices, IntArrayRef sizes, bool keepdim) {
+    return detail::infer_type(grad).index_select_backward(grad, dim, indices, sizes, keepdim);
+}
+static inline Tensor select_backward(const Tensor &amp; grad, IntArrayRef input_sizes, int64_t dim, int64_t index) {
+    return detail::infer_type(grad).select_backward(grad, input_sizes, dim, index);
+}
 static inline std::tuple&lt;Tensor,Tensor&gt; _fused_dropout(const Tensor &amp; self, double p, Generator * generator) {
     return detail::infer_type(self)._fused_dropout(self, p, generator);
 }
@@ -4141,6 +4158,9 @@ static inline Tensor logsumexp(const Tensor &amp; self, IntArrayRef dim, bool ke
 static inline Tensor &amp; logsumexp_out(Tensor &amp; out, const Tensor &amp; self, IntArrayRef dim, bool keepdim) {
     return detail::infer_type(self).logsumexp_out(out, self, dim, keepdim);
 }
+static inline Tensor logsumexp_backward(const Tensor &amp; grad, const Tensor &amp; self, const Tensor &amp; res, IntArrayRef dim, bool keepdim) {
+    return detail::infer_type(self).logsumexp_backward(grad, self, res, dim, keepdim);
+}
 static inline Tensor margin_ranking_loss(const Tensor &amp; input1, const Tensor &amp; input2, const Tensor &amp; target, double margin, int64_t reduction) {
     return detail::infer_type(input1).margin_ranking_loss(input1, input2, target, margin, reduction);
 }
@@ -4203,6 +4223,9 @@ static inline Tensor &amp; mean_out(Tensor &amp; out, const Tensor &amp; self, I
 }
 static inline Tensor &amp; mean_out(Tensor &amp; out, const Tensor &amp; self, IntArrayRef dim, ScalarType dtype) {
     return detail::infer_type(self).mean_out(out, self, dim, dtype);
+}
+static inline Tensor sum_backward(const Tensor &amp; grad, IntArrayRef sizes, IntArrayRef dims, bool keepdim) {
+    return detail::infer_type(grad).sum_backward(grad, sizes, dims, keepdim);
 }
 static inline std::tuple&lt;Tensor,Tensor&gt; median(const Tensor &amp; self, int64_t dim, bool keepdim) {
     return detail::infer_type(self).median(self, dim, keepdim);
@@ -4353,6 +4376,9 @@ static inline Tensor _pdist_backward(const Tensor &amp; grad, const Tensor &amp;
 }
 static inline Tensor cosine_similarity(const Tensor &amp; x1, const Tensor &amp; x2, int64_t dim, double eps) {
     return detail::infer_type(x1).cosine_similarity(x1, x2, dim, eps);
+}
+static inline Tensor permute_backwards(const Tensor &amp; grad, IntArrayRef fwd_dims) {
+    return detail::infer_type(grad).permute_backwards(grad, fwd_dims);
 }
 static inline Tensor pixel_shuffle(const Tensor &amp; self, int64_t upscale_factor) {
     return detail::infer_type(self).pixel_shuffle(self, upscale_factor);
@@ -4561,8 +4587,14 @@ static inline Tensor &amp; detach_(Tensor &amp; self) {
 static inline int64_t size(const Tensor &amp; self, int64_t dim) {
     return detail::infer_type(self).size(self, dim);
 }
+static inline int64_t _safe_size(IntArrayRef sizes, IntArrayRef dim) {
+    return at::getNonVariableType(at::Backend::Undefined, at::ScalarType::Float)._safe_size(sizes, dim);
+}
 static inline Tensor slice(const Tensor &amp; self, int64_t dim, int64_t start, int64_t end, int64_t step) {
     return detail::infer_type(self).slice(self, dim, start, end, step);
+}
+static inline Tensor slice_backward(const Tensor &amp; grad, IntArrayRef input_sizes, int64_t dim, int64_t start, int64_t end, int64_t step) {
+    return detail::infer_type(grad).slice_backward(grad, input_sizes, dim, start, end, step);
 }
 static inline std::tuple&lt;Tensor,Tensor&gt; slogdet(const Tensor &amp; self) {
     return detail::infer_type(self).slogdet(self);
@@ -4614,6 +4646,12 @@ static inline Tensor squeeze(const Tensor &amp; self) {
 }
 static inline Tensor squeeze(const Tensor &amp; self, int64_t dim) {
     return detail::infer_type(self).squeeze(self, dim);
+}
+static inline Tensor unsqueeze_to(const Tensor &amp; self, IntArrayRef sizes) {
+    return detail::infer_type(self).unsqueeze_to(self, sizes);
+}
+static inline Tensor unsqueeze_to(const Tensor &amp; self, int64_t dim, IntArrayRef sizes) {
+    return detail::infer_type(self).unsqueeze_to(self, dim, sizes);
 }
 static inline Tensor sspaddmm(const Tensor &amp; self, const Tensor &amp; mat1, const Tensor &amp; mat2, Scalar beta, Scalar alpha) {
     return detail::infer_type(self).sspaddmm(self, mat1, mat2, beta, alpha);
@@ -4785,6 +4823,12 @@ static inline Tensor var(const Tensor &amp; self, IntArrayRef dim, bool unbiased
 }
 static inline Tensor &amp; var_out(Tensor &amp; out, const Tensor &amp; self, IntArrayRef dim, bool unbiased, bool keepdim) {
     return detail::infer_type(self).var_out(out, self, dim, unbiased, keepdim);
+}
+static inline Tensor var_backward(const Tensor &amp; grad, const Tensor &amp; self, bool unbiased) {
+    return detail::infer_type(self).var_backward(grad, self, unbiased);
+}
+static inline Tensor var_backward(const Tensor &amp; grad, const Tensor &amp; self, IntArrayRef dim, bool unbiased, bool keepdim) {
+    return detail::infer_type(self).var_backward(grad, self, dim, unbiased, keepdim);
 }
 static inline Tensor where(const Tensor &amp; condition, const Tensor &amp; self, const Tensor &amp; other) {
     return detail::infer_type(self).where(condition, self, other);
