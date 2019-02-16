@@ -1004,8 +1004,9 @@ static inline int64_t _cufft_get_plan_cache_max_size();
 static inline void _cufft_set_plan_cache_max_size(int64_t max_size);
 static inline void _cufft_clear_plan_cache();
 static inline Tensor index(const Tensor &amp; self, TensorList indices);
-static inline Tensor index_put(const Tensor &amp; self, TensorList indices, const Tensor &amp; values, bool accumulate=false);
+static inline Tensor index_copy(const Tensor &amp; self, int64_t dim, const Tensor &amp; index, const Tensor &amp; source);
 static inline Tensor &amp; index_put_(Tensor &amp; self, TensorList indices, const Tensor &amp; values, bool accumulate=false);
+static inline Tensor index_put(const Tensor &amp; self, TensorList indices, const Tensor &amp; values, bool accumulate=false);
 static inline Tensor instance_norm(const Tensor &amp; input, const Tensor &amp; weight, const Tensor &amp; bias, const Tensor &amp; running_mean, const Tensor &amp; running_var, bool use_input_stats, double momentum, double eps, bool cudnn_enabled);
 static inline Tensor inverse(const Tensor &amp; self);
 static inline Tensor &amp; inverse_out(Tensor &amp; out, const Tensor &amp; self);
@@ -1366,6 +1367,15 @@ static inline Tensor quantized_rnn_tanh_cell(const Tensor &amp; input, const Ten
 static inline std::tuple&lt;Tensor,Tensor&gt; _pack_padded_sequence(const Tensor &amp; input, const Tensor &amp; lengths, bool batch_first);
 static inline Tensor _pack_padded_sequence_backward(const Tensor &amp; grad, IntArrayRef input_size, const Tensor &amp; batch_sizes, bool batch_first);
 static inline std::tuple&lt;Tensor,Tensor&gt; _pad_packed_sequence(const Tensor &amp; data, const Tensor &amp; batch_sizes, bool batch_first, Scalar padding_value, int64_t total_length);
+static inline Tensor masked_fill(const Tensor &amp; self, const Tensor &amp; mask, Scalar value);
+static inline Tensor masked_fill(const Tensor &amp; self, const Tensor &amp; mask, const Tensor &amp; value);
+static inline Tensor masked_scatter(const Tensor &amp; self, const Tensor &amp; mask, const Tensor &amp; source);
+static inline Tensor index_add(const Tensor &amp; self, int64_t dim, const Tensor &amp; index, const Tensor &amp; source);
+static inline Tensor index_fill(const Tensor &amp; self, int64_t dim, const Tensor &amp; index, Scalar value);
+static inline Tensor index_fill(const Tensor &amp; self, int64_t dim, const Tensor &amp; index, const Tensor &amp; value);
+static inline Tensor scatter(const Tensor &amp; self, int64_t dim, const Tensor &amp; index, const Tensor &amp; src);
+static inline Tensor scatter(const Tensor &amp; self, int64_t dim, const Tensor &amp; index, Scalar value);
+static inline Tensor scatter_add(const Tensor &amp; self, int64_t dim, const Tensor &amp; index, const Tensor &amp; src);
 static inline Tensor __and__(const Tensor &amp; self, Scalar other);
 static inline Tensor __and__(const Tensor &amp; self, const Tensor &amp; other);
 static inline Tensor __or__(const Tensor &amp; self, Scalar other);
@@ -4025,11 +4035,14 @@ static inline void _cufft_clear_plan_cache() {
 static inline Tensor index(const Tensor &amp; self, TensorList indices) {
     return detail::infer_type(self).index(self, indices);
 }
-static inline Tensor index_put(const Tensor &amp; self, TensorList indices, const Tensor &amp; values, bool accumulate) {
-    return detail::infer_type(self).index_put(self, indices, values, accumulate);
+static inline Tensor index_copy(const Tensor &amp; self, int64_t dim, const Tensor &amp; index, const Tensor &amp; source) {
+    return detail::infer_type(self).index_copy(self, dim, index, source);
 }
 static inline Tensor &amp; index_put_(Tensor &amp; self, TensorList indices, const Tensor &amp; values, bool accumulate) {
     return detail::infer_type(self).index_put_(self, indices, values, accumulate);
+}
+static inline Tensor index_put(const Tensor &amp; self, TensorList indices, const Tensor &amp; values, bool accumulate) {
+    return detail::infer_type(self).index_put(self, indices, values, accumulate);
 }
 static inline Tensor instance_norm(const Tensor &amp; input, const Tensor &amp; weight, const Tensor &amp; bias, const Tensor &amp; running_mean, const Tensor &amp; running_var, bool use_input_stats, double momentum, double eps, bool cudnn_enabled) {
     return detail::infer_type(input).instance_norm(input, weight, bias, running_mean, running_var, use_input_stats, momentum, eps, cudnn_enabled);
@@ -5110,6 +5123,33 @@ static inline Tensor _pack_padded_sequence_backward(const Tensor &amp; grad, Int
 }
 static inline std::tuple&lt;Tensor,Tensor&gt; _pad_packed_sequence(const Tensor &amp; data, const Tensor &amp; batch_sizes, bool batch_first, Scalar padding_value, int64_t total_length) {
     return detail::infer_type(data)._pad_packed_sequence(data, batch_sizes, batch_first, padding_value, total_length);
+}
+static inline Tensor masked_fill(const Tensor &amp; self, const Tensor &amp; mask, Scalar value) {
+    return detail::infer_type(self).masked_fill(self, mask, value);
+}
+static inline Tensor masked_fill(const Tensor &amp; self, const Tensor &amp; mask, const Tensor &amp; value) {
+    return detail::infer_type(self).masked_fill(self, mask, value);
+}
+static inline Tensor masked_scatter(const Tensor &amp; self, const Tensor &amp; mask, const Tensor &amp; source) {
+    return detail::infer_type(self).masked_scatter(self, mask, source);
+}
+static inline Tensor index_add(const Tensor &amp; self, int64_t dim, const Tensor &amp; index, const Tensor &amp; source) {
+    return detail::infer_type(self).index_add(self, dim, index, source);
+}
+static inline Tensor index_fill(const Tensor &amp; self, int64_t dim, const Tensor &amp; index, Scalar value) {
+    return detail::infer_type(self).index_fill(self, dim, index, value);
+}
+static inline Tensor index_fill(const Tensor &amp; self, int64_t dim, const Tensor &amp; index, const Tensor &amp; value) {
+    return detail::infer_type(self).index_fill(self, dim, index, value);
+}
+static inline Tensor scatter(const Tensor &amp; self, int64_t dim, const Tensor &amp; index, const Tensor &amp; src) {
+    return detail::infer_type(self).scatter(self, dim, index, src);
+}
+static inline Tensor scatter(const Tensor &amp; self, int64_t dim, const Tensor &amp; index, Scalar value) {
+    return detail::infer_type(self).scatter(self, dim, index, value);
+}
+static inline Tensor scatter_add(const Tensor &amp; self, int64_t dim, const Tensor &amp; index, const Tensor &amp; src) {
+    return detail::infer_type(self).scatter_add(self, dim, index, src);
 }
 static inline Tensor __and__(const Tensor &amp; self, Scalar other) {
     return detail::infer_type(self).__and__(self, other);

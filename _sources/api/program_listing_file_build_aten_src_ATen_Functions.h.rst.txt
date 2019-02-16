@@ -787,8 +787,9 @@ Program Listing for File Functions.h
    static inline void _cufft_set_plan_cache_max_size(int64_t max_size);
    static inline void _cufft_clear_plan_cache();
    static inline Tensor index(const Tensor & self, TensorList indices);
-   static inline Tensor index_put(const Tensor & self, TensorList indices, const Tensor & values, bool accumulate=false);
+   static inline Tensor index_copy(const Tensor & self, int64_t dim, const Tensor & index, const Tensor & source);
    static inline Tensor & index_put_(Tensor & self, TensorList indices, const Tensor & values, bool accumulate=false);
+   static inline Tensor index_put(const Tensor & self, TensorList indices, const Tensor & values, bool accumulate=false);
    static inline Tensor instance_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool use_input_stats, double momentum, double eps, bool cudnn_enabled);
    static inline Tensor inverse(const Tensor & self);
    static inline Tensor & inverse_out(Tensor & out, const Tensor & self);
@@ -1149,6 +1150,15 @@ Program Listing for File Functions.h
    static inline std::tuple<Tensor,Tensor> _pack_padded_sequence(const Tensor & input, const Tensor & lengths, bool batch_first);
    static inline Tensor _pack_padded_sequence_backward(const Tensor & grad, IntArrayRef input_size, const Tensor & batch_sizes, bool batch_first);
    static inline std::tuple<Tensor,Tensor> _pad_packed_sequence(const Tensor & data, const Tensor & batch_sizes, bool batch_first, Scalar padding_value, int64_t total_length);
+   static inline Tensor masked_fill(const Tensor & self, const Tensor & mask, Scalar value);
+   static inline Tensor masked_fill(const Tensor & self, const Tensor & mask, const Tensor & value);
+   static inline Tensor masked_scatter(const Tensor & self, const Tensor & mask, const Tensor & source);
+   static inline Tensor index_add(const Tensor & self, int64_t dim, const Tensor & index, const Tensor & source);
+   static inline Tensor index_fill(const Tensor & self, int64_t dim, const Tensor & index, Scalar value);
+   static inline Tensor index_fill(const Tensor & self, int64_t dim, const Tensor & index, const Tensor & value);
+   static inline Tensor scatter(const Tensor & self, int64_t dim, const Tensor & index, const Tensor & src);
+   static inline Tensor scatter(const Tensor & self, int64_t dim, const Tensor & index, Scalar value);
+   static inline Tensor scatter_add(const Tensor & self, int64_t dim, const Tensor & index, const Tensor & src);
    static inline Tensor __and__(const Tensor & self, Scalar other);
    static inline Tensor __and__(const Tensor & self, const Tensor & other);
    static inline Tensor __or__(const Tensor & self, Scalar other);
@@ -3808,11 +3818,14 @@ Program Listing for File Functions.h
    static inline Tensor index(const Tensor & self, TensorList indices) {
        return detail::infer_type(self).index(self, indices);
    }
-   static inline Tensor index_put(const Tensor & self, TensorList indices, const Tensor & values, bool accumulate) {
-       return detail::infer_type(self).index_put(self, indices, values, accumulate);
+   static inline Tensor index_copy(const Tensor & self, int64_t dim, const Tensor & index, const Tensor & source) {
+       return detail::infer_type(self).index_copy(self, dim, index, source);
    }
    static inline Tensor & index_put_(Tensor & self, TensorList indices, const Tensor & values, bool accumulate) {
        return detail::infer_type(self).index_put_(self, indices, values, accumulate);
+   }
+   static inline Tensor index_put(const Tensor & self, TensorList indices, const Tensor & values, bool accumulate) {
+       return detail::infer_type(self).index_put(self, indices, values, accumulate);
    }
    static inline Tensor instance_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool use_input_stats, double momentum, double eps, bool cudnn_enabled) {
        return detail::infer_type(input).instance_norm(input, weight, bias, running_mean, running_var, use_input_stats, momentum, eps, cudnn_enabled);
@@ -4893,6 +4906,33 @@ Program Listing for File Functions.h
    }
    static inline std::tuple<Tensor,Tensor> _pad_packed_sequence(const Tensor & data, const Tensor & batch_sizes, bool batch_first, Scalar padding_value, int64_t total_length) {
        return detail::infer_type(data)._pad_packed_sequence(data, batch_sizes, batch_first, padding_value, total_length);
+   }
+   static inline Tensor masked_fill(const Tensor & self, const Tensor & mask, Scalar value) {
+       return detail::infer_type(self).masked_fill(self, mask, value);
+   }
+   static inline Tensor masked_fill(const Tensor & self, const Tensor & mask, const Tensor & value) {
+       return detail::infer_type(self).masked_fill(self, mask, value);
+   }
+   static inline Tensor masked_scatter(const Tensor & self, const Tensor & mask, const Tensor & source) {
+       return detail::infer_type(self).masked_scatter(self, mask, source);
+   }
+   static inline Tensor index_add(const Tensor & self, int64_t dim, const Tensor & index, const Tensor & source) {
+       return detail::infer_type(self).index_add(self, dim, index, source);
+   }
+   static inline Tensor index_fill(const Tensor & self, int64_t dim, const Tensor & index, Scalar value) {
+       return detail::infer_type(self).index_fill(self, dim, index, value);
+   }
+   static inline Tensor index_fill(const Tensor & self, int64_t dim, const Tensor & index, const Tensor & value) {
+       return detail::infer_type(self).index_fill(self, dim, index, value);
+   }
+   static inline Tensor scatter(const Tensor & self, int64_t dim, const Tensor & index, const Tensor & src) {
+       return detail::infer_type(self).scatter(self, dim, index, src);
+   }
+   static inline Tensor scatter(const Tensor & self, int64_t dim, const Tensor & index, Scalar value) {
+       return detail::infer_type(self).scatter(self, dim, index, value);
+   }
+   static inline Tensor scatter_add(const Tensor & self, int64_t dim, const Tensor & index, const Tensor & src) {
+       return detail::infer_type(self).scatter_add(self, dim, index, src);
    }
    static inline Tensor __and__(const Tensor & self, Scalar other) {
        return detail::infer_type(self).__and__(self, other);
