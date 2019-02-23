@@ -482,6 +482,10 @@ class ChunkDataset final
         running_preloaders_(0) {}
 
   virtual ~ChunkDataset() {
+    // stop batch buffer first.
+    if (batch_buffer_) {
+      batch_buffer_-&gt;stop();
+    }
     free_workers();
   }
 
@@ -500,6 +504,10 @@ class ChunkDataset final
   }
 
   void reset() override {
+    // We need this to support partial data reads via dataloader iterator.
+    if (batch_buffer_) {
+      batch_buffer_-&gt;stop();
+    }
     // free workers from previous reset if there is any.
     free_workers();
     preload_threads_.clear();
