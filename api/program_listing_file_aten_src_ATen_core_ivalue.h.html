@@ -969,39 +969,6 @@ DEFINE_TO(c10::Device, toDevice)
 DEFINE_TO(at::ScalarType, toScalarType)
 DEFINE_TO(at::Layout, toLayout)
 
-template &lt;typename T&gt;
-struct _fake_type {};
-
-template &lt;typename Elem&gt;
-std::vector&lt;Elem&gt; generic_to(
-    const IValue* ivalue,
-    _fake_type&lt;std::vector&lt;Elem&gt;&gt;) {
-  return fmap(ivalue-&gt;toGenericListRef(), [](IValue item_ivalue) { return item_ivalue.to&lt;Elem&gt;(); });
-}
-
-template &lt;typename K, typename V&gt;
-std::unordered_map&lt;K, V&gt; generic_to(
-    const IValue* ivalue,
-    _fake_type&lt;std::unordered_map&lt;K, V&gt;&gt;) {
-  std::unordered_map&lt;K, V&gt; specialized_dict;
-
-  for (auto item : ivalue-&gt;toGenericDictRef()) {
-    specialized_dict[item.first.to&lt;K&gt;()] = item.second.to&lt;V&gt;();
-  }
-
-  return specialized_dict;
-}
-
-template &lt;typename T&gt;
-inline T IValue::to() &amp;&amp; {
-  return generic_to(this, _fake_type&lt;T&gt;{});
-}
-
-template &lt;typename T&gt;
-inline T IValue::to() const&amp; {
-  return generic_to(this, _fake_type&lt;T&gt;{});
-}
-
 // note: when adding a DEFINE_TO case here you should also add a
 // toX method to IValue. These named methods are much more discoverable
 // than the to templated function.
