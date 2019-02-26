@@ -322,7 +322,7 @@ using DoubleList = List&lt;double&gt;;
 using BoolList = List&lt;bool&gt;;
 using GenericList = List&lt;IValue&gt;;
 
-
+struct UserObject;
 }
 
 // IValue is the generic tagged union used by the interpreter to hold
@@ -348,7 +348,8 @@ using GenericList = List&lt;IValue&gt;;
   _(GenericList) \
   _(GenericDict) \
   _(Future) \
-  _(Device)
+  _(Device) \
+  _(UserObject)
 
 struct CAFFE2_API IValue final {
   IValue()
@@ -624,6 +625,18 @@ struct CAFFE2_API IValue final {
     return toIntrusivePtr&lt;ivalue::GenericDict&gt;();
   }
 
+  // UserType
+  IValue(c10::intrusive_ptr&lt;ivalue::UserObject&gt; v);
+  bool isUserObject() const { return tag == Tag::UserObject; }
+  c10::intrusive_ptr&lt;ivalue::UserObject&gt; toUserObject() &amp;&amp; {
+    AT_ASSERT(isUserObject());
+    return toIntrusivePtr&lt;ivalue::UserObject&gt;();
+  }
+  c10::intrusive_ptr&lt;ivalue::UserObject&gt; toUserObject() const &amp; {
+    AT_ASSERT(isUserObject());
+    return toIntrusivePtr&lt;ivalue::UserObject&gt;();
+  }
+
   // None
   bool isNone() const {
     return Tag::None == tag;
@@ -884,6 +897,36 @@ struct C10_EXPORT ivalue::Future final : c10::intrusive_ptr_target {
   FutureError error;
 };
 
+// User-defined object.
+struct C10_EXPORT ivalue::UserObject final : c10::intrusive_ptr_target {
+ public:
+  UserObject(Symbol name, size_t numSlots) : typename_(std::move(name)) {
+    slots_.resize(numSlots);
+  }
+
+  static c10::intrusive_ptr&lt;UserObject&gt; create(
+      Symbol name,
+      size_t numSlots) {
+    return c10::make_intrusive&lt;UserObject&gt;(std::move(name), numSlots);
+  }
+
+  void setSlot(size_t slot, IValue v) {
+    slots_[slot] = v;
+  }
+
+  IValue getSlot(size_t slot) const {
+    return slots_.at(slot);
+  }
+
+  Symbol name() const {
+    return typename_;
+  }
+
+ private:
+  const Symbol typename_;
+  std::vector&lt;IValue&gt; slots_;
+};
+
 struct C10_EXPORT ivalue::GenericDict : c10::intrusive_ptr_target {
  private:
   UnorderedMap elements_;
@@ -956,6 +999,7 @@ DEFINE_TO(c10::intrusive_ptr&lt;ivalue::TensorList&gt;, toTensorList)
 DEFINE_TO(c10::intrusive_ptr&lt;ivalue::GenericList&gt;, toGenericList)
 DEFINE_TO(c10::intrusive_ptr&lt;ivalue::GenericDict&gt;, toGenericDict)
 DEFINE_TO(c10::intrusive_ptr&lt;ivalue::ConstantString&gt;, toString)
+DEFINE_TO(c10::intrusive_ptr&lt;ivalue::UserObject&gt;, toUserObject)
 DEFINE_TO(at::Scalar, toScalar)
 DEFINE_TO(std::vector&lt;int64_t&gt;, toIntListRef)
 DEFINE_TO(std::vector&lt;double&gt;, toDoubleListRef)
@@ -1027,6 +1071,10 @@ inline IValue::IValue(c10::intrusive_ptr&lt;ivalue::GenericDict&gt; v)
 inline IValue::IValue(ivalue::UnorderedMap v)
 : IValue(ivalue::GenericDict::create(std::move(v))) {}
 
+inline IValue::IValue(c10::intrusive_ptr&lt;ivalue::UserObject&gt; v)
+: tag(Tag::UserObject), is_intrusive_ptr(true) {
+  payload.as_intrusive_ptr = v.release();
+}
 inline IValue::IValue(c10::intrusive_ptr&lt;ivalue::Future&gt; v)
 : tag(Tag::Future), is_intrusive_ptr(true) {
   payload.as_intrusive_ptr = v.release();
