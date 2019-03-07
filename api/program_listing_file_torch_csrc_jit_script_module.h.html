@@ -280,30 +280,33 @@ using ExtraFilesMap = std::unordered_map&lt;std::string, std::string&gt;;
 
 struct Module;
 
+using ModuleLookup = std::function&lt;std::shared_ptr&lt;Module&gt;(
+    const std::vector&lt;std::string&gt;&amp;)&gt;;
+
 struct Method {
   Method(
       Module* owner,
       std::string name,
       bool optimize,
       std::shared_ptr&lt;Graph&gt; graph,
-      std::vector&lt;at::Tensor*&gt; initial_members,
+      std::vector&lt;IValue*&gt; initial_members,
       std::function&lt;void(Method&amp;)&gt; method_creator)
       : owner_(owner),
         name_(std::move(name)),
         graph_(std::move(graph)),
         optimize(optimize),
-        member_inputs(std::move(initial_members)),
+        initial_ivalues_(std::move(initial_members)),
         method_creator(std::move(method_creator)) {
-    AT_ASSERT(graph_-&gt;inputs().size() &gt;= member_inputs.size());
-    int i = graph_-&gt;inputs().size() - member_inputs.size();
-    for (at::Tensor* member : member_inputs) {
-      member_input_index[member] = i++;
+    AT_ASSERT(graph_-&gt;inputs().size() &gt;= initial_ivalues_.size());
+    int i = graph_-&gt;inputs().size() - initial_ivalues_.size();
+    for (auto member : initial_ivalues_) {
+      initial_ivalue_index[member] = i++;
     }
   }
 
   void run(Stack&amp; stack) {
-    for (at::Tensor* tp : member_inputs) {
-      stack.emplace_back(*tp);
+    for (auto input : initial_ivalues_) {
+      push(stack, *input);
     }
     get_executor().run(stack);
   }
@@ -319,7 +322,7 @@ struct Method {
   }
 
   std::shared_ptr&lt;Graph&gt; graph_for(Stack inputs) {
-    for (at::Tensor* tp : member_inputs) {
+    for (auto tp : initial_ivalues_) {
       inputs.emplace_back(*tp);
     }
     return get_executor().graphFor(inputs);
@@ -346,17 +349,21 @@ struct Method {
   TORCH_API void ensure_defined();
 
   size_t num_inputs() const {
-    return graph()-&gt;inputs().size() - member_inputs.size();
+    return graph()-&gt;inputs().size() - initial_ivalues_.size();
   }
-  TORCH_API Value* get_or_add_parameter(at::Tensor* slot) {
-    auto it = member_input_index.find(slot);
-    if (it != member_input_index.end()) {
+  TORCH_API Value* get_or_add_parameter(IValue* slot) {
+    AT_ASSERT(slot-&gt;isTensor());
+    return get_or_add_attribute(TensorType::get(), slot);
+  }
+
+  TORCH_API Value* get_or_add_attribute(TypePtr type, IValue* slot) {
+    auto it = initial_ivalue_index.find(slot);
+    if (it != initial_ivalue_index.end()) {
       return graph()-&gt;inputs().at(it-&gt;second);
     }
-    // add it as a new parameter
-    member_inputs.push_back(slot);
-    member_input_index[slot] = graph()-&gt;inputs().size();
-    return graph()-&gt;addInput();
+    initial_ivalues_.push_back(slot);
+    initial_ivalue_index[slot] = graph()-&gt;inputs().size();
+    return graph()-&gt;addInput()-&gt;setType(type);
   }
 
   std::shared_ptr&lt;Graph&gt; propagate_shapes(
@@ -364,11 +371,11 @@ struct Method {
       bool with_grad = false) {
     auto retval = graph_-&gt;copy();
     Stack stack;
-    stack.reserve(inputs.size() + member_inputs.size());
+    stack.reserve(inputs.size() + initial_ivalues_.size());
     for (at::Tensor&amp; i : inputs) {
       stack.emplace_back(std::move(i));
     }
-    for (at::Tensor* inp : member_inputs) {
+    for (IValue* inp : initial_ivalues_) {
       stack.push_back(*inp);
     }
     const auto size = stack.size();
@@ -383,8 +390,10 @@ struct Method {
       bool with_grad = false,
       bool propagate = true) {
     auto retval = graph_-&gt;copy();
-    for (auto inp : member_inputs) {
-      inputs.push_back(*inp);
+    for (auto inp : initial_ivalues_) {
+      if (inp-&gt;isTensor()) {
+        inputs.push_back(inp-&gt;toTensor());
+      }
     }
     if (propagate) {
       setInputTypes(
@@ -417,8 +426,8 @@ struct Method {
     return retval;
   }
 
-  std::vector&lt;at::Tensor*&gt; params() const {
-    return member_inputs;
+  const std::vector&lt;IValue*&gt;&amp; initial_ivalues() const {
+    return initial_ivalues_;
   }
 
   Method&amp; setSchema(FunctionSchema schema_) {
@@ -541,16 +550,16 @@ struct Method {
   bool optimize;
 
   GraphExecutor executor; // for execution
-  // member_inputs are a list of additional arguments appended to graph that are
-  // inputs that come from the members of the Module or its submodules.
+  // initial_ivalues are a list of additional arguments appended to graph
+  // that are inputs that come from the members of the Module or its submodules.
   // each is a pointer to a slot in the module that owns this parameter
   // parameters and submodules can only be _added_ to script Modules to ensure
   // these pointers always stay valid
-  std::vector&lt;at::Tensor*&gt; member_inputs;
+  std::vector&lt;IValue*&gt; initial_ivalues_;
 
-  // map from a at::Tensor* in member_inputs to the offset it appears at
+  // map from a IValue* in initial_ivalues to the offset it appears at
   // in graph. used to accelerate get_or_add_parameter
-  std::unordered_map&lt;at::Tensor*, size_t&gt; member_input_index;
+  std::unordered_map&lt;IValue*, size_t&gt; initial_ivalue_index;
 
   // TODO: support that case where we allow _writes_ to parameters from
   // compiled functions.
@@ -580,24 +589,18 @@ struct NamedModule {
   std::shared_ptr&lt;Module&gt; module;
 };
 
-struct NamedParameter {
-  NamedParameter(std::string name, at::Tensor tensor, bool is_buffer)
-      : name(std::move(name)),
-        is_buffer(is_buffer),
-        parameter(torch::make_unique&lt;at::Tensor&gt;(std::move(tensor))) {}
+struct NamedIValue {
+  NamedIValue(std::string name, TypePtr type, IValue ivalue)
+      : name_(name),
+        type(type),
+        ivalue(torch::make_unique&lt;IValue&gt;(std::move(ivalue))) {}
 
-  const std::string name;
-  bool is_buffer; // buffers are part of the module state but
-                  // are not modified by optimizers during SGD
-  at::Tensor* slot() const {
-    return parameter.get();
+  IValue* slot() const {
+    return ivalue.get();
   }
-
- private:
-  // the extra level of indirection allows Methods to safely store pointers
-  // to the slots where parameters are kept while also allow parameters
-  // to be reassigned
-  std::unique_ptr&lt;at::Tensor&gt; parameter;
+  const std::string name_;
+  const TypePtr type;
+  std::unique_ptr&lt;IValue&gt; ivalue;
 };
 
 struct Module {
@@ -605,6 +608,7 @@ struct Module {
   Module()
       : modules(&quot;Module&quot;),
         parameters(&quot;Parameter&quot;),
+        attributes(&quot;Attributes&quot;),
         methods(&quot;Method&quot;),
         optimize(true) {}
 
@@ -622,16 +626,33 @@ struct Module {
     return get_method(&quot;forward&quot;)(std::move(inputs));
   }
 
+  void register_buffer(const std::string&amp; name, autograd::Variable v) {
+    if (auto b = attributes.find(name)) {
+      AT_ASSERT(b-&gt;type-&gt;isSubtypeOf(TensorType::get()));
+      *b-&gt;slot() = v;
+      return;
+    }
+    attributes.insert(name, NamedIValue(name, TensorType::get(), std::move(v)));
+  }
   void register_parameter(
       const std::string&amp; name,
       autograd::Variable v,
       bool is_buffer) {
-    if (auto p = parameters.find(name)) {
-      *p-&gt;slot() = v;
-      p-&gt;is_buffer = is_buffer;
+    if (is_buffer) {
+      register_buffer(name, std::move(v));
       return;
     }
-    parameters.insert(name, NamedParameter(name, std::move(v), is_buffer));
+    if (auto p = parameters.find(name)) {
+      *p-&gt;slot() = v;
+      return;
+    }
+    parameters.insert(name, NamedIValue(name, TensorType::get(), std::move(v)));
+  }
+  void register_attribute(
+      const std::string&amp; name,
+      const TypePtr type,
+      IValue ivalue) {
+    attributes.insert(name, NamedIValue(name, type, ivalue));
   }
   void register_module(
       const std::string&amp; name,
@@ -642,7 +663,7 @@ struct Module {
   Method&amp; create_method(
       const std::string&amp; name,
       std::shared_ptr&lt;Graph&gt; graph,
-      std::vector&lt;at::Tensor*&gt; member_inputs) {
+      std::vector&lt;IValue*&gt; member_inputs) {
     AT_ASSERT(graph);
     std::unique_ptr&lt;Method&gt; method(new Method(
         this,
@@ -667,7 +688,7 @@ struct Module {
     return *methods.insert(name, std::move(method));
   }
 
-  at::Tensor* parameter_slot(const std::string&amp; name) const {
+  IValue* parameter_slot(const std::string&amp; name) const {
     return parameters[name].slot();
   }
 
@@ -676,7 +697,10 @@ struct Module {
   }
 
   autograd::Variable get_parameter(const std::string&amp; name) const {
-    return autograd::as_variable_ref(*parameter_slot(name));
+    return autograd::as_variable_ref(parameter_slot(name)-&gt;toTensor());
+  }
+  autograd::Variable get_buffer(const std::string&amp; name) const {
+    return autograd::as_variable_ref(attributes.find(name)-&gt;slot()-&gt;toTensor());
   }
 
   // each module owns its method. The reference returned here
@@ -692,17 +716,31 @@ struct Module {
   const torch::OrderedDict&lt;std::string, NamedModule&gt;&amp; get_modules() const {
     return modules;
   }
-  const torch::OrderedDict&lt;std::string, NamedParameter&gt;&amp; get_parameters()
+  const torch::OrderedDict&lt;std::string, NamedIValue&gt;&amp; get_parameters()
       const {
     return parameters;
+  }
+  const torch::OrderedDict&lt;std::string, NamedIValue&gt;&amp; get_attributes()
+      const {
+    return attributes;
   }
   const torch::OrderedDict&lt;std::string, std::unique_ptr&lt;Method&gt;&gt;&amp; get_methods()
       const {
     return methods;
   }
 
-  NamedParameter* find_parameter(const std::string&amp; name) {
+  NamedIValue* find_parameter(const std::string&amp; name) {
     return parameters.find(name);
+  }
+  NamedIValue* find_attribute(const std::string&amp; name) {
+    return attributes.find(name);
+  }
+  NamedIValue* find_buffer(const std::string&amp; name) {
+    auto b = attributes.find(name);
+    if (b &amp;&amp; b-&gt;type-&gt;isSubtypeOf(TensorType::get())) {
+      return b;
+    }
+    return nullptr;
   }
   NamedModule* find_module(const std::string&amp; name) {
     return modules.find(name);
@@ -723,14 +761,14 @@ struct Module {
     for (auto&amp; submod : get_modules()) {
       submod-&gt;module-&gt;train(on);
     }
-    register_parameter(&quot;training&quot;, torch::tensor(on ? 1 : 0, at::kLong), /*is_buffer=*/true);
+    register_buffer(&quot;training&quot;, torch::tensor(on ? 1 : 0, at::kLong));
   }
   void eval() {
     train(/*on=*/false);
   }
   bool is_training() {
-    if (auto p = find_parameter(&quot;training&quot;)) {
-      return p-&gt;slot()-&gt;item&lt;int64_t&gt;() == 1;
+    if (auto p = find_buffer(&quot;training&quot;)) {
+      return p-&gt;slot()-&gt;toTensor().item&lt;int64_t&gt;() == 1;
     }
     // We are in training mode by default
     return true;
@@ -759,17 +797,27 @@ struct Module {
       const ExtraFilesMap&amp; extra_files = ExtraFilesMap());
 
   void copy_into(
-      std::function&lt;std::shared_ptr&lt;Module&gt;(std::vector&lt;std::string&gt;)&gt;
-          module_lookup,
+      ModuleLookup module_lookup,
       // parameter_remap is needed when a parent module uses a parameter of a
       // submodule
-      std::unordered_map&lt;at::Tensor*, at::Tensor*&gt;&amp; parameter_remap,
+      std::unordered_map&lt;IValue*, IValue*&gt;&amp; parameter_remap,
       std::vector&lt;std::string&gt; names = {}) const {
     auto curr = module_lookup(names);
     for (auto&amp; kv : parameters) {
       curr-&gt;register_parameter(
-          kv.key(), *kv.value().slot(), kv.value().is_buffer);
+          kv.key(),
+          kv.value().slot()-&gt;toTensor(),
+          /*is_buffer=*/false);
       parameter_remap[kv.value().slot()] = curr-&gt;parameter_slot(kv.key());
+    }
+    for (auto&amp; kv : attributes) {
+      if (!kv.value().type-&gt;isSubtypeOf(TensorType::get())) {
+        continue;
+      }
+      curr-&gt;register_buffer(
+          kv.key(),
+          kv.value().slot()-&gt;toTensor());
+      parameter_remap[kv.value().slot()] = curr-&gt;find_buffer(kv.key())-&gt;slot();
     }
     for (auto&amp; kv : modules) {
       names.push_back(kv.key());
@@ -779,11 +827,12 @@ struct Module {
       names.pop_back();
     }
     for (auto&amp; kv : methods) {
-      std::vector&lt;at::Tensor*&gt; params;
-      for (auto&amp; p : kv.value()-&gt;params()) {
-        params.push_back(parameter_remap.at(p));
+      std::vector&lt;IValue*&gt; initial_ivalues;
+      for (auto&amp; p : kv.value()-&gt;initial_ivalues()) {
+        initial_ivalues.push_back(parameter_remap.at(p));
       }
-      curr-&gt;create_method(kv.key(), kv.value()-&gt;graph()-&gt;copy(), params);
+      curr-&gt;create_method(
+          kv.key(), kv.value()-&gt;graph()-&gt;copy(), initial_ivalues);
     }
   }
 
@@ -793,12 +842,13 @@ struct Module {
       const c10::optional&lt;at::ScalarType&gt;&amp; dtype,
       bool non_blocking);
 
-  // invariant: to ensure member_inputs of Methods stay valid,
+  // invariant: to ensure initial_ivalues of Methods stay valid,
   // it is only legal to _add_ new modules and parameters.
-  // removing them will allow member_inputs to point to invalid parameters
+  // removing them will allow initial_ivalues to point to invalid parameters
   // no such restriction exists for methods
   torch::OrderedDict&lt;std::string, NamedModule&gt; modules;
-  torch::OrderedDict&lt;std::string, NamedParameter&gt; parameters;
+  torch::OrderedDict&lt;std::string, NamedIValue&gt; parameters;
+  torch::OrderedDict&lt;std::string, NamedIValue&gt; attributes;
   torch::OrderedDict&lt;std::string, std::unique_ptr&lt;Method&gt;&gt; methods;
   bool optimize;
 };
