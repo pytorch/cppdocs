@@ -233,6 +233,7 @@
 
 #include &lt;torch/csrc/jit/operator.h&gt;
 #include &lt;ATen/core/stack.h&gt;
+#include &lt;ATen/core/op_registration/infer_schema.h&gt;
 #include &lt;torch/csrc/jit/tracer.h&gt;
 #include &lt;torch/csrc/utils/variadic.h&gt;
 
@@ -247,65 +248,7 @@ namespace detail {
 using ::c10::Argument;
 using ::c10::FunctionSchema;
 
-template &lt;typename T&gt;
-void checkStaticTypes() {
-  // Give nice error messages for some of the common error cases.
-  // Use a LOUD ERROR MESSAGE SO USERS SEE THE STATIC_ASSERT
-  static_assert(
-      !std::is_integral&lt;T&gt;::value || std::is_same&lt;T, int64_t&gt;::value,
-      &quot;INVALID TYPE: Only int64_t is supported as an integral argument type&quot;);
-  static_assert(
-      !std::is_same&lt;T, float&gt;::value,
-      &quot;INVALID TYPE: float is not supported as an argument type, use double instead&quot;);
-}
 
-template &lt;typename First, typename Second, typename... Rest&gt;
-void checkStaticTypes() {
-  checkStaticTypes&lt;First&gt;();
-  checkStaticTypes&lt;Second, Rest...&gt;();
-}
-
-template &lt;typename... Ts, size_t... Is&gt;
-::std::vector&lt;Argument&gt; createArgumentVectorFromTypes(Indices&lt;Is...&gt; indices) {
-  checkStaticTypes&lt;decay_t&lt;Ts&gt;...&gt;();
-  // Arguments are named &quot;_&lt;index&gt;&quot;
-  return {Argument(&quot;_&quot; + std::to_string(Is), getTypePtr&lt;decay_t&lt;Ts&gt;&gt;())...};
-}
-
-template &lt;typename... Ts, size_t... Is&gt;
-::std::vector&lt;Argument&gt; createReturns(Indices&lt;Is...&gt; indices) {
-  return createArgumentVectorFromTypes&lt;Ts..., Is...&gt;();
-}
-
-template &lt;typename... Ts&gt;
-::std::vector&lt;Argument&gt; createReturns(std::tuple&lt;Ts...&gt;* tuple) {
-  // Create an index pack so we can call `get&lt;Indices&gt;` on the tuple next.
-  return createReturns&lt;Ts...&gt;(typename MakeIndices&lt;sizeof...(Ts)&gt;::indices{});
-}
-
-template &lt;typename ReturnType&gt;
-::std::vector&lt;Argument&gt; createReturns(ReturnType*) {
-  checkStaticTypes&lt;decay_t&lt;ReturnType&gt;&gt;();
-  return {Argument(&quot;_1&quot;, getTypePtr&lt;decay_t&lt;ReturnType&gt;&gt;())};
-}
-
-template &lt;typename FunctionTraits, size_t... Is&gt;
-::std::vector&lt;Argument&gt; createArgumentVectorFromTraits(Indices&lt;Is...&gt; indices) {
-  using ArgumentTypes = typename FunctionTraits::parameter_types;
-  return createArgumentVectorFromTypes&lt;
-      c10::guts::typelist::element_t&lt;Is, ArgumentTypes&gt;...&gt;(indices);
-}
-
-template &lt;typename FunctionTraits&gt;
-FunctionSchema createFunctionSchemaFromTraits(const std::string&amp; name) {
-  using ReturnType = typename FunctionTraits::return_type;
-
-  auto arguments = createArgumentVectorFromTraits&lt;FunctionTraits&gt;(
-      typename MakeIndices&lt;FunctionTraits::number_of_parameters&gt;::indices{});
-  auto returns = createReturns(static_cast&lt;ReturnType*&gt;(nullptr));
-
-  return {name, &quot;&quot;, arguments, returns};
-}
 
 template &lt;size_t... Is, typename... Types&gt;
 Node* getTracedNode(
@@ -391,8 +334,8 @@ FunctionSchema inferAndCheckSchema(const std::string&amp; schemaOrName) {
   const auto bracketIndex = schemaOrName.find(&#39;(&#39;);
   if (bracketIndex == std::string::npos) {
     // Infer the full schema and we&#39;re good.
-    return torch::jit::detail::createFunctionSchemaFromTraits&lt;Traits&gt;(
-        /*name=*/schemaOrName);
+    return c10::detail::createFunctionSchemaFromTraits&lt;Traits&gt;(
+        /*name=*/schemaOrName, &quot;&quot;);
   }
 
   // If the user provided her own schema, we need to infer it nevertheless and
@@ -402,8 +345,8 @@ FunctionSchema inferAndCheckSchema(const std::string&amp; schemaOrName) {
   auto providedSchema = parseSchema(schemaOrName);
 
   const auto inferredSchema =
-      torch::jit::detail::createFunctionSchemaFromTraits&lt;Traits&gt;(
-          providedSchema.name());
+      c10::detail::createFunctionSchemaFromTraits&lt;Traits&gt;(
+          providedSchema.name(), providedSchema.overload_name());
   checkArgumentVector(
       &quot;argument&quot;,
       inferredSchema.arguments(),

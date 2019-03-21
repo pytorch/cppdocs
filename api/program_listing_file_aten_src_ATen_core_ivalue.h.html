@@ -1181,6 +1181,23 @@ inline bool IValue::isSameIdentity(IValue&amp; rhs) {
         &amp;&amp; this-&gt;payload.as_intrusive_ptr == rhs.payload.as_intrusive_ptr;
   }
 }
+
+inline bool shallowEquals(const IValue&amp; lhs, const IValue&amp; rhs) {
+  if (lhs.isNone()) {
+    return rhs.isNone();
+  } else if (lhs.isInt()) {
+    return rhs.isInt() &amp;&amp; lhs.toInt() == rhs.toInt();
+  } else if (lhs.isString()) {
+    return rhs.isString() &amp;&amp; lhs.toStringRef() == rhs.toStringRef();
+  } else if (lhs.isDouble()) {
+    return rhs.isDouble() &amp;&amp; lhs.toDouble() == rhs.toDouble();
+  } else if (lhs.isBool()) {
+    return rhs.isBool() &amp;&amp; lhs.toBool() == rhs.toBool();
+  } else {
+    AT_ERROR(&quot;shallowEquals(IValue, IValue) not implemented for type &quot;, lhs.tagKind());
+  }
+}
+
 } // namespace c10
 
 inline size_t at::ivalue::DictHash::operator()(
@@ -1199,7 +1216,9 @@ inline size_t at::ivalue::DictHash::operator()(
 inline bool at::ivalue::DictEqualTo::operator()(
     const c10::IValue&amp; lhs,
     const c10::IValue&amp; rhs) const {
-  if (lhs.isInt()) {
+  if (lhs.isNone()) {
+    return rhs.isNone();
+  } else if (lhs.isInt()) {
     return lhs.toInt() == rhs.toInt();
   } else if (lhs.isString()) {
     return lhs.toStringRef() == rhs.toStringRef();
