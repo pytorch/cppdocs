@@ -491,8 +491,8 @@ static inline Tensor _th_clamp_min(const Tensor &amp; self, Scalar min);
 static inline Tensor &amp; _th_clamp_max_out(Tensor &amp; result, const Tensor &amp; self, Scalar max);
 static inline Tensor _th_clamp_max(const Tensor &amp; self, Scalar max);
 static inline Tensor _th_dot(const Tensor &amp; self, const Tensor &amp; tensor);
-static inline Tensor &amp; _th_cross_out(Tensor &amp; result, const Tensor &amp; self, const Tensor &amp; other, int64_t dim=-1);
-static inline Tensor _th_cross(const Tensor &amp; self, const Tensor &amp; other, int64_t dim=-1);
+static inline Tensor &amp; _th_cross_kernel_out(Tensor &amp; result, const Tensor &amp; self, const Tensor &amp; other, int64_t dim);
+static inline Tensor _th_cross_kernel(const Tensor &amp; self, const Tensor &amp; other, int64_t dim);
 static inline Tensor &amp; _th_diag_out(Tensor &amp; result, const Tensor &amp; self, int64_t diagonal=0);
 static inline Tensor _th_diag(const Tensor &amp; self, int64_t diagonal=0);
 static inline Tensor &amp; _th_addmm_out(Tensor &amp; result, const Tensor &amp; self, const Tensor &amp; mat1, const Tensor &amp; mat2, Scalar beta=1, Scalar alpha=1);
@@ -550,6 +550,10 @@ static inline Tensor _th_btrisolve(const Tensor &amp; self, const Tensor &amp; L
 static inline Tensor &amp; _th_random_(Tensor &amp; self, int64_t from, int64_t to, Generator * generator=nullptr);
 static inline Tensor &amp; _th_random_(Tensor &amp; self, int64_t to, Generator * generator=nullptr);
 static inline Tensor &amp; _th_random_(Tensor &amp; self, Generator * generator=nullptr);
+static inline std::tuple&lt;Tensor &amp;,Tensor &amp;&gt; _th_multinomial_alias_setup_out(Tensor &amp; J, Tensor &amp; q, const Tensor &amp; probs);
+static inline std::tuple&lt;Tensor,Tensor&gt; _th_multinomial_alias_setup(const Tensor &amp; probs);
+static inline Tensor &amp; _th_multinomial_alias_draw_out(Tensor &amp; result, const Tensor &amp; q, const Tensor &amp; J, int64_t num_samples, Generator * generator=nullptr);
+static inline Tensor _th_multinomial_alias_draw(const Tensor &amp; q, const Tensor &amp; J, int64_t num_samples, Generator * generator=nullptr);
 static inline Tensor &amp; _th_multinomial_out(Tensor &amp; result, const Tensor &amp; self, int64_t num_samples, bool replacement=false, Generator * generator=nullptr);
 static inline Tensor _th_multinomial(const Tensor &amp; self, int64_t num_samples, bool replacement=false, Generator * generator=nullptr);
 static inline Tensor &amp; _th_uniform_(Tensor &amp; self, double from=0, double to=1, Generator * generator=nullptr);
@@ -1291,15 +1295,10 @@ static inline Tensor frobenius_norm(const Tensor &amp; self, IntArrayRef dim, bo
 static inline Tensor &amp; frobenius_norm_out(Tensor &amp; out, const Tensor &amp; self, IntArrayRef dim, bool keepdim=false);
 static inline Tensor nuclear_norm(const Tensor &amp; self, bool keepdim=false);
 static inline Tensor &amp; nuclear_norm_out(Tensor &amp; out, const Tensor &amp; self, bool keepdim=false);
-static inline Tensor native_clone(const Tensor &amp; self);
 static inline Tensor clone(const Tensor &amp; self);
-static inline Tensor &amp; native_resize_as_(Tensor &amp; self, const Tensor &amp; the_template);
 static inline Tensor &amp; resize_as_(Tensor &amp; self, const Tensor &amp; the_template);
-static inline Tensor &amp; native_pow_out(Tensor &amp; out, const Tensor &amp; self, Scalar exponent);
-static inline Tensor native_pow(const Tensor &amp; self, Scalar exponent);
 static inline Tensor &amp; pow_out(Tensor &amp; out, const Tensor &amp; self, Scalar exponent);
 static inline Tensor pow(const Tensor &amp; self, Scalar exponent);
-static inline Tensor &amp; native_zero_(Tensor &amp; self);
 static inline Tensor &amp; zero_(Tensor &amp; self);
 static inline Tensor &amp; sub_out(Tensor &amp; out, const Tensor &amp; self, const Tensor &amp; other, Scalar alpha=1);
 static inline Tensor sub(const Tensor &amp; self, const Tensor &amp; other, Scalar alpha=1);
@@ -1374,8 +1373,8 @@ static inline Tensor &amp; addbmm_out(Tensor &amp; out, const Tensor &amp; self,
 static inline Tensor addbmm(const Tensor &amp; self, const Tensor &amp; batch1, const Tensor &amp; batch2, Scalar beta=1, Scalar alpha=1);
 static inline Tensor &amp; diag_out(Tensor &amp; out, const Tensor &amp; self, int64_t diagonal=0);
 static inline Tensor diag(const Tensor &amp; self, int64_t diagonal=0);
-static inline Tensor &amp; cross_out(Tensor &amp; out, const Tensor &amp; self, const Tensor &amp; other, int64_t dim=-1);
-static inline Tensor cross(const Tensor &amp; self, const Tensor &amp; other, int64_t dim=-1);
+static inline Tensor &amp; cross_out(Tensor &amp; out, const Tensor &amp; self, const Tensor &amp; other, c10::optional&lt;int64_t&gt; dim=c10::nullopt);
+static inline Tensor cross(const Tensor &amp; self, const Tensor &amp; other, c10::optional&lt;int64_t&gt; dim=c10::nullopt);
 static inline Tensor &amp; triu_out(Tensor &amp; out, const Tensor &amp; self, int64_t diagonal=0);
 static inline Tensor triu(const Tensor &amp; self, int64_t diagonal=0);
 static inline Tensor &amp; tril_out(Tensor &amp; out, const Tensor &amp; self, int64_t diagonal=0);
@@ -1454,15 +1453,13 @@ static inline Tensor &amp; orgqr_out(Tensor &amp; out, const Tensor &amp; self, 
 static inline Tensor orgqr(const Tensor &amp; self, const Tensor &amp; input2);
 static inline Tensor &amp; ormqr_out(Tensor &amp; out, const Tensor &amp; self, const Tensor &amp; input2, const Tensor &amp; input3, bool left=true, bool transpose=false);
 static inline Tensor ormqr(const Tensor &amp; self, const Tensor &amp; input2, const Tensor &amp; input3, bool left=true, bool transpose=false);
-static inline std::tuple&lt;Tensor &amp;,Tensor &amp;&gt; btrifact_out(Tensor &amp; A_LU, Tensor &amp; pivots, const Tensor &amp; self, bool pivot=true);
-static inline std::tuple&lt;Tensor,Tensor&gt; btrifact(const Tensor &amp; self, bool pivot=true);
-static inline std::tuple&lt;Tensor &amp;,Tensor &amp;,Tensor &amp;&gt; btrifact_with_info_out(Tensor &amp; A_LU, Tensor &amp; pivots, Tensor &amp; info, const Tensor &amp; self, bool pivot=true);
-static inline std::tuple&lt;Tensor,Tensor,Tensor&gt; btrifact_with_info(const Tensor &amp; self, bool pivot=true);
-static inline std::tuple&lt;Tensor,Tensor,Tensor&gt; _btrifact_helper(const Tensor &amp; self, bool pivot);
+static inline std::tuple&lt;Tensor,Tensor,Tensor&gt; _lu_with_info(const Tensor &amp; self, bool pivot=true, bool check_errors=true);
 static inline Tensor &amp; btrisolve_out(Tensor &amp; out, const Tensor &amp; self, const Tensor &amp; LU_data, const Tensor &amp; LU_pivots);
 static inline Tensor btrisolve(const Tensor &amp; self, const Tensor &amp; LU_data, const Tensor &amp; LU_pivots);
 static inline Tensor &amp; multinomial_out(Tensor &amp; out, const Tensor &amp; self, int64_t num_samples, bool replacement=false, Generator * generator=nullptr);
 static inline Tensor multinomial(const Tensor &amp; self, int64_t num_samples, bool replacement=false, Generator * generator=nullptr);
+static inline std::tuple&lt;Tensor,Tensor&gt; _multinomial_alias_setup(const Tensor &amp; probs);
+static inline Tensor _multinomial_alias_draw(const Tensor &amp; J, const Tensor &amp; q, int64_t num_samples, Generator * generator=nullptr);
 static inline Tensor &amp; lgamma_out(Tensor &amp; out, const Tensor &amp; self);
 static inline Tensor lgamma(const Tensor &amp; self);
 static inline Tensor &amp; digamma_out(Tensor &amp; out, const Tensor &amp; self);
@@ -2483,11 +2480,11 @@ static inline Tensor _th_clamp_max(const Tensor &amp; self, Scalar max) {
 static inline Tensor _th_dot(const Tensor &amp; self, const Tensor &amp; tensor) {
     return detail::infer_type(self)._th_dot(self, tensor);
 }
-static inline Tensor &amp; _th_cross_out(Tensor &amp; result, const Tensor &amp; self, const Tensor &amp; other, int64_t dim) {
-    return detail::infer_type(self)._th_cross_out(result, self, other, dim);
+static inline Tensor &amp; _th_cross_kernel_out(Tensor &amp; result, const Tensor &amp; self, const Tensor &amp; other, int64_t dim) {
+    return detail::infer_type(self)._th_cross_kernel_out(result, self, other, dim);
 }
-static inline Tensor _th_cross(const Tensor &amp; self, const Tensor &amp; other, int64_t dim) {
-    return detail::infer_type(self)._th_cross(self, other, dim);
+static inline Tensor _th_cross_kernel(const Tensor &amp; self, const Tensor &amp; other, int64_t dim) {
+    return detail::infer_type(self)._th_cross_kernel(self, other, dim);
 }
 static inline Tensor &amp; _th_diag_out(Tensor &amp; result, const Tensor &amp; self, int64_t diagonal) {
     return detail::infer_type(self)._th_diag_out(result, self, diagonal);
@@ -2659,6 +2656,18 @@ static inline Tensor &amp; _th_random_(Tensor &amp; self, int64_t to, Generator 
 }
 static inline Tensor &amp; _th_random_(Tensor &amp; self, Generator * generator) {
     return detail::infer_type(self)._th_random_(self, generator);
+}
+static inline std::tuple&lt;Tensor &amp;,Tensor &amp;&gt; _th_multinomial_alias_setup_out(Tensor &amp; J, Tensor &amp; q, const Tensor &amp; probs) {
+    return detail::infer_type(J)._th_multinomial_alias_setup_out(J, q, probs);
+}
+static inline std::tuple&lt;Tensor,Tensor&gt; _th_multinomial_alias_setup(const Tensor &amp; probs) {
+    return detail::infer_type(probs)._th_multinomial_alias_setup(probs);
+}
+static inline Tensor &amp; _th_multinomial_alias_draw_out(Tensor &amp; result, const Tensor &amp; q, const Tensor &amp; J, int64_t num_samples, Generator * generator) {
+    return detail::infer_type(result)._th_multinomial_alias_draw_out(result, q, J, num_samples, generator);
+}
+static inline Tensor _th_multinomial_alias_draw(const Tensor &amp; q, const Tensor &amp; J, int64_t num_samples, Generator * generator) {
+    return detail::infer_type(q)._th_multinomial_alias_draw(q, J, num_samples, generator);
 }
 static inline Tensor &amp; _th_multinomial_out(Tensor &amp; result, const Tensor &amp; self, int64_t num_samples, bool replacement, Generator * generator) {
     return detail::infer_type(self)._th_multinomial_out(result, self, num_samples, replacement, generator);
@@ -4883,32 +4892,17 @@ static inline Tensor nuclear_norm(const Tensor &amp; self, bool keepdim) {
 static inline Tensor &amp; nuclear_norm_out(Tensor &amp; out, const Tensor &amp; self, bool keepdim) {
     return detail::infer_type(self).nuclear_norm_out(out, self, keepdim);
 }
-static inline Tensor native_clone(const Tensor &amp; self) {
-    return detail::infer_type(self).native_clone(self);
-}
 static inline Tensor clone(const Tensor &amp; self) {
     return detail::infer_type(self).clone(self);
 }
-static inline Tensor &amp; native_resize_as_(Tensor &amp; self, const Tensor &amp; the_template) {
-    return detail::infer_type(self).native_resize_as_(self, the_template);
-}
 static inline Tensor &amp; resize_as_(Tensor &amp; self, const Tensor &amp; the_template) {
     return detail::infer_type(self).resize_as_(self, the_template);
-}
-static inline Tensor &amp; native_pow_out(Tensor &amp; out, const Tensor &amp; self, Scalar exponent) {
-    return detail::infer_type(self).native_pow_out(out, self, exponent);
-}
-static inline Tensor native_pow(const Tensor &amp; self, Scalar exponent) {
-    return detail::infer_type(self).native_pow(self, exponent);
 }
 static inline Tensor &amp; pow_out(Tensor &amp; out, const Tensor &amp; self, Scalar exponent) {
     return detail::infer_type(self).pow_out(out, self, exponent);
 }
 static inline Tensor pow(const Tensor &amp; self, Scalar exponent) {
     return detail::infer_type(self).pow(self, exponent);
-}
-static inline Tensor &amp; native_zero_(Tensor &amp; self) {
-    return detail::infer_type(self).native_zero_(self);
 }
 static inline Tensor &amp; zero_(Tensor &amp; self) {
     return detail::infer_type(self).zero_(self);
@@ -5132,10 +5126,10 @@ static inline Tensor &amp; diag_out(Tensor &amp; out, const Tensor &amp; self, i
 static inline Tensor diag(const Tensor &amp; self, int64_t diagonal) {
     return detail::infer_type(self).diag(self, diagonal);
 }
-static inline Tensor &amp; cross_out(Tensor &amp; out, const Tensor &amp; self, const Tensor &amp; other, int64_t dim) {
+static inline Tensor &amp; cross_out(Tensor &amp; out, const Tensor &amp; self, const Tensor &amp; other, c10::optional&lt;int64_t&gt; dim) {
     return detail::infer_type(self).cross_out(out, self, other, dim);
 }
-static inline Tensor cross(const Tensor &amp; self, const Tensor &amp; other, int64_t dim) {
+static inline Tensor cross(const Tensor &amp; self, const Tensor &amp; other, c10::optional&lt;int64_t&gt; dim) {
     return detail::infer_type(self).cross(self, other, dim);
 }
 static inline Tensor &amp; triu_out(Tensor &amp; out, const Tensor &amp; self, int64_t diagonal) {
@@ -5372,20 +5366,8 @@ static inline Tensor &amp; ormqr_out(Tensor &amp; out, const Tensor &amp; self, 
 static inline Tensor ormqr(const Tensor &amp; self, const Tensor &amp; input2, const Tensor &amp; input3, bool left, bool transpose) {
     return detail::infer_type(self).ormqr(self, input2, input3, left, transpose);
 }
-static inline std::tuple&lt;Tensor &amp;,Tensor &amp;&gt; btrifact_out(Tensor &amp; A_LU, Tensor &amp; pivots, const Tensor &amp; self, bool pivot) {
-    return detail::infer_type(self).btrifact_out(A_LU, pivots, self, pivot);
-}
-static inline std::tuple&lt;Tensor,Tensor&gt; btrifact(const Tensor &amp; self, bool pivot) {
-    return detail::infer_type(self).btrifact(self, pivot);
-}
-static inline std::tuple&lt;Tensor &amp;,Tensor &amp;,Tensor &amp;&gt; btrifact_with_info_out(Tensor &amp; A_LU, Tensor &amp; pivots, Tensor &amp; info, const Tensor &amp; self, bool pivot) {
-    return detail::infer_type(self).btrifact_with_info_out(A_LU, pivots, info, self, pivot);
-}
-static inline std::tuple&lt;Tensor,Tensor,Tensor&gt; btrifact_with_info(const Tensor &amp; self, bool pivot) {
-    return detail::infer_type(self).btrifact_with_info(self, pivot);
-}
-static inline std::tuple&lt;Tensor,Tensor,Tensor&gt; _btrifact_helper(const Tensor &amp; self, bool pivot) {
-    return detail::infer_type(self)._btrifact_helper(self, pivot);
+static inline std::tuple&lt;Tensor,Tensor,Tensor&gt; _lu_with_info(const Tensor &amp; self, bool pivot, bool check_errors) {
+    return detail::infer_type(self)._lu_with_info(self, pivot, check_errors);
 }
 static inline Tensor &amp; btrisolve_out(Tensor &amp; out, const Tensor &amp; self, const Tensor &amp; LU_data, const Tensor &amp; LU_pivots) {
     return detail::infer_type(self).btrisolve_out(out, self, LU_data, LU_pivots);
@@ -5398,6 +5380,12 @@ static inline Tensor &amp; multinomial_out(Tensor &amp; out, const Tensor &amp; 
 }
 static inline Tensor multinomial(const Tensor &amp; self, int64_t num_samples, bool replacement, Generator * generator) {
     return detail::infer_type(self).multinomial(self, num_samples, replacement, generator);
+}
+static inline std::tuple&lt;Tensor,Tensor&gt; _multinomial_alias_setup(const Tensor &amp; probs) {
+    return detail::infer_type(probs)._multinomial_alias_setup(probs);
+}
+static inline Tensor _multinomial_alias_draw(const Tensor &amp; J, const Tensor &amp; q, int64_t num_samples, Generator * generator) {
+    return detail::infer_type(J)._multinomial_alias_draw(J, q, num_samples, generator);
 }
 static inline Tensor &amp; lgamma_out(Tensor &amp; out, const Tensor &amp; self) {
     return detail::infer_type(self).lgamma_out(out, self);

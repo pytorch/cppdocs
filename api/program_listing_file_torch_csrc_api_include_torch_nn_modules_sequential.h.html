@@ -266,6 +266,13 @@ class SequentialImpl : public Cloneable&lt;SequentialImpl&gt; {
     push_back(std::forward&lt;Modules&gt;(modules)...);
   }
 
+  explicit SequentialImpl(torch::OrderedDict&lt;std::string, AnyModule&gt;&amp;&amp; ordered_dict) {
+    modules_.reserve(ordered_dict.size());
+    for (auto&amp; item : ordered_dict) {
+      push_back(std::move(item.key()), std::move(item.value()));
+    }
+  }
+
   std::shared_ptr&lt;Module&gt; clone(
       const optional&lt;Device&gt;&amp; device = nullopt) const override {
     auto clone = std::make_shared&lt;SequentialImpl&gt;();
@@ -306,31 +313,33 @@ class SequentialImpl : public Cloneable&lt;SequentialImpl&gt; {
 
   template &lt;typename ModuleType&gt;
   void push_back(std::shared_ptr&lt;ModuleType&gt; module_ptr) {
-    // Nesting Sequential doesn&#39;t work because `forward()`&#39;s return type is
-    // templatized, so it&#39;ll give a nasty compiler error.
-    static_assert(
-        !std::is_same&lt;SequentialImpl, ModuleType&gt;::value,
-        &quot;Sequential is not nestable&quot;);
-    static_assert(
-        torch::detail::is_module&lt;ModuleType&gt;::value,
-        &quot;Can only add objects derived from nn::Module to Sequential&quot;);
-    static_assert(
-        torch::detail::has_forward&lt;ModuleType&gt;::value,
-        &quot;Can only add modules with a forward() method to Sequential&quot;);
-    push_back(AnyModule(std::move(module_ptr)));
+    push_back(std::to_string(modules_.size()), std::move(module_ptr));
+  }
+
+  template &lt;typename ModuleType&gt;
+  void push_back(std::string name, std::shared_ptr&lt;ModuleType&gt; module_ptr) {
+    push_back(std::move(name), AnyModule(std::move(module_ptr)));
   }
 
   template &lt;typename M, typename = torch::detail::enable_if_module_t&lt;M&gt;&gt;
   void push_back(M&amp;&amp; module) {
-    // Need to get rid of any reference components for make_unique.
+    push_back(std::to_string(modules_.size()), std::forward&lt;M&gt;(module));
+  }
+
+  template &lt;typename M, typename = torch::detail::enable_if_module_t&lt;M&gt;&gt;
+  void push_back(std::string name, M&amp;&amp; module) {
     using Type = typename std::remove_reference&lt;M&gt;::type;
-    // Here we move (or copy) the module into a new shared_ptr.
-    push_back(std::make_shared&lt;Type&gt;(std::forward&lt;M&gt;(module)));
+    push_back(std::move(name), std::make_shared&lt;Type&gt;(std::forward&lt;M&gt;(module)));
   }
 
   template &lt;typename M&gt;
   void push_back(const ModuleHolder&lt;M&gt;&amp; module_holder) {
-    push_back(module_holder.ptr());
+    push_back(std::to_string(modules_.size()), module_holder);
+  }
+
+  template &lt;typename M&gt;
+  void push_back(std::string name, const ModuleHolder&lt;M&gt;&amp; module_holder) {
+    push_back(std::move(name), module_holder.ptr());
   }
 
   template &lt;typename Container&gt;
@@ -402,7 +411,9 @@ class SequentialImpl : public Cloneable&lt;SequentialImpl&gt; {
   }
 
  private:
-  template &lt;typename First, typename Second, typename... Rest&gt;
+  template &lt;typename First, typename Second, typename... Rest,
+    typename = torch::disable_if_t&lt;std::is_same&lt;First, std::string&gt;::value ||
+      std::is_same&lt;typename std::decay&lt;First&gt;::type, std::decay&lt;const char (&amp;)[]&gt;::type&gt;::value&gt;&gt;
   void push_back(First&amp;&amp; first, Second&amp;&amp; second, Rest&amp;&amp;... rest) {
     push_back(std::forward&lt;First&gt;(first));
     // Recursively calls this method, until the parameter pack only thas this
@@ -411,9 +422,13 @@ class SequentialImpl : public Cloneable&lt;SequentialImpl&gt; {
   }
 
   void push_back(AnyModule any_module) {
+    push_back(std::to_string(modules_.size()), std::move(any_module));
+  }
+
+  void push_back(std::string name, AnyModule any_module) {
     modules_.push_back(std::move(any_module));
     const auto index = modules_.size() - 1;
-    register_module(std::to_string(index), modules_[index].ptr());
+    register_module(std::move(name), modules_[index].ptr());
   }
 
   void push_back() {}
