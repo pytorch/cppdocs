@@ -232,17 +232,16 @@
 <span id="program-listing-file-torch-csrc-jit-script-module-h"></span><h1>Program Listing for File module.h<a class="headerlink" href="#program-listing-for-file-module-h" title="Permalink to this headline">¶</a></h1>
 <p>↰ <a class="reference internal" href="file_torch_csrc_jit_script_module.h.html#file-torch-csrc-jit-script-module-h"><span class="std std-ref">Return to documentation for file</span></a> (<code class="docutils literal notranslate"><span class="pre">torch/csrc/jit/script/module.h</span></code>)</p>
 <div class="highlight-none notranslate"><div class="highlight"><pre><span></span>#pragma once
-#include &lt;torch/csrc/autograd/variable.h&gt;
-#include &lt;torch/csrc/autograd/generated/variable_factories.h&gt;
-#include &lt;torch/csrc/jit/argument_spec.h&gt;
 #include &lt;c10/util/Exception.h&gt;
+#include &lt;torch/csrc/autograd/generated/variable_factories.h&gt;
+#include &lt;torch/csrc/autograd/variable.h&gt;
+#include &lt;torch/csrc/jit/argument_spec.h&gt;
 #include &lt;torch/csrc/jit/graph_executor.h&gt;
 #include &lt;torch/csrc/jit/ir.h&gt;
 #include &lt;torch/csrc/jit/named_value.h&gt;
 #include &lt;torch/csrc/jit/passes/shape_analysis.h&gt;
-#include &lt;torch/csrc/jit/source_range.h&gt;
 #include &lt;torch/csrc/jit/script/slot.h&gt;
-
+#include &lt;torch/csrc/jit/source_range.h&gt;
 
 #include &lt;torch/csrc/WindowsTorchApiMacro.h&gt;
 #include &lt;torch/csrc/api/include/torch/ordered_dict.h&gt;
@@ -284,8 +283,8 @@ using ExtraFilesMap = std::unordered_map&lt;std::string, std::string&gt;;
 
 struct Module;
 
-using ModuleLookup = std::function&lt;std::shared_ptr&lt;Module&gt;(
-    const std::vector&lt;std::string&gt;&amp;)&gt;;
+using ModuleLookup =
+    std::function&lt;std::shared_ptr&lt;Module&gt;(const std::vector&lt;std::string&gt;&amp;)&gt;;
 
 struct Method {
   Method(
@@ -370,6 +369,14 @@ struct Method {
     return graph()-&gt;addInput()-&gt;setType(type);
   }
 
+  static void setInputTensorTypes(Graph&amp; g, const Stack&amp; stack) {
+    AT_ASSERT(stack.size() == g.inputs().size());
+    for (size_t i = 0; i &lt; stack.size(); ++i) {
+      g.inputs().at(i)-&gt;setType(
+          DimensionedTensorType::create(stack.at(i).toTensor()));
+    }
+  }
+
   std::shared_ptr&lt;Graph&gt; propagate_shapes(
       std::vector&lt;at::Tensor&gt; inputs,
       bool with_grad = false) {
@@ -382,8 +389,7 @@ struct Method {
     for (const Slot&amp; inp : initial_ivalues_) {
       stack.push_back(*inp);
     }
-    const auto size = stack.size();
-    setInputTypes(*retval, ArgumentSpec(with_grad, stack, size));
+    setInputTensorTypes(*retval, stack);
     PropagateInputShapes(retval);
     return retval;
   }
@@ -400,9 +406,7 @@ struct Method {
       }
     }
     if (propagate) {
-      setInputTypes(
-          *retval,
-          ArgumentSpec(with_grad, fmap&lt;IValue&gt;(inputs), inputs.size()));
+      setInputTensorTypes(*retval, fmap&lt;IValue&gt;(inputs));
       PropagateInputShapes(retval);
     }
     AT_ASSERT(retval-&gt;inputs().size() == inputs.size());
@@ -521,16 +525,16 @@ struct Method {
       if (pos &lt; inputs.size()) {
         if (!isSubvalueOf(inputs[pos], argument.type())) {
           AT_ERROR(
-            &quot;Expected value of type &quot;,
-            *argument.type(),
-            &quot; for argument &#39;&quot;,
-            argument.name(),
-            &quot;&#39; in position &quot;,
-            pos,
-            &quot;, but instead got value of type &quot;,
-            attemptToRecoverType(inputs[pos])-&gt;str(),
-            &quot;. Declaration: &quot;,
-            schema);
+              &quot;Expected value of type &quot;,
+              *argument.type(),
+              &quot; for argument &#39;&quot;,
+              argument.name(),
+              &quot;&#39; in position &quot;,
+              pos,
+              &quot;, but instead got value of type &quot;,
+              attemptToRecoverType(inputs[pos])-&gt;str(),
+              &quot;. Declaration: &quot;,
+              schema);
         }
       } else if (argument.default_value()) {
         inputs.push_back(*argument.default_value());
@@ -608,7 +612,8 @@ struct NamedIValue {
   const TypePtr&amp; type() const {
     return type_;
   }
-private:
+
+ private:
   const std::string name_;
   const TypePtr type_;
   std::unique_ptr&lt;IValue&gt; ivalue_;
@@ -730,12 +735,10 @@ struct Module {
   const torch::OrderedDict&lt;std::string, NamedModule&gt;&amp; get_modules() const {
     return modules;
   }
-  const torch::OrderedDict&lt;std::string, NamedIValue&gt;&amp; get_parameters()
-      const {
+  const torch::OrderedDict&lt;std::string, NamedIValue&gt;&amp; get_parameters() const {
     return parameters;
   }
-  const torch::OrderedDict&lt;std::string, NamedIValue&gt;&amp; get_attributes()
-      const {
+  const torch::OrderedDict&lt;std::string, NamedIValue&gt;&amp; get_attributes() const {
     return attributes;
   }
   const torch::OrderedDict&lt;std::string, std::unique_ptr&lt;Method&gt;&gt;&amp; get_methods()
@@ -828,9 +831,7 @@ struct Module {
       if (!kv.value().type()-&gt;isSubtypeOf(TensorType::get())) {
         continue;
       }
-      curr-&gt;register_buffer(
-          kv.key(),
-          kv.value().slot()-&gt;toTensor());
+      curr-&gt;register_buffer(kv.key(), kv.value().slot()-&gt;toTensor());
       parameter_remap[kv.value().slot()] = curr-&gt;find_buffer(kv.key())-&gt;slot();
     }
     for (auto&amp; kv : modules) {
