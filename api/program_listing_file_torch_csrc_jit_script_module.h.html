@@ -592,6 +592,11 @@ struct Method {
 
 struct Module;
 
+struct NamedModule {
+  std::string name;
+  std::shared_ptr&lt;Module&gt; module;
+};
+
 struct NamedIValue {
   NamedIValue(std::string name, TypePtr type, IValue ivalue)
       : name_(name),
@@ -616,20 +621,16 @@ struct NamedIValue {
 
 struct Module {
   TH_DISALLOW_COPY_AND_ASSIGN(Module);
-  Module() : name_(&quot;__main__&quot;), optimize_(true) {}
-
-  const std::string&amp; name() const {
-    return name_;
-  }
+  Module() : optimize(true) {}
 
   // note this doesn&#39;t change the flags of existing methods just ones
   // added afterward.
   void set_optimized(bool o) {
-    optimize_ = o;
+    optimize = o;
   }
 
   bool is_optimized() const {
-    return optimize_;
+    return optimize;
   }
 
   IValue forward(std::vector&lt;IValue&gt; inputs) {
@@ -679,15 +680,7 @@ struct Module {
   void register_module(
       const std::string&amp; name,
       std::shared_ptr&lt;Module&gt; module) {
-    if (module-&gt;parent_) {
-      AT_ERROR(
-          &quot;Attempting to assign submodule &#39;&quot;,
-          name,
-          &quot;&#39; but it is already a submodule of another ScriptModule &#39;&quot;, module-&gt;parent_-&gt;name(), &quot;&#39;&quot;);
-    }
-    module-&gt;parent_ = this;
-    module-&gt;name_ = name;
-    insert(name, modules_, EntityType::MODULE, std::move(module));
+    insert(name, modules_, EntityType::MODULE, {name, std::move(module)});
   }
 
   Method&amp; create_method(
@@ -698,7 +691,7 @@ struct Module {
     std::unique_ptr&lt;Method&gt; method(new Method(
         this,
         name,
-        optimize_,
+        optimize,
         std::move(graph),
         std::move(member_inputs),
         nullptr));
@@ -711,7 +704,7 @@ struct Module {
     std::unique_ptr&lt;Method&gt; method(new Method(
         this,
         name,
-        optimize_,
+        optimize,
         std::make_shared&lt;Graph&gt;(),
         {},
         std::move(creator)));
@@ -745,10 +738,10 @@ struct Module {
   }
 
   std::shared_ptr&lt;Module&gt; get_module(const std::string&amp; name) const {
-    return modules_[get_offset(name, EntityType::MODULE)];
+    return modules_[get_offset(name, EntityType::MODULE)].module;
   }
 
-  c10::ArrayRef&lt;std::shared_ptr&lt;Module&gt;&gt; get_modules() const {
+  c10::ArrayRef&lt;NamedModule&gt; get_modules() const {
     return modules_;
   }
   c10::ArrayRef&lt;NamedIValue&gt; get_parameters() const {
@@ -776,9 +769,9 @@ struct Module {
     }
     return nullptr;
   }
-  std::shared_ptr&lt;Module&gt; find_module(const std::string&amp; name) {
+  NamedModule* find_module(const std::string&amp; name) {
     auto offset = find_offset(name, EntityType::MODULE);
-    return offset ? modules_[*offset] : nullptr;
+    return offset ? &amp;modules_[*offset] : nullptr;
   }
   Method* find_method(const std::string&amp; name) {
     auto offset = find_offset(name, EntityType::METHOD);
@@ -786,13 +779,13 @@ struct Module {
   }
   void apply(std::function&lt;void(Module&amp;)&gt; fn) {
     for (auto&amp; submod : get_modules()) {
-      submod-&gt;apply(fn);
+      submod.module-&gt;apply(fn);
     }
     fn(*this);
   }
   void train(bool on = true) {
     for (auto&amp; submod : get_modules()) {
-      submod-&gt;train(on);
+      submod.module-&gt;train(on);
     }
     register_buffer(&quot;training&quot;, torch::tensor(on ? 1 : 0, at::kLong));
   }
@@ -851,10 +844,10 @@ struct Module {
       parameter_remap[attr.slot()] = curr-&gt;find_buffer(attr.name())-&gt;slot();
     }
     for (auto&amp; mod : get_modules()) {
-      names.push_back(mod-&gt;name());
+      names.push_back(mod.name);
       // Submodules must be translated first, otherwise parameter_remap entries
       // will not be filled in for methods of this module.
-      mod-&gt;copy_into(module_lookup, parameter_remap, names);
+      mod.module-&gt;copy_into(module_lookup, parameter_remap, names);
       names.pop_back();
     }
     for (auto&amp; method : get_methods()) {
@@ -881,6 +874,20 @@ struct Module {
       const c10::optional&lt;at::Device&gt;&amp; device,
       const c10::optional&lt;at::ScalarType&gt;&amp; dtype,
       bool non_blocking);
+
+  // modules have a single namespace, but spread over 4 different concepts:
+  // parameters, attributes, methods, and sub-modules
+  // we store individual lists of each concept, and a single map to
+  // unify the namespace and ensure fast lookup
+
+  // invariant: to ensure initial_ivalues of Methods stay valid,
+  // it is only legal to _add_ new modules and parameters.
+  // removing them will allow initial_ivalues to point to invalid parameters
+  // no such restriction exists for methods
+  std::vector&lt;NamedModule&gt; modules_;
+  std::vector&lt;NamedIValue&gt; parameters_;
+  std::vector&lt;NamedIValue&gt; attributes_;
+  std::vector&lt;std::unique_ptr&lt;Method&gt;&gt; methods_;
 
   static const char* toString(EntityType t) {
     switch (t) {
@@ -953,26 +960,9 @@ struct Module {
     return list.back();
   }
 
-  // modules have a single namespace, but spread over 4 different concepts:
-  // parameters, attributes, methods, and sub-modules
-  // we store individual lists of each concept, and a single map to
-  // unify the namespace and ensure fast lookup
-
-  // invariant: to ensure initial_ivalues of Methods stay valid,
-  // it is only legal to _add_ new modules and parameters.
-  // removing them will allow initial_ivalues to point to invalid parameters
-  // no such restriction exists for methods
-  std::vector&lt;std::shared_ptr&lt;Module&gt;&gt; modules_;
-  std::vector&lt;NamedIValue&gt; parameters_;
-  std::vector&lt;NamedIValue&gt; attributes_;
-  std::vector&lt;std::unique_ptr&lt;Method&gt;&gt; methods_;
-
   std::unordered_map&lt;std::string, Entry&gt; dict_;
-  std::string name_;
 
-  // back reference to parent of this Module if present
-  Module* parent_ = nullptr;
-  bool optimize_;
+  bool optimize;
 };
 
 // returns nullptr and fills in failure_messages if the callee does not
