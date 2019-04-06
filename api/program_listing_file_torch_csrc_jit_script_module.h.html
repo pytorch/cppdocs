@@ -356,17 +356,16 @@ struct Method {
   }
   TORCH_API Value* get_or_add_parameter(Slot slot) {
     AT_ASSERT(slot.value().isTensor());
-    return get_or_add_attribute(TensorType::get(), slot);
+    return get_or_add_attribute(slot);
   }
-
-  TORCH_API Value* get_or_add_attribute(TypePtr type, Slot slot) {
+  TORCH_API Value* get_or_add_attribute(Slot slot) {
     auto it = initial_ivalue_index.find(slot);
     if (it != initial_ivalue_index.end()) {
       return graph()-&gt;inputs().at(it-&gt;second);
     }
     initial_ivalues_.push_back(slot);
     initial_ivalue_index[slot] = graph()-&gt;inputs().size();
-    return graph()-&gt;addInput()-&gt;setType(type);
+    return graph()-&gt;addInput()-&gt;setType(slot.type());
   }
 
   static void setInputTensorTypes(Graph&amp; g, const Stack&amp; stack) {
@@ -592,31 +591,14 @@ struct Method {
 
 struct Module;
 
-struct NamedIValue {
-  NamedIValue(std::string name, TypePtr type, IValue ivalue)
-      : name_(name),
-        type_(type),
-        ivalue_(torch::make_unique&lt;IValue&gt;(std::move(ivalue))) {}
-
-  Slot slot() const {
-    return Slot(ivalue_.get());
-  }
-  const std::string&amp; name() const {
-    return name_;
-  }
-  const TypePtr&amp; type() const {
-    return type_;
-  }
-
- private:
-  const std::string name_;
-  const TypePtr type_;
-  std::unique_ptr&lt;IValue&gt; ivalue_;
-};
-
 struct Module {
   TH_DISALLOW_COPY_AND_ASSIGN(Module);
-  Module() : name_(&quot;__main__&quot;), optimize_(true) {}
+  Module()
+      : name_(&quot;__main__&quot;),
+        module_value_(c10::ivalue::Object::create(
+            ClassType::createModuleType(),
+            0)),
+        optimize_(true) {}
 
   const std::string&amp; name() const {
     return name_;
@@ -639,15 +621,16 @@ struct Module {
   void register_buffer(const std::string&amp; name, autograd::Variable v) {
     if (auto b = find_attribute(name)) {
       AT_ASSERT(b-&gt;type()-&gt;isSubtypeOf(TensorType::get()));
-      b-&gt;slot().setValue(v);
+      b-&gt;setValue(v);
       return;
     }
     insert(
         name,
         attributes_,
         EntityType::ATTRIBUTE,
-        NamedIValue(name, TensorType::get(), std::move(v)));
+        appendSlot(name, TensorType::get(),std::move(v)));
   }
+
   void register_parameter(
       const std::string&amp; name,
       autograd::Variable v,
@@ -657,24 +640,20 @@ struct Module {
       return;
     }
     if (auto p = find_parameter(name)) {
-      p-&gt;slot().setValue(v);
+      p-&gt;setValue(v);
       return;
     }
     insert(
         name,
         parameters_,
         EntityType::PARAMETER,
-        NamedIValue(name, TensorType::get(), std::move(v)));
+        appendSlot(name, TensorType::get(), std::move(v)));
   }
   void register_attribute(
       const std::string&amp; name,
       const TypePtr type,
       IValue ivalue) {
-    insert(
-        name,
-        attributes_,
-        EntityType::ATTRIBUTE,
-        NamedIValue(name, type, ivalue));
+    insert(name, attributes_, EntityType::ATTRIBUTE, appendSlot(name, type, ivalue));
   }
   void register_module(
       const std::string&amp; name,
@@ -694,6 +673,7 @@ struct Module {
     // }
     module-&gt;parent_ = this;
     module-&gt;name_ = name;
+    appendSlot(name, module-&gt;module_value_-&gt;type(), module-&gt;module_value_);
     insert(name, modules_, EntityType::MODULE, std::move(module));
   }
 
@@ -726,7 +706,7 @@ struct Module {
   }
 
   Slot parameter_slot(const std::string&amp; name) const {
-    return parameters_[get_offset(name, EntityType::PARAMETER)].slot();
+    return parameters_[get_offset(name, EntityType::PARAMETER)];
   }
 
   void set_parameter(const std::string&amp; name, at::Tensor v) {
@@ -738,7 +718,7 @@ struct Module {
   }
 
   IValue get_attribute(const std::string&amp; name) const {
-    return attributes_[get_offset(name, EntityType::ATTRIBUTE)].slot().value();
+    return attributes_[get_offset(name, EntityType::ATTRIBUTE)].value();
   }
 
   autograd::Variable get_buffer(const std::string&amp; name) const {
@@ -758,25 +738,25 @@ struct Module {
   c10::ArrayRef&lt;std::shared_ptr&lt;Module&gt;&gt; get_modules() const {
     return modules_;
   }
-  c10::ArrayRef&lt;NamedIValue&gt; get_parameters() const {
+  c10::ArrayRef&lt;Slot&gt; get_parameters() const {
     return parameters_;
   }
-  c10::ArrayRef&lt;NamedIValue&gt; get_attributes() const {
+  c10::ArrayRef&lt;Slot&gt; get_attributes() const {
     return attributes_;
   }
   c10::ArrayRef&lt;std::unique_ptr&lt;Method&gt;&gt; get_methods() const {
     return methods_;
   }
 
-  NamedIValue* find_parameter(const std::string&amp; name) {
+  Slot* find_parameter(const std::string&amp; name) {
     auto offset = find_offset(name, EntityType::PARAMETER);
     return offset ? &amp;parameters_[*offset] : nullptr;
   }
-  NamedIValue* find_attribute(const std::string&amp; name) {
+  Slot* find_attribute(const std::string&amp; name) {
     auto offset = find_offset(name, EntityType::ATTRIBUTE);
     return offset ? &amp;attributes_[*offset] : nullptr;
   }
-  NamedIValue* find_buffer(const std::string&amp; name) {
+  Slot* find_buffer(const std::string&amp; name) {
     auto iv = find_attribute(name);
     if (iv &amp;&amp; iv-&gt;type()-&gt;isSubtypeOf(TensorType::get())) {
       return iv;
@@ -808,7 +788,7 @@ struct Module {
   }
   bool is_training() {
     if (auto p = find_buffer(&quot;training&quot;)) {
-      return p-&gt;slot().value().toTensor().item&lt;int64_t&gt;() == 1;
+      return p-&gt;value().toTensor().item&lt;int64_t&gt;() == 1;
     }
     // We are in training mode by default
     return true;
@@ -846,16 +826,16 @@ struct Module {
     for (auto&amp; param : get_parameters()) {
       curr-&gt;register_parameter(
           param.name(),
-          param.slot().value().toTensor(),
+          param.value().toTensor(),
           /*is_buffer=*/false);
-      parameter_remap[param.slot()] = curr-&gt;parameter_slot(param.name());
+      parameter_remap[param] = curr-&gt;parameter_slot(param.name());
     }
     for (auto&amp; attr : get_attributes()) {
       if (!attr.type()-&gt;isSubtypeOf(TensorType::get())) {
         continue;
       }
-      curr-&gt;register_buffer(attr.name(), attr.slot().value().toTensor());
-      parameter_remap[attr.slot()] = curr-&gt;find_buffer(attr.name())-&gt;slot();
+      curr-&gt;register_buffer(attr.name(), attr.value().toTensor());
+      parameter_remap[attr] = *curr-&gt;find_buffer(attr.name());
     }
     for (auto&amp; mod : get_modules()) {
       names.push_back(mod-&gt;name());
@@ -960,6 +940,17 @@ struct Module {
     return list.back();
   }
 
+  // add a new entry to the singleton object that represents this
+  // Module as a first-class value in code, and update the corresponding
+  // ClassType to match.
+  Slot appendSlot(const std::string&amp; name, TypePtr typ, IValue value) {
+    const ClassTypePtr&amp; type = module_value_-&gt;type();
+    type-&gt;addAttribute(name, std::move(typ));
+    auto slot_index = type-&gt;getAttributeSlot(name);
+    module_value_-&gt;setSlot(slot_index, std::move(value));
+    return Slot(module_value_, slot_index);
+  }
+
   // modules have a single namespace, but spread over 4 different concepts:
   // parameters, attributes, methods, and sub-modules
   // we store individual lists of each concept, and a single map to
@@ -970,12 +961,16 @@ struct Module {
   // removing them will allow initial_ivalues to point to invalid parameters
   // no such restriction exists for methods
   std::vector&lt;std::shared_ptr&lt;Module&gt;&gt; modules_;
-  std::vector&lt;NamedIValue&gt; parameters_;
-  std::vector&lt;NamedIValue&gt; attributes_;
+  std::vector&lt;Slot&gt; parameters_;
+  std::vector&lt;Slot&gt; attributes_;
   std::vector&lt;std::unique_ptr&lt;Method&gt;&gt; methods_;
 
   std::unordered_map&lt;std::string, Entry&gt; dict_;
   std::string name_;
+
+
+  c10::intrusive_ptr&lt;at::ivalue::Object&gt; module_value_;
+
 
   // back reference to parent of this Module if present
   Module* parent_ = nullptr;
