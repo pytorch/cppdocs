@@ -247,10 +247,10 @@
 #include &lt;c10/core/TensorOptions.h&gt;
 #include &lt;ATen/core/Reduction.h&gt;
 #include &lt;c10/util/Optional.h&gt;
+#include &lt;ATen/TensorUtils.h&gt;
 
 namespace at {
 
-using native::from_blob;
 using native::tensor;
 
 static inline Tensor &amp; _th_set_(Tensor &amp; self, Storage source);
@@ -1758,6 +1758,45 @@ static inline Tensor thnn_col2im(const Tensor &amp; self, IntArrayRef output_siz
 static inline Tensor thnn_col2im_backward(const Tensor &amp; grad_output, IntArrayRef kernel_size, IntArrayRef dilation, IntArrayRef padding, IntArrayRef stride);
 static inline Tensor thnn_im2col(const Tensor &amp; self, IntArrayRef kernel_size, IntArrayRef dilation, IntArrayRef padding, IntArrayRef stride);
 static inline Tensor thnn_im2col_backward(const Tensor &amp; grad_output, IntArrayRef input_size, IntArrayRef kernel_size, IntArrayRef dilation, IntArrayRef padding, IntArrayRef stride);
+
+inline Tensor from_blob(
+    void* data,
+    IntArrayRef sizes,
+    IntArrayRef strides,
+    const std::function&lt;void(void*)&gt;&amp; deleter,
+    const TensorOptions&amp; options = {}) {
+  auto storage = Storage(
+      options.dtype(),
+      detail::computeStorageSize(sizes, strides),
+      InefficientStdFunctionContext::makeDataPtr(
+          data, deleter, options.device()),
+      /*allocator=*/nullptr,
+      /*resizable=*/false);
+  return empty({0}, options).set_(storage, 0, sizes, strides);
+}
+
+inline Tensor from_blob(
+    void* data,
+    IntArrayRef sizes,
+    const std::function&lt;void(void*)&gt;&amp; deleter,
+    const TensorOptions&amp; options = {}) {
+  return from_blob(data, sizes, detail::defaultStrides(sizes), deleter, options);
+}
+
+inline Tensor from_blob(
+    void* data,
+    IntArrayRef sizes,
+    IntArrayRef strides,
+    const TensorOptions&amp; options = {}) {
+  return from_blob(data, sizes, strides, [](void*) {}, options);
+}
+
+inline Tensor from_blob(
+    void* data,
+    IntArrayRef sizes,
+    const TensorOptions&amp; options = {}) {
+  return from_blob(data, sizes, detail::defaultStrides(sizes), [](void*) {}, options);
+}
 
 namespace detail {
 
