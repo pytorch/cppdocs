@@ -311,8 +311,10 @@ struct TORCH_API Method {
     run(stack);
   }
 
-  IValue operator()(std::vector&lt;IValue&gt; stack) {
-    getSchema().checkAndNormalizeInputs(stack);
+  IValue operator()(
+      std::vector&lt;IValue&gt; stack,
+      const Kwargs&amp; kwargs = Kwargs()) {
+    getSchema().checkAndNormalizeInputs(stack, kwargs);
     for (auto input : initial_ivalues_) {
       push(stack, input.value());
     }
@@ -821,75 +823,6 @@ struct TORCH_API Module {
   mutable CompilationUnit lowered_methods_;
   mutable std::recursive_mutex find_method_guard_;
 };
-
-static void setInputTensorTypes(Graph&amp; g, const Stack&amp; stack) {
-  AT_ASSERT(stack.size() == g.inputs().size());
-  for (size_t i = 0; i &lt; stack.size(); ++i) {
-    g.inputs().at(i)-&gt;setType(
-        DimensionedTensorType::create(stack.at(i).toTensor()));
-  }
-}
-
-inline std::shared_ptr&lt;Graph&gt; propagate_shapes(
-    Graph&amp; graph,
-    const std::vector&lt;at::Tensor&gt;&amp; inputs,
-    const std::vector&lt;Slot&gt;&amp; initial_ivalues,
-    bool with_grad = false) {
-  auto retval = graph.copy();
-  Stack stack;
-  stack.reserve(inputs.size() + initial_ivalues.size());
-  for (const at::Tensor&amp; i : inputs) {
-    stack.emplace_back(std::move(i));
-  }
-  for (const Slot&amp; inp : initial_ivalues) {
-    stack.push_back(inp.value());
-  }
-  setInputTensorTypes(*retval, stack);
-  PropagateInputShapes(retval);
-  return retval;
-}
-
-inline std::shared_ptr&lt;Graph&gt; propagate_and_assign_input_and_output_shapes(
-    Graph&amp; graph,
-    std::vector&lt;at::Tensor&gt; inputs,
-    const std::vector&lt;Slot&gt;&amp; initial_ivalues,
-    std::vector&lt;at::Tensor&gt; outputs,
-    bool with_grad = false,
-    bool propagate = true) {
-  auto retval = graph.copy();
-  for (auto inp : initial_ivalues) {
-    if (inp.value().isTensor()) {
-      inputs.push_back(inp.value().toTensor());
-    }
-  }
-  if (propagate) {
-    setInputTensorTypes(*retval, fmap&lt;IValue&gt;(inputs));
-    PropagateInputShapes(retval);
-  }
-  AT_ASSERT(retval-&gt;inputs().size() == inputs.size());
-  for (size_t i = 0; i &lt; retval-&gt;inputs().size(); ++i) {
-    auto scalar_type = inputs[i].scalar_type();
-    auto sizes = inputs[i].sizes();
-    auto type =
-        torch::jit::CompleteTensorType::create(scalar_type, at::kCPU, sizes);
-    retval-&gt;inputs()[i]-&gt;setType(type);
-  }
-  at::ArrayRef&lt;Value*&gt; output_values = retval-&gt;outputs();
-  // patch this to still work if we are returning a tuple of multiple values
-  if (output_values.at(0)-&gt;type()-&gt;kind() == TupleType::Kind) {
-    AT_ASSERT(output_values.at(0)-&gt;node()-&gt;kind() == prim::TupleConstruct);
-    output_values = output_values.at(0)-&gt;node()-&gt;inputs();
-  }
-  AT_ASSERT(output_values.size() == outputs.size());
-  for (size_t i = 0; i &lt; retval-&gt;outputs().size(); ++i) {
-    auto scalar_type = outputs[i].scalar_type();
-    auto sizes = outputs[i].sizes();
-    auto type =
-        torch::jit::CompleteTensorType::create(scalar_type, at::kCPU, sizes);
-    output_values[i]-&gt;setType(type);
-  }
-  return retval;
-}
 
 } // namespace script
 } // namespace jit
