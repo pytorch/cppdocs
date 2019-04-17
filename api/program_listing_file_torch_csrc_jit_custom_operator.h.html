@@ -368,7 +368,8 @@ FunctionSchema inferAndCheckSchema(const std::string&amp; schemaOrName) {
 template &lt;typename Implementation&gt;
 Operator createOperator(
     const std::string&amp; schemaOrName,
-    Implementation&amp;&amp; implementation) {
+    Implementation&amp;&amp; implementation,
+    OperatorOptions options = OperatorOptions()) {
   using Traits = c10::guts::infer_function_traits_t&lt;Implementation&gt;;
   using ArgumentTypes =
       c10::guts::typelist::map_t&lt;decay_t, typename Traits::parameter_types&gt;;
@@ -399,16 +400,20 @@ Operator createOperator(
         name.ns().toUnqualString());
   }
 
-  return Operator(schema, [implementation, schema](Stack&amp; stack) {
-    ArgumentTuple tuple;
-    torch::jit::detail::callOperatorWithTuple(
-        schema,
-        std::move(implementation), // NOLINT(bugprone-move-forwarding-reference)
-        stack,
-        tuple,
-        typename MakeIndices&lt;kNumberOfArguments&gt;::indices{});
-    return 0;
-  });
+  return Operator(
+      schema,
+      [implementation, schema](Stack&amp; stack) {
+        ArgumentTuple tuple;
+        torch::jit::detail::callOperatorWithTuple(
+            schema,
+            std::move(
+                implementation), // NOLINT(bugprone-move-forwarding-reference)
+            stack,
+            tuple,
+            typename MakeIndices&lt;kNumberOfArguments&gt;::indices{});
+        return 0;
+      },
+      std::move(options));
 }
 
 struct TORCH_API RegisterOperators {
@@ -428,9 +433,10 @@ struct TORCH_API RegisterOperators {
   template &lt;typename Implementation&gt;
   RegisterOperators&amp; op(
       const std::string&amp; name,
-      Implementation&amp;&amp; implementation) {
-    registerOperator(
-        createOperator(name, std::forward&lt;Implementation&gt;(implementation)));
+      Implementation&amp;&amp; implementation,
+      OperatorOptions options = OperatorOptions()) {
+    registerOperator(createOperator(
+        name, std::forward&lt;Implementation&gt;(implementation), options));
     return *this;
   }
 };
