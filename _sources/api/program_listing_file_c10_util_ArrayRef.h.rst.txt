@@ -10,7 +10,7 @@ Program Listing for File ArrayRef.h
 
 .. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
 
-.. code-block:: none
+.. code-block:: cpp
 
    //===--- ArrayRef.h - Array Reference Wrapper -------------------*- C++ -*-===//
    //
@@ -71,9 +71,13 @@ Program Listing for File ArrayRef.h
      /* implicit */ ArrayRef(const SmallVectorTemplateCommon<T, U>& Vec)
          : Data(Vec.data()), Length(Vec.size()) {}
    
+     // The enable_if stuff here makes sure that this isn't used for std::vector<bool>,
+     // because ArrayRef can't work on a std::vector<bool> bitfield.
      template <typename A>
      /* implicit */ ArrayRef(const std::vector<T, A>& Vec)
-         : Data(Vec.data()), Length(Vec.size()) {}
+         : Data(Vec.data()), Length(Vec.size()) {
+       static_assert(!std::is_same<T, bool>::value, "ArrayRef<bool> cannot be constructed from a std::vector<bool> bitfield.");
+     }
    
      template <size_t N>
      /* implicit */ constexpr ArrayRef(const std::array<T, N>& Arr)

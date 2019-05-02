@@ -231,70 +231,70 @@
   <div class="section" id="program-listing-for-file-data-shuttle-h">
 <span id="program-listing-file-torch-csrc-api-include-torch-data-detail-data-shuttle-h"></span><h1>Program Listing for File data_shuttle.h<a class="headerlink" href="#program-listing-for-file-data-shuttle-h" title="Permalink to this headline">¶</a></h1>
 <p>↰ <a class="reference internal" href="file_torch_csrc_api_include_torch_data_detail_data_shuttle.h.html#file-torch-csrc-api-include-torch-data-detail-data-shuttle-h"><span class="std std-ref">Return to documentation for file</span></a> (<code class="docutils literal notranslate"><span class="pre">torch/csrc/api/include/torch/data/detail/data_shuttle.h</span></code>)</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>#pragma once
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#pragma once</span>
 
-#include &lt;torch/data/detail/queue.h&gt;
-#include &lt;torch/types.h&gt;
+<span class="cp">#include</span> <span class="cpf">&lt;torch/data/detail/queue.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/types.h&gt;</span><span class="cp"></span>
 
-#include &lt;c10/util/Exception.h&gt;
-#include &lt;c10/util/Optional.h&gt;
+<span class="cp">#include</span> <span class="cpf">&lt;c10/util/Exception.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;c10/util/Optional.h&gt;</span><span class="cp"></span>
 
-#include &lt;chrono&gt;
-#include &lt;utility&gt;
+<span class="cp">#include</span> <span class="cpf">&lt;chrono&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;utility&gt;</span><span class="cp"></span>
 
-namespace torch {
-namespace data {
-namespace detail {
+<span class="k">namespace</span> <span class="n">torch</span> <span class="p">{</span>
+<span class="k">namespace</span> <span class="n">data</span> <span class="p">{</span>
+<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
 
-template &lt;typename Job, typename Result&gt;
-class DataShuttle {
- public:
-  void push_job(Job job) {
-    new_jobs_.push(std::move(job));
-    ++in_flight_jobs_;
-  }
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Job</span><span class="p">,</span> <span class="k">typename</span> <span class="n">Result</span><span class="o">&gt;</span>
+<span class="k">class</span> <span class="nc">DataShuttle</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="kt">void</span> <span class="n">push_job</span><span class="p">(</span><span class="n">Job</span> <span class="n">job</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">new_jobs_</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">job</span><span class="p">));</span>
+    <span class="o">++</span><span class="n">in_flight_jobs_</span><span class="p">;</span>
+  <span class="p">}</span>
 
-  void push_result(Result result) {
-    results_.push(std::move(result));
-  }
+  <span class="kt">void</span> <span class="n">push_result</span><span class="p">(</span><span class="n">Result</span> <span class="n">result</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">results_</span><span class="p">.</span><span class="n">push</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">result</span><span class="p">));</span>
+  <span class="p">}</span>
 
-  Job pop_job() {
-    return new_jobs_.pop();
-  }
+  <span class="n">Job</span> <span class="n">pop_job</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">new_jobs_</span><span class="p">.</span><span class="n">pop</span><span class="p">();</span>
+  <span class="p">}</span>
 
-  optional&lt;Result&gt; pop_result(
-      optional&lt;std::chrono::milliseconds&gt; timeout = nullopt) {
-    if (in_flight_jobs_ &gt; 0) {
-      auto result = results_.pop(timeout);
-      --in_flight_jobs_;
-      return result;
-    }
-    return nullopt;
-  }
+  <span class="n">optional</span><span class="o">&lt;</span><span class="n">Result</span><span class="o">&gt;</span> <span class="n">pop_result</span><span class="p">(</span>
+      <span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">chrono</span><span class="o">::</span><span class="n">milliseconds</span><span class="o">&gt;</span> <span class="n">timeout</span> <span class="o">=</span> <span class="n">nullopt</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">in_flight_jobs_</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">auto</span> <span class="n">result</span> <span class="o">=</span> <span class="n">results_</span><span class="p">.</span><span class="n">pop</span><span class="p">(</span><span class="n">timeout</span><span class="p">);</span>
+      <span class="o">--</span><span class="n">in_flight_jobs_</span><span class="p">;</span>
+      <span class="k">return</span> <span class="n">result</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">nullopt</span><span class="p">;</span>
+  <span class="p">}</span>
 
-  void drain() {
-    // Clear all inputs so that no further jobs are scheduled.
-    auto number_cleared = new_jobs_.clear();
-    in_flight_jobs_ -= number_cleared;
-    // Remove any outstanding results.
-    while (in_flight_jobs_ &gt; 0) {
-      pop_result();
-    }
-  }
+  <span class="kt">void</span> <span class="n">drain</span><span class="p">()</span> <span class="p">{</span>
+    <span class="c1">// Clear all inputs so that no further jobs are scheduled.</span>
+    <span class="k">auto</span> <span class="n">number_cleared</span> <span class="o">=</span> <span class="n">new_jobs_</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span>
+    <span class="n">in_flight_jobs_</span> <span class="o">-=</span> <span class="n">number_cleared</span><span class="p">;</span>
+    <span class="c1">// Remove any outstanding results.</span>
+    <span class="k">while</span> <span class="p">(</span><span class="n">in_flight_jobs_</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">pop_result</span><span class="p">();</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
 
-  size_t in_flight_jobs() const noexcept {
-    return in_flight_jobs_;
-  }
+  <span class="kt">size_t</span> <span class="n">in_flight_jobs</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">in_flight_jobs_</span><span class="p">;</span>
+  <span class="p">}</span>
 
- private:
-  Queue&lt;Job&gt; new_jobs_;
-  size_t in_flight_jobs_ = 0;
-  Queue&lt;Result&gt; results_;
-};
+ <span class="k">private</span><span class="o">:</span>
+  <span class="n">Queue</span><span class="o">&lt;</span><span class="n">Job</span><span class="o">&gt;</span> <span class="n">new_jobs_</span><span class="p">;</span>
+  <span class="kt">size_t</span> <span class="n">in_flight_jobs_</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="n">Queue</span><span class="o">&lt;</span><span class="n">Result</span><span class="o">&gt;</span> <span class="n">results_</span><span class="p">;</span>
+<span class="p">};</span>
 
-} // namespace detail
-} // namespace data
-} // namespace torch
+<span class="p">}</span> <span class="c1">// namespace detail</span>
+<span class="p">}</span> <span class="c1">// namespace data</span>
+<span class="p">}</span> <span class="c1">// namespace torch</span>
 </pre></div>
 </div>
 </div>

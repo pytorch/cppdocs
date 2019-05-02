@@ -231,151 +231,151 @@
   <div class="section" id="program-listing-for-file-data-parallel-h">
 <span id="program-listing-file-torch-csrc-api-include-torch-nn-parallel-data-parallel-h"></span><h1>Program Listing for File data_parallel.h<a class="headerlink" href="#program-listing-for-file-data-parallel-h" title="Permalink to this headline">¶</a></h1>
 <p>↰ <a class="reference internal" href="file_torch_csrc_api_include_torch_nn_parallel_data_parallel.h.html#file-torch-csrc-api-include-torch-nn-parallel-data-parallel-h"><span class="std std-ref">Return to documentation for file</span></a> (<code class="docutils literal notranslate"><span class="pre">torch/csrc/api/include/torch/nn/parallel/data_parallel.h</span></code>)</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>#pragma once
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#pragma once</span>
 
-#include &lt;torch/cuda.h&gt;
-#include &lt;torch/nn/module.h&gt;
-#include &lt;torch/nn/pimpl.h&gt;
-#include &lt;torch/types.h&gt;
+<span class="cp">#include</span> <span class="cpf">&lt;torch/cuda.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/nn/module.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/nn/pimpl.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/types.h&gt;</span><span class="cp"></span>
 
-#include &lt;torch/csrc/autograd/functions/comm.h&gt;
-#ifdef USE_CUDA
-#include &lt;torch/csrc/cuda/comm.h&gt;
-#endif
-#include &lt;ATen/core/functional.h&gt;
+<span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/autograd/functions/comm.h&gt;</span><span class="cp"></span>
+<span class="cp">#ifdef USE_CUDA</span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/cuda/comm.h&gt;</span><span class="cp"></span>
+<span class="cp">#endif</span>
+<span class="cp">#include</span> <span class="cpf">&lt;ATen/core/functional.h&gt;</span><span class="cp"></span>
 
-#include &lt;ATen/Device.h&gt;
-#include &lt;ATen/Parallel.h&gt;
-#include &lt;c10/core/TensorOptions.h&gt;
-#include &lt;c10/util/Exception.h&gt;
+<span class="cp">#include</span> <span class="cpf">&lt;ATen/Device.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;ATen/Parallel.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;c10/core/TensorOptions.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;c10/util/Exception.h&gt;</span><span class="cp"></span>
 
-#include &lt;cstddef&gt;
-#include &lt;exception&gt;
-#include &lt;memory&gt;
-#include &lt;mutex&gt;
-#include &lt;vector&gt;
+<span class="cp">#include</span> <span class="cpf">&lt;cstddef&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;exception&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;memory&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;mutex&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;vector&gt;</span><span class="cp"></span>
 
-namespace torch {
-namespace nn {
-namespace parallel {
+<span class="k">namespace</span> <span class="n">torch</span> <span class="p">{</span>
+<span class="k">namespace</span> <span class="n">nn</span> <span class="p">{</span>
+<span class="k">namespace</span> <span class="n">parallel</span> <span class="p">{</span>
 
-template &lt;typename ModuleType&gt;
-std::vector&lt;std::shared_ptr&lt;ModuleType&gt;&gt; replicate(
-    const std::shared_ptr&lt;ModuleType&gt;&amp; module,
-    const std::vector&lt;Device&gt;&amp; devices) {
-  std::vector&lt;std::shared_ptr&lt;ModuleType&gt;&gt; replicas;
-  replicas.reserve(devices.size());
-  for (const auto&amp; device : devices) {
-    replicas.push_back(
-        std::dynamic_pointer_cast&lt;ModuleType&gt;(module-&gt;clone(device)));
-  }
-  return replicas;
-}
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">ModuleType</span><span class="o">&gt;</span>
+<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;&gt;</span> <span class="n">replicate</span><span class="p">(</span>
+    <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;&amp;</span> <span class="n">module</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Device</span><span class="o">&gt;&amp;</span> <span class="n">devices</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;&gt;</span> <span class="n">replicas</span><span class="p">;</span>
+  <span class="n">replicas</span><span class="p">.</span><span class="n">reserve</span><span class="p">(</span><span class="n">devices</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
+  <span class="k">for</span> <span class="p">(</span><span class="k">const</span> <span class="k">auto</span><span class="o">&amp;</span> <span class="nl">device</span> <span class="p">:</span> <span class="n">devices</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">replicas</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span>
+        <span class="n">std</span><span class="o">::</span><span class="n">dynamic_pointer_cast</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;</span><span class="p">(</span><span class="n">module</span><span class="o">-&gt;</span><span class="n">clone</span><span class="p">(</span><span class="n">device</span><span class="p">)));</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="n">replicas</span><span class="p">;</span>
+<span class="p">}</span>
 
-template &lt;typename ModuleType&gt;
-std::vector&lt;ModuleHolder&lt;ModuleType&gt;&gt; replicate(
-    const ModuleHolder&lt;ModuleType&gt;&amp; module,
-    const std::vector&lt;Device&gt;&amp; devices) {
-  auto ptrs = replicate(module.ptr(), devices);
-  return std::vector&lt;ModuleHolder&lt;ModuleType&gt;&gt;(ptrs.begin(), ptrs.end());
-}
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">ModuleType</span><span class="o">&gt;</span>
+<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">ModuleHolder</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;&gt;</span> <span class="n">replicate</span><span class="p">(</span>
+    <span class="k">const</span> <span class="n">ModuleHolder</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;&amp;</span> <span class="n">module</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Device</span><span class="o">&gt;&amp;</span> <span class="n">devices</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">auto</span> <span class="n">ptrs</span> <span class="o">=</span> <span class="n">replicate</span><span class="p">(</span><span class="n">module</span><span class="p">.</span><span class="n">ptr</span><span class="p">(),</span> <span class="n">devices</span><span class="p">);</span>
+  <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">ModuleHolder</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="n">ptrs</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span> <span class="n">ptrs</span><span class="p">.</span><span class="n">end</span><span class="p">());</span>
+<span class="p">}</span>
 
-template &lt;typename ModuleType&gt;
-std::vector&lt;Tensor&gt; parallel_apply(
-    std::vector&lt;ModuleType&gt;&amp; modules,
-    const std::vector&lt;Tensor&gt;&amp; inputs,
-    const optional&lt;std::vector&lt;Device&gt;&gt;&amp; devices = nullopt) {
-  AT_CHECK(
-      modules.size() == inputs.size(), &quot;Must have as many inputs as modules&quot;);
-  if (devices) {
-    AT_CHECK(
-        modules.size() == devices-&gt;size(),
-        &quot;Must have as many devices as modules&quot;);
-  }
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">ModuleType</span><span class="o">&gt;</span>
+<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">parallel_apply</span><span class="p">(</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;&amp;</span> <span class="n">modules</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;&amp;</span> <span class="n">inputs</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Device</span><span class="o">&gt;&gt;&amp;</span> <span class="n">devices</span> <span class="o">=</span> <span class="n">nullopt</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">AT_CHECK</span><span class="p">(</span>
+      <span class="n">modules</span><span class="p">.</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="n">inputs</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span> <span class="s">&quot;Must have as many inputs as modules&quot;</span><span class="p">);</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">devices</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">AT_CHECK</span><span class="p">(</span>
+        <span class="n">modules</span><span class="p">.</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="n">devices</span><span class="o">-&gt;</span><span class="n">size</span><span class="p">(),</span>
+        <span class="s">&quot;Must have as many devices as modules&quot;</span><span class="p">);</span>
+  <span class="p">}</span>
 
-  std::vector&lt;Tensor&gt; outputs(modules.size());
-  std::mutex mutex;
+  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">outputs</span><span class="p">(</span><span class="n">modules</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">mutex</span> <span class="n">mutex</span><span class="p">;</span>
 
-  // std::exception_ptr can be passed between threads:
-  // &gt; An instance of std::exception_ptr may be passed to another function,
-  // &gt; possibly on another thread, where the exception may be rethrown [...].
-  // https://en.cppreference.com/w/cpp/error/exception_ptr
-  std::exception_ptr exception;
+  <span class="c1">// std::exception_ptr can be passed between threads:</span>
+  <span class="c1">// &gt; An instance of std::exception_ptr may be passed to another function,</span>
+  <span class="c1">// &gt; possibly on another thread, where the exception may be rethrown [...].</span>
+  <span class="c1">// https://en.cppreference.com/w/cpp/error/exception_ptr</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">exception_ptr</span> <span class="n">exception</span><span class="p">;</span>
 
-  at::parallel_for(
-      /*begin=*/0,
-      /*end=*/modules.size(),
-      /*grain_size=*/1,
-      [&amp;modules, &amp;inputs, &amp;devices, &amp;outputs, &amp;mutex, &amp;exception](
-          int64_t index, int64_t stop) {
-        for (; index &lt; stop; ++index) {
-          try {
-            auto output = modules[index]-&gt;forward(inputs[index]);
-            output =
-                output.to(devices ? (*devices)[index] : inputs[index].device());
-            std::lock_guard&lt;std::mutex&gt; lock(mutex);
-            outputs[index] = output;
-          } catch (...) {
-            std::lock_guard&lt;std::mutex&gt; lock(mutex);
-            if (!exception) {
-              exception = std::current_exception();
-            }
-          }
-        }
-      });
+  <span class="n">at</span><span class="o">::</span><span class="n">parallel_for</span><span class="p">(</span>
+      <span class="cm">/*begin=*/</span><span class="mi">0</span><span class="p">,</span>
+      <span class="cm">/*end=*/</span><span class="n">modules</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span>
+      <span class="cm">/*grain_size=*/</span><span class="mi">1</span><span class="p">,</span>
+      <span class="p">[</span><span class="o">&amp;</span><span class="n">modules</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">inputs</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">devices</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">outputs</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">mutex</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">exception</span><span class="p">](</span>
+          <span class="kt">int64_t</span> <span class="n">index</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">stop</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">for</span> <span class="p">(;</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="n">stop</span><span class="p">;</span> <span class="o">++</span><span class="n">index</span><span class="p">)</span> <span class="p">{</span>
+          <span class="k">try</span> <span class="p">{</span>
+            <span class="k">auto</span> <span class="n">output</span> <span class="o">=</span> <span class="n">modules</span><span class="p">[</span><span class="n">index</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">forward</span><span class="p">(</span><span class="n">inputs</span><span class="p">[</span><span class="n">index</span><span class="p">]);</span>
+            <span class="n">output</span> <span class="o">=</span>
+                <span class="n">output</span><span class="p">.</span><span class="n">to</span><span class="p">(</span><span class="n">devices</span> <span class="o">?</span> <span class="p">(</span><span class="o">*</span><span class="n">devices</span><span class="p">)[</span><span class="n">index</span><span class="p">]</span> <span class="o">:</span> <span class="n">inputs</span><span class="p">[</span><span class="n">index</span><span class="p">].</span><span class="n">device</span><span class="p">());</span>
+            <span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lock</span><span class="p">(</span><span class="n">mutex</span><span class="p">);</span>
+            <span class="n">outputs</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">output</span><span class="p">;</span>
+          <span class="p">}</span> <span class="k">catch</span> <span class="p">(...)</span> <span class="p">{</span>
+            <span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lock</span><span class="p">(</span><span class="n">mutex</span><span class="p">);</span>
+            <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">exception</span><span class="p">)</span> <span class="p">{</span>
+              <span class="n">exception</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">current_exception</span><span class="p">();</span>
+            <span class="p">}</span>
+          <span class="p">}</span>
+        <span class="p">}</span>
+      <span class="p">});</span>
 
-  if (exception) {
-    std::rethrow_exception(exception);
-  }
+  <span class="k">if</span> <span class="p">(</span><span class="n">exception</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">rethrow_exception</span><span class="p">(</span><span class="n">exception</span><span class="p">);</span>
+  <span class="p">}</span>
 
-  return outputs;
-}
+  <span class="k">return</span> <span class="n">outputs</span><span class="p">;</span>
+<span class="p">}</span>
 
-template &lt;typename ModuleType&gt;
-Tensor data_parallel(
-    ModuleType module,
-    Tensor input,
-    optional&lt;std::vector&lt;Device&gt;&gt; devices = nullopt,
-    optional&lt;Device&gt; output_device = nullopt,
-    int64_t dim = 0) {
-  if (!devices) {
-    const auto device_count = torch::cuda::device_count();
-    AT_CHECK(
-        device_count &gt; 0, &quot;Expected at least one CUDA device to be available&quot;);
-    devices = std::vector&lt;Device&gt;();
-    devices-&gt;reserve(device_count);
-    for (size_t index = 0; index &lt; device_count; ++index) {
-      devices-&gt;emplace_back(kCUDA, index);
-    }
-  }
-  if (!output_device) {
-    output_device = devices-&gt;front();
-  }
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">ModuleType</span><span class="o">&gt;</span>
+<span class="n">Tensor</span> <span class="n">data_parallel</span><span class="p">(</span>
+    <span class="n">ModuleType</span> <span class="n">module</span><span class="p">,</span>
+    <span class="n">Tensor</span> <span class="n">input</span><span class="p">,</span>
+    <span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Device</span><span class="o">&gt;&gt;</span> <span class="n">devices</span> <span class="o">=</span> <span class="n">nullopt</span><span class="p">,</span>
+    <span class="n">optional</span><span class="o">&lt;</span><span class="n">Device</span><span class="o">&gt;</span> <span class="n">output_device</span> <span class="o">=</span> <span class="n">nullopt</span><span class="p">,</span>
+    <span class="kt">int64_t</span> <span class="n">dim</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">devices</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">const</span> <span class="k">auto</span> <span class="n">device_count</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">device_count</span><span class="p">();</span>
+    <span class="n">AT_CHECK</span><span class="p">(</span>
+        <span class="n">device_count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&quot;Expected at least one CUDA device to be available&quot;</span><span class="p">);</span>
+    <span class="n">devices</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Device</span><span class="o">&gt;</span><span class="p">();</span>
+    <span class="n">devices</span><span class="o">-&gt;</span><span class="n">reserve</span><span class="p">(</span><span class="n">device_count</span><span class="p">);</span>
+    <span class="k">for</span> <span class="p">(</span><span class="kt">size_t</span> <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="n">device_count</span><span class="p">;</span> <span class="o">++</span><span class="n">index</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">devices</span><span class="o">-&gt;</span><span class="n">emplace_back</span><span class="p">(</span><span class="n">kCUDA</span><span class="p">,</span> <span class="n">index</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">output_device</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">output_device</span> <span class="o">=</span> <span class="n">devices</span><span class="o">-&gt;</span><span class="n">front</span><span class="p">();</span>
+  <span class="p">}</span>
 
-  if (devices-&gt;size() == 1) {
-    module-&gt;to(devices-&gt;front());
-    input = input.to(devices-&gt;front());
-    return module-&gt;forward(std::move(input)).to(*output_device);
-  }
+  <span class="k">if</span> <span class="p">(</span><span class="n">devices</span><span class="o">-&gt;</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">module</span><span class="o">-&gt;</span><span class="n">to</span><span class="p">(</span><span class="n">devices</span><span class="o">-&gt;</span><span class="n">front</span><span class="p">());</span>
+    <span class="n">input</span> <span class="o">=</span> <span class="n">input</span><span class="p">.</span><span class="n">to</span><span class="p">(</span><span class="n">devices</span><span class="o">-&gt;</span><span class="n">front</span><span class="p">());</span>
+    <span class="k">return</span> <span class="n">module</span><span class="o">-&gt;</span><span class="n">forward</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">input</span><span class="p">)).</span><span class="n">to</span><span class="p">(</span><span class="o">*</span><span class="n">output_device</span><span class="p">);</span>
+  <span class="p">}</span>
 
-#ifdef USE_CUDA
-  autograd::Scatter scatter(*devices, /*chunk_sizes=*/nullopt, dim);
-  auto scattered_inputs = fmap&lt;Tensor&gt;(scatter.apply({std::move(input)}));
+<span class="cp">#ifdef USE_CUDA</span>
+  <span class="n">autograd</span><span class="o">::</span><span class="n">Scatter</span> <span class="n">scatter</span><span class="p">(</span><span class="o">*</span><span class="n">devices</span><span class="p">,</span> <span class="cm">/*chunk_sizes=*/</span><span class="n">nullopt</span><span class="p">,</span> <span class="n">dim</span><span class="p">);</span>
+  <span class="k">auto</span> <span class="n">scattered_inputs</span> <span class="o">=</span> <span class="n">fmap</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span><span class="p">(</span><span class="n">scatter</span><span class="p">.</span><span class="n">apply</span><span class="p">({</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">input</span><span class="p">)}));</span>
 
-  auto replicas = replicate(module, *devices);
-  auto outputs = parallel_apply(replicas, scattered_inputs, *devices);
-  return autograd::Gather(*output_device, dim)
-      .apply(fmap&lt;autograd::Variable&gt;(std::move(outputs)))
-      .front();
-#else
-  AT_ERROR(&quot;data_parallel not supported without CUDA&quot;);
-  return Tensor();
-#endif
-}
+  <span class="k">auto</span> <span class="n">replicas</span> <span class="o">=</span> <span class="n">replicate</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="o">*</span><span class="n">devices</span><span class="p">);</span>
+  <span class="k">auto</span> <span class="n">outputs</span> <span class="o">=</span> <span class="n">parallel_apply</span><span class="p">(</span><span class="n">replicas</span><span class="p">,</span> <span class="n">scattered_inputs</span><span class="p">,</span> <span class="o">*</span><span class="n">devices</span><span class="p">);</span>
+  <span class="k">return</span> <span class="n">autograd</span><span class="o">::</span><span class="n">Gather</span><span class="p">(</span><span class="o">*</span><span class="n">output_device</span><span class="p">,</span> <span class="n">dim</span><span class="p">)</span>
+      <span class="p">.</span><span class="n">apply</span><span class="p">(</span><span class="n">fmap</span><span class="o">&lt;</span><span class="n">autograd</span><span class="o">::</span><span class="n">Variable</span><span class="o">&gt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">outputs</span><span class="p">)))</span>
+      <span class="p">.</span><span class="n">front</span><span class="p">();</span>
+<span class="cp">#else</span>
+  <span class="n">AT_ERROR</span><span class="p">(</span><span class="s">&quot;data_parallel not supported without CUDA&quot;</span><span class="p">);</span>
+  <span class="k">return</span> <span class="nf">Tensor</span><span class="p">();</span>
+<span class="cp">#endif</span>
+<span class="p">}</span>
 
-} // namespace parallel
-} // namespace nn
-} // namespace torch
+<span class="p">}</span> <span class="c1">// namespace parallel</span>
+<span class="p">}</span> <span class="c1">// namespace nn</span>
+<span class="p">}</span> <span class="c1">// namespace torch</span>
 </pre></div>
 </div>
 </div>

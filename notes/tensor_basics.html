@@ -254,7 +254,17 @@ small. However, there are cases, especially in your own kernels, where efficient
 element-wise access is needed, and the cost of dynamic dispatch inside the
 element-wise loop is very high. ATen provides <em>accessors</em> that are created with
 a single dynamic check that a Tensor is the type and number of dimensions.
-Accessors then expose an API for accessing the Tensor elements efficiently:</p>
+Accessors then expose an API for accessing the Tensor elements efficiently.</p>
+<p>Accessors are temporary views of a Tensor. They are only valid for the lifetime
+of the tensor that they view and hence should only be used locally in a
+function, like iterators.</p>
+<p>Note that accessors are not compatible with CUDA tensors inside kernel functions.
+Instead, you will have to use a <em>packed accessor</em> which behaves the same way but
+copies tensor metadata instead of pointing to it.</p>
+<p>It is thus recommended to use <em>accessors</em> for CPU tensors and <em>packed accessors</em>
+for CUDA tensors.</p>
+<div class="section" id="cpu-accessors">
+<h3>CPU accessors<a class="headerlink" href="#cpu-accessors" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">torch</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">foo</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">rand</span><span class="p">({</span><span class="mi">12</span><span class="p">,</span> <span class="mi">12</span><span class="p">});</span>
 
 <span class="c1">// assert foo is 2-dimensional and holds floats.</span>
@@ -267,9 +277,29 @@ Accessors then expose an API for accessing the Tensor elements efficiently:</p>
 <span class="p">}</span>
 </pre></div>
 </div>
-<p>Accessors are temporary views of a Tensor. They are only valid for the lifetime
-of the tensor that they view and hence should only be used locally in a
-function, like iterators.</p>
+</div>
+<div class="section" id="cuda-accessors">
+<h3>CUDA accessors<a class="headerlink" href="#cuda-accessors" title="Permalink to this headline">¶</a></h3>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">__global__</span> <span class="kt">void</span> <span class="nf">packed_accessor_kernel</span><span class="p">(</span>
+    <span class="n">PackedTensorAccessor</span><span class="o">&lt;</span><span class="kt">float</span><span class="p">,</span> <span class="mi">2</span><span class="o">&gt;</span> <span class="n">foo</span><span class="p">,</span>
+    <span class="kt">float</span><span class="o">*</span> <span class="n">trace</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kt">int</span> <span class="n">i</span><span class="o">=</span><span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span>
+  <span class="n">atomicAdd</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">foo</span><span class="p">[</span><span class="n">i</span><span class="p">](</span><span class="n">i</span><span class="p">])</span>
+<span class="p">}</span>
+
+<span class="n">torch</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">foo</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">rand</span><span class="p">({</span><span class="mi">12</span><span class="p">,</span> <span class="mi">12</span><span class="p">});</span>
+
+<span class="c1">// assert foo is 2-dimensional and holds floats.</span>
+<span class="k">auto</span> <span class="n">foo_a</span> <span class="o">=</span> <span class="n">foo</span><span class="p">.</span><span class="n">packed_accessor</span><span class="o">&lt;</span><span class="kt">float</span><span class="p">,</span><span class="mi">2</span><span class="o">&gt;</span><span class="p">();</span>
+<span class="kt">float</span> <span class="n">trace</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+<span class="n">packed_accessor_kernel</span><span class="o">&lt;&lt;&lt;</span><span class="mi">1</span><span class="p">,</span> <span class="mi">12</span><span class="o">&gt;&gt;&gt;</span><span class="p">(</span><span class="n">foo_a</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">trace</span><span class="p">);</span>
+</pre></div>
+</div>
+<p>Note that the template can hold other parameters such as the pointer restriction
+and the integer type for indexing. See documentation for a thorough template
+description of <em>accessors</em> and <em>packed accessors</em>.</p>
+</div>
 </div>
 <div class="section" id="using-externally-created-data">
 <h2>Using Externally Created Data<a class="headerlink" href="#using-externally-created-data" title="Permalink to this headline">¶</a></h2>
@@ -363,7 +393,11 @@ which reduce the dimensions of a <code class="docutils literal notranslate"><spa
             <div class="pytorch-side-scroll" id="pytorch-side-scroll-right">
               <ul>
 <li><a class="reference internal" href="#">Tensor Basics</a><ul>
-<li><a class="reference internal" href="#efficient-access-to-tensor-elements">Efficient Access to Tensor Elements</a></li>
+<li><a class="reference internal" href="#efficient-access-to-tensor-elements">Efficient Access to Tensor Elements</a><ul>
+<li><a class="reference internal" href="#cpu-accessors">CPU accessors</a></li>
+<li><a class="reference internal" href="#cuda-accessors">CUDA accessors</a></li>
+</ul>
+</li>
 <li><a class="reference internal" href="#using-externally-created-data">Using Externally Created Data</a></li>
 <li><a class="reference internal" href="#scalars-and-zero-dimensional-tensors">Scalars and zero-dimensional tensors</a></li>
 </ul>

@@ -231,120 +231,120 @@
   <div class="section" id="program-listing-for-file-distributed-h">
 <span id="program-listing-file-torch-csrc-api-include-torch-data-samplers-distributed-h"></span><h1>Program Listing for File distributed.h<a class="headerlink" href="#program-listing-for-file-distributed-h" title="Permalink to this headline">¶</a></h1>
 <p>↰ <a class="reference internal" href="file_torch_csrc_api_include_torch_data_samplers_distributed.h.html#file-torch-csrc-api-include-torch-data-samplers-distributed-h"><span class="std std-ref">Return to documentation for file</span></a> (<code class="docutils literal notranslate"><span class="pre">torch/csrc/api/include/torch/data/samplers/distributed.h</span></code>)</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>#pragma once
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#pragma once</span>
 
-#include &lt;torch/csrc/WindowsTorchApiMacro.h&gt;
-#include &lt;torch/data/samplers/base.h&gt;
+<span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/WindowsTorchApiMacro.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/data/samplers/base.h&gt;</span><span class="cp"></span>
 
-#include &lt;cstddef&gt;
-#include &lt;vector&gt;
+<span class="cp">#include</span> <span class="cpf">&lt;cstddef&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;vector&gt;</span><span class="cp"></span>
 
-namespace torch {
-namespace serialize {
-class OutputArchive;
-class InputArchive;
-} // namespace serialize
-} // namespace torch
+<span class="k">namespace</span> <span class="n">torch</span> <span class="p">{</span>
+<span class="k">namespace</span> <span class="n">serialize</span> <span class="p">{</span>
+<span class="k">class</span> <span class="nc">OutputArchive</span><span class="p">;</span>
+<span class="k">class</span> <span class="nc">InputArchive</span><span class="p">;</span>
+<span class="p">}</span> <span class="c1">// namespace serialize</span>
+<span class="p">}</span> <span class="c1">// namespace torch</span>
 
-namespace torch {
-namespace data {
-namespace samplers {
+<span class="k">namespace</span> <span class="n">torch</span> <span class="p">{</span>
+<span class="k">namespace</span> <span class="n">data</span> <span class="p">{</span>
+<span class="k">namespace</span> <span class="n">samplers</span> <span class="p">{</span>
 
-template &lt;typename BatchRequest = std::vector&lt;size_t&gt;&gt;
-class DistributedSampler : public Sampler&lt;BatchRequest&gt; {
- public:
-  TORCH_API DistributedSampler(
-      size_t size,
-      size_t num_replicas = 1,
-      size_t rank = 0,
-      bool allow_duplicates = true)
-      : size_(size),
-        num_replicas_(num_replicas),
-        rank_(rank),
-        epoch_(0),
-        allow_duplicates_(allow_duplicates) {}
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">BatchRequest</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="o">&gt;&gt;</span>
+<span class="k">class</span> <span class="nc">DistributedSampler</span> <span class="o">:</span> <span class="k">public</span> <span class="n">Sampler</span><span class="o">&lt;</span><span class="n">BatchRequest</span><span class="o">&gt;</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="n">DistributedSampler</span><span class="p">(</span>
+      <span class="kt">size_t</span> <span class="n">size</span><span class="p">,</span>
+      <span class="kt">size_t</span> <span class="n">num_replicas</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+      <span class="kt">size_t</span> <span class="n">rank</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+      <span class="kt">bool</span> <span class="n">allow_duplicates</span> <span class="o">=</span> <span class="nb">true</span><span class="p">)</span>
+      <span class="o">:</span> <span class="n">size_</span><span class="p">(</span><span class="n">size</span><span class="p">),</span>
+        <span class="n">num_replicas_</span><span class="p">(</span><span class="n">num_replicas</span><span class="p">),</span>
+        <span class="n">rank_</span><span class="p">(</span><span class="n">rank</span><span class="p">),</span>
+        <span class="n">epoch_</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+        <span class="n">allow_duplicates_</span><span class="p">(</span><span class="n">allow_duplicates</span><span class="p">)</span> <span class="p">{}</span>
 
-  void set_epoch(size_t epoch) {
-    epoch_ = epoch;
-  }
+  <span class="kt">void</span> <span class="n">set_epoch</span><span class="p">(</span><span class="kt">size_t</span> <span class="n">epoch</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">epoch_</span> <span class="o">=</span> <span class="n">epoch</span><span class="p">;</span>
+  <span class="p">}</span>
 
-  size_t epoch() const {
-    return epoch_;
-  }
+  <span class="kt">size_t</span> <span class="n">epoch</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">epoch_</span><span class="p">;</span>
+  <span class="p">}</span>
 
- protected:
-  size_t local_sample_count() {
-    if (allow_duplicates_) {
-      return (size_ + num_replicas_ - 1) / num_replicas_;
-    } else {
-      return size_ / num_replicas_;
-    }
-  }
+ <span class="k">protected</span><span class="o">:</span>
+  <span class="kt">size_t</span> <span class="n">local_sample_count</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">allow_duplicates_</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="p">(</span><span class="n">size_</span> <span class="o">+</span> <span class="n">num_replicas_</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">num_replicas_</span><span class="p">;</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="n">size_</span> <span class="o">/</span> <span class="n">num_replicas_</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
 
-  size_t size_;
-  size_t num_replicas_;
-  size_t rank_;
-  size_t epoch_;
-  bool allow_duplicates_;
-};
+  <span class="kt">size_t</span> <span class="n">size_</span><span class="p">;</span>
+  <span class="kt">size_t</span> <span class="n">num_replicas_</span><span class="p">;</span>
+  <span class="kt">size_t</span> <span class="n">rank_</span><span class="p">;</span>
+  <span class="kt">size_t</span> <span class="n">epoch_</span><span class="p">;</span>
+  <span class="kt">bool</span> <span class="n">allow_duplicates_</span><span class="p">;</span>
+<span class="p">};</span>
 
-class DistributedRandomSampler : public DistributedSampler&lt;&gt; {
- public:
-  TORCH_API DistributedRandomSampler(
-      size_t size,
-      size_t num_replicas = 1,
-      size_t rank = 0,
-      bool allow_duplicates = true);
+<span class="k">class</span> <span class="nc">TORCH_API</span> <span class="nl">DistributedRandomSampler</span> <span class="p">:</span> <span class="k">public</span> <span class="n">DistributedSampler</span><span class="o">&lt;&gt;</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="n">DistributedRandomSampler</span><span class="p">(</span>
+      <span class="kt">size_t</span> <span class="n">size</span><span class="p">,</span>
+      <span class="kt">size_t</span> <span class="n">num_replicas</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+      <span class="kt">size_t</span> <span class="n">rank</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+      <span class="kt">bool</span> <span class="n">allow_duplicates</span> <span class="o">=</span> <span class="nb">true</span><span class="p">);</span>
 
-  TORCH_API void reset(optional&lt;size_t&gt; new_size = nullopt) override;
+  <span class="kt">void</span> <span class="nf">reset</span><span class="p">(</span><span class="n">optional</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="o">&gt;</span> <span class="n">new_size</span> <span class="o">=</span> <span class="n">nullopt</span><span class="p">)</span> <span class="k">override</span><span class="p">;</span>
 
-  TORCH_API optional&lt;std::vector&lt;size_t&gt;&gt; next(size_t batch_size) override;
+  <span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="o">&gt;&gt;</span> <span class="n">next</span><span class="p">(</span><span class="kt">size_t</span> <span class="n">batch_size</span><span class="p">)</span> <span class="k">override</span><span class="p">;</span>
 
-  TORCH_API void save(serialize::OutputArchive&amp; archive) const override;
+  <span class="kt">void</span> <span class="nf">save</span><span class="p">(</span><span class="n">serialize</span><span class="o">::</span><span class="n">OutputArchive</span><span class="o">&amp;</span> <span class="n">archive</span><span class="p">)</span> <span class="k">const</span> <span class="k">override</span><span class="p">;</span>
 
-  TORCH_API void load(serialize::InputArchive&amp; archive) override;
+  <span class="kt">void</span> <span class="nf">load</span><span class="p">(</span><span class="n">serialize</span><span class="o">::</span><span class="n">InputArchive</span><span class="o">&amp;</span> <span class="n">archive</span><span class="p">)</span> <span class="k">override</span><span class="p">;</span>
 
-  TORCH_API size_t index() const noexcept;
+  <span class="kt">size_t</span> <span class="nf">index</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span><span class="p">;</span>
 
- private:
-  void populate_indices();
+ <span class="k">private</span><span class="o">:</span>
+  <span class="kt">void</span> <span class="n">populate_indices</span><span class="p">();</span>
 
-  size_t begin_index_;
-  size_t end_index_;
-  size_t sample_index_;
-  std::vector&lt;size_t&gt; all_indices_;
-};
+  <span class="kt">size_t</span> <span class="n">begin_index_</span><span class="p">;</span>
+  <span class="kt">size_t</span> <span class="n">end_index_</span><span class="p">;</span>
+  <span class="kt">size_t</span> <span class="n">sample_index_</span><span class="p">;</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="o">&gt;</span> <span class="n">all_indices_</span><span class="p">;</span>
+<span class="p">};</span>
 
-class DistributedSequentialSampler : public DistributedSampler&lt;&gt; {
- public:
-  TORCH_API DistributedSequentialSampler(
-      size_t size,
-      size_t num_replicas = 1,
-      size_t rank = 0,
-      bool allow_duplicates = true);
+<span class="k">class</span> <span class="nc">TORCH_API</span> <span class="nl">DistributedSequentialSampler</span> <span class="p">:</span> <span class="k">public</span> <span class="n">DistributedSampler</span><span class="o">&lt;&gt;</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="n">DistributedSequentialSampler</span><span class="p">(</span>
+      <span class="kt">size_t</span> <span class="n">size</span><span class="p">,</span>
+      <span class="kt">size_t</span> <span class="n">num_replicas</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+      <span class="kt">size_t</span> <span class="n">rank</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+      <span class="kt">bool</span> <span class="n">allow_duplicates</span> <span class="o">=</span> <span class="nb">true</span><span class="p">);</span>
 
-  TORCH_API void reset(optional&lt;size_t&gt; new_size = nullopt) override;
+  <span class="kt">void</span> <span class="nf">reset</span><span class="p">(</span><span class="n">optional</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="o">&gt;</span> <span class="n">new_size</span> <span class="o">=</span> <span class="n">nullopt</span><span class="p">)</span> <span class="k">override</span><span class="p">;</span>
 
-  TORCH_API optional&lt;std::vector&lt;size_t&gt;&gt; next(size_t batch_size) override;
+  <span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="o">&gt;&gt;</span> <span class="n">next</span><span class="p">(</span><span class="kt">size_t</span> <span class="n">batch_size</span><span class="p">)</span> <span class="k">override</span><span class="p">;</span>
 
-  TORCH_API void save(serialize::OutputArchive&amp; archive) const override;
+  <span class="kt">void</span> <span class="nf">save</span><span class="p">(</span><span class="n">serialize</span><span class="o">::</span><span class="n">OutputArchive</span><span class="o">&amp;</span> <span class="n">archive</span><span class="p">)</span> <span class="k">const</span> <span class="k">override</span><span class="p">;</span>
 
-  TORCH_API void load(serialize::InputArchive&amp; archive) override;
+  <span class="kt">void</span> <span class="nf">load</span><span class="p">(</span><span class="n">serialize</span><span class="o">::</span><span class="n">InputArchive</span><span class="o">&amp;</span> <span class="n">archive</span><span class="p">)</span> <span class="k">override</span><span class="p">;</span>
 
-  TORCH_API size_t index() const noexcept;
+  <span class="kt">size_t</span> <span class="nf">index</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span><span class="p">;</span>
 
- private:
-  void populate_indices();
+ <span class="k">private</span><span class="o">:</span>
+  <span class="kt">void</span> <span class="n">populate_indices</span><span class="p">();</span>
 
-  size_t begin_index_;
-  size_t end_index_;
-  size_t sample_index_;
-  std::vector&lt;size_t&gt; all_indices_;
-};
+  <span class="kt">size_t</span> <span class="n">begin_index_</span><span class="p">;</span>
+  <span class="kt">size_t</span> <span class="n">end_index_</span><span class="p">;</span>
+  <span class="kt">size_t</span> <span class="n">sample_index_</span><span class="p">;</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="o">&gt;</span> <span class="n">all_indices_</span><span class="p">;</span>
+<span class="p">};</span>
 
-} // namespace samplers
-} // namespace data
-} // namespace torch
+<span class="p">}</span> <span class="c1">// namespace samplers</span>
+<span class="p">}</span> <span class="c1">// namespace data</span>
+<span class="p">}</span> <span class="c1">// namespace torch</span>
 </pre></div>
 </div>
 </div>

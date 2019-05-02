@@ -231,218 +231,212 @@
   <div class="section" id="program-listing-for-file-custom-operator-h">
 <span id="program-listing-file-torch-csrc-jit-custom-operator-h"></span><h1>Program Listing for File custom_operator.h<a class="headerlink" href="#program-listing-for-file-custom-operator-h" title="Permalink to this headline">¶</a></h1>
 <p>↰ <a class="reference internal" href="file_torch_csrc_jit_custom_operator.h.html#file-torch-csrc-jit-custom-operator-h"><span class="std std-ref">Return to documentation for file</span></a> (<code class="docutils literal notranslate"><span class="pre">torch/csrc/jit/custom_operator.h</span></code>)</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>#pragma once
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#pragma once</span>
 
-#include &lt;torch/csrc/jit/operator.h&gt;
-#include &lt;ATen/core/stack.h&gt;
-#include &lt;ATen/core/op_registration/infer_schema.h&gt;
-#include &lt;torch/csrc/jit/tracer.h&gt;
-#include &lt;torch/csrc/utils/variadic.h&gt;
+<span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/jit/operator.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;ATen/core/stack.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;ATen/core/op_registration/infer_schema.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/jit/tracer.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/utils/variadic.h&gt;</span><span class="cp"></span>
 
-#include &lt;ATen/core/function_schema.h&gt;
-#include &lt;c10/util/Metaprogramming.h&gt;
-#include &lt;c10/util/TypeList.h&gt;
+<span class="cp">#include</span> <span class="cpf">&lt;ATen/core/function_schema.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;c10/util/Metaprogramming.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;c10/util/TypeList.h&gt;</span><span class="cp"></span>
 
-namespace torch {
-namespace jit {
-namespace detail {
+<span class="k">namespace</span> <span class="n">torch</span> <span class="p">{</span>
+<span class="k">namespace</span> <span class="n">jit</span> <span class="p">{</span>
+<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
 
-using ::c10::Argument;
-using ::c10::FunctionSchema;
+<span class="k">using</span> <span class="o">::</span><span class="n">c10</span><span class="o">::</span><span class="n">Argument</span><span class="p">;</span>
+<span class="k">using</span> <span class="o">::</span><span class="n">c10</span><span class="o">::</span><span class="n">FunctionSchema</span><span class="p">;</span>
 
 
 
-template &lt;size_t... Is, typename... Types&gt;
-Node* getTracedNode(
-    const FunctionSchema&amp; schema,
-    const std::tuple&lt;Types...&gt;&amp; tuple) {
-  auto symbol = Symbol::fromQualString(schema.name());
-  const auto&amp; graph = tracer::getTracingState()-&gt;graph;
-  Node* node = graph-&gt;create(symbol, /*num_outputs=*/0);
-  tracer::recordSourceLocation(node);
+<span class="k">template</span> <span class="o">&lt;</span><span class="kt">size_t</span><span class="p">...</span> <span class="n">Is</span><span class="p">,</span> <span class="k">typename</span><span class="p">...</span> <span class="n">Types</span><span class="o">&gt;</span>
+<span class="n">Node</span><span class="o">*</span> <span class="n">getTracedNode</span><span class="p">(</span>
+    <span class="k">const</span> <span class="n">FunctionSchema</span><span class="o">&amp;</span> <span class="n">schema</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Types</span><span class="p">...</span><span class="o">&gt;&amp;</span> <span class="n">tuple</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">auto</span> <span class="n">symbol</span> <span class="o">=</span> <span class="n">Symbol</span><span class="o">::</span><span class="n">fromQualString</span><span class="p">(</span><span class="n">schema</span><span class="p">.</span><span class="n">name</span><span class="p">());</span>
+  <span class="k">const</span> <span class="k">auto</span><span class="o">&amp;</span> <span class="n">graph</span> <span class="o">=</span> <span class="n">tracer</span><span class="o">::</span><span class="n">getTracingState</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">graph</span><span class="p">;</span>
+  <span class="n">Node</span><span class="o">*</span> <span class="n">node</span> <span class="o">=</span> <span class="n">graph</span><span class="o">-&gt;</span><span class="n">create</span><span class="p">(</span><span class="n">symbol</span><span class="p">,</span> <span class="cm">/*num_outputs=*/</span><span class="mi">0</span><span class="p">);</span>
+  <span class="n">tracer</span><span class="o">::</span><span class="n">recordSourceLocation</span><span class="p">(</span><span class="n">node</span><span class="p">);</span>
 
-  // Hack to call addInputs for the parameter pack in a sequenced fashion.
-  // https://stackoverflow.com/questions/12030538/calling-a-function-for-each-variadic-template-argument-and-an-array
-  int _[] = {
-      (tracer::addInputs(
-           node, schema.arguments()[Is].name().c_str(), std::get&lt;Is&gt;(tuple)),
-       0)...};
-  (void)_; // ignore
+  <span class="c1">// Hack to call addInputs for the parameter pack in a sequenced fashion.</span>
+  <span class="c1">// https://stackoverflow.com/questions/12030538/calling-a-function-for-each-variadic-template-argument-and-an-array</span>
+  <span class="kt">int</span> <span class="n">_</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span>
+      <span class="p">(</span><span class="n">tracer</span><span class="o">::</span><span class="n">addInputs</span><span class="p">(</span>
+           <span class="n">node</span><span class="p">,</span> <span class="n">schema</span><span class="p">.</span><span class="n">arguments</span><span class="p">()[</span><span class="n">Is</span><span class="p">].</span><span class="n">name</span><span class="p">().</span><span class="n">c_str</span><span class="p">(),</span> <span class="n">std</span><span class="o">::</span><span class="n">get</span><span class="o">&lt;</span><span class="n">Is</span><span class="o">&gt;</span><span class="p">(</span><span class="n">tuple</span><span class="p">)),</span>
+       <span class="mi">0</span><span class="p">)...};</span>
+  <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">_</span><span class="p">;</span> <span class="c1">// ignore</span>
 
-  graph-&gt;insertNode(node);
+  <span class="n">graph</span><span class="o">-&gt;</span><span class="n">insertNode</span><span class="p">(</span><span class="n">node</span><span class="p">);</span>
 
-  return node;
-}
+  <span class="k">return</span> <span class="n">node</span><span class="p">;</span>
+<span class="p">}</span>
 
-template &lt;typename Implementation, typename... Types, size_t... Is&gt;
-void callOperatorWithTuple(
-    const FunctionSchema&amp; schema,
-    Implementation&amp;&amp; implementation,
-    Stack&amp; stack,
-    std::tuple&lt;Types...&gt;&amp; arguments,
-    Indices&lt;Is...&gt;) {
-  AT_ASSERT(stack.size() == sizeof...(Is));
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Implementation</span><span class="p">,</span> <span class="k">typename</span><span class="p">...</span> <span class="n">Types</span><span class="p">,</span> <span class="kt">size_t</span><span class="p">...</span> <span class="n">Is</span><span class="o">&gt;</span>
+<span class="kt">void</span> <span class="n">callOperatorWithTuple</span><span class="p">(</span>
+    <span class="k">const</span> <span class="n">FunctionSchema</span><span class="o">&amp;</span> <span class="n">schema</span><span class="p">,</span>
+    <span class="n">Implementation</span><span class="o">&amp;&amp;</span> <span class="n">implementation</span><span class="p">,</span>
+    <span class="n">Stack</span><span class="o">&amp;</span> <span class="n">stack</span><span class="p">,</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Types</span><span class="p">...</span><span class="o">&gt;&amp;</span> <span class="n">arguments</span><span class="p">,</span>
+    <span class="n">Indices</span><span class="o">&lt;</span><span class="n">Is</span><span class="p">...</span><span class="o">&gt;</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">stack</span><span class="p">.</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="k">sizeof</span><span class="p">...(</span><span class="n">Is</span><span class="p">));</span>
 
-  // Pop values from the stack into the elements of the tuple.
-  pop(stack, std::get&lt;Is&gt;(arguments)...);
+  <span class="c1">// Pop values from the stack into the elements of the tuple.</span>
+  <span class="n">pop</span><span class="p">(</span><span class="n">stack</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">get</span><span class="o">&lt;</span><span class="n">Is</span><span class="o">&gt;</span><span class="p">(</span><span class="n">arguments</span><span class="p">)...);</span>
 
-  Node* node = nullptr;
-  if (jit::tracer::isTracing()) {
-    node = getTracedNode&lt;Is...&gt;(schema, arguments);
-  }
+  <span class="n">Node</span><span class="o">*</span> <span class="n">node</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">;</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">jit</span><span class="o">::</span><span class="n">tracer</span><span class="o">::</span><span class="n">isTracing</span><span class="p">())</span> <span class="p">{</span>
+    <span class="n">node</span> <span class="o">=</span> <span class="n">getTracedNode</span><span class="o">&lt;</span><span class="n">Is</span><span class="p">...</span><span class="o">&gt;</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">arguments</span><span class="p">);</span>
+  <span class="p">}</span>
 
-  // Call into the actual, original, user-supplied function.
-  auto return_value =
-      std::forward&lt;Implementation&gt;(implementation)(std::get&lt;Is&gt;(arguments)...);
+  <span class="c1">// Call into the actual, original, user-supplied function.</span>
+  <span class="k">auto</span> <span class="n">return_value</span> <span class="o">=</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">Implementation</span><span class="o">&gt;</span><span class="p">(</span><span class="n">implementation</span><span class="p">)(</span><span class="n">std</span><span class="o">::</span><span class="n">get</span><span class="o">&lt;</span><span class="n">Is</span><span class="o">&gt;</span><span class="p">(</span><span class="n">arguments</span><span class="p">)...);</span>
 
-  if (jit::tracer::isTracing()) {
-    jit::tracer::addOutput(node, return_value);
-  }
+  <span class="k">if</span> <span class="p">(</span><span class="n">jit</span><span class="o">::</span><span class="n">tracer</span><span class="o">::</span><span class="n">isTracing</span><span class="p">())</span> <span class="p">{</span>
+    <span class="n">jit</span><span class="o">::</span><span class="n">tracer</span><span class="o">::</span><span class="n">addOutput</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="n">return_value</span><span class="p">);</span>
+  <span class="p">}</span>
 
-  // Push the return value back onto the stack.
-  push(stack, IValue(std::move(return_value)));
-}
+  <span class="c1">// Push the return value back onto the stack.</span>
+  <span class="n">push</span><span class="p">(</span><span class="n">stack</span><span class="p">,</span> <span class="n">IValue</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">return_value</span><span class="p">)));</span>
+<span class="p">}</span>
 
-inline void checkArgumentVector(
-    const char* what,
-    const std::vector&lt;Argument&gt;&amp; inferred,
-    const std::vector&lt;Argument&gt;&amp; provided,
-    const FunctionSchema&amp; inferredSchema,
-    const FunctionSchema&amp; providedSchema) {
-  // clang-format off
-  AT_CHECK(
-      inferred.size() == provided.size(),
-      &quot;Inferred &quot;, inferred.size(), &quot; &quot;, what,
-      &quot;(s) for operator implementation, but the provided schema specified &quot;,
-      provided.size(), &quot; &quot;, what, &quot;(s). Inferred schema: &quot;, inferredSchema,
-      &quot; | Provided schema: &quot;, providedSchema);
-  // clang-format on
-  for (size_t i = 0; i &lt; provided.size(); ++i) {
-    // clang-format off
-    AT_CHECK(
-        provided[i].type()-&gt;isSubtypeOf(inferred[i].type()),
-        &quot;Inferred type for &quot;, what, &quot; #&quot;, i, &quot; was &quot;, *inferred[i].type(),
-        &quot;, but the provided schema specified type &quot;, *provided[i].type(),
-        &quot; for the &quot;, what, &quot; in that position. Inferred schema: &quot;,
-        inferredSchema, &quot; | Provided schema: &quot;, providedSchema);
-    // clang-format on
-  }
-}
+<span class="kr">inline</span> <span class="kt">void</span> <span class="n">checkArgumentVector</span><span class="p">(</span>
+    <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">what</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Argument</span><span class="o">&gt;&amp;</span> <span class="n">inferred</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Argument</span><span class="o">&gt;&amp;</span> <span class="n">provided</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">FunctionSchema</span><span class="o">&amp;</span> <span class="n">inferredSchema</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">FunctionSchema</span><span class="o">&amp;</span> <span class="n">providedSchema</span><span class="p">)</span> <span class="p">{</span>
+  <span class="c1">// clang-format off</span>
+  <span class="n">AT_CHECK</span><span class="p">(</span>
+      <span class="n">inferred</span><span class="p">.</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="n">provided</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span>
+      <span class="s">&quot;Inferred &quot;</span><span class="p">,</span> <span class="n">inferred</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span> <span class="s">&quot; &quot;</span><span class="p">,</span> <span class="n">what</span><span class="p">,</span>
+      <span class="s">&quot;(s) for operator implementation, but the provided schema specified &quot;</span><span class="p">,</span>
+      <span class="n">provided</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span> <span class="s">&quot; &quot;</span><span class="p">,</span> <span class="n">what</span><span class="p">,</span> <span class="s">&quot;(s). Inferred schema: &quot;</span><span class="p">,</span> <span class="n">inferredSchema</span><span class="p">,</span>
+      <span class="s">&quot; | Provided schema: &quot;</span><span class="p">,</span> <span class="n">providedSchema</span><span class="p">);</span>
+  <span class="c1">// clang-format on</span>
+  <span class="k">for</span> <span class="p">(</span><span class="kt">size_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">provided</span><span class="p">.</span><span class="n">size</span><span class="p">();</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// clang-format off</span>
+    <span class="n">AT_CHECK</span><span class="p">(</span>
+        <span class="n">provided</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">isSubtypeOf</span><span class="p">(</span><span class="n">inferred</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">type</span><span class="p">()),</span>
+        <span class="s">&quot;Inferred type for &quot;</span><span class="p">,</span> <span class="n">what</span><span class="p">,</span> <span class="s">&quot; #&quot;</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="s">&quot; was &quot;</span><span class="p">,</span> <span class="o">*</span><span class="n">inferred</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">type</span><span class="p">(),</span>
+        <span class="s">&quot;, but the provided schema specified type &quot;</span><span class="p">,</span> <span class="o">*</span><span class="n">provided</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">type</span><span class="p">(),</span>
+        <span class="s">&quot; for the &quot;</span><span class="p">,</span> <span class="n">what</span><span class="p">,</span> <span class="s">&quot; in that position. Inferred schema: &quot;</span><span class="p">,</span>
+        <span class="n">inferredSchema</span><span class="p">,</span> <span class="s">&quot; | Provided schema: &quot;</span><span class="p">,</span> <span class="n">providedSchema</span><span class="p">);</span>
+    <span class="c1">// clang-format on</span>
+  <span class="p">}</span>
+<span class="p">}</span>
 
-template &lt;typename Traits&gt;
-FunctionSchema inferAndCheckSchema(const std::string&amp; schemaOrName) {
-  // If there is no &#39;(&#39; in the schema, we assume this is only the name (e.g.
-  // &quot;foo::bar&quot;).
-  const auto bracketIndex = schemaOrName.find(&#39;(&#39;);
-  if (bracketIndex == std::string::npos) {
-    // Infer the full schema and we&#39;re good.
-    return c10::detail::createFunctionSchemaFromTraits&lt;Traits&gt;(
-        /*name=*/schemaOrName, &quot;&quot;);
-  }
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Traits</span><span class="o">&gt;</span>
+<span class="n">FunctionSchema</span> <span class="n">inferAndCheckSchema</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">schemaOrName</span><span class="p">)</span> <span class="p">{</span>
+  <span class="c1">// If there is no &#39;(&#39; in the schema, we assume this is only the name (e.g.</span>
+  <span class="c1">// &quot;foo::bar&quot;).</span>
+  <span class="k">const</span> <span class="k">auto</span> <span class="n">bracketIndex</span> <span class="o">=</span> <span class="n">schemaOrName</span><span class="p">.</span><span class="n">find</span><span class="p">(</span><span class="sc">&#39;(&#39;</span><span class="p">);</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">bracketIndex</span> <span class="o">==</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">::</span><span class="n">npos</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// Infer the full schema and we&#39;re good.</span>
+    <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">detail</span><span class="o">::</span><span class="n">createFunctionSchemaFromTraits</span><span class="o">&lt;</span><span class="n">Traits</span><span class="o">&gt;</span><span class="p">(</span>
+        <span class="cm">/*name=*/</span><span class="n">schemaOrName</span><span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">);</span>
+  <span class="p">}</span>
 
-  // If the user provided her own schema, we need to infer it nevertheless and
-  // check that it&#39;s correct. We return the user provided schema in the end
-  // because it has proper argument names.
+  <span class="c1">// If the user provided her own schema, we need to infer it nevertheless and</span>
+  <span class="c1">// check that it&#39;s correct. We return the user provided schema in the end</span>
+  <span class="c1">// because it has proper argument names.</span>
 
-  auto providedSchema = parseSchema(schemaOrName);
+  <span class="k">auto</span> <span class="n">providedSchema</span> <span class="o">=</span> <span class="n">parseSchema</span><span class="p">(</span><span class="n">schemaOrName</span><span class="p">);</span>
 
-  const auto inferredSchema =
-      c10::detail::createFunctionSchemaFromTraits&lt;Traits&gt;(
-          providedSchema.name(), providedSchema.overload_name());
-  checkArgumentVector(
-      &quot;argument&quot;,
-      inferredSchema.arguments(),
-      providedSchema.arguments(),
-      inferredSchema,
-      providedSchema);
-  checkArgumentVector(
-      &quot;return value&quot;,
-      inferredSchema.returns(),
-      providedSchema.returns(),
-      inferredSchema,
-      providedSchema);
-  return providedSchema;
-}
-} // namespace detail
+  <span class="k">const</span> <span class="k">auto</span> <span class="n">inferredSchema</span> <span class="o">=</span>
+      <span class="n">c10</span><span class="o">::</span><span class="n">detail</span><span class="o">::</span><span class="n">createFunctionSchemaFromTraits</span><span class="o">&lt;</span><span class="n">Traits</span><span class="o">&gt;</span><span class="p">(</span>
+          <span class="n">providedSchema</span><span class="p">.</span><span class="n">name</span><span class="p">(),</span> <span class="n">providedSchema</span><span class="p">.</span><span class="n">overload_name</span><span class="p">());</span>
+  <span class="n">checkArgumentVector</span><span class="p">(</span>
+      <span class="s">&quot;argument&quot;</span><span class="p">,</span>
+      <span class="n">inferredSchema</span><span class="p">.</span><span class="n">arguments</span><span class="p">(),</span>
+      <span class="n">providedSchema</span><span class="p">.</span><span class="n">arguments</span><span class="p">(),</span>
+      <span class="n">inferredSchema</span><span class="p">,</span>
+      <span class="n">providedSchema</span><span class="p">);</span>
+  <span class="n">checkArgumentVector</span><span class="p">(</span>
+      <span class="s">&quot;return value&quot;</span><span class="p">,</span>
+      <span class="n">inferredSchema</span><span class="p">.</span><span class="n">returns</span><span class="p">(),</span>
+      <span class="n">providedSchema</span><span class="p">.</span><span class="n">returns</span><span class="p">(),</span>
+      <span class="n">inferredSchema</span><span class="p">,</span>
+      <span class="n">providedSchema</span><span class="p">);</span>
+  <span class="k">return</span> <span class="n">providedSchema</span><span class="p">;</span>
+<span class="p">}</span>
+<span class="p">}</span> <span class="c1">// namespace detail</span>
 
-template &lt;typename Implementation&gt;
-Operator createOperator(
-    const std::string&amp; schemaOrName,
-    Implementation&amp;&amp; implementation,
-    OperatorOptions options = OperatorOptions()) {
-  using Traits = c10::guts::infer_function_traits_t&lt;Implementation&gt;;
-  using ArgumentTypes =
-      c10::guts::typelist::map_t&lt;decay_t, typename Traits::parameter_types&gt;;
-  using ArgumentTuple =
-      typename c10::guts::typelist::to_tuple&lt;ArgumentTypes&gt;::type;
-  static constexpr auto kNumberOfArguments =
-      std::tuple_size&lt;ArgumentTuple&gt;::value;
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Implementation</span><span class="o">&gt;</span>
+<span class="n">Operator</span> <span class="n">createOperator</span><span class="p">(</span>
+    <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">schemaOrName</span><span class="p">,</span>
+    <span class="n">Implementation</span><span class="o">&amp;&amp;</span> <span class="n">implementation</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">using</span> <span class="n">Traits</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">guts</span><span class="o">::</span><span class="n">infer_function_traits_t</span><span class="o">&lt;</span><span class="n">Implementation</span><span class="o">&gt;</span><span class="p">;</span>
+  <span class="k">using</span> <span class="n">ArgumentTypes</span> <span class="o">=</span>
+      <span class="n">c10</span><span class="o">::</span><span class="n">guts</span><span class="o">::</span><span class="n">typelist</span><span class="o">::</span><span class="n">map_t</span><span class="o">&lt;</span><span class="n">decay_t</span><span class="p">,</span> <span class="k">typename</span> <span class="n">Traits</span><span class="o">::</span><span class="n">parameter_types</span><span class="o">&gt;</span><span class="p">;</span>
+  <span class="k">using</span> <span class="n">ArgumentTuple</span> <span class="o">=</span>
+      <span class="k">typename</span> <span class="n">c10</span><span class="o">::</span><span class="n">guts</span><span class="o">::</span><span class="n">typelist</span><span class="o">::</span><span class="n">to_tuple</span><span class="o">&lt;</span><span class="n">ArgumentTypes</span><span class="o">&gt;::</span><span class="n">type</span><span class="p">;</span>
+  <span class="k">static</span> <span class="k">constexpr</span> <span class="k">auto</span> <span class="n">kNumberOfArguments</span> <span class="o">=</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">tuple_size</span><span class="o">&lt;</span><span class="n">ArgumentTuple</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">;</span>
 
-  auto schema = torch::jit::detail::inferAndCheckSchema&lt;Traits&gt;(schemaOrName);
+  <span class="k">auto</span> <span class="n">schema</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">jit</span><span class="o">::</span><span class="n">detail</span><span class="o">::</span><span class="n">inferAndCheckSchema</span><span class="o">&lt;</span><span class="n">Traits</span><span class="o">&gt;</span><span class="p">(</span><span class="n">schemaOrName</span><span class="p">);</span>
 
-  // [custom operator aliasing] Currently, we have no way for the user to
-  // specify the alias annotations for a custom op. Therefore, we have to:
-  //   1. Assume that custom ops will mutate all inputs, have side effects, and
-  //      produce wildcard outputs.
-  //   2. Have some way of distinguishing between a custom op and a builtin op
-  //      so that we can apply the above rule.
-  // We do this by manually whitelisting &quot;aten&quot; and &quot;prim&quot; namespaces as
-  // builtins.
-  //
-  // We don&#39;t want to preserve this distinction between custom/builtin ops, as
-  // it is fragile and hard to maintain. When we provide a way for op
-  // registration to specify alias annotations, we should fix up builtins to
-  // use that and remove all references to this note.
-  Symbol name = Symbol::fromQualString(schema.name());
-  if (name.is_aten() || name.is_prim() || name.is_onnx()) {
-    AT_ERROR(
-        &quot;Tried to register a custom operator to a reserved namespace: &quot;,
-        name.ns().toUnqualString());
-  }
+  <span class="c1">// [custom operator aliasing] Currently, we have no way for the user to</span>
+  <span class="c1">// specify the alias annotations for a custom op. Therefore, we have to:</span>
+  <span class="c1">//   1. Assume that custom ops will mutate all inputs, have side effects, and</span>
+  <span class="c1">//      produce wildcard outputs.</span>
+  <span class="c1">//   2. Have some way of distinguishing between a custom op and a builtin op</span>
+  <span class="c1">//      so that we can apply the above rule.</span>
+  <span class="c1">// We do this by manually whitelisting &quot;aten&quot; and &quot;prim&quot; namespaces as</span>
+  <span class="c1">// builtins.</span>
+  <span class="c1">//</span>
+  <span class="c1">// We don&#39;t want to preserve this distinction between custom/builtin ops, as</span>
+  <span class="c1">// it is fragile and hard to maintain. When we provide a way for op</span>
+  <span class="c1">// registration to specify alias annotations, we should fix up builtins to</span>
+  <span class="c1">// use that and remove all references to this note.</span>
+  <span class="n">Symbol</span> <span class="n">name</span> <span class="o">=</span> <span class="n">Symbol</span><span class="o">::</span><span class="n">fromQualString</span><span class="p">(</span><span class="n">schema</span><span class="p">.</span><span class="n">name</span><span class="p">());</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">name</span><span class="p">.</span><span class="n">is_aten</span><span class="p">()</span> <span class="o">||</span> <span class="n">name</span><span class="p">.</span><span class="n">is_prim</span><span class="p">()</span> <span class="o">||</span> <span class="n">name</span><span class="p">.</span><span class="n">is_onnx</span><span class="p">())</span> <span class="p">{</span>
+    <span class="n">AT_ERROR</span><span class="p">(</span>
+        <span class="s">&quot;Tried to register a custom operator to a reserved namespace: &quot;</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">.</span><span class="n">ns</span><span class="p">().</span><span class="n">toUnqualString</span><span class="p">());</span>
+  <span class="p">}</span>
 
-  return Operator(
-      schema,
-      [implementation, schema](Stack&amp; stack) {
-        ArgumentTuple tuple;
-        torch::jit::detail::callOperatorWithTuple(
-            schema,
-            std::move(
-                implementation), // NOLINT(bugprone-move-forwarding-reference)
-            stack,
-            tuple,
-            typename MakeIndices&lt;kNumberOfArguments&gt;::indices{});
-        return 0;
-      },
-      std::move(options));
-}
+  <span class="k">return</span> <span class="n">Operator</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="p">[</span><span class="n">implementation</span><span class="p">,</span> <span class="n">schema</span><span class="p">](</span><span class="n">Stack</span><span class="o">&amp;</span> <span class="n">stack</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">ArgumentTuple</span> <span class="n">tuple</span><span class="p">;</span>
+    <span class="n">torch</span><span class="o">::</span><span class="n">jit</span><span class="o">::</span><span class="n">detail</span><span class="o">::</span><span class="n">callOperatorWithTuple</span><span class="p">(</span>
+        <span class="n">schema</span><span class="p">,</span>
+        <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">implementation</span><span class="p">),</span> <span class="c1">// NOLINT(bugprone-move-forwarding-reference)</span>
+        <span class="n">stack</span><span class="p">,</span>
+        <span class="n">tuple</span><span class="p">,</span>
+        <span class="k">typename</span> <span class="n">MakeIndices</span><span class="o">&lt;</span><span class="n">kNumberOfArguments</span><span class="o">&gt;::</span><span class="n">indices</span><span class="p">{});</span>
+    <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="p">});</span>
+<span class="p">}</span>
 
-struct TORCH_API RegisterOperators {
-  RegisterOperators() = default;
+<span class="k">struct</span> <span class="n">TORCH_API</span> <span class="n">RegisterOperators</span> <span class="p">{</span>
+  <span class="n">RegisterOperators</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
 
-  RegisterOperators(std::vector&lt;Operator&gt; operators) {
-    for (Operator&amp; o : operators) {
-      registerOperator(std::move(o));
-    }
-  }
+  <span class="n">RegisterOperators</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Operator</span><span class="o">&gt;</span> <span class="n">operators</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">Operator</span><span class="o">&amp;</span> <span class="nl">o</span> <span class="p">:</span> <span class="n">operators</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">registerOperator</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">o</span><span class="p">));</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
 
-  template &lt;typename Implementation&gt;
-  RegisterOperators(const std::string&amp; name, Implementation&amp;&amp; implementation) {
-    op(name, std::forward&lt;Implementation&gt;(implementation));
-  }
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Implementation</span><span class="o">&gt;</span>
+  <span class="n">RegisterOperators</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span> <span class="n">Implementation</span><span class="o">&amp;&amp;</span> <span class="n">implementation</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">op</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">Implementation</span><span class="o">&gt;</span><span class="p">(</span><span class="n">implementation</span><span class="p">));</span>
+  <span class="p">}</span>
 
-  template &lt;typename Implementation&gt;
-  RegisterOperators&amp; op(
-      const std::string&amp; name,
-      Implementation&amp;&amp; implementation,
-      OperatorOptions options = OperatorOptions()) {
-    registerOperator(createOperator(
-        name, std::forward&lt;Implementation&gt;(implementation), options));
-    return *this;
-  }
-};
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Implementation</span><span class="o">&gt;</span>
+  <span class="n">RegisterOperators</span><span class="o">&amp;</span> <span class="n">op</span><span class="p">(</span>
+      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span>
+      <span class="n">Implementation</span><span class="o">&amp;&amp;</span> <span class="n">implementation</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">registerOperator</span><span class="p">(</span>
+        <span class="n">createOperator</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">Implementation</span><span class="o">&gt;</span><span class="p">(</span><span class="n">implementation</span><span class="p">)));</span>
+    <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p">};</span>
 
-} // namespace jit
-} // namespace torch
+<span class="p">}</span> <span class="c1">// namespace jit</span>
+<span class="p">}</span> <span class="c1">// namespace torch</span>
 </pre></div>
 </div>
 </div>

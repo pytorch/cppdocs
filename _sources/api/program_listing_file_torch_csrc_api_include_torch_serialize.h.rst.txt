@@ -10,7 +10,7 @@ Program Listing for File serialize.h
 
 .. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
 
-.. code-block:: none
+.. code-block:: cpp
 
    #pragma once
    
@@ -28,10 +28,38 @@ Program Listing for File serialize.h
      archive.save_to(std::forward<SaveToArgs>(args)...);
    }
    
+   template <typename... SaveToArgs>
+   void save(const std::vector<torch::Tensor>& tensor_vec, SaveToArgs&&... args) {
+     serialize::OutputArchive archive;
+     for (size_t i = 0; i < tensor_vec.size(); i++) {
+       auto& value = tensor_vec[i];
+       archive.write(std::to_string(i), value);
+     }
+     archive.save_to(std::forward<SaveToArgs>(args)...);
+   }
+   
    template <typename Value, typename... LoadFromArgs>
    void load(Value& value, LoadFromArgs&&... args) {
      serialize::InputArchive archive;
      archive.load_from(std::forward<LoadFromArgs>(args)...);
      archive >> value;
+   }
+   
+   template <typename... LoadFromArgs>
+   void load(std::vector<torch::Tensor>& tensor_vec, LoadFromArgs&&... args) {
+     serialize::InputArchive archive;
+     archive.load_from(std::forward<LoadFromArgs>(args)...);
+   
+     // NOTE: The number of elements in the serialized `std::vector<torch::Tensor>`
+     // is not known ahead of time, so we need a while-loop to increment the index,
+     // and use `archive.try_read(...)` to check whether we have reached the end of
+     // the serialized `std::vector<torch::Tensor>`.
+     size_t index = 0;
+     torch::Tensor value;
+     while (archive.try_read(std::to_string(index), value)) {
+       tensor_vec.push_back(std::move(value));
+       value = torch::Tensor();
+       index++;
+     }
    }
    } // namespace torch

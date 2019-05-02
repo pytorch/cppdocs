@@ -231,7 +231,7 @@
   <div class="section" id="program-listing-for-file-tensor-h">
 <span id="program-listing-file-aten-src-aten-core-tensor-h"></span><h1>Program Listing for File Tensor.h<a class="headerlink" href="#program-listing-for-file-tensor-h" title="Permalink to this headline">¶</a></h1>
 <p>↰ <a class="reference internal" href="file_aten_src_ATen_core_Tensor.h.html#file-aten-src-aten-core-tensor-h"><span class="std std-ref">Return to documentation for file</span></a> (<code class="docutils literal notranslate"><span class="pre">aten/src/ATen/core/Tensor.h</span></code>)</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>#pragma once
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span>#pragma once
 
 #include &lt;c10/core/Device.h&gt;
 #include &lt;c10/core/Layout.h&gt;
@@ -247,6 +247,9 @@
 #include &lt;ATen/core/LegacyTypeDispatch.h&gt;
 #include &lt;ATen/core/DeprecatedTypePropertiesRegistry.h&gt;
 
+namespace caffe2 {
+class Tensor;
+}
 namespace c10{
 struct TensorOptions;
 }
@@ -442,7 +445,6 @@ class CAFFE2_API Tensor {
   bool is_alias_of(const at::Tensor&amp; other) const{
     return impl_-&gt;storage().is_alias_of(other.storage());
   }
-  Tensor &amp; copy_(const Tensor &amp; src, bool non_blocking=false);
   Tensor toType(const DeprecatedTypeProperties &amp; t, bool non_blocking=false) const;
   Tensor toType(ScalarType t) const;
   Tensor toBackend(Backend b) const;
@@ -462,6 +464,8 @@ class CAFFE2_API Tensor {
   bool is_hip() const;
 
   bool is_sparse() const;
+
+  bool is_mkldnn() const;
 
   bool is_quantized() const;
 
@@ -588,6 +592,7 @@ class CAFFE2_API Tensor {
   Tensor clamp_min(Scalar min) const;
   Tensor &amp; clamp_min_(Scalar min);
   Tensor contiguous() const;
+  Tensor &amp; copy_(const Tensor &amp; src, bool non_blocking=false);
   Tensor cos() const;
   Tensor &amp; cos_();
   Tensor cosh() const;
@@ -923,7 +928,7 @@ class CAFFE2_API Tensor {
   Tensor cholesky(bool upper=false) const;
   Tensor cholesky_solve(const Tensor &amp; input2, bool upper=false) const;
   std::tuple&lt;Tensor,Tensor&gt; solve(const Tensor &amp; A) const;
-  Tensor potri(bool upper=true) const;
+  Tensor cholesky_inverse(bool upper=false) const;
   std::tuple&lt;Tensor,Tensor&gt; pstrf(bool upper=true, Scalar tol=-1) const;
   std::tuple&lt;Tensor,Tensor&gt; qr() const;
   std::tuple&lt;Tensor,Tensor&gt; geqrf() const;
@@ -981,6 +986,8 @@ class CAFFE2_API Tensor {
   friend struct WeakTensor;
 
 protected:
+  friend class ::caffe2::Tensor;
+
   void enforce_invariants();
   c10::intrusive_ptr&lt;TensorImpl, UndefinedTensorImpl&gt; impl_;
 };

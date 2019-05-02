@@ -231,86 +231,86 @@
   <div class="section" id="program-listing-for-file-cloneable-h">
 <span id="program-listing-file-torch-csrc-api-include-torch-nn-cloneable-h"></span><h1>Program Listing for File cloneable.h<a class="headerlink" href="#program-listing-for-file-cloneable-h" title="Permalink to this headline">¶</a></h1>
 <p>↰ <a class="reference internal" href="file_torch_csrc_api_include_torch_nn_cloneable.h.html#file-torch-csrc-api-include-torch-nn-cloneable-h"><span class="std std-ref">Return to documentation for file</span></a> (<code class="docutils literal notranslate"><span class="pre">torch/csrc/api/include/torch/nn/cloneable.h</span></code>)</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>#pragma once
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#pragma once</span>
 
-#include &lt;torch/nn/module.h&gt;
-#include &lt;torch/types.h&gt;
-#include &lt;torch/utils.h&gt;
+<span class="cp">#include</span> <span class="cpf">&lt;torch/nn/module.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/types.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/utils.h&gt;</span><span class="cp"></span>
 
-#include &lt;c10/core/TensorOptions.h&gt;
-#include &lt;c10/util/Exception.h&gt;
+<span class="cp">#include</span> <span class="cpf">&lt;c10/core/TensorOptions.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;c10/util/Exception.h&gt;</span><span class="cp"></span>
 
-#include &lt;memory&gt;
-#include &lt;utility&gt;
+<span class="cp">#include</span> <span class="cpf">&lt;memory&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;utility&gt;</span><span class="cp"></span>
 
-namespace torch {
-namespace nn {
-template &lt;typename Derived&gt;
-class Cloneable : public virtual Module {
- public:
-  using Module::Module;
+<span class="k">namespace</span> <span class="n">torch</span> <span class="p">{</span>
+<span class="k">namespace</span> <span class="n">nn</span> <span class="p">{</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Derived</span><span class="o">&gt;</span>
+<span class="k">class</span> <span class="nc">Cloneable</span> <span class="o">:</span> <span class="k">public</span> <span class="k">virtual</span> <span class="n">Module</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="k">using</span> <span class="n">Module</span><span class="o">::</span><span class="n">Module</span><span class="p">;</span>
 
-  virtual void reset() = 0;
+  <span class="k">virtual</span> <span class="kt">void</span> <span class="nf">reset</span><span class="p">()</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
 
-  std::shared_ptr&lt;Module&gt; clone(
-      const optional&lt;Device&gt;&amp; device = nullopt) const override {
-    NoGradGuard no_grad;
+  <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Module</span><span class="o">&gt;</span> <span class="n">clone</span><span class="p">(</span>
+      <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">Device</span><span class="o">&gt;&amp;</span> <span class="n">device</span> <span class="o">=</span> <span class="n">nullopt</span><span class="p">)</span> <span class="k">const</span> <span class="k">override</span> <span class="p">{</span>
+    <span class="n">NoGradGuard</span> <span class="n">no_grad</span><span class="p">;</span>
 
-    const auto&amp; self = static_cast&lt;const Derived&amp;&gt;(*this);
-    auto copy = std::make_shared&lt;Derived&gt;(self);
-    copy-&gt;parameters_.clear();
-    copy-&gt;buffers_.clear();
-    copy-&gt;children_.clear();
-    copy-&gt;reset();
-    AT_CHECK(
-        copy-&gt;parameters_.size() == parameters_.size(),
-        &quot;The cloned module does not have the same number of &quot;
-        &quot;parameters as the original module after calling reset(). &quot;
-        &quot;Are you sure you called register_parameter() inside reset() &quot;
-        &quot;and not the constructor?&quot;);
-    for (const auto&amp; parameter : parameters_) {
-      auto data = autograd::Variable(*parameter).data().clone();
-      copy-&gt;parameters_[parameter.key()].set_data(
-          device ? data.to(*device) : data);
-    }
-    AT_CHECK(
-        copy-&gt;buffers_.size() == buffers_.size(),
-        &quot;The cloned module does not have the same number of &quot;
-        &quot;buffers as the original module after calling reset(). &quot;
-        &quot;Are you sure you called register_buffer() inside reset() &quot;
-        &quot;and not the constructor?&quot;);
-    for (const auto&amp; buffer : buffers_) {
-      auto data = autograd::Variable(*buffer).data().clone();
-      copy-&gt;buffers_[buffer.key()].set_data(device ? data.to(*device) : data);
-    }
-    AT_CHECK(
-        copy-&gt;children_.size() == children_.size(),
-        &quot;The cloned module does not have the same number of &quot;
-        &quot;child modules as the original module after calling reset(). &quot;
-        &quot;Are you sure you called register_module() inside reset() &quot;
-        &quot;and not the constructor?&quot;);
-    for (const auto&amp; child : children_) {
-      copy-&gt;children_[child.key()]-&gt;clone_(*child.value(), device);
-    }
-    return copy;
-  }
+    <span class="k">const</span> <span class="k">auto</span><span class="o">&amp;</span> <span class="n">self</span> <span class="o">=</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="k">const</span> <span class="n">Derived</span><span class="o">&amp;&gt;</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">);</span>
+    <span class="k">auto</span> <span class="n">copy</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">Derived</span><span class="o">&gt;</span><span class="p">(</span><span class="n">self</span><span class="p">);</span>
+    <span class="n">copy</span><span class="o">-&gt;</span><span class="n">parameters_</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span>
+    <span class="n">copy</span><span class="o">-&gt;</span><span class="n">buffers_</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span>
+    <span class="n">copy</span><span class="o">-&gt;</span><span class="n">children_</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span>
+    <span class="n">copy</span><span class="o">-&gt;</span><span class="n">reset</span><span class="p">();</span>
+    <span class="n">AT_CHECK</span><span class="p">(</span>
+        <span class="n">copy</span><span class="o">-&gt;</span><span class="n">parameters_</span><span class="p">.</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="n">parameters_</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span>
+        <span class="s">&quot;The cloned module does not have the same number of &quot;</span>
+        <span class="s">&quot;parameters as the original module after calling reset(). &quot;</span>
+        <span class="s">&quot;Are you sure you called register_parameter() inside reset() &quot;</span>
+        <span class="s">&quot;and not the constructor?&quot;</span><span class="p">);</span>
+    <span class="k">for</span> <span class="p">(</span><span class="k">const</span> <span class="k">auto</span><span class="o">&amp;</span> <span class="nl">parameter</span> <span class="p">:</span> <span class="n">parameters_</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">auto</span> <span class="n">data</span> <span class="o">=</span> <span class="n">autograd</span><span class="o">::</span><span class="n">Variable</span><span class="p">(</span><span class="o">*</span><span class="n">parameter</span><span class="p">).</span><span class="n">data</span><span class="p">().</span><span class="n">clone</span><span class="p">();</span>
+      <span class="n">copy</span><span class="o">-&gt;</span><span class="n">parameters_</span><span class="p">[</span><span class="n">parameter</span><span class="p">.</span><span class="n">key</span><span class="p">()].</span><span class="n">set_data</span><span class="p">(</span>
+          <span class="n">device</span> <span class="o">?</span> <span class="n">data</span><span class="p">.</span><span class="n">to</span><span class="p">(</span><span class="o">*</span><span class="n">device</span><span class="p">)</span> <span class="o">:</span> <span class="n">data</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="n">AT_CHECK</span><span class="p">(</span>
+        <span class="n">copy</span><span class="o">-&gt;</span><span class="n">buffers_</span><span class="p">.</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="n">buffers_</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span>
+        <span class="s">&quot;The cloned module does not have the same number of &quot;</span>
+        <span class="s">&quot;buffers as the original module after calling reset(). &quot;</span>
+        <span class="s">&quot;Are you sure you called register_buffer() inside reset() &quot;</span>
+        <span class="s">&quot;and not the constructor?&quot;</span><span class="p">);</span>
+    <span class="k">for</span> <span class="p">(</span><span class="k">const</span> <span class="k">auto</span><span class="o">&amp;</span> <span class="nl">buffer</span> <span class="p">:</span> <span class="n">buffers_</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">auto</span> <span class="n">data</span> <span class="o">=</span> <span class="n">autograd</span><span class="o">::</span><span class="n">Variable</span><span class="p">(</span><span class="o">*</span><span class="n">buffer</span><span class="p">).</span><span class="n">data</span><span class="p">().</span><span class="n">clone</span><span class="p">();</span>
+      <span class="n">copy</span><span class="o">-&gt;</span><span class="n">buffers_</span><span class="p">[</span><span class="n">buffer</span><span class="p">.</span><span class="n">key</span><span class="p">()].</span><span class="n">set_data</span><span class="p">(</span><span class="n">device</span> <span class="o">?</span> <span class="n">data</span><span class="p">.</span><span class="n">to</span><span class="p">(</span><span class="o">*</span><span class="n">device</span><span class="p">)</span> <span class="o">:</span> <span class="n">data</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="n">AT_CHECK</span><span class="p">(</span>
+        <span class="n">copy</span><span class="o">-&gt;</span><span class="n">children_</span><span class="p">.</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="n">children_</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span>
+        <span class="s">&quot;The cloned module does not have the same number of &quot;</span>
+        <span class="s">&quot;child modules as the original module after calling reset(). &quot;</span>
+        <span class="s">&quot;Are you sure you called register_module() inside reset() &quot;</span>
+        <span class="s">&quot;and not the constructor?&quot;</span><span class="p">);</span>
+    <span class="k">for</span> <span class="p">(</span><span class="k">const</span> <span class="k">auto</span><span class="o">&amp;</span> <span class="nl">child</span> <span class="p">:</span> <span class="n">children_</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">copy</span><span class="o">-&gt;</span><span class="n">children_</span><span class="p">[</span><span class="n">child</span><span class="p">.</span><span class="n">key</span><span class="p">()]</span><span class="o">-&gt;</span><span class="n">clone_</span><span class="p">(</span><span class="o">*</span><span class="n">child</span><span class="p">.</span><span class="n">value</span><span class="p">(),</span> <span class="n">device</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">copy</span><span class="p">;</span>
+  <span class="p">}</span>
 
- private:
-  void clone_(Module&amp; other, const optional&lt;Device&gt;&amp; device) final {
-    // Here we are *pretty* certain that `other&#39;s` type is `Derived` (because it
-    // was registered under the same name as `this`), but you never know what
-    // crazy things `reset()` does, so `dynamic_cast` just to be safe.
-    auto clone = std::dynamic_pointer_cast&lt;Derived&gt;(other.clone(device));
-    AT_CHECK(
-        clone != nullptr,
-        &quot;Attempted to clone submodule, but it is of a &quot;
-        &quot;different type than the submodule it was to be cloned into&quot;);
-    static_cast&lt;Derived&amp;&gt;(*this) = std::move(*clone);
-  }
-};
+ <span class="k">private</span><span class="o">:</span>
+  <span class="kt">void</span> <span class="n">clone_</span><span class="p">(</span><span class="n">Module</span><span class="o">&amp;</span> <span class="n">other</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">Device</span><span class="o">&gt;&amp;</span> <span class="n">device</span><span class="p">)</span> <span class="k">final</span> <span class="p">{</span>
+    <span class="c1">// Here we are *pretty* certain that `other&#39;s` type is `Derived` (because it</span>
+    <span class="c1">// was registered under the same name as `this`), but you never know what</span>
+    <span class="c1">// crazy things `reset()` does, so `dynamic_cast` just to be safe.</span>
+    <span class="k">auto</span> <span class="n">clone</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">dynamic_pointer_cast</span><span class="o">&lt;</span><span class="n">Derived</span><span class="o">&gt;</span><span class="p">(</span><span class="n">other</span><span class="p">.</span><span class="n">clone</span><span class="p">(</span><span class="n">device</span><span class="p">));</span>
+    <span class="n">AT_CHECK</span><span class="p">(</span>
+        <span class="n">clone</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">,</span>
+        <span class="s">&quot;Attempted to clone submodule, but it is of a &quot;</span>
+        <span class="s">&quot;different type than the submodule it was to be cloned into&quot;</span><span class="p">);</span>
+    <span class="k">static_cast</span><span class="o">&lt;</span><span class="n">Derived</span><span class="o">&amp;&gt;</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">)</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="o">*</span><span class="n">clone</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">};</span>
 
-} // namespace nn
-} // namespace torch
+<span class="p">}</span> <span class="c1">// namespace nn</span>
+<span class="p">}</span> <span class="c1">// namespace torch</span>
 </pre></div>
 </div>
 </div>

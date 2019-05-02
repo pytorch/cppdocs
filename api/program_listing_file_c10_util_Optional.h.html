@@ -231,1099 +231,1099 @@
   <div class="section" id="program-listing-for-file-optional-h">
 <span id="program-listing-file-c10-util-optional-h"></span><h1>Program Listing for File Optional.h<a class="headerlink" href="#program-listing-for-file-optional-h" title="Permalink to this headline">¶</a></h1>
 <p>↰ <a class="reference internal" href="file_c10_util_Optional.h.html#file-c10-util-optional-h"><span class="std std-ref">Return to documentation for file</span></a> (<code class="docutils literal notranslate"><span class="pre">c10/util/Optional.h</span></code>)</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>// Copyright (C) 2011 - 2012 Andrzej Krzemienski.
-//
-// Use, modification, and distribution is subject to the Boost Software
-// License, Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at
-// http://www.boost.org/LICENSE_1_0.txt)
-//
-// The idea and interface is based on Boost.Optional library
-// authored by Fernando Luis Cacciola Carballal
-//
-// From https://github.com/akrzemi1/Optional
-//
-// C10
-// - Move to `c10` namespace.
-// - Remove macro use in line 478 because the nvcc device compiler cannot handle
-// it.
-// - revise constructor logic so that it is consistent with c++ 17 standard documented
-// here in (8): https://en.cppreference.com/w/cpp/utility/optional/optional, and
-// could be able to support initialization of optionals from convertible type U, also
-// remove two old constructors optional(const T&amp;) and optional(T&amp;&amp;) as it could be
-// handled by the template&lt;U=T&gt; case with default template argument.
-
-#ifndef C10_UTIL_OPTIONAL_H_
-#define C10_UTIL_OPTIONAL_H_
-
-#include &lt;cassert&gt;
-#include &lt;functional&gt;
-#include &lt;initializer_list&gt;
-#include &lt;stdexcept&gt;
-#include &lt;string&gt;
-#include &lt;type_traits&gt;
-#include &lt;utility&gt;
-
-#define TR2_OPTIONAL_REQUIRES(...) \
-  typename std::enable_if&lt;__VA_ARGS__::value, bool&gt;::type = false
-
-#if defined __GNUC__ // NOTE: GNUC is also defined for Clang
-#if (__GNUC__ == 4) &amp;&amp; (__GNUC_MINOR__ &gt;= 8)
-#define TR2_OPTIONAL_GCC_4_8_AND_HIGHER___
-#elif (__GNUC__ &gt; 4)
-#define TR2_OPTIONAL_GCC_4_8_AND_HIGHER___
-#endif
-#
-#if (__GNUC__ == 4) &amp;&amp; (__GNUC_MINOR__ &gt;= 7)
-#define TR2_OPTIONAL_GCC_4_7_AND_HIGHER___
-#elif (__GNUC__ &gt; 4)
-#define TR2_OPTIONAL_GCC_4_7_AND_HIGHER___
-#endif
-#
-#if (__GNUC__ == 4) &amp;&amp; (__GNUC_MINOR__ == 8) &amp;&amp; (__GNUC_PATCHLEVEL__ &gt;= 1)
-#define TR2_OPTIONAL_GCC_4_8_1_AND_HIGHER___
-#elif (__GNUC__ == 4) &amp;&amp; (__GNUC_MINOR__ &gt;= 9)
-#define TR2_OPTIONAL_GCC_4_8_1_AND_HIGHER___
-#elif (__GNUC__ &gt; 4)
-#define TR2_OPTIONAL_GCC_4_8_1_AND_HIGHER___
-#endif
-#endif
-#
-#if defined __clang_major__
-#if (__clang_major__ == 3 &amp;&amp; __clang_minor__ &gt;= 5)
-#define TR2_OPTIONAL_CLANG_3_5_AND_HIGHTER_
-#elif (__clang_major__ &gt; 3)
-#define TR2_OPTIONAL_CLANG_3_5_AND_HIGHTER_
-#endif
-#if defined TR2_OPTIONAL_CLANG_3_5_AND_HIGHTER_
-#define TR2_OPTIONAL_CLANG_3_4_2_AND_HIGHER_
-#elif ( \
-    __clang_major__ == 3 &amp;&amp; __clang_minor__ == 4 &amp;&amp; __clang_patchlevel__ &gt;= 2)
-#define TR2_OPTIONAL_CLANG_3_4_2_AND_HIGHER_
-#endif
-#endif
-#
-#if defined _MSC_VER
-#if (_MSC_VER &gt;= 1900)
-#define TR2_OPTIONAL_MSVC_2015_AND_HIGHER___
-#endif
-#endif
-
-#if defined __clang__
-#if (__clang_major__ &gt; 2) || (__clang_major__ == 2) &amp;&amp; (__clang_minor__ &gt;= 9)
-#define OPTIONAL_HAS_THIS_RVALUE_REFS 1
-#else
-#define OPTIONAL_HAS_THIS_RVALUE_REFS 0
-#endif
-#elif defined TR2_OPTIONAL_GCC_4_8_1_AND_HIGHER___
-#define OPTIONAL_HAS_THIS_RVALUE_REFS 1
-#elif defined TR2_OPTIONAL_MSVC_2015_AND_HIGHER___
-#define OPTIONAL_HAS_THIS_RVALUE_REFS 1
-#else
-#define OPTIONAL_HAS_THIS_RVALUE_REFS 0
-#endif
-
-#if defined TR2_OPTIONAL_GCC_4_8_1_AND_HIGHER___
-#define OPTIONAL_HAS_CONSTEXPR_INIT_LIST 1
-#define OPTIONAL_CONSTEXPR_INIT_LIST constexpr
-#else
-#define OPTIONAL_HAS_CONSTEXPR_INIT_LIST 0
-#define OPTIONAL_CONSTEXPR_INIT_LIST
-#endif
-
-#if defined TR2_OPTIONAL_CLANG_3_5_AND_HIGHTER_ &amp;&amp; (defined __cplusplus) &amp;&amp; \
-    (__cplusplus != 201103L)
-#define OPTIONAL_HAS_MOVE_ACCESSORS 1
-#else
-#define OPTIONAL_HAS_MOVE_ACCESSORS 0
-#endif
-
-#// In C++11 constexpr implies const, so we need to make non-const members also non-constexpr
-#if (defined __cplusplus) &amp;&amp; (__cplusplus == 201103L)
-#define OPTIONAL_MUTABLE_CONSTEXPR
-#else
-#define OPTIONAL_MUTABLE_CONSTEXPR constexpr
-#endif
-
-namespace c10 {
-
-// 20.5.4, optional for object types
-template &lt;class T&gt;
-class optional;
-
-// 20.5.5, optional for lvalue reference types
-template &lt;class T&gt;
-class optional&lt;T&amp;&gt;;
-
-// workaround: std utility functions aren&#39;t constexpr yet
-template &lt;class T&gt;
-inline constexpr T&amp;&amp; constexpr_forward(
-    typename std::remove_reference&lt;T&gt;::type&amp; t) noexcept {
-  return static_cast&lt;T&amp;&amp;&gt;(t);
-}
-
-template &lt;class T&gt;
-inline constexpr T&amp;&amp; constexpr_forward(
-    typename std::remove_reference&lt;T&gt;::type&amp;&amp; t) noexcept {
-  static_assert(!std::is_lvalue_reference&lt;T&gt;::value, &quot;!!&quot;);
-  return static_cast&lt;T&amp;&amp;&gt;(t);
-}
-
-template &lt;class T&gt;
-inline constexpr typename std::remove_reference&lt;T&gt;::type&amp;&amp; constexpr_move(
-    T&amp;&amp; t) noexcept {
-  return static_cast&lt;typename std::remove_reference&lt;T&gt;::type&amp;&amp;&gt;(t);
-}
-
-#if defined NDEBUG
-#define TR2_OPTIONAL_ASSERTED_EXPRESSION(CHECK, EXPR) (EXPR)
-#else
-#define TR2_OPTIONAL_ASSERTED_EXPRESSION(CHECK, EXPR) \
-  ((CHECK) ? (EXPR) : ([] { assert(!#CHECK); }(), (EXPR)))
-#endif
-
-namespace detail_ {
-
-// VS 2015 doesn&#39;t handle constexpr well, so we need to skip these stuff.
-#if (defined _MSC_VER) &amp;&amp; (_MSC_VER &lt;= 1900)
-template &lt;typename T&gt;
-T* static_addressof(T&amp; ref) {
-  return std::addressof(ref);
-}
-#else
-// static_addressof: a constexpr version of addressof
-template &lt;typename T&gt;
-struct has_overloaded_addressof {
-  template &lt;class X&gt;
-  constexpr static bool has_overload(...) {
-    return false;
-  }
-
-  template &lt;class X, size_t S = sizeof(std::declval&lt;X&amp;&gt;().operator&amp;())&gt;
-  constexpr static bool has_overload(bool) {
-    return true;
-  }
-
-  constexpr static bool value = has_overload&lt;T&gt;(true);
-};
-
-template &lt;typename T, TR2_OPTIONAL_REQUIRES(!has_overloaded_addressof&lt;T&gt;)&gt;
-constexpr T* static_addressof(T&amp; ref) {
-  return &amp;ref;
-}
-
-template &lt;typename T, TR2_OPTIONAL_REQUIRES(has_overloaded_addressof&lt;T&gt;)&gt;
-T* static_addressof(T&amp; ref) {
-  return std::addressof(ref);
-}
-#endif
-
-// the call to convert&lt;A&gt;(b) has return type A and converts b to type A iff b
-// decltype(b) is implicitly convertible to A
-template &lt;class U&gt;
-constexpr U convert(U v) {
-  return v;
-}
-
-} // namespace detail_
-
-constexpr struct trivial_init_t {
-} trivial_init{};
-
-// 20.5.6, In-place construction
-constexpr struct in_place_t {
-} in_place{};
-
-// 20.5.7, Disengaged state indicator
-struct nullopt_t {
-  struct init {};
-  constexpr explicit nullopt_t(init) {}
-};
-constexpr nullopt_t nullopt{nullopt_t::init()};
-
-// 20.5.8, class bad_optional_access
-class bad_optional_access : public std::logic_error {
- public:
-  explicit bad_optional_access(const std::string&amp; what_arg)
-      : logic_error{what_arg} {}
-  explicit bad_optional_access(const char* what_arg) : logic_error{what_arg} {}
-};
-
-template &lt;class T&gt;
-union storage_t {
-  unsigned char dummy_;
-  T value_;
-
-  constexpr storage_t(trivial_init_t) noexcept : dummy_(){};
-
-  template &lt;class... Args&gt;
-  constexpr storage_t(Args&amp;&amp;... args)
-      : value_(constexpr_forward&lt;Args&gt;(args)...) {}
-
-  ~storage_t() {}
-};
-
-template &lt;class T&gt;
-union constexpr_storage_t {
-  unsigned char dummy_;
-  T value_;
-
-  constexpr constexpr_storage_t(trivial_init_t) noexcept : dummy_(){};
-
-  template &lt;class... Args&gt;
-  constexpr constexpr_storage_t(Args&amp;&amp;... args)
-      : value_(constexpr_forward&lt;Args&gt;(args)...) {}
-
-  ~constexpr_storage_t() = default;
-};
-
-template &lt;class T&gt;
-struct optional_base {
-  bool init_;
-  storage_t&lt;T&gt; storage_;
-
-  constexpr optional_base() noexcept : init_(false), storage_(trivial_init){};
-
-  explicit constexpr optional_base(const T&amp; v) : init_(true), storage_(v) {}
-
-  explicit constexpr optional_base(T&amp;&amp; v)
-      : init_(true), storage_(constexpr_move(v)) {}
-
-  template &lt;class... Args&gt;
-  explicit optional_base(in_place_t, Args&amp;&amp;... args)
-      : init_(true), storage_(constexpr_forward&lt;Args&gt;(args)...) {}
-
-  template &lt;
-      class U,
-      class... Args,
-      TR2_OPTIONAL_REQUIRES(std::is_constructible&lt;T, std::initializer_list&lt;U&gt;&gt;)&gt;
-  explicit optional_base(
-      in_place_t,
-      std::initializer_list&lt;U&gt; il,
-      Args&amp;&amp;... args)
-      : init_(true), storage_(il, std::forward&lt;Args&gt;(args)...) {}
-
-  ~optional_base() {
-    if (init_)
-      storage_.value_.T::~T();
-  }
-};
-
-template &lt;class T&gt;
-struct constexpr_optional_base {
-  bool init_;
-  constexpr_storage_t&lt;T&gt; storage_;
-
-  constexpr constexpr_optional_base() noexcept
-      : init_(false), storage_(trivial_init){};
-
-  explicit constexpr constexpr_optional_base(const T&amp; v)
-      : init_(true), storage_(v) {}
-
-  explicit constexpr constexpr_optional_base(T&amp;&amp; v)
-      : init_(true), storage_(constexpr_move(v)) {}
-
-  template &lt;class... Args&gt;
-  explicit constexpr constexpr_optional_base(in_place_t, Args&amp;&amp;... args)
-      : init_(true), storage_(constexpr_forward&lt;Args&gt;(args)...) {}
-
-  template &lt;
-      class U,
-      class... Args,
-      TR2_OPTIONAL_REQUIRES(std::is_constructible&lt;T, std::initializer_list&lt;U&gt;&gt;)&gt;
-  OPTIONAL_CONSTEXPR_INIT_LIST explicit constexpr_optional_base(
-      in_place_t,
-      std::initializer_list&lt;U&gt; il,
-      Args&amp;&amp;... args)
-      : init_(true), storage_(il, std::forward&lt;Args&gt;(args)...) {}
-
-  ~constexpr_optional_base() = default;
-};
-
-template &lt;class T&gt;
-using OptionalBase = typename std::conditional&lt;
-    std::is_trivially_destructible&lt;T&gt;::value, // if possible
-    constexpr_optional_base&lt;typename std::remove_const&lt;
-        T&gt;::type&gt;, // use base with trivial destructor
-    optional_base&lt;typename std::remove_const&lt;T&gt;::type&gt;&gt;::type;
-
-template &lt;class T&gt;
-class optional : private OptionalBase&lt;T&gt; {
-  template &lt;class U&gt; // re-declaration for nvcc on Windows.
-  using OptionalBase = typename std::conditional&lt;
-      std::is_trivially_destructible&lt;U&gt;::value, // if possible
-      constexpr_optional_base&lt;typename std::remove_const&lt;
-          U&gt;::type&gt;, // use base with trivial destructor
-      optional_base&lt;typename std::remove_const&lt;U&gt;::type&gt;&gt;::type;
-
-  static_assert(
-      !std::is_same&lt;typename std::decay&lt;T&gt;::type, nullopt_t&gt;::value,
-      &quot;bad T&quot;);
-  static_assert(
-      !std::is_same&lt;typename std::decay&lt;T&gt;::type, in_place_t&gt;::value,
-      &quot;bad T&quot;);
-
-  constexpr bool initialized() const noexcept {
-    return OptionalBase&lt;T&gt;::init_;
-  }
-  typename std::remove_const&lt;T&gt;::type* dataptr() {
-    return std::addressof(OptionalBase&lt;T&gt;::storage_.value_);
-  }
-  constexpr const T* dataptr() const {
-    return detail_::static_addressof(OptionalBase&lt;T&gt;::storage_.value_);
-  }
-
-#if OPTIONAL_HAS_THIS_RVALUE_REFS == 1
-  constexpr const T&amp; contained_val() const&amp; {
-    return OptionalBase&lt;T&gt;::storage_.value_;
-  }
-#if OPTIONAL_HAS_MOVE_ACCESSORS == 1
-  OPTIONAL_MUTABLE_CONSTEXPR T&amp;&amp; contained_val() &amp;&amp; {
-    return std::move(OptionalBase&lt;T&gt;::storage_.value_);
-  }
-  OPTIONAL_MUTABLE_CONSTEXPR T&amp; contained_val() &amp; {
-    return OptionalBase&lt;T&gt;::storage_.value_;
-  }
-#else
-  T&amp; contained_val() &amp; {
-    return OptionalBase&lt;T&gt;::storage_.value_;
-  }
-  T&amp;&amp; contained_val() &amp;&amp; {
-    return std::move(OptionalBase&lt;T&gt;::storage_.value_);
-  }
-#endif
-#else
-  constexpr const T&amp; contained_val() const {
-    return OptionalBase&lt;T&gt;::storage_.value_;
-  }
-  T&amp; contained_val() {
-    return OptionalBase&lt;T&gt;::storage_.value_;
-  }
-#endif
-
-  void clear() noexcept {
-    if (initialized())
-      dataptr()-&gt;~T();
-    OptionalBase&lt;T&gt;::init_ = false;
-  }
-
-  template &lt;class... Args&gt;
-  void initialize(Args&amp;&amp;... args) noexcept(
-      noexcept(T(std::forward&lt;Args&gt;(args)...))) {
-    assert(!OptionalBase&lt;T&gt;::init_);
-    ::new (static_cast&lt;void*&gt;(dataptr())) T(std::forward&lt;Args&gt;(args)...);
-    OptionalBase&lt;T&gt;::init_ = true;
-  }
-
-  template &lt;class U, class... Args&gt;
-  void initialize(std::initializer_list&lt;U&gt; il, Args&amp;&amp;... args) noexcept(
-      noexcept(T(il, std::forward&lt;Args&gt;(args)...))) {
-    assert(!OptionalBase&lt;T&gt;::init_);
-    ::new (static_cast&lt;void*&gt;(dataptr())) T(il, std::forward&lt;Args&gt;(args)...);
-    OptionalBase&lt;T&gt;::init_ = true;
-  }
-
- public:
-  typedef T value_type;
-
-  // 20.5.5.1, constructors
-  constexpr optional() noexcept : OptionalBase&lt;T&gt;(){};
-  constexpr optional(nullopt_t) noexcept : OptionalBase&lt;T&gt;(){};
-
-  optional(const optional&amp; rhs) : OptionalBase&lt;T&gt;() {
-    if (rhs.initialized()) {
-      ::new (static_cast&lt;void*&gt;(dataptr())) T(*rhs);
-      OptionalBase&lt;T&gt;::init_ = true;
-    }
-  }
-
-  optional(optional&amp;&amp; rhs) noexcept(
-      std::is_nothrow_move_constructible&lt;T&gt;::value)
-      : OptionalBase&lt;T&gt;() {
-    if (rhs.initialized()) {
-      ::new (static_cast&lt;void*&gt;(dataptr())) T(std::move(*rhs));
-      OptionalBase&lt;T&gt;::init_ = true;
-    }
-  }
-
-  // see https://github.com/akrzemi1/Optional/issues/16
-  // and https://en.cppreference.com/w/cpp/utility/optional/optional,
-  // in constructor 8, the std::optional spec can allow initialization
-  // of optionals from convertible type U
-  //
-  // 8 - implicit move construct from value
-  template&lt;
-      typename U = T,
-      TR2_OPTIONAL_REQUIRES(
-          std::is_constructible&lt;T, U&amp;&amp;&gt;::value
-          &amp;&amp; !std::is_same&lt;typename std::decay&lt;U&gt;::type, in_place_t&gt;::value
-          &amp;&amp; !std::is_same&lt;typename std::decay&lt;U&gt;::type, optional&lt;T&gt;&gt;::value
-          &amp;&amp; std::is_convertible&lt;U&amp;&amp;, T&gt;
-      )
-    &gt;
-  constexpr optional(U&amp;&amp; u) : OptionalBase&lt;T&gt;(std::forward&lt;U&gt;(u)) {}
-
-  // 8 - explicit move construct from value
-  template&lt;
-      typename U = T,
-      TR2_OPTIONAL_REQUIRES(
-          std::is_constructible&lt;T, U&amp;&amp;&gt;::value
-          &amp;&amp; !std::is_same&lt;typename std::decay&lt;U&gt;::type, in_place_t&gt;::value
-          &amp;&amp; !std::is_same&lt;typename std::decay&lt;U&gt;::type, optional&lt;T&gt;&gt;::value
-          &amp;&amp; !std::is_convertible&lt;U&amp;&amp;, T&gt;
-      )
-    &gt;
-  explicit constexpr optional(U&amp;&amp; u) : OptionalBase&lt;T&gt;(std::forward&lt;U&gt;(u)) {}
-
-  template &lt;class... Args&gt;
-  explicit constexpr optional(in_place_t, Args&amp;&amp;... args)
-      : OptionalBase&lt;T&gt;(in_place_t{}, constexpr_forward&lt;Args&gt;(args)...) {}
-
-  template &lt;
-      class U,
-      class... Args,
-      TR2_OPTIONAL_REQUIRES(std::is_constructible&lt;T, std::initializer_list&lt;U&gt;&gt;)&gt;
-  OPTIONAL_CONSTEXPR_INIT_LIST explicit optional(
-      in_place_t,
-      std::initializer_list&lt;U&gt; il,
-      Args&amp;&amp;... args)
-      : OptionalBase&lt;T&gt;(in_place_t{}, il, constexpr_forward&lt;Args&gt;(args)...) {}
-
-  // 20.5.4.2, Destructor
-  ~optional() = default;
-
-  // 20.5.4.3, assignment
-  optional&amp; operator=(nullopt_t) noexcept {
-    clear();
-    return *this;
-  }
-
-  optional&amp; operator=(const optional&amp; rhs) {
-    if (initialized() == true &amp;&amp; rhs.initialized() == false)
-      clear();
-    else if (initialized() == false &amp;&amp; rhs.initialized() == true)
-      initialize(*rhs);
-    else if (initialized() == true &amp;&amp; rhs.initialized() == true)
-      contained_val() = *rhs;
-    return *this;
-  }
-
-  optional&amp; operator=(optional&amp;&amp; rhs) noexcept(
-      std::is_nothrow_move_assignable&lt;T&gt;::value&amp;&amp;
-          std::is_nothrow_move_constructible&lt;T&gt;::value) {
-    if (initialized() == true &amp;&amp; rhs.initialized() == false)
-      clear();
-    else if (initialized() == false &amp;&amp; rhs.initialized() == true)
-      initialize(std::move(*rhs));
-    else if (initialized() == true &amp;&amp; rhs.initialized() == true)
-      contained_val() = std::move(*rhs);
-    return *this;
-  }
-
-  template&lt;class U = T&gt;
-  auto operator=(U&amp;&amp; v) -&gt; typename std::enable_if&lt;
-          std::is_constructible&lt;T, U&gt;::value
-          &amp;&amp; !std::is_same&lt;typename std::decay&lt;U&gt;::type, optional&lt;T&gt;&gt;::value
-          &amp;&amp; (std::is_scalar&lt;T&gt;::value || std::is_same&lt;typename std::decay&lt;U&gt;::type, T&gt;::value)
-          &amp;&amp; std::is_assignable&lt;T&amp;, U&gt;::value,
-      optional&amp;&gt;::type {
-    if (initialized()) {
-      contained_val() = std::forward&lt;U&gt;(v);
-    } else {
-      initialize(std::forward&lt;U&gt;(v));
-    }
-    return *this;
-  }
-
-  template &lt;class... Args&gt;
-  void emplace(Args&amp;&amp;... args) {
-    clear();
-    initialize(std::forward&lt;Args&gt;(args)...);
-  }
-
-  template &lt;class U, class... Args&gt;
-  void emplace(std::initializer_list&lt;U&gt; il, Args&amp;&amp;... args) {
-    clear();
-    initialize&lt;U, Args...&gt;(il, std::forward&lt;Args&gt;(args)...);
-  }
-
-  // 20.5.4.4, Swap
-  void swap(optional&lt;T&gt;&amp; rhs) noexcept(
-      std::is_nothrow_move_constructible&lt;T&gt;::value&amp;&amp; noexcept(
-          swap(std::declval&lt;T&amp;&gt;(), std::declval&lt;T&amp;&gt;()))) {
-    if (initialized() == true &amp;&amp; rhs.initialized() == false) {
-      rhs.initialize(std::move(**this));
-      clear();
-    } else if (initialized() == false &amp;&amp; rhs.initialized() == true) {
-      initialize(std::move(*rhs));
-      rhs.clear();
-    } else if (initialized() == true &amp;&amp; rhs.initialized() == true) {
-      using std::swap;
-      swap(**this, *rhs);
-    }
-  }
-
-  // 20.5.4.5, Observers
-
-  explicit constexpr operator bool() const noexcept {
-    return initialized();
-  }
-  constexpr bool has_value() const noexcept {
-    return initialized();
-  }
-
-  constexpr T const* operator-&gt;() const {
-    return TR2_OPTIONAL_ASSERTED_EXPRESSION(initialized(), dataptr());
-  }
-
-#if OPTIONAL_HAS_MOVE_ACCESSORS == 1
-
-  OPTIONAL_MUTABLE_CONSTEXPR T* operator-&gt;() {
-    assert(initialized());
-    return dataptr();
-  }
-
-  constexpr T const&amp; operator*() const&amp; {
-    return TR2_OPTIONAL_ASSERTED_EXPRESSION(initialized(), contained_val());
-  }
-
-  OPTIONAL_MUTABLE_CONSTEXPR T&amp; operator*() &amp; {
-    assert(initialized());
-    return contained_val();
-  }
-
-  OPTIONAL_MUTABLE_CONSTEXPR T&amp;&amp; operator*() &amp;&amp; {
-    assert(initialized());
-    return constexpr_move(contained_val());
-  }
-
-  constexpr T const&amp; value() const&amp; {
-    return initialized()
-        ? contained_val()
-        : (throw bad_optional_access(&quot;bad optional access&quot;), contained_val());
-  }
-
-  OPTIONAL_MUTABLE_CONSTEXPR T&amp; value() &amp; {
-    return initialized()
-        ? contained_val()
-        : (throw bad_optional_access(&quot;bad optional access&quot;), contained_val());
-  }
-
-  OPTIONAL_MUTABLE_CONSTEXPR T&amp;&amp; value() &amp;&amp; {
-    if (!initialized())
-      throw bad_optional_access(&quot;bad optional access&quot;);
-    return std::move(contained_val());
-  }
-
-#else
-
-  T* operator-&gt;() {
-    assert(initialized());
-    return dataptr();
-  }
-
-  constexpr T const&amp; operator*() const {
-    return contained_val();
-  }
-
-  T&amp; operator*() {
-    assert(initialized());
-    return contained_val();
-  }
-
-  constexpr T const&amp; value() const {
-    return initialized()
-        ? contained_val()
-        : (throw bad_optional_access(&quot;bad optional access&quot;), contained_val());
-  }
-
-  T&amp; value() {
-    return initialized()
-        ? contained_val()
-        : (throw bad_optional_access(&quot;bad optional access&quot;), contained_val());
-  }
-
-#endif
-
-#if OPTIONAL_HAS_THIS_RVALUE_REFS == 1
-
-  template &lt;class V&gt;
-  constexpr T value_or(V&amp;&amp; v) const&amp; {
-    return *this ? **this : detail_::convert&lt;T&gt;(constexpr_forward&lt;V&gt;(v));
-  }
-
-#if OPTIONAL_HAS_MOVE_ACCESSORS == 1
-
-  template &lt;class V&gt;
-  OPTIONAL_MUTABLE_CONSTEXPR T value_or(V&amp;&amp; v) &amp;&amp; {
-    return *this
-        ? constexpr_move(const_cast&lt;optional&lt;T&gt;&amp;&gt;(*this).contained_val())
-        : detail_::convert&lt;T&gt;(constexpr_forward&lt;V&gt;(v));
-  }
-
-#else
-
-  template &lt;class V&gt;
-  T value_or(V&amp;&amp; v) &amp;&amp; {
-    return *this
-        ? constexpr_move(const_cast&lt;optional&lt;T&gt;&amp;&gt;(*this).contained_val())
-        : detail_::convert&lt;T&gt;(constexpr_forward&lt;V&gt;(v));
-  }
-
-#endif
-
-#else
-
-  template &lt;class V&gt;
-  constexpr T value_or(V&amp;&amp; v) const {
-    return *this ? **this : detail_::convert&lt;T&gt;(constexpr_forward&lt;V&gt;(v));
-  }
-
-#endif
-
-  // 20.6.3.6, modifiers
-  void reset() noexcept {
-    clear();
-  }
-};
-
-
-// XXX: please refrain from using optional&lt;T&amp;&gt;, since it is being against with
-// the optional standard in c++ 17, see the debate and the details here:
-// http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2012/n3406#rationale.refs
-// if you need it, consider using optional&lt;std::reference_wrapper&lt;T&gt;&gt; or * pointer
-//
-// we leave the implementation here in case we want to reconsider using it in the
-// future if it becomes a definitely necessary case.
-template &lt;class T&gt;
-class optional&lt;T&amp;&gt; {
-  // add this assert to prevent user from using optional reference as indicated above
-  static_assert(sizeof(T) == 0, &quot;optional references is ill-formed, \
-    consider use optional of a std::reference_wrapper of type T to \
-    hold a reference if you really need to&quot;);
-
-  static_assert(!std::is_same&lt;T, nullopt_t&gt;::value, &quot;bad T&quot;);
-  static_assert(!std::is_same&lt;T, in_place_t&gt;::value, &quot;bad T&quot;);
-  T* ref;
-
- public:
-  // 20.5.5.1, construction/destruction
-  constexpr optional() noexcept : ref(nullptr) {}
-
-  constexpr optional(nullopt_t) noexcept : ref(nullptr) {}
-
-  template&lt;typename U = T&gt;
-  constexpr optional(U&amp; u) noexcept : ref(detail_::static_addressof(u)) {}
-
-  template&lt;typename U = T&gt;
-  optional(U&amp;&amp;) = delete;
-
-  constexpr optional(const optional&amp; rhs) noexcept : ref(rhs.ref) {}
-
-  explicit constexpr optional(in_place_t, T&amp; v) noexcept
-      : ref(detail_::static_addressof(v)) {}
-
-  explicit optional(in_place_t, T&amp;&amp;) = delete;
-
-  ~optional() = default;
-
-  // 20.5.5.2, mutation
-  optional&amp; operator=(nullopt_t) noexcept {
-    ref = nullptr;
-    return *this;
-  }
-
-  // optional&amp; operator=(const optional&amp; rhs) noexcept {
-  // ref = rhs.ref;
-  // return *this;
-  // }
-
-  // optional&amp; operator=(optional&amp;&amp; rhs) noexcept {
-  // ref = rhs.ref;
-  // return *this;
-  // }
-
-  template &lt;typename U&gt;
-  auto operator=(U&amp;&amp; rhs) noexcept -&gt; typename std::enable_if&lt;
-      std::is_same&lt;typename std::decay&lt;U&gt;::type, optional&lt;T&amp;&gt;&gt;::value,
-      optional&amp;&gt;::type {
-    ref = rhs.ref;
-    return *this;
-  }
-
-  template &lt;typename U&gt;
-  auto operator=(U&amp;&amp; rhs) noexcept -&gt; typename std::enable_if&lt;
-      !std::is_same&lt;typename std::decay&lt;U&gt;::type, optional&lt;T&amp;&gt;&gt;::value,
-      optional&amp;&gt;::type = delete;
-
-  void emplace(T&amp; v) noexcept {
-    ref = detail_::static_addressof(v);
-  }
-
-  void emplace(T&amp;&amp;) = delete;
-
-  void swap(optional&lt;T&amp;&gt;&amp; rhs) noexcept {
-    std::swap(ref, rhs.ref);
-  }
-
-  // 20.5.5.3, observers
-  constexpr T* operator-&gt;() const {
-    return TR2_OPTIONAL_ASSERTED_EXPRESSION(ref, ref);
-  }
-
-  constexpr T&amp; operator*() const {
-    return TR2_OPTIONAL_ASSERTED_EXPRESSION(ref, *ref);
-  }
-
-  constexpr T&amp; value() const {
-    return ref ? *ref
-               : (throw bad_optional_access(&quot;bad optional access&quot;), *ref);
-  }
-
-  explicit constexpr operator bool() const noexcept {
-    return ref != nullptr;
-  }
-
-  constexpr bool has_value() const noexcept {
-    return ref != nullptr;
-  }
-
-  template &lt;class V&gt;
-  constexpr typename std::decay&lt;T&gt;::type value_or(V&amp;&amp; v) const {
-    return *this ? **this
-                 : detail_::convert&lt;typename std::decay&lt;T&gt;::type&gt;(
-                       constexpr_forward&lt;V&gt;(v));
-  }
-
-  // x.x.x.x, modifiers
-  void reset() noexcept {
-    ref = nullptr;
-  }
-};
-
-template &lt;class T&gt;
-class optional&lt;T&amp;&amp;&gt; {
-  static_assert(sizeof(T) == 0, &quot;optional rvalue references disallowed&quot;);
-};
-
-// 20.5.8, Relational operators
-template &lt;class T&gt;
-constexpr bool operator==(const optional&lt;T&gt;&amp; x, const optional&lt;T&gt;&amp; y) {
-  return bool(x) != bool(y) ? false : bool(x) == false ? true : *x == *y;
-}
-
-template &lt;class T&gt;
-constexpr bool operator!=(const optional&lt;T&gt;&amp; x, const optional&lt;T&gt;&amp; y) {
-  return !(x == y);
-}
-
-template &lt;class T&gt;
-constexpr bool operator&lt;(const optional&lt;T&gt;&amp; x, const optional&lt;T&gt;&amp; y) {
-  return (!y) ? false : (!x) ? true : *x &lt; *y;
-}
-
-template &lt;class T&gt;
-constexpr bool operator&gt;(const optional&lt;T&gt;&amp; x, const optional&lt;T&gt;&amp; y) {
-  return (y &lt; x);
-}
-
-template &lt;class T&gt;
-constexpr bool operator&lt;=(const optional&lt;T&gt;&amp; x, const optional&lt;T&gt;&amp; y) {
-  return !(y &lt; x);
-}
-
-template &lt;class T&gt;
-constexpr bool operator&gt;=(const optional&lt;T&gt;&amp; x, const optional&lt;T&gt;&amp; y) {
-  return !(x &lt; y);
-}
-
-// 20.5.9, Comparison with nullopt
-template &lt;class T&gt;
-constexpr bool operator==(const optional&lt;T&gt;&amp; x, nullopt_t) noexcept {
-  return (!x);
-}
-
-template &lt;class T&gt;
-constexpr bool operator==(nullopt_t, const optional&lt;T&gt;&amp; x) noexcept {
-  return (!x);
-}
-
-template &lt;class T&gt;
-constexpr bool operator!=(const optional&lt;T&gt;&amp; x, nullopt_t) noexcept {
-  return bool(x);
-}
-
-template &lt;class T&gt;
-constexpr bool operator!=(nullopt_t, const optional&lt;T&gt;&amp; x) noexcept {
-  return bool(x);
-}
-
-template &lt;class T&gt;
-constexpr bool operator&lt;(const optional&lt;T&gt;&amp;, nullopt_t) noexcept {
-  return false;
-}
-
-template &lt;class T&gt;
-constexpr bool operator&lt;(nullopt_t, const optional&lt;T&gt;&amp; x) noexcept {
-  return bool(x);
-}
-
-template &lt;class T&gt;
-constexpr bool operator&lt;=(const optional&lt;T&gt;&amp; x, nullopt_t) noexcept {
-  return (!x);
-}
-
-template &lt;class T&gt;
-constexpr bool operator&lt;=(nullopt_t, const optional&lt;T&gt;&amp;) noexcept {
-  return true;
-}
-
-template &lt;class T&gt;
-constexpr bool operator&gt;(const optional&lt;T&gt;&amp; x, nullopt_t) noexcept {
-  return bool(x);
-}
-
-template &lt;class T&gt;
-constexpr bool operator&gt;(nullopt_t, const optional&lt;T&gt;&amp;) noexcept {
-  return false;
-}
-
-template &lt;class T&gt;
-constexpr bool operator&gt;=(const optional&lt;T&gt;&amp;, nullopt_t) noexcept {
-  return true;
-}
-
-template &lt;class T&gt;
-constexpr bool operator&gt;=(nullopt_t, const optional&lt;T&gt;&amp; x) noexcept {
-  return (!x);
-}
-
-// 20.5.10, Comparison with T
-template &lt;class T&gt;
-constexpr bool operator==(const optional&lt;T&gt;&amp; x, const T&amp; v) {
-  return bool(x) ? *x == v : false;
-}
-
-template &lt;class T&gt;
-constexpr bool operator==(const T&amp; v, const optional&lt;T&gt;&amp; x) {
-  return bool(x) ? v == *x : false;
-}
-
-template &lt;class T&gt;
-constexpr bool operator!=(const optional&lt;T&gt;&amp; x, const T&amp; v) {
-  return bool(x) ? *x != v : true;
-}
-
-template &lt;class T&gt;
-constexpr bool operator!=(const T&amp; v, const optional&lt;T&gt;&amp; x) {
-  return bool(x) ? v != *x : true;
-}
-
-template &lt;class T&gt;
-constexpr bool operator&lt;(const optional&lt;T&gt;&amp; x, const T&amp; v) {
-  return bool(x) ? *x &lt; v : true;
-}
-
-template &lt;class T&gt;
-constexpr bool operator&gt;(const T&amp; v, const optional&lt;T&gt;&amp; x) {
-  return bool(x) ? v &gt; *x : true;
-}
-
-template &lt;class T&gt;
-constexpr bool operator&gt;(const optional&lt;T&gt;&amp; x, const T&amp; v) {
-  return bool(x) ? *x &gt; v : false;
-}
-
-template &lt;class T&gt;
-constexpr bool operator&lt;(const T&amp; v, const optional&lt;T&gt;&amp; x) {
-  return bool(x) ? v &lt; *x : false;
-}
-
-template &lt;class T&gt;
-constexpr bool operator&gt;=(const optional&lt;T&gt;&amp; x, const T&amp; v) {
-  return bool(x) ? *x &gt;= v : false;
-}
-
-template &lt;class T&gt;
-constexpr bool operator&lt;=(const T&amp; v, const optional&lt;T&gt;&amp; x) {
-  return bool(x) ? v &lt;= *x : false;
-}
-
-template &lt;class T&gt;
-constexpr bool operator&lt;=(const optional&lt;T&gt;&amp; x, const T&amp; v) {
-  return bool(x) ? *x &lt;= v : true;
-}
-
-template &lt;class T&gt;
-constexpr bool operator&gt;=(const T&amp; v, const optional&lt;T&gt;&amp; x) {
-  return bool(x) ? v &gt;= *x : true;
-}
-
-// Comparison of optional&lt;T&amp;&gt; with T
-template &lt;class T&gt;
-constexpr bool operator==(const optional&lt;T&amp;&gt;&amp; x, const T&amp; v) {
-  return bool(x) ? *x == v : false;
-}
-
-template &lt;class T&gt;
-constexpr bool operator==(const T&amp; v, const optional&lt;T&amp;&gt;&amp; x) {
-  return bool(x) ? v == *x : false;
-}
-
-template &lt;class T&gt;
-constexpr bool operator!=(const optional&lt;T&amp;&gt;&amp; x, const T&amp; v) {
-  return bool(x) ? *x != v : true;
-}
-
-template &lt;class T&gt;
-constexpr bool operator!=(const T&amp; v, const optional&lt;T&amp;&gt;&amp; x) {
-  return bool(x) ? v != *x : true;
-}
-
-template &lt;class T&gt;
-constexpr bool operator&lt;(const optional&lt;T&amp;&gt;&amp; x, const T&amp; v) {
-  return bool(x) ? *x &lt; v : true;
-}
-
-template &lt;class T&gt;
-constexpr bool operator&gt;(const T&amp; v, const optional&lt;T&amp;&gt;&amp; x) {
-  return bool(x) ? v &gt; *x : true;
-}
-
-template &lt;class T&gt;
-constexpr bool operator&gt;(const optional&lt;T&amp;&gt;&amp; x, const T&amp; v) {
-  return bool(x) ? *x &gt; v : false;
-}
-
-template &lt;class T&gt;
-constexpr bool operator&lt;(const T&amp; v, const optional&lt;T&amp;&gt;&amp; x) {
-  return bool(x) ? v &lt; *x : false;
-}
-
-template &lt;class T&gt;
-constexpr bool operator&gt;=(const optional&lt;T&amp;&gt;&amp; x, const T&amp; v) {
-  return bool(x) ? *x &gt;= v : false;
-}
-
-template &lt;class T&gt;
-constexpr bool operator&lt;=(const T&amp; v, const optional&lt;T&amp;&gt;&amp; x) {
-  return bool(x) ? v &lt;= *x : false;
-}
-
-template &lt;class T&gt;
-constexpr bool operator&lt;=(const optional&lt;T&amp;&gt;&amp; x, const T&amp; v) {
-  return bool(x) ? *x &lt;= v : true;
-}
-
-template &lt;class T&gt;
-constexpr bool operator&gt;=(const T&amp; v, const optional&lt;T&amp;&gt;&amp; x) {
-  return bool(x) ? v &gt;= *x : true;
-}
-
-// Comparison of optional&lt;T const&amp;&gt; with T
-template &lt;class T&gt;
-constexpr bool operator==(const optional&lt;const T&amp;&gt;&amp; x, const T&amp; v) {
-  return bool(x) ? *x == v : false;
-}
-
-template &lt;class T&gt;
-constexpr bool operator==(const T&amp; v, const optional&lt;const T&amp;&gt;&amp; x) {
-  return bool(x) ? v == *x : false;
-}
-
-template &lt;class T&gt;
-constexpr bool operator!=(const optional&lt;const T&amp;&gt;&amp; x, const T&amp; v) {
-  return bool(x) ? *x != v : true;
-}
-
-template &lt;class T&gt;
-constexpr bool operator!=(const T&amp; v, const optional&lt;const T&amp;&gt;&amp; x) {
-  return bool(x) ? v != *x : true;
-}
-
-template &lt;class T&gt;
-constexpr bool operator&lt;(const optional&lt;const T&amp;&gt;&amp; x, const T&amp; v) {
-  return bool(x) ? *x &lt; v : true;
-}
-
-template &lt;class T&gt;
-constexpr bool operator&gt;(const T&amp; v, const optional&lt;const T&amp;&gt;&amp; x) {
-  return bool(x) ? v &gt; *x : true;
-}
-
-template &lt;class T&gt;
-constexpr bool operator&gt;(const optional&lt;const T&amp;&gt;&amp; x, const T&amp; v) {
-  return bool(x) ? *x &gt; v : false;
-}
-
-template &lt;class T&gt;
-constexpr bool operator&lt;(const T&amp; v, const optional&lt;const T&amp;&gt;&amp; x) {
-  return bool(x) ? v &lt; *x : false;
-}
-
-template &lt;class T&gt;
-constexpr bool operator&gt;=(const optional&lt;const T&amp;&gt;&amp; x, const T&amp; v) {
-  return bool(x) ? *x &gt;= v : false;
-}
-
-template &lt;class T&gt;
-constexpr bool operator&lt;=(const T&amp; v, const optional&lt;const T&amp;&gt;&amp; x) {
-  return bool(x) ? v &lt;= *x : false;
-}
-
-template &lt;class T&gt;
-constexpr bool operator&lt;=(const optional&lt;const T&amp;&gt;&amp; x, const T&amp; v) {
-  return bool(x) ? *x &lt;= v : true;
-}
-
-template &lt;class T&gt;
-constexpr bool operator&gt;=(const T&amp; v, const optional&lt;const T&amp;&gt;&amp; x) {
-  return bool(x) ? v &gt;= *x : true;
-}
-
-// 20.5.12, Specialized algorithms
-template &lt;class T&gt;
-void swap(optional&lt;T&gt;&amp; x, optional&lt;T&gt;&amp; y) noexcept(noexcept(x.swap(y))) {
-  x.swap(y);
-}
-
-template &lt;class T&gt;
-constexpr optional&lt;typename std::decay&lt;T&gt;::type&gt; make_optional(T&amp;&amp; v) {
-  return optional&lt;typename std::decay&lt;T&gt;::type&gt;(constexpr_forward&lt;T&gt;(v));
-}
-
-template &lt;class X&gt;
-constexpr optional&lt;X&amp;&gt; make_optional(std::reference_wrapper&lt;X&gt; v) {
-  return optional&lt;X&amp;&gt;(v.get());
-}
-
-} // namespace c10
-
-namespace std {
-template &lt;typename T&gt;
-struct hash&lt;c10::optional&lt;T&gt;&gt; {
-  typedef typename hash&lt;T&gt;::result_type result_type;
-  typedef c10::optional&lt;T&gt; argument_type;
-
-  constexpr result_type operator()(argument_type const&amp; arg) const {
-    return arg ? std::hash&lt;T&gt;{}(*arg) : result_type{};
-  }
-};
-
-template &lt;typename T&gt;
-struct hash&lt;c10::optional&lt;T&amp;&gt;&gt; {
-  typedef typename hash&lt;T&gt;::result_type result_type;
-  typedef c10::optional&lt;T&amp;&gt; argument_type;
-
-  constexpr result_type operator()(argument_type const&amp; arg) const {
-    return arg ? std::hash&lt;T&gt;{}(*arg) : result_type{};
-  }
-};
-} // namespace std
-
-#undef TR2_OPTIONAL_REQUIRES
-#undef TR2_OPTIONAL_ASSERTED_EXPRESSION
-
-#endif // C10_UTIL_OPTIONAL_H_
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="c1">// Copyright (C) 2011 - 2012 Andrzej Krzemienski.</span>
+<span class="c1">//</span>
+<span class="c1">// Use, modification, and distribution is subject to the Boost Software</span>
+<span class="c1">// License, Version 1.0. (See accompanying file LICENSE_1_0.txt or copy at</span>
+<span class="c1">// http://www.boost.org/LICENSE_1_0.txt)</span>
+<span class="c1">//</span>
+<span class="c1">// The idea and interface is based on Boost.Optional library</span>
+<span class="c1">// authored by Fernando Luis Cacciola Carballal</span>
+<span class="c1">//</span>
+<span class="c1">// From https://github.com/akrzemi1/Optional</span>
+<span class="c1">//</span>
+<span class="c1">// C10</span>
+<span class="c1">// - Move to `c10` namespace.</span>
+<span class="c1">// - Remove macro use in line 478 because the nvcc device compiler cannot handle</span>
+<span class="c1">// it.</span>
+<span class="c1">// - revise constructor logic so that it is consistent with c++ 17 standard documented</span>
+<span class="c1">// here in (8): https://en.cppreference.com/w/cpp/utility/optional/optional, and</span>
+<span class="c1">// could be able to support initialization of optionals from convertible type U, also</span>
+<span class="c1">// remove two old constructors optional(const T&amp;) and optional(T&amp;&amp;) as it could be</span>
+<span class="c1">// handled by the template&lt;U=T&gt; case with default template argument.</span>
+
+<span class="cp">#ifndef C10_UTIL_OPTIONAL_H_</span>
+<span class="cp">#define C10_UTIL_OPTIONAL_H_</span>
+
+<span class="cp">#include</span> <span class="cpf">&lt;cassert&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;functional&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;initializer_list&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;stdexcept&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;string&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;type_traits&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;utility&gt;</span><span class="cp"></span>
+
+<span class="cp">#define TR2_OPTIONAL_REQUIRES(...) \</span>
+<span class="cp">  typename std::enable_if&lt;__VA_ARGS__::value, bool&gt;::type = false</span>
+
+<span class="cp">#if defined __GNUC__ </span><span class="c1">// NOTE: GNUC is also defined for Clang</span>
+<span class="cp">#if (__GNUC__ == 4) &amp;&amp; (__GNUC_MINOR__ &gt;= 8)</span>
+<span class="cp">#define TR2_OPTIONAL_GCC_4_8_AND_HIGHER___</span>
+<span class="cp">#elif (__GNUC__ &gt; 4)</span>
+<span class="cp">#define TR2_OPTIONAL_GCC_4_8_AND_HIGHER___</span>
+<span class="cp">#endif</span>
+<span class="cp">#</span>
+<span class="cp">#if (__GNUC__ == 4) &amp;&amp; (__GNUC_MINOR__ &gt;= 7)</span>
+<span class="cp">#define TR2_OPTIONAL_GCC_4_7_AND_HIGHER___</span>
+<span class="cp">#elif (__GNUC__ &gt; 4)</span>
+<span class="cp">#define TR2_OPTIONAL_GCC_4_7_AND_HIGHER___</span>
+<span class="cp">#endif</span>
+<span class="cp">#</span>
+<span class="cp">#if (__GNUC__ == 4) &amp;&amp; (__GNUC_MINOR__ == 8) &amp;&amp; (__GNUC_PATCHLEVEL__ &gt;= 1)</span>
+<span class="cp">#define TR2_OPTIONAL_GCC_4_8_1_AND_HIGHER___</span>
+<span class="cp">#elif (__GNUC__ == 4) &amp;&amp; (__GNUC_MINOR__ &gt;= 9)</span>
+<span class="cp">#define TR2_OPTIONAL_GCC_4_8_1_AND_HIGHER___</span>
+<span class="cp">#elif (__GNUC__ &gt; 4)</span>
+<span class="cp">#define TR2_OPTIONAL_GCC_4_8_1_AND_HIGHER___</span>
+<span class="cp">#endif</span>
+<span class="cp">#endif</span>
+<span class="cp">#</span>
+<span class="cp">#if defined __clang_major__</span>
+<span class="cp">#if (__clang_major__ == 3 &amp;&amp; __clang_minor__ &gt;= 5)</span>
+<span class="cp">#define TR2_OPTIONAL_CLANG_3_5_AND_HIGHTER_</span>
+<span class="cp">#elif (__clang_major__ &gt; 3)</span>
+<span class="cp">#define TR2_OPTIONAL_CLANG_3_5_AND_HIGHTER_</span>
+<span class="cp">#endif</span>
+<span class="cp">#if defined TR2_OPTIONAL_CLANG_3_5_AND_HIGHTER_</span>
+<span class="cp">#define TR2_OPTIONAL_CLANG_3_4_2_AND_HIGHER_</span>
+<span class="cp">#elif ( \</span>
+<span class="cp">    __clang_major__ == 3 &amp;&amp; __clang_minor__ == 4 &amp;&amp; __clang_patchlevel__ &gt;= 2)</span>
+<span class="cp">#define TR2_OPTIONAL_CLANG_3_4_2_AND_HIGHER_</span>
+<span class="cp">#endif</span>
+<span class="cp">#endif</span>
+<span class="cp">#</span>
+<span class="cp">#if defined _MSC_VER</span>
+<span class="cp">#if (_MSC_VER &gt;= 1900)</span>
+<span class="cp">#define TR2_OPTIONAL_MSVC_2015_AND_HIGHER___</span>
+<span class="cp">#endif</span>
+<span class="cp">#endif</span>
+
+<span class="cp">#if defined __clang__</span>
+<span class="cp">#if (__clang_major__ &gt; 2) || (__clang_major__ == 2) &amp;&amp; (__clang_minor__ &gt;= 9)</span>
+<span class="cp">#define OPTIONAL_HAS_THIS_RVALUE_REFS 1</span>
+<span class="cp">#else</span>
+<span class="cp">#define OPTIONAL_HAS_THIS_RVALUE_REFS 0</span>
+<span class="cp">#endif</span>
+<span class="cp">#elif defined TR2_OPTIONAL_GCC_4_8_1_AND_HIGHER___</span>
+<span class="cp">#define OPTIONAL_HAS_THIS_RVALUE_REFS 1</span>
+<span class="cp">#elif defined TR2_OPTIONAL_MSVC_2015_AND_HIGHER___</span>
+<span class="cp">#define OPTIONAL_HAS_THIS_RVALUE_REFS 1</span>
+<span class="cp">#else</span>
+<span class="cp">#define OPTIONAL_HAS_THIS_RVALUE_REFS 0</span>
+<span class="cp">#endif</span>
+
+<span class="cp">#if defined TR2_OPTIONAL_GCC_4_8_1_AND_HIGHER___</span>
+<span class="cp">#define OPTIONAL_HAS_CONSTEXPR_INIT_LIST 1</span>
+<span class="cp">#define OPTIONAL_CONSTEXPR_INIT_LIST constexpr</span>
+<span class="cp">#else</span>
+<span class="cp">#define OPTIONAL_HAS_CONSTEXPR_INIT_LIST 0</span>
+<span class="cp">#define OPTIONAL_CONSTEXPR_INIT_LIST</span>
+<span class="cp">#endif</span>
+
+<span class="cp">#if defined TR2_OPTIONAL_CLANG_3_5_AND_HIGHTER_ &amp;&amp; (defined __cplusplus) &amp;&amp; \</span>
+<span class="cp">    (__cplusplus != 201103L)</span>
+<span class="cp">#define OPTIONAL_HAS_MOVE_ACCESSORS 1</span>
+<span class="cp">#else</span>
+<span class="cp">#define OPTIONAL_HAS_MOVE_ACCESSORS 0</span>
+<span class="cp">#endif</span>
+
+<span class="cp">#</span><span class="c1">// In C++11 constexpr implies const, so we need to make non-const members also non-constexpr</span>
+<span class="cp">#if (defined __cplusplus) &amp;&amp; (__cplusplus == 201103L)</span>
+<span class="cp">#define OPTIONAL_MUTABLE_CONSTEXPR</span>
+<span class="cp">#else</span>
+<span class="cp">#define OPTIONAL_MUTABLE_CONSTEXPR constexpr</span>
+<span class="cp">#endif</span>
+
+<span class="k">namespace</span> <span class="n">c10</span> <span class="p">{</span>
+
+<span class="c1">// 20.5.4, optional for object types</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">class</span> <span class="nc">optional</span><span class="p">;</span>
+
+<span class="c1">// 20.5.5, optional for lvalue reference types</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">class</span> <span class="nc">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&amp;&gt;</span><span class="p">;</span>
+
+<span class="c1">// workaround: std utility functions aren&#39;t constexpr yet</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="kr">inline</span> <span class="k">constexpr</span> <span class="n">T</span><span class="o">&amp;&amp;</span> <span class="n">constexpr_forward</span><span class="p">(</span>
+    <span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">remove_reference</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">type</span><span class="o">&amp;</span> <span class="n">t</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&amp;&amp;&gt;</span><span class="p">(</span><span class="n">t</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="kr">inline</span> <span class="k">constexpr</span> <span class="n">T</span><span class="o">&amp;&amp;</span> <span class="n">constexpr_forward</span><span class="p">(</span>
+    <span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">remove_reference</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">type</span><span class="o">&amp;&amp;</span> <span class="n">t</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
+  <span class="k">static_assert</span><span class="p">(</span><span class="o">!</span><span class="n">std</span><span class="o">::</span><span class="n">is_lvalue_reference</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span> <span class="s">&quot;!!&quot;</span><span class="p">);</span>
+  <span class="k">return</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&amp;&amp;&gt;</span><span class="p">(</span><span class="n">t</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="kr">inline</span> <span class="k">constexpr</span> <span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">remove_reference</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">type</span><span class="o">&amp;&amp;</span> <span class="n">constexpr_move</span><span class="p">(</span>
+    <span class="n">T</span><span class="o">&amp;&amp;</span> <span class="n">t</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">remove_reference</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">type</span><span class="o">&amp;&amp;&gt;</span><span class="p">(</span><span class="n">t</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="cp">#if defined NDEBUG</span>
+<span class="cp">#define TR2_OPTIONAL_ASSERTED_EXPRESSION(CHECK, EXPR) (EXPR)</span>
+<span class="cp">#else</span>
+<span class="cp">#define TR2_OPTIONAL_ASSERTED_EXPRESSION(CHECK, EXPR) \</span>
+<span class="cp">  ((CHECK) ? (EXPR) : ([] { assert(!#CHECK); }(), (EXPR)))</span>
+<span class="cp">#endif</span>
+
+<span class="k">namespace</span> <span class="n">detail_</span> <span class="p">{</span>
+
+<span class="c1">// VS 2015 doesn&#39;t handle constexpr well, so we need to skip these stuff.</span>
+<span class="cp">#if (defined _MSC_VER) &amp;&amp; (_MSC_VER &lt;= 1900)</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+<span class="n">T</span><span class="o">*</span> <span class="n">static_addressof</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;</span> <span class="n">ref</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">addressof</span><span class="p">(</span><span class="n">ref</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="cp">#else</span>
+<span class="c1">// static_addressof: a constexpr version of addressof</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+<span class="k">struct</span> <span class="n">has_overloaded_addressof</span> <span class="p">{</span>
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">X</span><span class="o">&gt;</span>
+  <span class="k">constexpr</span> <span class="k">static</span> <span class="kt">bool</span> <span class="n">has_overload</span><span class="p">(...)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">X</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">S</span> <span class="o">=</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">declval</span><span class="o">&lt;</span><span class="n">X</span><span class="o">&amp;&gt;</span><span class="p">().</span><span class="k">operator</span><span class="o">&amp;</span><span class="p">())</span><span class="o">&gt;</span>
+  <span class="k">constexpr</span> <span class="k">static</span> <span class="kt">bool</span> <span class="n">has_overload</span><span class="p">(</span><span class="kt">bool</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="k">constexpr</span> <span class="k">static</span> <span class="kt">bool</span> <span class="n">value</span> <span class="o">=</span> <span class="n">has_overload</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>
+<span class="p">};</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="p">,</span> <span class="n">TR2_OPTIONAL_REQUIRES</span><span class="p">(</span><span class="o">!</span><span class="n">has_overloaded_addressof</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">)</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="n">T</span><span class="o">*</span> <span class="n">static_addressof</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;</span> <span class="n">ref</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="o">&amp;</span><span class="n">ref</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="p">,</span> <span class="n">TR2_OPTIONAL_REQUIRES</span><span class="p">(</span><span class="n">has_overloaded_addressof</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">)</span><span class="o">&gt;</span>
+<span class="n">T</span><span class="o">*</span> <span class="n">static_addressof</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;</span> <span class="n">ref</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">addressof</span><span class="p">(</span><span class="n">ref</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="cp">#endif</span>
+
+<span class="c1">// the call to convert&lt;A&gt;(b) has return type A and converts b to type A iff b</span>
+<span class="c1">// decltype(b) is implicitly convertible to A</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">U</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="n">U</span> <span class="n">convert</span><span class="p">(</span><span class="n">U</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">v</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="p">}</span> <span class="c1">// namespace detail_</span>
+
+<span class="k">constexpr</span> <span class="k">struct</span> <span class="n">trivial_init_t</span> <span class="p">{</span>
+<span class="p">}</span> <span class="n">trivial_init</span><span class="p">{};</span>
+
+<span class="c1">// 20.5.6, In-place construction</span>
+<span class="k">constexpr</span> <span class="k">struct</span> <span class="n">in_place_t</span> <span class="p">{</span>
+<span class="p">}</span> <span class="n">in_place</span><span class="p">{};</span>
+
+<span class="c1">// 20.5.7, Disengaged state indicator</span>
+<span class="k">struct</span> <span class="n">nullopt_t</span> <span class="p">{</span>
+  <span class="k">struct</span> <span class="n">init</span> <span class="p">{};</span>
+  <span class="k">constexpr</span> <span class="k">explicit</span> <span class="nf">nullopt_t</span><span class="p">(</span><span class="n">init</span><span class="p">)</span> <span class="p">{}</span>
+<span class="p">};</span>
+<span class="k">constexpr</span> <span class="n">nullopt_t</span> <span class="n">nullopt</span><span class="p">{</span><span class="n">nullopt_t</span><span class="o">::</span><span class="n">init</span><span class="p">()};</span>
+
+<span class="c1">// 20.5.8, class bad_optional_access</span>
+<span class="k">class</span> <span class="nc">bad_optional_access</span> <span class="o">:</span> <span class="k">public</span> <span class="n">std</span><span class="o">::</span><span class="n">logic_error</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="k">explicit</span> <span class="n">bad_optional_access</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">what_arg</span><span class="p">)</span>
+      <span class="o">:</span> <span class="n">logic_error</span><span class="p">{</span><span class="n">what_arg</span><span class="p">}</span> <span class="p">{}</span>
+  <span class="k">explicit</span> <span class="n">bad_optional_access</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">what_arg</span><span class="p">)</span> <span class="o">:</span> <span class="n">logic_error</span><span class="p">{</span><span class="n">what_arg</span><span class="p">}</span> <span class="p">{}</span>
+<span class="p">};</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">union</span> <span class="n">storage_t</span> <span class="p">{</span>
+  <span class="kt">unsigned</span> <span class="kt">char</span> <span class="n">dummy_</span><span class="p">;</span>
+  <span class="n">T</span> <span class="n">value_</span><span class="p">;</span>
+
+  <span class="k">constexpr</span> <span class="nf">storage_t</span><span class="p">(</span><span class="n">trivial_init_t</span><span class="p">)</span> <span class="k">noexcept</span> <span class="o">:</span> <span class="n">dummy_</span><span class="p">(){};</span>
+
+  <span class="k">template</span> <span class="o">&lt;</span><span class="n">class</span><span class="p">...</span> <span class="n">Args</span><span class="o">&gt;</span>
+  <span class="k">constexpr</span> <span class="n">storage_t</span><span class="p">(</span><span class="n">Args</span><span class="o">&amp;&amp;</span><span class="p">...</span> <span class="n">args</span><span class="p">)</span>
+      <span class="o">:</span> <span class="n">value_</span><span class="p">(</span><span class="n">constexpr_forward</span><span class="o">&lt;</span><span class="n">Args</span><span class="o">&gt;</span><span class="p">(</span><span class="n">args</span><span class="p">)...)</span> <span class="p">{}</span>
+
+  <span class="o">~</span><span class="n">storage_t</span><span class="p">()</span> <span class="p">{}</span>
+<span class="p">};</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">union</span> <span class="n">constexpr_storage_t</span> <span class="p">{</span>
+  <span class="kt">unsigned</span> <span class="kt">char</span> <span class="n">dummy_</span><span class="p">;</span>
+  <span class="n">T</span> <span class="n">value_</span><span class="p">;</span>
+
+  <span class="k">constexpr</span> <span class="nf">constexpr_storage_t</span><span class="p">(</span><span class="n">trivial_init_t</span><span class="p">)</span> <span class="k">noexcept</span> <span class="o">:</span> <span class="n">dummy_</span><span class="p">(){};</span>
+
+  <span class="k">template</span> <span class="o">&lt;</span><span class="n">class</span><span class="p">...</span> <span class="n">Args</span><span class="o">&gt;</span>
+  <span class="k">constexpr</span> <span class="n">constexpr_storage_t</span><span class="p">(</span><span class="n">Args</span><span class="o">&amp;&amp;</span><span class="p">...</span> <span class="n">args</span><span class="p">)</span>
+      <span class="o">:</span> <span class="n">value_</span><span class="p">(</span><span class="n">constexpr_forward</span><span class="o">&lt;</span><span class="n">Args</span><span class="o">&gt;</span><span class="p">(</span><span class="n">args</span><span class="p">)...)</span> <span class="p">{}</span>
+
+  <span class="o">~</span><span class="n">constexpr_storage_t</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">struct</span> <span class="n">optional_base</span> <span class="p">{</span>
+  <span class="kt">bool</span> <span class="n">init_</span><span class="p">;</span>
+  <span class="n">storage_t</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">storage_</span><span class="p">;</span>
+
+  <span class="k">constexpr</span> <span class="nf">optional_base</span><span class="p">()</span> <span class="k">noexcept</span> <span class="o">:</span> <span class="n">init_</span><span class="p">(</span><span class="nb">false</span><span class="p">),</span> <span class="n">storage_</span><span class="p">(</span><span class="n">trivial_init</span><span class="p">){};</span>
+
+  <span class="k">explicit</span> <span class="k">constexpr</span> <span class="nf">optional_base</span><span class="p">(</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="o">:</span> <span class="n">init_</span><span class="p">(</span><span class="nb">true</span><span class="p">),</span> <span class="n">storage_</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="p">{}</span>
+
+  <span class="k">explicit</span> <span class="k">constexpr</span> <span class="nf">optional_base</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;&amp;</span> <span class="n">v</span><span class="p">)</span>
+      <span class="o">:</span> <span class="n">init_</span><span class="p">(</span><span class="nb">true</span><span class="p">),</span> <span class="n">storage_</span><span class="p">(</span><span class="n">constexpr_move</span><span class="p">(</span><span class="n">v</span><span class="p">))</span> <span class="p">{}</span>
+
+  <span class="k">template</span> <span class="o">&lt;</span><span class="n">class</span><span class="p">...</span> <span class="n">Args</span><span class="o">&gt;</span>
+  <span class="k">explicit</span> <span class="n">optional_base</span><span class="p">(</span><span class="n">in_place_t</span><span class="p">,</span> <span class="n">Args</span><span class="o">&amp;&amp;</span><span class="p">...</span> <span class="n">args</span><span class="p">)</span>
+      <span class="o">:</span> <span class="n">init_</span><span class="p">(</span><span class="nb">true</span><span class="p">),</span> <span class="n">storage_</span><span class="p">(</span><span class="n">constexpr_forward</span><span class="o">&lt;</span><span class="n">Args</span><span class="o">&gt;</span><span class="p">(</span><span class="n">args</span><span class="p">)...)</span> <span class="p">{}</span>
+
+  <span class="k">template</span> <span class="o">&lt;</span>
+      <span class="k">class</span> <span class="nc">U</span><span class="p">,</span>
+      <span class="n">class</span><span class="p">...</span> <span class="n">Args</span><span class="p">,</span>
+      <span class="n">TR2_OPTIONAL_REQUIRES</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">is_constructible</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">initializer_list</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;&gt;</span><span class="p">)</span><span class="o">&gt;</span>
+  <span class="k">explicit</span> <span class="n">optional_base</span><span class="p">(</span>
+      <span class="n">in_place_t</span><span class="p">,</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">initializer_list</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;</span> <span class="n">il</span><span class="p">,</span>
+      <span class="n">Args</span><span class="o">&amp;&amp;</span><span class="p">...</span> <span class="n">args</span><span class="p">)</span>
+      <span class="o">:</span> <span class="n">init_</span><span class="p">(</span><span class="nb">true</span><span class="p">),</span> <span class="n">storage_</span><span class="p">(</span><span class="n">il</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">Args</span><span class="o">&gt;</span><span class="p">(</span><span class="n">args</span><span class="p">)...)</span> <span class="p">{}</span>
+
+  <span class="o">~</span><span class="n">optional_base</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">init_</span><span class="p">)</span>
+      <span class="n">storage_</span><span class="p">.</span><span class="n">value_</span><span class="p">.</span><span class="n">T</span><span class="o">::~</span><span class="n">T</span><span class="p">();</span>
+  <span class="p">}</span>
+<span class="p">};</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">struct</span> <span class="n">constexpr_optional_base</span> <span class="p">{</span>
+  <span class="kt">bool</span> <span class="n">init_</span><span class="p">;</span>
+  <span class="n">constexpr_storage_t</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">storage_</span><span class="p">;</span>
+
+  <span class="k">constexpr</span> <span class="nf">constexpr_optional_base</span><span class="p">()</span> <span class="k">noexcept</span>
+      <span class="o">:</span> <span class="n">init_</span><span class="p">(</span><span class="nb">false</span><span class="p">),</span> <span class="n">storage_</span><span class="p">(</span><span class="n">trivial_init</span><span class="p">){};</span>
+
+  <span class="k">explicit</span> <span class="k">constexpr</span> <span class="nf">constexpr_optional_base</span><span class="p">(</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">)</span>
+      <span class="o">:</span> <span class="n">init_</span><span class="p">(</span><span class="nb">true</span><span class="p">),</span> <span class="n">storage_</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="p">{}</span>
+
+  <span class="k">explicit</span> <span class="k">constexpr</span> <span class="nf">constexpr_optional_base</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;&amp;</span> <span class="n">v</span><span class="p">)</span>
+      <span class="o">:</span> <span class="n">init_</span><span class="p">(</span><span class="nb">true</span><span class="p">),</span> <span class="n">storage_</span><span class="p">(</span><span class="n">constexpr_move</span><span class="p">(</span><span class="n">v</span><span class="p">))</span> <span class="p">{}</span>
+
+  <span class="k">template</span> <span class="o">&lt;</span><span class="n">class</span><span class="p">...</span> <span class="n">Args</span><span class="o">&gt;</span>
+  <span class="k">explicit</span> <span class="k">constexpr</span> <span class="n">constexpr_optional_base</span><span class="p">(</span><span class="n">in_place_t</span><span class="p">,</span> <span class="n">Args</span><span class="o">&amp;&amp;</span><span class="p">...</span> <span class="n">args</span><span class="p">)</span>
+      <span class="o">:</span> <span class="n">init_</span><span class="p">(</span><span class="nb">true</span><span class="p">),</span> <span class="n">storage_</span><span class="p">(</span><span class="n">constexpr_forward</span><span class="o">&lt;</span><span class="n">Args</span><span class="o">&gt;</span><span class="p">(</span><span class="n">args</span><span class="p">)...)</span> <span class="p">{}</span>
+
+  <span class="k">template</span> <span class="o">&lt;</span>
+      <span class="k">class</span> <span class="nc">U</span><span class="p">,</span>
+      <span class="n">class</span><span class="p">...</span> <span class="n">Args</span><span class="p">,</span>
+      <span class="n">TR2_OPTIONAL_REQUIRES</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">is_constructible</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">initializer_list</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;&gt;</span><span class="p">)</span><span class="o">&gt;</span>
+  <span class="n">OPTIONAL_CONSTEXPR_INIT_LIST</span> <span class="k">explicit</span> <span class="n">constexpr_optional_base</span><span class="p">(</span>
+      <span class="n">in_place_t</span><span class="p">,</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">initializer_list</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;</span> <span class="n">il</span><span class="p">,</span>
+      <span class="n">Args</span><span class="o">&amp;&amp;</span><span class="p">...</span> <span class="n">args</span><span class="p">)</span>
+      <span class="o">:</span> <span class="n">init_</span><span class="p">(</span><span class="nb">true</span><span class="p">),</span> <span class="n">storage_</span><span class="p">(</span><span class="n">il</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">Args</span><span class="o">&gt;</span><span class="p">(</span><span class="n">args</span><span class="p">)...)</span> <span class="p">{}</span>
+
+  <span class="o">~</span><span class="n">constexpr_optional_base</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">using</span> <span class="n">OptionalBase</span> <span class="o">=</span> <span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">conditional</span><span class="o">&lt;</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">is_trivially_destructible</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span> <span class="c1">// if possible</span>
+    <span class="n">constexpr_optional_base</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">remove_const</span><span class="o">&lt;</span>
+        <span class="n">T</span><span class="o">&gt;::</span><span class="n">type</span><span class="o">&gt;</span><span class="p">,</span> <span class="c1">// use base with trivial destructor</span>
+    <span class="n">optional_base</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">remove_const</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">type</span><span class="o">&gt;&gt;::</span><span class="n">type</span><span class="p">;</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">class</span> <span class="nc">optional</span> <span class="o">:</span> <span class="k">private</span> <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="p">{</span>
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">U</span><span class="o">&gt;</span> <span class="c1">// re-declaration for nvcc on Windows.</span>
+  <span class="k">using</span> <span class="n">OptionalBase</span> <span class="o">=</span> <span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">conditional</span><span class="o">&lt;</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">is_trivially_destructible</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span> <span class="c1">// if possible</span>
+      <span class="n">constexpr_optional_base</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">remove_const</span><span class="o">&lt;</span>
+          <span class="n">U</span><span class="o">&gt;::</span><span class="n">type</span><span class="o">&gt;</span><span class="p">,</span> <span class="c1">// use base with trivial destructor</span>
+      <span class="n">optional_base</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">remove_const</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;::</span><span class="n">type</span><span class="o">&gt;&gt;::</span><span class="n">type</span><span class="p">;</span>
+
+  <span class="k">static_assert</span><span class="p">(</span>
+      <span class="o">!</span><span class="n">std</span><span class="o">::</span><span class="n">is_same</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">decay</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">type</span><span class="p">,</span> <span class="n">nullopt_t</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span>
+      <span class="s">&quot;bad T&quot;</span><span class="p">);</span>
+  <span class="k">static_assert</span><span class="p">(</span>
+      <span class="o">!</span><span class="n">std</span><span class="o">::</span><span class="n">is_same</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">decay</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">type</span><span class="p">,</span> <span class="n">in_place_t</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span>
+      <span class="s">&quot;bad T&quot;</span><span class="p">);</span>
+
+  <span class="k">constexpr</span> <span class="kt">bool</span> <span class="nf">initialized</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">init_</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">remove_const</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">type</span><span class="o">*</span> <span class="n">dataptr</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">addressof</span><span class="p">(</span><span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">storage_</span><span class="p">.</span><span class="n">value_</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="k">constexpr</span> <span class="k">const</span> <span class="n">T</span><span class="o">*</span> <span class="n">dataptr</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">detail_</span><span class="o">::</span><span class="n">static_addressof</span><span class="p">(</span><span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">storage_</span><span class="p">.</span><span class="n">value_</span><span class="p">);</span>
+  <span class="p">}</span>
+
+<span class="cp">#if OPTIONAL_HAS_THIS_RVALUE_REFS == 1</span>
+  <span class="k">constexpr</span> <span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">contained_val</span><span class="p">()</span> <span class="k">const</span><span class="o">&amp;</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">storage_</span><span class="p">.</span><span class="n">value_</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="cp">#if OPTIONAL_HAS_MOVE_ACCESSORS == 1</span>
+  <span class="n">OPTIONAL_MUTABLE_CONSTEXPR</span> <span class="n">T</span><span class="o">&amp;&amp;</span> <span class="n">contained_val</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">storage_</span><span class="p">.</span><span class="n">value_</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="n">OPTIONAL_MUTABLE_CONSTEXPR</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">contained_val</span><span class="p">()</span> <span class="o">&amp;</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">storage_</span><span class="p">.</span><span class="n">value_</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="cp">#else</span>
+  <span class="n">T</span><span class="o">&amp;</span> <span class="n">contained_val</span><span class="p">()</span> <span class="o">&amp;</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">storage_</span><span class="p">.</span><span class="n">value_</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="n">T</span><span class="o">&amp;&amp;</span> <span class="n">contained_val</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">storage_</span><span class="p">.</span><span class="n">value_</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="cp">#endif</span>
+<span class="cp">#else</span>
+  <span class="k">constexpr</span> <span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">contained_val</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">storage_</span><span class="p">.</span><span class="n">value_</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="n">T</span><span class="o">&amp;</span> <span class="n">contained_val</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">storage_</span><span class="p">.</span><span class="n">value_</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="cp">#endif</span>
+
+  <span class="kt">void</span> <span class="n">clear</span><span class="p">()</span> <span class="k">noexcept</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">initialized</span><span class="p">())</span>
+      <span class="n">dataptr</span><span class="p">()</span><span class="o">-&gt;~</span><span class="n">T</span><span class="p">();</span>
+    <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">init_</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="k">template</span> <span class="o">&lt;</span><span class="n">class</span><span class="p">...</span> <span class="n">Args</span><span class="o">&gt;</span>
+  <span class="kt">void</span> <span class="n">initialize</span><span class="p">(</span><span class="n">Args</span><span class="o">&amp;&amp;</span><span class="p">...</span> <span class="n">args</span><span class="p">)</span> <span class="k">noexcept</span><span class="p">(</span>
+      <span class="k">noexcept</span><span class="p">(</span><span class="n">T</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">Args</span><span class="o">&gt;</span><span class="p">(</span><span class="n">args</span><span class="p">)...)))</span> <span class="p">{</span>
+    <span class="n">assert</span><span class="p">(</span><span class="o">!</span><span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">init_</span><span class="p">);</span>
+    <span class="o">::</span><span class="k">new</span> <span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">dataptr</span><span class="p">()))</span> <span class="n">T</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">Args</span><span class="o">&gt;</span><span class="p">(</span><span class="n">args</span><span class="p">)...);</span>
+    <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">init_</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">U</span><span class="p">,</span> <span class="n">class</span><span class="p">...</span> <span class="n">Args</span><span class="o">&gt;</span>
+  <span class="kt">void</span> <span class="n">initialize</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">initializer_list</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;</span> <span class="n">il</span><span class="p">,</span> <span class="n">Args</span><span class="o">&amp;&amp;</span><span class="p">...</span> <span class="n">args</span><span class="p">)</span> <span class="k">noexcept</span><span class="p">(</span>
+      <span class="k">noexcept</span><span class="p">(</span><span class="n">T</span><span class="p">(</span><span class="n">il</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">Args</span><span class="o">&gt;</span><span class="p">(</span><span class="n">args</span><span class="p">)...)))</span> <span class="p">{</span>
+    <span class="n">assert</span><span class="p">(</span><span class="o">!</span><span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">init_</span><span class="p">);</span>
+    <span class="o">::</span><span class="k">new</span> <span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">dataptr</span><span class="p">()))</span> <span class="n">T</span><span class="p">(</span><span class="n">il</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">Args</span><span class="o">&gt;</span><span class="p">(</span><span class="n">args</span><span class="p">)...);</span>
+    <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">init_</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+  <span class="p">}</span>
+
+ <span class="k">public</span><span class="o">:</span>
+  <span class="k">typedef</span> <span class="n">T</span> <span class="n">value_type</span><span class="p">;</span>
+
+  <span class="c1">// 20.5.5.1, constructors</span>
+  <span class="k">constexpr</span> <span class="nf">optional</span><span class="p">()</span> <span class="k">noexcept</span> <span class="o">:</span> <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(){};</span>
+  <span class="k">constexpr</span> <span class="nf">optional</span><span class="p">(</span><span class="n">nullopt_t</span><span class="p">)</span> <span class="k">noexcept</span> <span class="o">:</span> <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(){};</span>
+
+  <span class="n">optional</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="o">:</span> <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">initialized</span><span class="p">())</span> <span class="p">{</span>
+      <span class="o">::</span><span class="k">new</span> <span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">dataptr</span><span class="p">()))</span> <span class="n">T</span><span class="p">(</span><span class="o">*</span><span class="n">rhs</span><span class="p">);</span>
+      <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">init_</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="n">optional</span><span class="p">(</span><span class="n">optional</span><span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="k">noexcept</span><span class="p">(</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">is_nothrow_move_constructible</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">)</span>
+      <span class="o">:</span> <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">initialized</span><span class="p">())</span> <span class="p">{</span>
+      <span class="o">::</span><span class="k">new</span> <span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">dataptr</span><span class="p">()))</span> <span class="n">T</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="o">*</span><span class="n">rhs</span><span class="p">));</span>
+      <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">init_</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="c1">// see https://github.com/akrzemi1/Optional/issues/16</span>
+  <span class="c1">// and https://en.cppreference.com/w/cpp/utility/optional/optional,</span>
+  <span class="c1">// in constructor 8, the std::optional spec can allow initialization</span>
+  <span class="c1">// of optionals from convertible type U</span>
+  <span class="c1">//</span>
+  <span class="c1">// 8 - implicit move construct from value</span>
+  <span class="k">template</span><span class="o">&lt;</span>
+      <span class="k">typename</span> <span class="n">U</span> <span class="o">=</span> <span class="n">T</span><span class="p">,</span>
+      <span class="n">TR2_OPTIONAL_REQUIRES</span><span class="p">(</span>
+          <span class="n">std</span><span class="o">::</span><span class="n">is_constructible</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span> <span class="n">U</span><span class="o">&amp;&amp;&gt;::</span><span class="n">value</span>
+          <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">std</span><span class="o">::</span><span class="n">is_same</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">decay</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;::</span><span class="n">type</span><span class="p">,</span> <span class="n">in_place_t</span><span class="o">&gt;::</span><span class="n">value</span>
+          <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">std</span><span class="o">::</span><span class="n">is_same</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">decay</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;::</span><span class="n">type</span><span class="p">,</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;::</span><span class="n">value</span>
+          <span class="o">&amp;&amp;</span> <span class="n">std</span><span class="o">::</span><span class="n">is_convertible</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&amp;&amp;</span><span class="p">,</span> <span class="n">T</span><span class="o">&gt;</span>
+      <span class="p">)</span>
+    <span class="o">&gt;</span>
+  <span class="k">constexpr</span> <span class="n">optional</span><span class="p">(</span><span class="n">U</span><span class="o">&amp;&amp;</span> <span class="n">u</span><span class="p">)</span> <span class="o">:</span> <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;</span><span class="p">(</span><span class="n">u</span><span class="p">))</span> <span class="p">{}</span>
+
+  <span class="c1">// 8 - explicit move construct from value</span>
+  <span class="k">template</span><span class="o">&lt;</span>
+      <span class="k">typename</span> <span class="n">U</span> <span class="o">=</span> <span class="n">T</span><span class="p">,</span>
+      <span class="n">TR2_OPTIONAL_REQUIRES</span><span class="p">(</span>
+          <span class="n">std</span><span class="o">::</span><span class="n">is_constructible</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span> <span class="n">U</span><span class="o">&amp;&amp;&gt;::</span><span class="n">value</span>
+          <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">std</span><span class="o">::</span><span class="n">is_same</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">decay</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;::</span><span class="n">type</span><span class="p">,</span> <span class="n">in_place_t</span><span class="o">&gt;::</span><span class="n">value</span>
+          <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">std</span><span class="o">::</span><span class="n">is_same</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">decay</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;::</span><span class="n">type</span><span class="p">,</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;::</span><span class="n">value</span>
+          <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">std</span><span class="o">::</span><span class="n">is_convertible</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&amp;&amp;</span><span class="p">,</span> <span class="n">T</span><span class="o">&gt;</span>
+      <span class="p">)</span>
+    <span class="o">&gt;</span>
+  <span class="k">explicit</span> <span class="k">constexpr</span> <span class="n">optional</span><span class="p">(</span><span class="n">U</span><span class="o">&amp;&amp;</span> <span class="n">u</span><span class="p">)</span> <span class="o">:</span> <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;</span><span class="p">(</span><span class="n">u</span><span class="p">))</span> <span class="p">{}</span>
+
+  <span class="k">template</span> <span class="o">&lt;</span><span class="n">class</span><span class="p">...</span> <span class="n">Args</span><span class="o">&gt;</span>
+  <span class="k">explicit</span> <span class="k">constexpr</span> <span class="n">optional</span><span class="p">(</span><span class="n">in_place_t</span><span class="p">,</span> <span class="n">Args</span><span class="o">&amp;&amp;</span><span class="p">...</span> <span class="n">args</span><span class="p">)</span>
+      <span class="o">:</span> <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">in_place_t</span><span class="p">{},</span> <span class="n">constexpr_forward</span><span class="o">&lt;</span><span class="n">Args</span><span class="o">&gt;</span><span class="p">(</span><span class="n">args</span><span class="p">)...)</span> <span class="p">{}</span>
+
+  <span class="k">template</span> <span class="o">&lt;</span>
+      <span class="k">class</span> <span class="nc">U</span><span class="p">,</span>
+      <span class="n">class</span><span class="p">...</span> <span class="n">Args</span><span class="p">,</span>
+      <span class="n">TR2_OPTIONAL_REQUIRES</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">is_constructible</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">initializer_list</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;&gt;</span><span class="p">)</span><span class="o">&gt;</span>
+  <span class="n">OPTIONAL_CONSTEXPR_INIT_LIST</span> <span class="k">explicit</span> <span class="n">optional</span><span class="p">(</span>
+      <span class="n">in_place_t</span><span class="p">,</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">initializer_list</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;</span> <span class="n">il</span><span class="p">,</span>
+      <span class="n">Args</span><span class="o">&amp;&amp;</span><span class="p">...</span> <span class="n">args</span><span class="p">)</span>
+      <span class="o">:</span> <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">in_place_t</span><span class="p">{},</span> <span class="n">il</span><span class="p">,</span> <span class="n">constexpr_forward</span><span class="o">&lt;</span><span class="n">Args</span><span class="o">&gt;</span><span class="p">(</span><span class="n">args</span><span class="p">)...)</span> <span class="p">{}</span>
+
+  <span class="c1">// 20.5.4.2, Destructor</span>
+  <span class="o">~</span><span class="n">optional</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
+
+  <span class="c1">// 20.5.4.3, assignment</span>
+  <span class="n">optional</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">nullopt_t</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
+    <span class="n">clear</span><span class="p">();</span>
+    <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="n">optional</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">initialized</span><span class="p">()</span> <span class="o">==</span> <span class="nb">true</span> <span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">.</span><span class="n">initialized</span><span class="p">()</span> <span class="o">==</span> <span class="nb">false</span><span class="p">)</span>
+      <span class="n">clear</span><span class="p">();</span>
+    <span class="k">else</span> <span class="nf">if</span> <span class="p">(</span><span class="n">initialized</span><span class="p">()</span> <span class="o">==</span> <span class="nb">false</span> <span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">.</span><span class="n">initialized</span><span class="p">()</span> <span class="o">==</span> <span class="nb">true</span><span class="p">)</span>
+      <span class="n">initialize</span><span class="p">(</span><span class="o">*</span><span class="n">rhs</span><span class="p">);</span>
+    <span class="k">else</span> <span class="nf">if</span> <span class="p">(</span><span class="n">initialized</span><span class="p">()</span> <span class="o">==</span> <span class="nb">true</span> <span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">.</span><span class="n">initialized</span><span class="p">()</span> <span class="o">==</span> <span class="nb">true</span><span class="p">)</span>
+      <span class="n">contained_val</span><span class="p">()</span> <span class="o">=</span> <span class="o">*</span><span class="n">rhs</span><span class="p">;</span>
+    <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="n">optional</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">optional</span><span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="k">noexcept</span><span class="p">(</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">is_nothrow_move_assignable</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span><span class="o">&amp;&amp;</span>
+          <span class="n">std</span><span class="o">::</span><span class="n">is_nothrow_move_constructible</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">initialized</span><span class="p">()</span> <span class="o">==</span> <span class="nb">true</span> <span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">.</span><span class="n">initialized</span><span class="p">()</span> <span class="o">==</span> <span class="nb">false</span><span class="p">)</span>
+      <span class="n">clear</span><span class="p">();</span>
+    <span class="k">else</span> <span class="nf">if</span> <span class="p">(</span><span class="n">initialized</span><span class="p">()</span> <span class="o">==</span> <span class="nb">false</span> <span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">.</span><span class="n">initialized</span><span class="p">()</span> <span class="o">==</span> <span class="nb">true</span><span class="p">)</span>
+      <span class="n">initialize</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="o">*</span><span class="n">rhs</span><span class="p">));</span>
+    <span class="k">else</span> <span class="nf">if</span> <span class="p">(</span><span class="n">initialized</span><span class="p">()</span> <span class="o">==</span> <span class="nb">true</span> <span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">.</span><span class="n">initialized</span><span class="p">()</span> <span class="o">==</span> <span class="nb">true</span><span class="p">)</span>
+      <span class="n">contained_val</span><span class="p">()</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="o">*</span><span class="n">rhs</span><span class="p">);</span>
+    <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="k">template</span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">U</span> <span class="o">=</span> <span class="n">T</span><span class="o">&gt;</span>
+  <span class="k">auto</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">U</span><span class="o">&amp;&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">enable_if</span><span class="o">&lt;</span>
+          <span class="n">std</span><span class="o">::</span><span class="n">is_constructible</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span> <span class="n">U</span><span class="o">&gt;::</span><span class="n">value</span>
+          <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">std</span><span class="o">::</span><span class="n">is_same</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">decay</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;::</span><span class="n">type</span><span class="p">,</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;::</span><span class="n">value</span>
+          <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">is_scalar</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span> <span class="o">||</span> <span class="n">std</span><span class="o">::</span><span class="n">is_same</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">decay</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;::</span><span class="n">type</span><span class="p">,</span> <span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">)</span>
+          <span class="o">&amp;&amp;</span> <span class="n">std</span><span class="o">::</span><span class="n">is_assignable</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&amp;</span><span class="p">,</span> <span class="n">U</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span>
+      <span class="n">optional</span><span class="o">&amp;&gt;::</span><span class="n">type</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">initialized</span><span class="p">())</span> <span class="p">{</span>
+      <span class="n">contained_val</span><span class="p">()</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;</span><span class="p">(</span><span class="n">v</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="n">initialize</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;</span><span class="p">(</span><span class="n">v</span><span class="p">));</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="k">template</span> <span class="o">&lt;</span><span class="n">class</span><span class="p">...</span> <span class="n">Args</span><span class="o">&gt;</span>
+  <span class="kt">void</span> <span class="n">emplace</span><span class="p">(</span><span class="n">Args</span><span class="o">&amp;&amp;</span><span class="p">...</span> <span class="n">args</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">clear</span><span class="p">();</span>
+    <span class="n">initialize</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">Args</span><span class="o">&gt;</span><span class="p">(</span><span class="n">args</span><span class="p">)...);</span>
+  <span class="p">}</span>
+
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">U</span><span class="p">,</span> <span class="n">class</span><span class="p">...</span> <span class="n">Args</span><span class="o">&gt;</span>
+  <span class="kt">void</span> <span class="n">emplace</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">initializer_list</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;</span> <span class="n">il</span><span class="p">,</span> <span class="n">Args</span><span class="o">&amp;&amp;</span><span class="p">...</span> <span class="n">args</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">clear</span><span class="p">();</span>
+    <span class="n">initialize</span><span class="o">&lt;</span><span class="n">U</span><span class="p">,</span> <span class="n">Args</span><span class="p">...</span><span class="o">&gt;</span><span class="p">(</span><span class="n">il</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">Args</span><span class="o">&gt;</span><span class="p">(</span><span class="n">args</span><span class="p">)...);</span>
+  <span class="p">}</span>
+
+  <span class="c1">// 20.5.4.4, Swap</span>
+  <span class="kt">void</span> <span class="n">swap</span><span class="p">(</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="k">noexcept</span><span class="p">(</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">is_nothrow_move_constructible</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span><span class="o">&amp;&amp;</span> <span class="k">noexcept</span><span class="p">(</span>
+          <span class="n">swap</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">declval</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&amp;&gt;</span><span class="p">(),</span> <span class="n">std</span><span class="o">::</span><span class="n">declval</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&amp;&gt;</span><span class="p">())))</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">initialized</span><span class="p">()</span> <span class="o">==</span> <span class="nb">true</span> <span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">.</span><span class="n">initialized</span><span class="p">()</span> <span class="o">==</span> <span class="nb">false</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">rhs</span><span class="p">.</span><span class="n">initialize</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="o">**</span><span class="k">this</span><span class="p">));</span>
+      <span class="n">clear</span><span class="p">();</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">initialized</span><span class="p">()</span> <span class="o">==</span> <span class="nb">false</span> <span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">.</span><span class="n">initialized</span><span class="p">()</span> <span class="o">==</span> <span class="nb">true</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">initialize</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="o">*</span><span class="n">rhs</span><span class="p">));</span>
+      <span class="n">rhs</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">initialized</span><span class="p">()</span> <span class="o">==</span> <span class="nb">true</span> <span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">.</span><span class="n">initialized</span><span class="p">()</span> <span class="o">==</span> <span class="nb">true</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">using</span> <span class="n">std</span><span class="o">::</span><span class="n">swap</span><span class="p">;</span>
+      <span class="n">swap</span><span class="p">(</span><span class="o">**</span><span class="k">this</span><span class="p">,</span> <span class="o">*</span><span class="n">rhs</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="c1">// 20.5.4.5, Observers</span>
+
+  <span class="k">explicit</span> <span class="k">constexpr</span> <span class="k">operator</span> <span class="kt">bool</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">initialized</span><span class="p">();</span>
+  <span class="p">}</span>
+  <span class="k">constexpr</span> <span class="kt">bool</span> <span class="n">has_value</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">initialized</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="k">constexpr</span> <span class="n">T</span> <span class="k">const</span><span class="o">*</span> <span class="k">operator</span><span class="o">-&gt;</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">TR2_OPTIONAL_ASSERTED_EXPRESSION</span><span class="p">(</span><span class="n">initialized</span><span class="p">(),</span> <span class="n">dataptr</span><span class="p">());</span>
+  <span class="p">}</span>
+
+<span class="cp">#if OPTIONAL_HAS_MOVE_ACCESSORS == 1</span>
+
+  <span class="n">OPTIONAL_MUTABLE_CONSTEXPR</span> <span class="n">T</span><span class="o">*</span> <span class="k">operator</span><span class="o">-&gt;</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">assert</span><span class="p">(</span><span class="n">initialized</span><span class="p">());</span>
+    <span class="k">return</span> <span class="nf">dataptr</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="k">constexpr</span> <span class="n">T</span> <span class="k">const</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">*</span><span class="p">()</span> <span class="k">const</span><span class="o">&amp;</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">TR2_OPTIONAL_ASSERTED_EXPRESSION</span><span class="p">(</span><span class="n">initialized</span><span class="p">(),</span> <span class="n">contained_val</span><span class="p">());</span>
+  <span class="p">}</span>
+
+  <span class="n">OPTIONAL_MUTABLE_CONSTEXPR</span> <span class="n">T</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">*</span><span class="p">()</span> <span class="o">&amp;</span> <span class="p">{</span>
+    <span class="n">assert</span><span class="p">(</span><span class="n">initialized</span><span class="p">());</span>
+    <span class="k">return</span> <span class="nf">contained_val</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="n">OPTIONAL_MUTABLE_CONSTEXPR</span> <span class="n">T</span><span class="o">&amp;&amp;</span> <span class="k">operator</span><span class="o">*</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
+    <span class="n">assert</span><span class="p">(</span><span class="n">initialized</span><span class="p">());</span>
+    <span class="k">return</span> <span class="nf">constexpr_move</span><span class="p">(</span><span class="n">contained_val</span><span class="p">());</span>
+  <span class="p">}</span>
+
+  <span class="k">constexpr</span> <span class="n">T</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">()</span> <span class="k">const</span><span class="o">&amp;</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">initialized</span><span class="p">()</span>
+        <span class="o">?</span> <span class="n">contained_val</span><span class="p">()</span>
+        <span class="o">:</span> <span class="p">(</span><span class="k">throw</span> <span class="n">bad_optional_access</span><span class="p">(</span><span class="s">&quot;bad optional access&quot;</span><span class="p">),</span> <span class="n">contained_val</span><span class="p">());</span>
+  <span class="p">}</span>
+
+  <span class="n">OPTIONAL_MUTABLE_CONSTEXPR</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">()</span> <span class="o">&amp;</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">initialized</span><span class="p">()</span>
+        <span class="o">?</span> <span class="n">contained_val</span><span class="p">()</span>
+        <span class="o">:</span> <span class="p">(</span><span class="k">throw</span> <span class="n">bad_optional_access</span><span class="p">(</span><span class="s">&quot;bad optional access&quot;</span><span class="p">),</span> <span class="n">contained_val</span><span class="p">());</span>
+  <span class="p">}</span>
+
+  <span class="n">OPTIONAL_MUTABLE_CONSTEXPR</span> <span class="n">T</span><span class="o">&amp;&amp;</span> <span class="n">value</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">initialized</span><span class="p">())</span>
+      <span class="k">throw</span> <span class="n">bad_optional_access</span><span class="p">(</span><span class="s">&quot;bad optional access&quot;</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">contained_val</span><span class="p">());</span>
+  <span class="p">}</span>
+
+<span class="cp">#else</span>
+
+  <span class="n">T</span><span class="o">*</span> <span class="k">operator</span><span class="o">-&gt;</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">assert</span><span class="p">(</span><span class="n">initialized</span><span class="p">());</span>
+    <span class="k">return</span> <span class="nf">dataptr</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="k">constexpr</span> <span class="n">T</span> <span class="k">const</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">*</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">contained_val</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="n">T</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">*</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">assert</span><span class="p">(</span><span class="n">initialized</span><span class="p">());</span>
+    <span class="k">return</span> <span class="nf">contained_val</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="k">constexpr</span> <span class="n">T</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">initialized</span><span class="p">()</span>
+        <span class="o">?</span> <span class="n">contained_val</span><span class="p">()</span>
+        <span class="o">:</span> <span class="p">(</span><span class="k">throw</span> <span class="n">bad_optional_access</span><span class="p">(</span><span class="s">&quot;bad optional access&quot;</span><span class="p">),</span> <span class="n">contained_val</span><span class="p">());</span>
+  <span class="p">}</span>
+
+  <span class="n">T</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">initialized</span><span class="p">()</span>
+        <span class="o">?</span> <span class="n">contained_val</span><span class="p">()</span>
+        <span class="o">:</span> <span class="p">(</span><span class="k">throw</span> <span class="n">bad_optional_access</span><span class="p">(</span><span class="s">&quot;bad optional access&quot;</span><span class="p">),</span> <span class="n">contained_val</span><span class="p">());</span>
+  <span class="p">}</span>
+
+<span class="cp">#endif</span>
+
+<span class="cp">#if OPTIONAL_HAS_THIS_RVALUE_REFS == 1</span>
+
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">V</span><span class="o">&gt;</span>
+  <span class="k">constexpr</span> <span class="n">T</span> <span class="n">value_or</span><span class="p">(</span><span class="n">V</span><span class="o">&amp;&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="k">const</span><span class="o">&amp;</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="o">*</span><span class="k">this</span> <span class="o">?</span> <span class="o">**</span><span class="k">this</span> <span class="o">:</span> <span class="n">detail_</span><span class="o">::</span><span class="n">convert</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">constexpr_forward</span><span class="o">&lt;</span><span class="n">V</span><span class="o">&gt;</span><span class="p">(</span><span class="n">v</span><span class="p">));</span>
+  <span class="p">}</span>
+
+<span class="cp">#if OPTIONAL_HAS_MOVE_ACCESSORS == 1</span>
+
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">V</span><span class="o">&gt;</span>
+  <span class="n">OPTIONAL_MUTABLE_CONSTEXPR</span> <span class="n">T</span> <span class="n">value_or</span><span class="p">(</span><span class="n">V</span><span class="o">&amp;&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="o">*</span><span class="k">this</span>
+        <span class="o">?</span> <span class="n">constexpr_move</span><span class="p">(</span><span class="k">const_cast</span><span class="o">&lt;</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;&gt;</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">).</span><span class="n">contained_val</span><span class="p">())</span>
+        <span class="o">:</span> <span class="n">detail_</span><span class="o">::</span><span class="n">convert</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">constexpr_forward</span><span class="o">&lt;</span><span class="n">V</span><span class="o">&gt;</span><span class="p">(</span><span class="n">v</span><span class="p">));</span>
+  <span class="p">}</span>
+
+<span class="cp">#else</span>
+
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">V</span><span class="o">&gt;</span>
+  <span class="n">T</span> <span class="n">value_or</span><span class="p">(</span><span class="n">V</span><span class="o">&amp;&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="o">*</span><span class="k">this</span>
+        <span class="o">?</span> <span class="n">constexpr_move</span><span class="p">(</span><span class="k">const_cast</span><span class="o">&lt;</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;&gt;</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">).</span><span class="n">contained_val</span><span class="p">())</span>
+        <span class="o">:</span> <span class="n">detail_</span><span class="o">::</span><span class="n">convert</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">constexpr_forward</span><span class="o">&lt;</span><span class="n">V</span><span class="o">&gt;</span><span class="p">(</span><span class="n">v</span><span class="p">));</span>
+  <span class="p">}</span>
+
+<span class="cp">#endif</span>
+
+<span class="cp">#else</span>
+
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">V</span><span class="o">&gt;</span>
+  <span class="k">constexpr</span> <span class="n">T</span> <span class="n">value_or</span><span class="p">(</span><span class="n">V</span><span class="o">&amp;&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="o">*</span><span class="k">this</span> <span class="o">?</span> <span class="o">**</span><span class="k">this</span> <span class="o">:</span> <span class="n">detail_</span><span class="o">::</span><span class="n">convert</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">constexpr_forward</span><span class="o">&lt;</span><span class="n">V</span><span class="o">&gt;</span><span class="p">(</span><span class="n">v</span><span class="p">));</span>
+  <span class="p">}</span>
+
+<span class="cp">#endif</span>
+
+  <span class="c1">// 20.6.3.6, modifiers</span>
+  <span class="kt">void</span> <span class="n">reset</span><span class="p">()</span> <span class="k">noexcept</span> <span class="p">{</span>
+    <span class="n">clear</span><span class="p">();</span>
+  <span class="p">}</span>
+<span class="p">};</span>
+
+
+<span class="c1">// XXX: please refrain from using optional&lt;T&amp;&gt;, since it is being against with</span>
+<span class="c1">// the optional standard in c++ 17, see the debate and the details here:</span>
+<span class="c1">// http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2012/n3406#rationale.refs</span>
+<span class="c1">// if you need it, consider using optional&lt;std::reference_wrapper&lt;T&gt;&gt; or * pointer</span>
+<span class="c1">//</span>
+<span class="c1">// we leave the implementation here in case we want to reconsider using it in the</span>
+<span class="c1">// future if it becomes a definitely necessary case.</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">class</span> <span class="nc">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&amp;&gt;</span> <span class="p">{</span>
+  <span class="c1">// add this assert to prevent user from using optional reference as indicated above</span>
+  <span class="k">static_assert</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="n">T</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&quot;optional references is ill-formed, \</span>
+<span class="s">    consider use optional of a std::reference_wrapper of type T to \</span>
+<span class="s">    hold a reference if you really need to&quot;</span><span class="p">);</span>
+
+  <span class="k">static_assert</span><span class="p">(</span><span class="o">!</span><span class="n">std</span><span class="o">::</span><span class="n">is_same</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span> <span class="n">nullopt_t</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span> <span class="s">&quot;bad T&quot;</span><span class="p">);</span>
+  <span class="k">static_assert</span><span class="p">(</span><span class="o">!</span><span class="n">std</span><span class="o">::</span><span class="n">is_same</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span> <span class="n">in_place_t</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span> <span class="s">&quot;bad T&quot;</span><span class="p">);</span>
+  <span class="n">T</span><span class="o">*</span> <span class="n">ref</span><span class="p">;</span>
+
+ <span class="k">public</span><span class="o">:</span>
+  <span class="c1">// 20.5.5.1, construction/destruction</span>
+  <span class="k">constexpr</span> <span class="n">optional</span><span class="p">()</span> <span class="k">noexcept</span> <span class="o">:</span> <span class="n">ref</span><span class="p">(</span><span class="k">nullptr</span><span class="p">)</span> <span class="p">{}</span>
+
+  <span class="k">constexpr</span> <span class="n">optional</span><span class="p">(</span><span class="n">nullopt_t</span><span class="p">)</span> <span class="k">noexcept</span> <span class="o">:</span> <span class="n">ref</span><span class="p">(</span><span class="k">nullptr</span><span class="p">)</span> <span class="p">{}</span>
+
+  <span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">U</span> <span class="o">=</span> <span class="n">T</span><span class="o">&gt;</span>
+  <span class="k">constexpr</span> <span class="n">optional</span><span class="p">(</span><span class="n">U</span><span class="o">&amp;</span> <span class="n">u</span><span class="p">)</span> <span class="k">noexcept</span> <span class="o">:</span> <span class="n">ref</span><span class="p">(</span><span class="n">detail_</span><span class="o">::</span><span class="n">static_addressof</span><span class="p">(</span><span class="n">u</span><span class="p">))</span> <span class="p">{}</span>
+
+  <span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">U</span> <span class="o">=</span> <span class="n">T</span><span class="o">&gt;</span>
+  <span class="n">optional</span><span class="p">(</span><span class="n">U</span><span class="o">&amp;&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+
+  <span class="k">constexpr</span> <span class="nf">optional</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="k">noexcept</span> <span class="o">:</span> <span class="n">ref</span><span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">ref</span><span class="p">)</span> <span class="p">{}</span>
+
+  <span class="k">explicit</span> <span class="k">constexpr</span> <span class="nf">optional</span><span class="p">(</span><span class="n">in_place_t</span><span class="p">,</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="k">noexcept</span>
+      <span class="o">:</span> <span class="n">ref</span><span class="p">(</span><span class="n">detail_</span><span class="o">::</span><span class="n">static_addressof</span><span class="p">(</span><span class="n">v</span><span class="p">))</span> <span class="p">{}</span>
+
+  <span class="k">explicit</span> <span class="nf">optional</span><span class="p">(</span><span class="n">in_place_t</span><span class="p">,</span> <span class="n">T</span><span class="o">&amp;&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+
+  <span class="o">~</span><span class="n">optional</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
+
+  <span class="c1">// 20.5.5.2, mutation</span>
+  <span class="n">optional</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">nullopt_t</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
+    <span class="n">ref</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">;</span>
+    <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="c1">// optional&amp; operator=(const optional&amp; rhs) noexcept {</span>
+  <span class="c1">// ref = rhs.ref;</span>
+  <span class="c1">// return *this;</span>
+  <span class="c1">// }</span>
+
+  <span class="c1">// optional&amp; operator=(optional&amp;&amp; rhs) noexcept {</span>
+  <span class="c1">// ref = rhs.ref;</span>
+  <span class="c1">// return *this;</span>
+  <span class="c1">// }</span>
+
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">U</span><span class="o">&gt;</span>
+  <span class="k">auto</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">U</span><span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="k">noexcept</span> <span class="o">-&gt;</span> <span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">enable_if</span><span class="o">&lt;</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">is_same</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">decay</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;::</span><span class="n">type</span><span class="p">,</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&amp;&gt;&gt;::</span><span class="n">value</span><span class="p">,</span>
+      <span class="n">optional</span><span class="o">&amp;&gt;::</span><span class="n">type</span> <span class="p">{</span>
+    <span class="n">ref</span> <span class="o">=</span> <span class="n">rhs</span><span class="p">.</span><span class="n">ref</span><span class="p">;</span>
+    <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">U</span><span class="o">&gt;</span>
+  <span class="k">auto</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">U</span><span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="k">noexcept</span> <span class="o">-&gt;</span> <span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">enable_if</span><span class="o">&lt;</span>
+      <span class="o">!</span><span class="n">std</span><span class="o">::</span><span class="n">is_same</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">decay</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;::</span><span class="n">type</span><span class="p">,</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&amp;&gt;&gt;::</span><span class="n">value</span><span class="p">,</span>
+      <span class="n">optional</span><span class="o">&amp;&gt;::</span><span class="n">type</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+
+  <span class="kt">void</span> <span class="nf">emplace</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
+    <span class="n">ref</span> <span class="o">=</span> <span class="n">detail_</span><span class="o">::</span><span class="n">static_addressof</span><span class="p">(</span><span class="n">v</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="kt">void</span> <span class="nf">emplace</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+
+  <span class="kt">void</span> <span class="nf">swap</span><span class="p">(</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&amp;&gt;&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">swap</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">rhs</span><span class="p">.</span><span class="n">ref</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="c1">// 20.5.5.3, observers</span>
+  <span class="k">constexpr</span> <span class="n">T</span><span class="o">*</span> <span class="k">operator</span><span class="o">-&gt;</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">TR2_OPTIONAL_ASSERTED_EXPRESSION</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">ref</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="k">constexpr</span> <span class="n">T</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">*</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">TR2_OPTIONAL_ASSERTED_EXPRESSION</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="o">*</span><span class="n">ref</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="k">constexpr</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">ref</span> <span class="o">?</span> <span class="o">*</span><span class="nl">ref</span>
+               <span class="p">:</span> <span class="p">(</span><span class="k">throw</span> <span class="n">bad_optional_access</span><span class="p">(</span><span class="s">&quot;bad optional access&quot;</span><span class="p">),</span> <span class="o">*</span><span class="n">ref</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="k">explicit</span> <span class="k">constexpr</span> <span class="k">operator</span> <span class="kt">bool</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">ref</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="k">constexpr</span> <span class="kt">bool</span> <span class="n">has_value</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">ref</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">V</span><span class="o">&gt;</span>
+  <span class="k">constexpr</span> <span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">decay</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">type</span> <span class="n">value_or</span><span class="p">(</span><span class="n">V</span><span class="o">&amp;&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="o">*</span><span class="k">this</span> <span class="o">?</span> <span class="o">**</span><span class="k">this</span>
+                 <span class="o">:</span> <span class="n">detail_</span><span class="o">::</span><span class="n">convert</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">decay</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">type</span><span class="o">&gt;</span><span class="p">(</span>
+                       <span class="n">constexpr_forward</span><span class="o">&lt;</span><span class="n">V</span><span class="o">&gt;</span><span class="p">(</span><span class="n">v</span><span class="p">));</span>
+  <span class="p">}</span>
+
+  <span class="c1">// x.x.x.x, modifiers</span>
+  <span class="kt">void</span> <span class="n">reset</span><span class="p">()</span> <span class="k">noexcept</span> <span class="p">{</span>
+    <span class="n">ref</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p">};</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">class</span> <span class="nc">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&amp;&amp;&gt;</span> <span class="p">{</span>
+  <span class="k">static_assert</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="n">T</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&quot;optional rvalue references disallowed&quot;</span><span class="p">);</span>
+<span class="p">};</span>
+
+<span class="c1">// 20.5.8, Relational operators</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">==</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">x</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">y</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">!=</span> <span class="kt">bool</span><span class="p">(</span><span class="n">y</span><span class="p">)</span> <span class="o">?</span> <span class="nb">false</span> <span class="o">:</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">==</span> <span class="nb">false</span> <span class="o">?</span> <span class="nb">true</span> <span class="o">:</span> <span class="o">*</span><span class="n">x</span> <span class="o">==</span> <span class="o">*</span><span class="n">y</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">!=</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">x</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">y</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="o">!</span><span class="p">(</span><span class="n">x</span> <span class="o">==</span> <span class="n">y</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&lt;</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">x</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">y</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span><span class="o">!</span><span class="n">y</span><span class="p">)</span> <span class="o">?</span> <span class="nb">false</span> <span class="o">:</span> <span class="p">(</span><span class="o">!</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="nb">true</span> <span class="o">:</span> <span class="o">*</span><span class="n">x</span> <span class="o">&lt;</span> <span class="o">*</span><span class="n">y</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&gt;</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">x</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">y</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span><span class="n">y</span> <span class="o">&lt;</span> <span class="n">x</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&lt;=</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">x</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">y</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="o">!</span><span class="p">(</span><span class="n">y</span> <span class="o">&lt;</span> <span class="n">x</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&gt;=</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">x</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">y</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="o">!</span><span class="p">(</span><span class="n">x</span> <span class="o">&lt;</span> <span class="n">y</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="c1">// 20.5.9, Comparison with nullopt</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">==</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">x</span><span class="p">,</span> <span class="n">nullopt_t</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span><span class="o">!</span><span class="n">x</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">==</span><span class="p">(</span><span class="n">nullopt_t</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span><span class="o">!</span><span class="n">x</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">!=</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">x</span><span class="p">,</span> <span class="n">nullopt_t</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">!=</span><span class="p">(</span><span class="n">nullopt_t</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&lt;</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span><span class="p">,</span> <span class="n">nullopt_t</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&lt;</span><span class="p">(</span><span class="n">nullopt_t</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&lt;=</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">x</span><span class="p">,</span> <span class="n">nullopt_t</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span><span class="o">!</span><span class="n">x</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&lt;=</span><span class="p">(</span><span class="n">nullopt_t</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&gt;</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">x</span><span class="p">,</span> <span class="n">nullopt_t</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&gt;</span><span class="p">(</span><span class="n">nullopt_t</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&gt;=</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span><span class="p">,</span> <span class="n">nullopt_t</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&gt;=</span><span class="p">(</span><span class="n">nullopt_t</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">(</span><span class="o">!</span><span class="n">x</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="c1">// 20.5.10, Comparison with T</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">==</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">x</span><span class="p">,</span> <span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="o">*</span><span class="n">x</span> <span class="o">==</span> <span class="nl">v</span> <span class="p">:</span> <span class="nb">false</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">==</span><span class="p">(</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="n">v</span> <span class="o">==</span> <span class="o">*</span><span class="nl">x</span> <span class="p">:</span> <span class="nb">false</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">!=</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">x</span><span class="p">,</span> <span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="o">*</span><span class="n">x</span> <span class="o">!=</span> <span class="nl">v</span> <span class="p">:</span> <span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">!=</span><span class="p">(</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="n">v</span> <span class="o">!=</span> <span class="o">*</span><span class="nl">x</span> <span class="p">:</span> <span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&lt;</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">x</span><span class="p">,</span> <span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="o">*</span><span class="n">x</span> <span class="o">&lt;</span> <span class="nl">v</span> <span class="p">:</span> <span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&gt;</span><span class="p">(</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="n">v</span> <span class="o">&gt;</span> <span class="o">*</span><span class="nl">x</span> <span class="p">:</span> <span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&gt;</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">x</span><span class="p">,</span> <span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="o">*</span><span class="n">x</span> <span class="o">&gt;</span> <span class="nl">v</span> <span class="p">:</span> <span class="nb">false</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&lt;</span><span class="p">(</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="n">v</span> <span class="o">&lt;</span> <span class="o">*</span><span class="nl">x</span> <span class="p">:</span> <span class="nb">false</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&gt;=</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">x</span><span class="p">,</span> <span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="o">*</span><span class="n">x</span> <span class="o">&gt;=</span> <span class="nl">v</span> <span class="p">:</span> <span class="nb">false</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&lt;=</span><span class="p">(</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="o">*</span><span class="nl">x</span> <span class="p">:</span> <span class="nb">false</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&lt;=</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">x</span><span class="p">,</span> <span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="o">*</span><span class="n">x</span> <span class="o">&lt;=</span> <span class="nl">v</span> <span class="p">:</span> <span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&gt;=</span><span class="p">(</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="n">v</span> <span class="o">&gt;=</span> <span class="o">*</span><span class="nl">x</span> <span class="p">:</span> <span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="c1">// Comparison of optional&lt;T&amp;&gt; with T</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">==</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&amp;&gt;&amp;</span> <span class="n">x</span><span class="p">,</span> <span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="o">*</span><span class="n">x</span> <span class="o">==</span> <span class="nl">v</span> <span class="p">:</span> <span class="nb">false</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">==</span><span class="p">(</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&amp;&gt;&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="n">v</span> <span class="o">==</span> <span class="o">*</span><span class="nl">x</span> <span class="p">:</span> <span class="nb">false</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">!=</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&amp;&gt;&amp;</span> <span class="n">x</span><span class="p">,</span> <span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="o">*</span><span class="n">x</span> <span class="o">!=</span> <span class="nl">v</span> <span class="p">:</span> <span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">!=</span><span class="p">(</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&amp;&gt;&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="n">v</span> <span class="o">!=</span> <span class="o">*</span><span class="nl">x</span> <span class="p">:</span> <span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&lt;</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&amp;&gt;&amp;</span> <span class="n">x</span><span class="p">,</span> <span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="o">*</span><span class="n">x</span> <span class="o">&lt;</span> <span class="nl">v</span> <span class="p">:</span> <span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&gt;</span><span class="p">(</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&amp;&gt;&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="n">v</span> <span class="o">&gt;</span> <span class="o">*</span><span class="nl">x</span> <span class="p">:</span> <span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&gt;</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&amp;&gt;&amp;</span> <span class="n">x</span><span class="p">,</span> <span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="o">*</span><span class="n">x</span> <span class="o">&gt;</span> <span class="nl">v</span> <span class="p">:</span> <span class="nb">false</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&lt;</span><span class="p">(</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&amp;&gt;&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="n">v</span> <span class="o">&lt;</span> <span class="o">*</span><span class="nl">x</span> <span class="p">:</span> <span class="nb">false</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&gt;=</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&amp;&gt;&amp;</span> <span class="n">x</span><span class="p">,</span> <span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="o">*</span><span class="n">x</span> <span class="o">&gt;=</span> <span class="nl">v</span> <span class="p">:</span> <span class="nb">false</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&lt;=</span><span class="p">(</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&amp;&gt;&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="o">*</span><span class="nl">x</span> <span class="p">:</span> <span class="nb">false</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&lt;=</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&amp;&gt;&amp;</span> <span class="n">x</span><span class="p">,</span> <span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="o">*</span><span class="n">x</span> <span class="o">&lt;=</span> <span class="nl">v</span> <span class="p">:</span> <span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&gt;=</span><span class="p">(</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&amp;&gt;&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="n">v</span> <span class="o">&gt;=</span> <span class="o">*</span><span class="nl">x</span> <span class="p">:</span> <span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="c1">// Comparison of optional&lt;T const&amp;&gt; with T</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">==</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;&gt;&amp;</span> <span class="n">x</span><span class="p">,</span> <span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="o">*</span><span class="n">x</span> <span class="o">==</span> <span class="nl">v</span> <span class="p">:</span> <span class="nb">false</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">==</span><span class="p">(</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;&gt;&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="n">v</span> <span class="o">==</span> <span class="o">*</span><span class="nl">x</span> <span class="p">:</span> <span class="nb">false</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">!=</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;&gt;&amp;</span> <span class="n">x</span><span class="p">,</span> <span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="o">*</span><span class="n">x</span> <span class="o">!=</span> <span class="nl">v</span> <span class="p">:</span> <span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">!=</span><span class="p">(</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;&gt;&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="n">v</span> <span class="o">!=</span> <span class="o">*</span><span class="nl">x</span> <span class="p">:</span> <span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&lt;</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;&gt;&amp;</span> <span class="n">x</span><span class="p">,</span> <span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="o">*</span><span class="n">x</span> <span class="o">&lt;</span> <span class="nl">v</span> <span class="p">:</span> <span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&gt;</span><span class="p">(</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;&gt;&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="n">v</span> <span class="o">&gt;</span> <span class="o">*</span><span class="nl">x</span> <span class="p">:</span> <span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&gt;</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;&gt;&amp;</span> <span class="n">x</span><span class="p">,</span> <span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="o">*</span><span class="n">x</span> <span class="o">&gt;</span> <span class="nl">v</span> <span class="p">:</span> <span class="nb">false</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&lt;</span><span class="p">(</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;&gt;&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="n">v</span> <span class="o">&lt;</span> <span class="o">*</span><span class="nl">x</span> <span class="p">:</span> <span class="nb">false</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&gt;=</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;&gt;&amp;</span> <span class="n">x</span><span class="p">,</span> <span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="o">*</span><span class="n">x</span> <span class="o">&gt;=</span> <span class="nl">v</span> <span class="p">:</span> <span class="nb">false</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&lt;=</span><span class="p">(</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;&gt;&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="n">v</span> <span class="o">&lt;=</span> <span class="o">*</span><span class="nl">x</span> <span class="p">:</span> <span class="nb">false</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&lt;=</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;&gt;&amp;</span> <span class="n">x</span><span class="p">,</span> <span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="o">*</span><span class="n">x</span> <span class="o">&lt;=</span> <span class="nl">v</span> <span class="p">:</span> <span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">&gt;=</span><span class="p">(</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;&gt;&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="kt">bool</span><span class="p">(</span><span class="n">x</span><span class="p">)</span> <span class="o">?</span> <span class="n">v</span> <span class="o">&gt;=</span> <span class="o">*</span><span class="nl">x</span> <span class="p">:</span> <span class="nb">true</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="c1">// 20.5.12, Specialized algorithms</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="kt">void</span> <span class="n">swap</span><span class="p">(</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">x</span><span class="p">,</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">y</span><span class="p">)</span> <span class="k">noexcept</span><span class="p">(</span><span class="k">noexcept</span><span class="p">(</span><span class="n">x</span><span class="p">.</span><span class="n">swap</span><span class="p">(</span><span class="n">y</span><span class="p">)))</span> <span class="p">{</span>
+  <span class="n">x</span><span class="p">.</span><span class="n">swap</span><span class="p">(</span><span class="n">y</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="n">optional</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">decay</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">type</span><span class="o">&gt;</span> <span class="n">make_optional</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">optional</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">decay</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">type</span><span class="o">&gt;</span><span class="p">(</span><span class="n">constexpr_forward</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">v</span><span class="p">));</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">X</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">X</span><span class="o">&amp;&gt;</span> <span class="n">make_optional</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">reference_wrapper</span><span class="o">&lt;</span><span class="n">X</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">X</span><span class="o">&amp;&gt;</span><span class="p">(</span><span class="n">v</span><span class="p">.</span><span class="n">get</span><span class="p">());</span>
+<span class="p">}</span>
+
+<span class="p">}</span> <span class="c1">// namespace c10</span>
+
+<span class="k">namespace</span> <span class="n">std</span> <span class="p">{</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+<span class="k">struct</span> <span class="n">hash</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;</span> <span class="p">{</span>
+  <span class="k">typedef</span> <span class="k">typename</span> <span class="n">hash</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">result_type</span> <span class="n">result_type</span><span class="p">;</span>
+  <span class="k">typedef</span> <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">argument_type</span><span class="p">;</span>
+
+  <span class="k">constexpr</span> <span class="n">result_type</span> <span class="nf">operator</span><span class="p">()(</span><span class="n">argument_type</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">arg</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">arg</span> <span class="o">?</span> <span class="n">std</span><span class="o">::</span><span class="n">hash</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">{}(</span><span class="o">*</span><span class="n">arg</span><span class="p">)</span> <span class="o">:</span> <span class="n">result_type</span><span class="p">{};</span>
+  <span class="p">}</span>
+<span class="p">};</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+<span class="k">struct</span> <span class="n">hash</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&amp;&gt;&gt;</span> <span class="p">{</span>
+  <span class="k">typedef</span> <span class="k">typename</span> <span class="n">hash</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">result_type</span> <span class="n">result_type</span><span class="p">;</span>
+  <span class="k">typedef</span> <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&amp;&gt;</span> <span class="n">argument_type</span><span class="p">;</span>
+
+  <span class="k">constexpr</span> <span class="n">result_type</span> <span class="nf">operator</span><span class="p">()(</span><span class="n">argument_type</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">arg</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">arg</span> <span class="o">?</span> <span class="n">std</span><span class="o">::</span><span class="n">hash</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">{}(</span><span class="o">*</span><span class="n">arg</span><span class="p">)</span> <span class="o">:</span> <span class="n">result_type</span><span class="p">{};</span>
+  <span class="p">}</span>
+<span class="p">};</span>
+<span class="p">}</span> <span class="c1">// namespace std</span>
+
+<span class="cp">#undef TR2_OPTIONAL_REQUIRES</span>
+<span class="cp">#undef TR2_OPTIONAL_ASSERTED_EXPRESSION</span>
+
+<span class="cp">#endif </span><span class="c1">// C10_UTIL_OPTIONAL_H_</span>
 </pre></div>
 </div>
 </div>

@@ -231,594 +231,543 @@
   <div class="section" id="program-listing-for-file-module-h">
 <span id="program-listing-file-torch-csrc-jit-script-module-h"></span><h1>Program Listing for File module.h<a class="headerlink" href="#program-listing-for-file-module-h" title="Permalink to this headline">¶</a></h1>
 <p>↰ <a class="reference internal" href="file_torch_csrc_jit_script_module.h.html#file-torch-csrc-jit-script-module-h"><span class="std std-ref">Return to documentation for file</span></a> (<code class="docutils literal notranslate"><span class="pre">torch/csrc/jit/script/module.h</span></code>)</p>
-<div class="highlight-none notranslate"><div class="highlight"><pre><span></span>#pragma once
-#include &lt;c10/util/Exception.h&gt;
-#include &lt;torch/csrc/autograd/generated/variable_factories.h&gt;
-#include &lt;torch/csrc/autograd/variable.h&gt;
-#include &lt;torch/csrc/jit/argument_spec.h&gt;
-#include &lt;torch/csrc/jit/graph_executor.h&gt;
-#include &lt;torch/csrc/jit/ir.h&gt;
-#include &lt;torch/csrc/jit/named_value.h&gt;
-#include &lt;torch/csrc/jit/passes/shape_analysis.h&gt;
-#include &lt;torch/csrc/jit/script/slot.h&gt;
-#include &lt;torch/csrc/jit/source_range.h&gt;
-
-#include &lt;torch/csrc/WindowsTorchApiMacro.h&gt;
-#include &lt;torch/csrc/api/include/torch/ordered_dict.h&gt;
-#include &lt;torch/csrc/jit/script/compilation_unit.h&gt;
-#include &lt;torch/csrc/utils/memory.h&gt;
-
-#include &lt;ATen/core/function_schema.h&gt;
-#include &lt;c10/util/ArrayRef.h&gt;
-#include &lt;c10/util/Optional.h&gt;
-
-#include &lt;functional&gt;
-#include &lt;memory&gt;
-#include &lt;mutex&gt;
-#include &lt;ostream&gt;
-#include &lt;string&gt;
-#include &lt;unordered_map&gt;
-#include &lt;vector&gt;
-
-// This file contains classes which assist in desugaring Python style
-// modules and their methods into flattened graphs which don&#39;t have any
-// function calls.
-
-namespace torch {
-namespace jit {
-namespace script {
-
-using ::c10::Argument;
-using ::c10::FunctionSchema;
-// Map which stores filename to content.
-using ExtraFilesMap = std::unordered_map&lt;std::string, std::string&gt;;
-
-using ModulePtr = c10::intrusive_ptr&lt;c10::ivalue::Object&gt;;
-// A method in a module, e.g. f in:
-//
-// class M(ScriptModule):
-//   @script_method
-//   def f(self, x):
-//     ...
-// Note: because Method/Module are exposed to python these
-// classes use python method naming conventions
-
-struct Module;
-
-using ModuleLookup =
-    std::function&lt;std::shared_ptr&lt;Module&gt;(const std::vector&lt;std::string&gt;&amp;)&gt;;
-
-struct TORCH_API Method {
-  Method(Module* owner, Function* function, std::vector&lt;Slot&gt; initial_members)
-      : owner_(owner),
-        function_(function),
-        initial_ivalues_(std::move(initial_members)) {
-    AT_ASSERT(function-&gt;num_inputs() &gt;= initial_ivalues_.size());
-  }
-
-  // the module that contains this method.
-  Module&amp; owner() const {
-    return *owner_;
-  }
-
-  void run(Stack&amp; stack) {
-    for (auto input : initial_ivalues_) {
-      push(stack, input.value());
-    }
-    function_-&gt;run(stack);
-  }
-  void run(Stack&amp;&amp; stack) {
-    run(stack);
-  }
-
-  IValue operator()(
-      std::vector&lt;IValue&gt; stack,
-      const Kwargs&amp; kwargs = Kwargs()) {
-    getSchema().checkAndNormalizeInputs(stack, kwargs);
-    for (auto input : initial_ivalues_) {
-      push(stack, input.value());
-    }
-    // use run rather than operator() to skip the second schema check.
-    function_-&gt;run(std::move(stack));
-    return stack.front();
-  }
-
-  const std::vector&lt;Slot&gt;&amp; initial_ivalues() const {
-    return initial_ivalues_;
-  }
-
-  std::shared_ptr&lt;Graph&gt; graph() const {
-    return function_-&gt;graph();
-  }
-
-  const std::string&amp; name() const {
-    return function_-&gt;name();
-  }
-
-  size_t num_inputs() const {
-    return function_-&gt;num_inputs() - initial_ivalues_.size();
-  }
-
-  FunctionSchema getSchema() const {
-    // we are required to slice out the slot inputs from the schema
-    // we can&#39;t cache this because setSchema on the underlying function
-    // will change the underlying schema
-    auto sliced = ArrayRef&lt;Argument&gt;(function_-&gt;getSchema().arguments())
-                      .slice(0, num_inputs());
-    return function_-&gt;getSchema().cloneWithArguments(sliced.vec());
-  }
-
-  GraphExecutor&amp; get_executor() {
-    return function_-&gt;get_executor();
-  }
-
-  Function&amp; function() const {
-    return *function_;
-  }
-
- private:
-  // Methods are uniqued onwed by a single module. This raw pointer allows
-  // looking up the module.
-  Module* owner_;
-
-  // Underlying unbound function
-  Function* function_;
-
-  // parameters and attributes loaded from the Module and appending
-  // before calling function_
-  std::vector&lt;Slot&gt; initial_ivalues_;
-};
-
-struct Module;
-
-struct TORCH_API Module {
-  TH_DISALLOW_COPY_AND_ASSIGN(Module);
-  Module()
-      : name_(&quot;__main__&quot;),
-        module_value_(c10::ivalue::Object::create(
-            ClassType::createModuleType(std::make_shared&lt;CompilationUnit&gt;()),
-            0)) {}
-
-  ~Module() {
-    // ClassType own the compilation unit of their Functions, but each
-    // Function has a self argument which owns the ClassType, created a
-    // referernce cycle. By dropping all the methods of the module&#39;s class
-    // here we break the cycle.
-    class_cu().drop_all_functions();
-  }
-  const std::string&amp; name() const {
-    return name_;
-  }
-
-  // note this doesn&#39;t change the flags of existing methods just ones
-  // added afterward.
-  void set_optimized(bool o) {
-    lowered_methods().set_optimized(o);
-    class_cu().set_optimized(o);
-  }
-
-  bool is_optimized() const {
-    return class_cu().is_optimized();
-  }
-
-  IValue forward(std::vector&lt;IValue&gt; inputs) {
-    return get_method(&quot;forward&quot;)(std::move(inputs));
-  }
-
-  void register_buffer(const std::string&amp; name, autograd::Variable v) {
-    if (auto b = find_attribute(name)) {
-      AT_ASSERT(b-&gt;type()-&gt;isSubtypeOf(TensorType::get()));
-      b-&gt;setValue(v);
-      return;
-    }
-    insert(
-        name,
-        attributes_,
-        EntityType::ATTRIBUTE,
-        appendSlot(name, TensorType::get(), std::move(v)));
-  }
-
-  void register_parameter(
-      const std::string&amp; name,
-      autograd::Variable v,
-      bool is_buffer) {
-    if (is_buffer) {
-      register_buffer(name, std::move(v));
-      return;
-    }
-    if (auto p = find_parameter(name)) {
-      p-&gt;setValue(v);
-      return;
-    }
-    insert(
-        name,
-        parameters_,
-        EntityType::PARAMETER,
-        appendSlot(name, TensorType::get(), std::move(v)));
-  }
-  void register_attribute(
-      const std::string&amp; name,
-      const TypePtr type,
-      IValue ivalue) {
-    insert(
-        name,
-        attributes_,
-        EntityType::ATTRIBUTE,
-        appendSlot(name, type, ivalue));
-  }
-  void register_module(
-      const std::string&amp; name,
-      std::shared_ptr&lt;Module&gt; module) {
-    // We would like to enable more stringent error checking at this point,
-    // but because script functions are considered modules, it is possible
-    // to hit this situation without knowing it. For now this is disabled
-    // until a later PR that distinguishes script functions from script modules.
-    // See TestScript.test_submodule_twice for example failure
-    // if (module-&gt;parent_) {
-    //   AT_WARN(
-    //       &quot;Attempting to assign submodule &#39;&quot;,
-    //       name,
-    //       &quot;&#39; but it is already a submodule of another ScriptModule &#39;&quot;,
-    //       module-&gt;parent_-&gt;name(), &quot;&#39;&quot;, &quot; Modules of this form do not import
-    //       and export correctly. This use is deprecated and may be&quot; &quot; removed
-    //       in a future version.&quot;);
-    // }
-    module-&gt;parent_ = this;
-    module-&gt;name_ = name;
-    appendSlot(name, module-&gt;module_value_-&gt;type(), module-&gt;module_value_);
-    insert(name, modules_, EntityType::MODULE, std::move(module));
-  }
-
-  Slot parameter_slot(const std::string&amp; name) const {
-    return parameters_[get_offset(name, EntityType::PARAMETER)];
-  }
-
-  void set_parameter(const std::string&amp; name, at::Tensor v) {
-    parameter_slot(name).setValue(std::move(v));
-  }
-
-  autograd::Variable get_parameter(const std::string&amp; name) const {
-    return autograd::as_variable_ref(parameter_slot(name).value().toTensor());
-  }
-
-  IValue get_attribute(const std::string&amp; name) const {
-    return attributes_[get_offset(name, EntityType::ATTRIBUTE)].value();
-  }
-
-  autograd::Variable get_buffer(const std::string&amp; name) const {
-    return autograd::as_variable_ref(get_attribute(name).toTensor());
-  }
-
-  // each module owns its method. The reference returned here
-  // is guarenteed to stay valid until this module has been destroyed
-  Method&amp; get_method(const std::string&amp; name) const {
-    if (Method* method = find_method(name)) {
-      return *method;
-    }
-    // temporary: force the error message
-    // once the on-demand creation of Method is removed, this code
-    // can be removed as well
-    get_offset(name, EntityType::METHOD);
-    AT_ERROR(&quot;unreachable&quot;);
-  }
-
-  std::shared_ptr&lt;Module&gt; get_module(const std::string&amp; name) const {
-    return modules_[get_offset(name, EntityType::MODULE)];
-  }
-
-  c10::ArrayRef&lt;std::shared_ptr&lt;Module&gt;&gt; get_modules() const {
-    return modules_;
-  }
-  c10::ArrayRef&lt;Slot&gt; get_parameters() const {
-    return parameters_;
-  }
-  c10::ArrayRef&lt;Slot&gt; get_attributes() const {
-    return attributes_;
-  }
-  const std::vector&lt;std::unique_ptr&lt;Method&gt;&gt;&amp; get_methods() const {
-    // force methods_ to be up to date by querying all
-    // methods. This will go away when lowered_methods_ is deleted
-    for (const auto&amp; m : class_cu().get_functions()) {
-      get_method(m-&gt;name());
-    }
-    return methods_;
-  }
-
-  Slot* find_parameter(const std::string&amp; name) {
-    auto offset = find_offset(name, EntityType::PARAMETER);
-    return offset ? &amp;parameters_[*offset] : nullptr;
-  }
-  Slot* find_attribute(const std::string&amp; name) {
-    auto offset = find_offset(name, EntityType::ATTRIBUTE);
-    return offset ? &amp;attributes_[*offset] : nullptr;
-  }
-  Slot* find_buffer(const std::string&amp; name) {
-    auto iv = find_attribute(name);
-    if (iv &amp;&amp; iv-&gt;type()-&gt;isSubtypeOf(TensorType::get())) {
-      return iv;
-    }
-    return nullptr;
-  }
-  std::shared_ptr&lt;Module&gt; find_module(const std::string&amp; name) {
-    auto offset = find_offset(name, EntityType::MODULE);
-    return offset ? modules_[*offset] : nullptr;
-  }
-  Method* find_method(const std::string&amp; name) const {
-    auto offset = find_offset(name, EntityType::METHOD);
-    if (offset) {
-      return methods_[*offset].get();
-    }
-
-    if (Function* fn = class_cu().find_function(name).get()) {
-      // temporary lock because technically this is marked const,
-      // but we have to update the internal Method cache.
-      // This can be removed when class_cu() is the source of truth for
-      // methods.
-      std::lock_guard&lt;std::recursive_mutex&gt; guard(find_method_guard_);
-      return &amp;const_cast&lt;Module*&gt;(this)-&gt;lower_first_class_method(fn);
-    }
-
-    return nullptr;
-  }
-  void apply(std::function&lt;void(Module&amp;)&gt; fn) {
-    for (auto&amp; submod : get_modules()) {
-      submod-&gt;apply(fn);
-    }
-    fn(*this);
-  }
-  void train(bool on = true) {
-    for (auto&amp; submod : get_modules()) {
-      submod-&gt;train(on);
-    }
-    register_buffer(&quot;training&quot;, torch::tensor(on ? 1 : 0, at::kLong));
-  }
-  void eval() {
-    train(/*on=*/false);
-  }
-  bool is_training() {
-    if (auto p = find_buffer(&quot;training&quot;)) {
-      return p-&gt;value().toTensor().item&lt;int64_t&gt;() == 1;
-    }
-    // We are in training mode by default
-    return true;
-  }
-
-  void to(at::Device device, at::ScalarType dtype, bool non_blocking = false);
-
-  void to(at::ScalarType dtype, bool non_blocking = false);
-
-  void to(at::Device device, bool non_blocking = false);
-
-  template &lt;typename... Types&gt;
-  IValue run_method(const std::string&amp; method_name, Types&amp;&amp;... args) {
-    return get_method(method_name)({IValue(std::forward&lt;Types&gt;(args))...});
-  }
-
-  void save(
-      std::ostream&amp; out,
-      const ExtraFilesMap&amp; extra_files = ExtraFilesMap());
-
-  void save(
-      const std::string&amp; filename,
-      const ExtraFilesMap&amp; extra_files = ExtraFilesMap());
-
-  void copy_into(
-      ModuleLookup module_lookup,
-      // parameter_remap is needed when a parent module uses a parameter of a
-      // submodule
-      std::unordered_map&lt;Slot, Slot&gt;&amp; parameter_remap,
-      std::vector&lt;std::string&gt; names = {}) const {
-    auto curr = module_lookup(names);
-    for (auto&amp; param : get_parameters()) {
-      curr-&gt;register_parameter(
-          param.name(),
-          param.value().toTensor(),
-          /*is_buffer=*/false);
-      parameter_remap[param] = curr-&gt;parameter_slot(param.name());
-    }
-    for (auto&amp; attr : get_attributes()) {
-      if (attr.type()-&gt;isSubtypeOf(TensorType::get())) {
-        curr-&gt;register_buffer(attr.name(), attr.value().toTensor());
-        parameter_remap[attr] = *curr-&gt;find_buffer(attr.name());
-      } else {
-        curr-&gt;register_attribute(attr.name(), attr.type(), attr.value());
-        parameter_remap[attr] = *curr-&gt;find_attribute(attr.name());
-      }
-    }
-    for (auto&amp; mod : get_modules()) {
-      names.push_back(mod-&gt;name());
-      // Submodules must be translated first, otherwise parameter_remap entries
-      // will not be filled in for methods of this module.
-      mod-&gt;copy_into(module_lookup, parameter_remap, names);
-      names.pop_back();
-    }
-
-    for (auto&amp; fn : class_cu().get_functions()) {
-      curr-&gt;class_cu().clone_function(*fn);
-    }
-  }
-
-  enum class EntityType { MODULE, PARAMETER, ATTRIBUTE, METHOD };
-
-  at::optional&lt;EntityType&gt; kind_of(const std::string&amp; name) const {
-    // force lazy creation of Method if needed
-    // remove once lowered_methods_ is removed.
-    find_method(name);
-
-    auto it = dict_.find(name);
-    if (it == dict_.end())
-      return at::nullopt;
-    return it-&gt;second.type;
-  }
-
-  ModulePtr module_object() const {
-    return module_value_;
-  }
-  CompilationUnit&amp; class_compilation_unit() {
-    return module_object()-&gt;type()-&gt;compilation_unit();
-  }
-  CompilationUnit&amp; lowered_methods() const {
-    return lowered_methods_;
-  }
-
-  // so that C++ users can easily add methods
-  void define(const std::string&amp; src, const Resolver&amp; resolver = nullptr);
-
-  void _define_lowered(
-      const std::vector&lt;Def&gt;&amp; definitions,
-      const std::vector&lt;Resolver&gt;&amp; resolvers);
-  void _define_lowered(const std::string&amp; src, const Resolver&amp; resolver);
-
-  Method&amp; _define_lowered(
-      std::string name,
-      std::shared_ptr&lt;Graph&gt; graph,
-      std::vector&lt;Slot&gt; slots);
-
- private:
-  Method&amp; _create_lowered_method(
-      Function* func,
-      std::vector&lt;Slot&gt; member_inputs);
-
-  Method&amp; lower_first_class_method(Function* fn);
-  void lift_lowered_method(Method&amp; fn);
-  void lift_lowered_methods(size_t start);
-
-  void to_impl(
-      const c10::optional&lt;at::Device&gt;&amp; device,
-      const c10::optional&lt;at::ScalarType&gt;&amp; dtype,
-      bool non_blocking);
-
-  static const char* toString(EntityType t) {
-    switch (t) {
-      case EntityType::MODULE:
-        return &quot;module&quot;;
-      case EntityType::PARAMETER:
-        return &quot;parameter&quot;;
-      case EntityType::ATTRIBUTE:
-        return &quot;attribute&quot;;
-      case EntityType::METHOD:
-        return &quot;method&quot;;
-    }
-    return nullptr;
-  }
-
-  struct Entry {
-    EntityType type;
-    size_t offset;
-  };
-
-  size_t get_offset(const std::string&amp; name, EntityType expected_type) const {
-    auto it = dict_.find(name);
-    if (it == dict_.end()) {
-      AT_ERROR(toString(expected_type), &quot; &#39;&quot;, name, &quot;&#39; is not defined.&quot;);
-    }
-    if (it-&gt;second.type != expected_type) {
-      AT_ERROR(
-          &quot;The field &#39;&quot;,
-          name,
-          &quot;&#39; is a &quot;,
-          toString(it-&gt;second.type),
-          &quot; but this call is&quot;
-          &quot; trying to use it as a &quot;,
-          toString(expected_type));
-    }
-    return it-&gt;second.offset;
-  }
-  at::optional&lt;size_t&gt; find_offset(
-      const std::string&amp; name,
-      EntityType expected_type) const {
-    auto it = dict_.find(name);
-    if (it == dict_.end() || it-&gt;second.type != expected_type) {
-      return at::nullopt;
-    }
-    return it-&gt;second.offset;
-  }
-
-  template &lt;typename T&gt;
-  T&amp; insert(
-      const std::string&amp; name,
-      std::vector&lt;T&gt;&amp; list,
-      EntityType type,
-      T value) {
-    auto it = dict_.find(name);
-    if (it != dict_.end()) {
-      if (type != it-&gt;second.type) {
-        AT_ERROR(
-            &quot;attempting to add &quot;,
-            toString(type),
-            &quot; &#39;&quot;,
-            name,
-            &quot;&#39; but it already exists as a &quot;,
-            toString(it-&gt;second.type));
-      } else {
-        AT_ERROR(toString(type), &quot; &#39;&quot;, name, &quot;&#39; already defined.&quot;);
-      }
-    }
-    dict_[name] = Entry{type, list.size()};
-    list.emplace_back(std::move(value));
-    return list.back();
-  }
-
-  // add a new entry to the singleton object that represents this
-  // Module as a first-class value in code, and update the corresponding
-  // ClassType to match.
-  Slot appendSlot(const std::string&amp; name, TypePtr typ, IValue value) {
-    const ClassTypePtr&amp; type = module_value_-&gt;type();
-    type-&gt;addAttribute(name, std::move(typ));
-    auto slot_index = type-&gt;getAttributeSlot(name);
-    module_value_-&gt;setSlot(slot_index, std::move(value));
-    return Slot(module_value_, slot_index);
-  }
-
-  CompilationUnit&amp; class_cu() {
-    return module_value_-&gt;type()-&gt;compilation_unit();
-  }
-  const CompilationUnit&amp; class_cu() const {
-    return module_value_-&gt;type()-&gt;compilation_unit();
-  }
-
-  // modules have a single namespace, but spread over 4 different concepts:
-  // parameters, attributes, methods, and sub-modules
-  // we store individual lists of each concept, and a single map to
-  // unify the namespace and ensure fast lookup
-
-  // invariant: to ensure initial_ivalues of Methods stay valid,
-  // it is only legal to _add_ new modules and parameters.
-  // removing them will allow initial_ivalues to point to invalid parameters
-  // no such restriction exists for methods
-  std::vector&lt;std::shared_ptr&lt;Module&gt;&gt; modules_;
-  std::vector&lt;Slot&gt; parameters_;
-  std::vector&lt;Slot&gt; attributes_;
-  std::vector&lt;std::unique_ptr&lt;Method&gt;&gt; methods_;
-
-  std::unordered_map&lt;std::string, Entry&gt; dict_;
-  std::string name_;
-
-  ModulePtr module_value_;
-
-  // back reference to parent of this Module if present
-  Module* parent_ = nullptr;
-
-  // Currently we are in a transitionary state
-  // where we construct such first class functions but we lower them
-  // to a form where the modules does not exist before execution.
-
-  // So each Method is actually stored twice once in first-class Module
-  // form and once in lowered form.
-
-  // first-class: module_value_-&gt;type().compilation_unit() holds Functions that
-  // treat modules as first class.
-
-  // lowered: In this lowered form, all the attributes/parameters are appended
-  // as additional inputs. lowered_methods_ holds this lowered form
-  // mutable because it is a cache for class_cu() methods
-  mutable CompilationUnit lowered_methods_;
-  mutable std::recursive_mutex find_method_guard_;
-};
-
-} // namespace script
-} // namespace jit
-} // namespace torch
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#pragma once</span>
+<span class="cp">#include</span> <span class="cpf">&lt;c10/util/Exception.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/autograd/variable.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/jit/argument_spec.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/jit/graph_executor.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/jit/ir.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/jit/named_value.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/jit/passes/shape_analysis.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/jit/script/slot.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/jit/source_range.h&gt;</span><span class="cp"></span>
+
+<span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/WindowsTorchApiMacro.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/api/include/torch/ordered_dict.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/jit/script/compilation_unit.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/utils/memory.h&gt;</span><span class="cp"></span>
+
+<span class="cp">#include</span> <span class="cpf">&lt;ATen/core/function_schema.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;c10/util/ArrayRef.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;c10/util/Optional.h&gt;</span><span class="cp"></span>
+
+<span class="cp">#include</span> <span class="cpf">&lt;functional&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;memory&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;mutex&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;ostream&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;string&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;unordered_map&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;vector&gt;</span><span class="cp"></span>
+
+<span class="c1">// This file contains classes which assist in desugaring Python style</span>
+<span class="c1">// modules and their methods into flattened graphs which don&#39;t have any</span>
+<span class="c1">// function calls.</span>
+
+<span class="k">namespace</span> <span class="n">torch</span> <span class="p">{</span>
+<span class="k">namespace</span> <span class="n">jit</span> <span class="p">{</span>
+<span class="k">namespace</span> <span class="n">script</span> <span class="p">{</span>
+
+<span class="k">using</span> <span class="o">::</span><span class="n">c10</span><span class="o">::</span><span class="n">Argument</span><span class="p">;</span>
+<span class="k">using</span> <span class="o">::</span><span class="n">c10</span><span class="o">::</span><span class="n">FunctionSchema</span><span class="p">;</span>
+<span class="c1">// Map which stores filename to content.</span>
+<span class="k">using</span> <span class="n">ExtraFilesMap</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">unordered_map</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="p">;</span>
+
+<span class="k">using</span> <span class="n">ModulePtr</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Object</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="c1">// A method in a module, e.g. f in:</span>
+<span class="c1">//</span>
+<span class="c1">// class M(ScriptModule):</span>
+<span class="c1">//   @script_method</span>
+<span class="c1">//   def f(self, x):</span>
+<span class="c1">//     ...</span>
+<span class="c1">// Note: because Method/Module are exposed to python these</span>
+<span class="c1">// classes use python method naming conventions</span>
+
+<span class="k">struct</span> <span class="n">Module</span><span class="p">;</span>
+
+<span class="k">using</span> <span class="n">ModuleLookup</span> <span class="o">=</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Module</span><span class="o">&gt;</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;&amp;</span><span class="p">)</span><span class="o">&gt;</span><span class="p">;</span>
+
+<span class="k">struct</span> <span class="n">TORCH_API</span> <span class="n">Method</span> <span class="p">{</span>
+  <span class="n">Method</span><span class="p">(</span><span class="n">Module</span><span class="o">*</span> <span class="n">owner</span><span class="p">,</span> <span class="n">Function</span><span class="o">*</span> <span class="n">function</span><span class="p">);</span>
+
+  <span class="c1">// the module that contains this method.</span>
+  <span class="n">Module</span><span class="o">&amp;</span> <span class="n">owner</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="o">*</span><span class="n">owner_</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="kt">void</span> <span class="n">run</span><span class="p">(</span><span class="n">Stack</span><span class="o">&amp;</span> <span class="n">stack</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="p">(</span><span class="k">auto</span> <span class="nl">input</span> <span class="p">:</span> <span class="n">initial_ivalues_</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">push</span><span class="p">(</span><span class="n">stack</span><span class="p">,</span> <span class="n">input</span><span class="p">.</span><span class="n">value</span><span class="p">());</span>
+    <span class="p">}</span>
+    <span class="n">function_</span><span class="o">-&gt;</span><span class="n">run</span><span class="p">(</span><span class="n">stack</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="kt">void</span> <span class="n">run</span><span class="p">(</span><span class="n">Stack</span><span class="o">&amp;&amp;</span> <span class="n">stack</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">run</span><span class="p">(</span><span class="n">stack</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="n">IValue</span> <span class="k">operator</span><span class="p">()(</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IValue</span><span class="o">&gt;</span> <span class="n">stack</span><span class="p">,</span>
+      <span class="k">const</span> <span class="n">Kwargs</span><span class="o">&amp;</span> <span class="n">kwargs</span> <span class="o">=</span> <span class="n">Kwargs</span><span class="p">())</span> <span class="p">{</span>
+    <span class="n">getSchema</span><span class="p">().</span><span class="n">checkAndNormalizeInputs</span><span class="p">(</span><span class="n">stack</span><span class="p">,</span> <span class="n">kwargs</span><span class="p">);</span>
+    <span class="k">for</span> <span class="p">(</span><span class="k">auto</span> <span class="nl">input</span> <span class="p">:</span> <span class="n">initial_ivalues_</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">push</span><span class="p">(</span><span class="n">stack</span><span class="p">,</span> <span class="n">input</span><span class="p">.</span><span class="n">value</span><span class="p">());</span>
+    <span class="p">}</span>
+    <span class="c1">// use run rather than operator() to skip the second schema check.</span>
+    <span class="n">function_</span><span class="o">-&gt;</span><span class="n">run</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">stack</span><span class="p">));</span>
+    <span class="k">return</span> <span class="n">stack</span><span class="p">.</span><span class="n">front</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Slot</span><span class="o">&gt;&amp;</span> <span class="n">initial_ivalues</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">initial_ivalues_</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Graph</span><span class="o">&gt;</span> <span class="n">graph</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">function_</span><span class="o">-&gt;</span><span class="n">graph</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">function_</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="kt">size_t</span> <span class="n">num_inputs</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">function_</span><span class="o">-&gt;</span><span class="n">num_inputs</span><span class="p">()</span> <span class="o">-</span> <span class="n">initial_ivalues_</span><span class="p">.</span><span class="n">size</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="k">const</span> <span class="n">FunctionSchema</span><span class="o">&amp;</span> <span class="n">getSchema</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">schema_</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="n">GraphExecutor</span><span class="o">&amp;</span> <span class="n">get_executor</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">function_</span><span class="o">-&gt;</span><span class="n">get_executor</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="n">Function</span><span class="o">&amp;</span> <span class="n">function</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="o">*</span><span class="n">function_</span><span class="p">;</span>
+  <span class="p">}</span>
+
+ <span class="k">private</span><span class="o">:</span>
+  <span class="c1">// Methods are uniqued onwed by a single module. This raw pointer allows</span>
+  <span class="c1">// looking up the module.</span>
+  <span class="n">Module</span><span class="o">*</span> <span class="n">owner_</span><span class="p">;</span>
+
+  <span class="c1">// Underlying unbound function</span>
+  <span class="c1">// This is the _lowered_ function and is different than the</span>
+  <span class="c1">// first-class function in class_compilation_unit()</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Function</span><span class="o">&gt;</span> <span class="n">function_</span><span class="p">;</span>
+
+  <span class="c1">// parameters and attributes loaded from the Module and appending</span>
+  <span class="c1">// before calling function_</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Slot</span><span class="o">&gt;</span> <span class="n">initial_ivalues_</span><span class="p">;</span>
+  <span class="n">FunctionSchema</span> <span class="n">schema_</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="k">struct</span> <span class="n">Module</span><span class="p">;</span>
+
+<span class="k">struct</span> <span class="n">TORCH_API</span> <span class="n">Module</span> <span class="p">{</span>
+  <span class="n">TH_DISALLOW_COPY_AND_ASSIGN</span><span class="p">(</span><span class="n">Module</span><span class="p">);</span>
+  <span class="n">Module</span><span class="p">()</span>
+      <span class="o">:</span> <span class="n">name_</span><span class="p">(</span><span class="s">&quot;__main__&quot;</span><span class="p">),</span>
+        <span class="n">module_value_</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Object</span><span class="o">::</span><span class="n">create</span><span class="p">(</span>
+            <span class="n">ClassType</span><span class="o">::</span><span class="n">createModuleType</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">CompilationUnit</span><span class="o">&gt;</span><span class="p">()),</span>
+            <span class="mi">0</span><span class="p">))</span> <span class="p">{}</span>
+
+  <span class="o">~</span><span class="n">Module</span><span class="p">()</span> <span class="p">{</span>
+    <span class="c1">// ClassType own the compilation unit of their Functions, but each</span>
+    <span class="c1">// Function has a self argument which owns the ClassType, created a</span>
+    <span class="c1">// referernce cycle. By dropping all the methods of the module&#39;s class</span>
+    <span class="c1">// here we break the cycle.</span>
+    <span class="n">class_compilation_unit</span><span class="p">().</span><span class="n">drop_all_functions</span><span class="p">();</span>
+  <span class="p">}</span>
+  <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">name_</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="c1">// note this doesn&#39;t change the flags of existing methods just ones</span>
+  <span class="c1">// added afterward.</span>
+  <span class="kt">void</span> <span class="n">set_optimized</span><span class="p">(</span><span class="kt">bool</span> <span class="n">o</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">class_compilation_unit</span><span class="p">().</span><span class="n">set_optimized</span><span class="p">(</span><span class="n">o</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="kt">bool</span> <span class="n">is_optimized</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">class_compilation_unit</span><span class="p">().</span><span class="n">is_optimized</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="n">IValue</span> <span class="n">forward</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IValue</span><span class="o">&gt;</span> <span class="n">inputs</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">get_method</span><span class="p">(</span><span class="s">&quot;forward&quot;</span><span class="p">)(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">inputs</span><span class="p">));</span>
+  <span class="p">}</span>
+
+  <span class="kt">void</span> <span class="n">register_buffer</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span> <span class="n">autograd</span><span class="o">::</span><span class="n">Variable</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="k">auto</span> <span class="n">b</span> <span class="o">=</span> <span class="n">find_attribute</span><span class="p">(</span><span class="n">name</span><span class="p">))</span> <span class="p">{</span>
+      <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">b</span><span class="o">-&gt;</span><span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">isSubtypeOf</span><span class="p">(</span><span class="n">TensorType</span><span class="o">::</span><span class="n">get</span><span class="p">()));</span>
+      <span class="n">b</span><span class="o">-&gt;</span><span class="n">setValue</span><span class="p">(</span><span class="n">v</span><span class="p">);</span>
+      <span class="k">return</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="n">insert</span><span class="p">(</span>
+        <span class="n">name</span><span class="p">,</span>
+        <span class="n">attributes_</span><span class="p">,</span>
+        <span class="n">EntityType</span><span class="o">::</span><span class="n">ATTRIBUTE</span><span class="p">,</span>
+        <span class="n">appendSlot</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">TensorType</span><span class="o">::</span><span class="n">get</span><span class="p">(),</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">v</span><span class="p">)));</span>
+  <span class="p">}</span>
+
+  <span class="kt">void</span> <span class="n">register_parameter</span><span class="p">(</span>
+      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span>
+      <span class="n">autograd</span><span class="o">::</span><span class="n">Variable</span> <span class="n">v</span><span class="p">,</span>
+      <span class="kt">bool</span> <span class="n">is_buffer</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">is_buffer</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">register_buffer</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">v</span><span class="p">));</span>
+      <span class="k">return</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="p">(</span><span class="k">auto</span> <span class="n">p</span> <span class="o">=</span> <span class="n">find_parameter</span><span class="p">(</span><span class="n">name</span><span class="p">))</span> <span class="p">{</span>
+      <span class="n">p</span><span class="o">-&gt;</span><span class="n">setValue</span><span class="p">(</span><span class="n">v</span><span class="p">);</span>
+      <span class="k">return</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="n">insert</span><span class="p">(</span>
+        <span class="n">name</span><span class="p">,</span>
+        <span class="n">parameters_</span><span class="p">,</span>
+        <span class="n">EntityType</span><span class="o">::</span><span class="n">PARAMETER</span><span class="p">,</span>
+        <span class="n">appendSlot</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">TensorType</span><span class="o">::</span><span class="n">get</span><span class="p">(),</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">v</span><span class="p">)));</span>
+  <span class="p">}</span>
+  <span class="kt">void</span> <span class="n">register_attribute</span><span class="p">(</span>
+      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span>
+      <span class="k">const</span> <span class="n">TypePtr</span> <span class="n">type</span><span class="p">,</span>
+      <span class="n">IValue</span> <span class="n">ivalue</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">insert</span><span class="p">(</span>
+        <span class="n">name</span><span class="p">,</span>
+        <span class="n">attributes_</span><span class="p">,</span>
+        <span class="n">EntityType</span><span class="o">::</span><span class="n">ATTRIBUTE</span><span class="p">,</span>
+        <span class="n">appendSlot</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">type</span><span class="p">,</span> <span class="n">ivalue</span><span class="p">));</span>
+  <span class="p">}</span>
+  <span class="kt">void</span> <span class="n">register_module</span><span class="p">(</span>
+      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Module</span><span class="o">&gt;</span> <span class="n">module</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// We would like to enable more stringent error checking at this point,</span>
+    <span class="c1">// but because script functions are considered modules, it is possible</span>
+    <span class="c1">// to hit this situation without knowing it. For now this is disabled</span>
+    <span class="c1">// until a later PR that distinguishes script functions from script modules.</span>
+    <span class="c1">// See TestScript.test_submodule_twice for example failure</span>
+    <span class="c1">// if (module-&gt;parent_) {</span>
+    <span class="c1">//   AT_WARN(</span>
+    <span class="c1">//       &quot;Attempting to assign submodule &#39;&quot;,</span>
+    <span class="c1">//       name,</span>
+    <span class="c1">//       &quot;&#39; but it is already a submodule of another ScriptModule &#39;&quot;,</span>
+    <span class="c1">//       module-&gt;parent_-&gt;name(), &quot;&#39;&quot;, &quot; Modules of this form do not import</span>
+    <span class="c1">//       and export correctly. This use is deprecated and may be&quot; &quot; removed</span>
+    <span class="c1">//       in a future version.&quot;);</span>
+    <span class="c1">// }</span>
+    <span class="n">module</span><span class="o">-&gt;</span><span class="n">parent_</span> <span class="o">=</span> <span class="k">this</span><span class="p">;</span>
+    <span class="n">module</span><span class="o">-&gt;</span><span class="n">name_</span> <span class="o">=</span> <span class="n">name</span><span class="p">;</span>
+    <span class="n">appendSlot</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">module</span><span class="o">-&gt;</span><span class="n">module_value_</span><span class="o">-&gt;</span><span class="n">type</span><span class="p">(),</span> <span class="n">module</span><span class="o">-&gt;</span><span class="n">module_value_</span><span class="p">);</span>
+    <span class="n">insert</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">modules_</span><span class="p">,</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">MODULE</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">module</span><span class="p">));</span>
+  <span class="p">}</span>
+
+  <span class="n">Slot</span> <span class="n">parameter_slot</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">parameters_</span><span class="p">[</span><span class="n">get_offset</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">PARAMETER</span><span class="p">)];</span>
+  <span class="p">}</span>
+
+  <span class="kt">void</span> <span class="n">set_parameter</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">parameter_slot</span><span class="p">(</span><span class="n">name</span><span class="p">).</span><span class="n">setValue</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">v</span><span class="p">));</span>
+  <span class="p">}</span>
+
+  <span class="n">autograd</span><span class="o">::</span><span class="n">Variable</span> <span class="n">get_parameter</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">autograd</span><span class="o">::</span><span class="n">as_variable_ref</span><span class="p">(</span><span class="n">parameter_slot</span><span class="p">(</span><span class="n">name</span><span class="p">).</span><span class="n">value</span><span class="p">().</span><span class="n">toTensor</span><span class="p">());</span>
+  <span class="p">}</span>
+
+  <span class="n">IValue</span> <span class="n">get_attribute</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">attributes_</span><span class="p">[</span><span class="n">get_offset</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">ATTRIBUTE</span><span class="p">)].</span><span class="n">value</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="n">autograd</span><span class="o">::</span><span class="n">Variable</span> <span class="n">get_buffer</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">autograd</span><span class="o">::</span><span class="n">as_variable_ref</span><span class="p">(</span><span class="n">get_attribute</span><span class="p">(</span><span class="n">name</span><span class="p">).</span><span class="n">toTensor</span><span class="p">());</span>
+  <span class="p">}</span>
+
+  <span class="c1">// each module owns its method. The reference returned here</span>
+  <span class="c1">// is guarenteed to stay valid until this module has been destroyed</span>
+  <span class="n">Method</span><span class="o">&amp;</span> <span class="n">get_method</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">Method</span><span class="o">*</span> <span class="n">method</span> <span class="o">=</span> <span class="n">find_method</span><span class="p">(</span><span class="n">name</span><span class="p">))</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="o">*</span><span class="n">method</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="c1">// temporary: force the error message</span>
+    <span class="c1">// once the on-demand creation of Method is removed, this code</span>
+    <span class="c1">// can be removed as well</span>
+    <span class="n">get_offset</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">METHOD</span><span class="p">);</span>
+    <span class="n">AT_ERROR</span><span class="p">(</span><span class="s">&quot;unreachable&quot;</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Module</span><span class="o">&gt;</span> <span class="n">get_module</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">modules_</span><span class="p">[</span><span class="n">get_offset</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">MODULE</span><span class="p">)];</span>
+  <span class="p">}</span>
+
+  <span class="n">c10</span><span class="o">::</span><span class="n">ArrayRef</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Module</span><span class="o">&gt;&gt;</span> <span class="n">get_modules</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">modules_</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">ArrayRef</span><span class="o">&lt;</span><span class="n">Slot</span><span class="o">&gt;</span> <span class="n">get_parameters</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">parameters_</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">ArrayRef</span><span class="o">&lt;</span><span class="n">Slot</span><span class="o">&gt;</span> <span class="n">get_attributes</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">attributes_</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Method</span><span class="o">&gt;&gt;&amp;</span> <span class="n">get_methods</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="c1">// force methods_ to be up to date by querying all</span>
+    <span class="c1">// methods.</span>
+    <span class="k">for</span> <span class="p">(</span><span class="k">const</span> <span class="k">auto</span><span class="o">&amp;</span> <span class="nl">m</span> <span class="p">:</span> <span class="n">class_compilation_unit</span><span class="p">().</span><span class="n">get_functions</span><span class="p">())</span> <span class="p">{</span>
+      <span class="n">get_method</span><span class="p">(</span><span class="n">m</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">());</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">methods_</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="n">Slot</span><span class="o">*</span> <span class="n">find_parameter</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">auto</span> <span class="n">offset</span> <span class="o">=</span> <span class="n">find_offset</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">PARAMETER</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">offset</span> <span class="o">?</span> <span class="o">&amp;</span><span class="n">parameters_</span><span class="p">[</span><span class="o">*</span><span class="n">offset</span><span class="p">]</span> <span class="o">:</span> <span class="k">nullptr</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="n">Slot</span><span class="o">*</span> <span class="n">find_attribute</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">auto</span> <span class="n">offset</span> <span class="o">=</span> <span class="n">find_offset</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">ATTRIBUTE</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">offset</span> <span class="o">?</span> <span class="o">&amp;</span><span class="n">attributes_</span><span class="p">[</span><span class="o">*</span><span class="n">offset</span><span class="p">]</span> <span class="o">:</span> <span class="k">nullptr</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="n">Slot</span><span class="o">*</span> <span class="n">find_buffer</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">auto</span> <span class="n">iv</span> <span class="o">=</span> <span class="n">find_attribute</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">iv</span> <span class="o">&amp;&amp;</span> <span class="n">iv</span><span class="o">-&gt;</span><span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">isSubtypeOf</span><span class="p">(</span><span class="n">TensorType</span><span class="o">::</span><span class="n">get</span><span class="p">()))</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="n">iv</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="k">nullptr</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Module</span><span class="o">&gt;</span> <span class="n">find_module</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">auto</span> <span class="n">offset</span> <span class="o">=</span> <span class="n">find_offset</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">MODULE</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">offset</span> <span class="o">?</span> <span class="n">modules_</span><span class="p">[</span><span class="o">*</span><span class="n">offset</span><span class="p">]</span> <span class="o">:</span> <span class="k">nullptr</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="n">Method</span><span class="o">*</span> <span class="n">find_method</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">auto</span> <span class="n">offset</span> <span class="o">=</span> <span class="n">find_offset</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">METHOD</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">offset</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="n">methods_</span><span class="p">[</span><span class="o">*</span><span class="n">offset</span><span class="p">].</span><span class="n">get</span><span class="p">();</span>
+    <span class="p">}</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">Function</span><span class="o">*</span> <span class="n">fn</span> <span class="o">=</span> <span class="n">class_compilation_unit</span><span class="p">().</span><span class="n">find_function</span><span class="p">(</span><span class="n">name</span><span class="p">).</span><span class="n">get</span><span class="p">())</span> <span class="p">{</span>
+      <span class="c1">// lock because technically this is marked const,</span>
+      <span class="c1">// but we have to update the internal Method cache.</span>
+      <span class="c1">// This can be removed when class_compilation_unit() is the source of</span>
+      <span class="c1">// truth for methods.</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">recursive_mutex</span><span class="o">&gt;</span> <span class="n">guard</span><span class="p">(</span><span class="n">create_method_guard_</span><span class="p">);</span>
+      <span class="n">Module</span><span class="o">*</span> <span class="n">mutable_this</span> <span class="o">=</span> <span class="k">const_cast</span><span class="o">&lt;</span><span class="n">Module</span><span class="o">*&gt;</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Method</span><span class="o">&gt;</span> <span class="n">m</span><span class="p">(</span><span class="k">new</span> <span class="n">Method</span><span class="p">(</span><span class="n">mutable_this</span><span class="p">,</span> <span class="n">fn</span><span class="p">));</span>
+      <span class="k">return</span> <span class="n">mutable_this</span>
+          <span class="o">-&gt;</span><span class="n">insert</span><span class="p">(</span>
+              <span class="n">fn</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">(),</span>
+              <span class="n">mutable_this</span><span class="o">-&gt;</span><span class="n">methods_</span><span class="p">,</span>
+              <span class="n">EntityType</span><span class="o">::</span><span class="n">METHOD</span><span class="p">,</span>
+              <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">m</span><span class="p">))</span>
+          <span class="p">.</span><span class="n">get</span><span class="p">();</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="k">nullptr</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="kt">void</span> <span class="n">apply</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">(</span><span class="n">Module</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;</span> <span class="n">fn</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="p">(</span><span class="k">auto</span><span class="o">&amp;</span> <span class="nl">submod</span> <span class="p">:</span> <span class="n">get_modules</span><span class="p">())</span> <span class="p">{</span>
+      <span class="n">submod</span><span class="o">-&gt;</span><span class="n">apply</span><span class="p">(</span><span class="n">fn</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="n">fn</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="kt">void</span> <span class="n">train</span><span class="p">(</span><span class="kt">bool</span> <span class="n">on</span> <span class="o">=</span> <span class="nb">true</span><span class="p">);</span>
+  <span class="kt">void</span> <span class="nf">eval</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">train</span><span class="p">(</span><span class="cm">/*on=*/</span><span class="nb">false</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="kt">bool</span> <span class="nf">is_training</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="k">auto</span> <span class="n">p</span> <span class="o">=</span> <span class="n">find_buffer</span><span class="p">(</span><span class="s">&quot;training&quot;</span><span class="p">))</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="n">p</span><span class="o">-&gt;</span><span class="n">value</span><span class="p">().</span><span class="n">toTensor</span><span class="p">().</span><span class="n">item</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="c1">// We are in training mode by default</span>
+    <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="kt">void</span> <span class="nf">to</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">Device</span> <span class="n">device</span><span class="p">,</span> <span class="n">at</span><span class="o">::</span><span class="n">ScalarType</span> <span class="n">dtype</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">non_blocking</span> <span class="o">=</span> <span class="nb">false</span><span class="p">);</span>
+
+  <span class="kt">void</span> <span class="nf">to</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">ScalarType</span> <span class="n">dtype</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">non_blocking</span> <span class="o">=</span> <span class="nb">false</span><span class="p">);</span>
+
+  <span class="kt">void</span> <span class="nf">to</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">Device</span> <span class="n">device</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">non_blocking</span> <span class="o">=</span> <span class="nb">false</span><span class="p">);</span>
+
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span><span class="p">...</span> <span class="n">Types</span><span class="o">&gt;</span>
+  <span class="n">IValue</span> <span class="n">run_method</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">method_name</span><span class="p">,</span> <span class="n">Types</span><span class="o">&amp;&amp;</span><span class="p">...</span> <span class="n">args</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">get_method</span><span class="p">(</span><span class="n">method_name</span><span class="p">)({</span><span class="n">IValue</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">Types</span><span class="o">&gt;</span><span class="p">(</span><span class="n">args</span><span class="p">))...});</span>
+  <span class="p">}</span>
+
+  <span class="kt">void</span> <span class="n">save</span><span class="p">(</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">ostream</span><span class="o">&amp;</span> <span class="n">out</span><span class="p">,</span>
+      <span class="k">const</span> <span class="n">ExtraFilesMap</span><span class="o">&amp;</span> <span class="n">extra_files</span> <span class="o">=</span> <span class="n">ExtraFilesMap</span><span class="p">());</span>
+
+  <span class="kt">void</span> <span class="nf">save</span><span class="p">(</span>
+      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">filename</span><span class="p">,</span>
+      <span class="k">const</span> <span class="n">ExtraFilesMap</span><span class="o">&amp;</span> <span class="n">extra_files</span> <span class="o">=</span> <span class="n">ExtraFilesMap</span><span class="p">());</span>
+
+  <span class="kt">void</span> <span class="nf">copy_into</span><span class="p">(</span>
+      <span class="k">const</span> <span class="n">ModuleLookup</span><span class="o">&amp;</span> <span class="n">module_lookup</span><span class="p">,</span>
+      <span class="c1">// translate current module singleton type to new module</span>
+      <span class="c1">// singleton type.</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">unordered_map</span><span class="o">&lt;</span><span class="n">TypePtr</span><span class="p">,</span> <span class="n">TypePtr</span><span class="o">&gt;&amp;</span> <span class="n">type_remap</span><span class="p">,</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span> <span class="n">names</span> <span class="o">=</span> <span class="p">{})</span> <span class="k">const</span><span class="p">;</span>
+
+  <span class="kt">void</span> <span class="nf">clone_method</span><span class="p">(</span>
+      <span class="k">const</span> <span class="n">Module</span><span class="o">&amp;</span> <span class="n">orig</span><span class="p">,</span>
+      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span>
+      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">unordered_map</span><span class="o">&lt;</span><span class="n">TypePtr</span><span class="p">,</span> <span class="n">TypePtr</span><span class="o">&gt;&amp;</span> <span class="n">type_remap</span><span class="p">);</span>
+
+  <span class="kt">void</span> <span class="nf">clone_method</span><span class="p">(</span><span class="k">const</span> <span class="n">Module</span><span class="o">&amp;</span> <span class="n">orig</span><span class="p">,</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">);</span>
+
+  <span class="k">enum</span> <span class="k">class</span> <span class="nc">EntityType</span> <span class="p">{</span> <span class="n">MODULE</span><span class="p">,</span> <span class="n">PARAMETER</span><span class="p">,</span> <span class="n">ATTRIBUTE</span><span class="p">,</span> <span class="n">METHOD</span> <span class="p">};</span>
+
+  <span class="n">at</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">EntityType</span><span class="o">&gt;</span> <span class="n">kind_of</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">auto</span> <span class="n">it</span> <span class="o">=</span> <span class="n">dict_</span><span class="p">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">it</span> <span class="o">==</span> <span class="n">dict_</span><span class="p">.</span><span class="n">end</span><span class="p">())</span> <span class="p">{</span>
+      <span class="c1">// methods are lazily created, see if this is, in face,</span>
+      <span class="c1">// a method that has not been created yet.</span>
+      <span class="k">if</span> <span class="p">(</span><span class="k">auto</span> <span class="n">fn</span> <span class="o">=</span> <span class="n">class_compilation_unit</span><span class="p">().</span><span class="n">find_function</span><span class="p">(</span><span class="n">name</span><span class="p">))</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">METHOD</span><span class="p">;</span>
+      <span class="p">}</span>
+      <span class="k">return</span> <span class="n">at</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">it</span><span class="o">-&gt;</span><span class="n">second</span><span class="p">.</span><span class="n">type</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="n">ModulePtr</span> <span class="n">module_object</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">module_value_</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="n">CompilationUnit</span><span class="o">&amp;</span> <span class="n">class_compilation_unit</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">compilation_unit</span><span class="p">();</span>
+  <span class="p">}</span>
+  <span class="k">const</span> <span class="n">CompilationUnit</span><span class="o">&amp;</span> <span class="n">class_compilation_unit</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">compilation_unit</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="c1">// so that C++ users can easily add methods</span>
+  <span class="kt">void</span> <span class="n">define</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">src</span><span class="p">,</span> <span class="k">const</span> <span class="n">ResolverPtr</span><span class="o">&amp;</span> <span class="n">resolver</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">);</span>
+
+ <span class="k">private</span><span class="o">:</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">pair</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Function</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Slot</span><span class="o">&gt;&gt;</span>
+  <span class="n">lower_first_class_method</span><span class="p">(</span><span class="n">Function</span><span class="o">*</span> <span class="n">fn</span><span class="p">);</span>
+
+  <span class="kt">void</span> <span class="nf">to_impl</span><span class="p">(</span>
+      <span class="k">const</span> <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Device</span><span class="o">&gt;&amp;</span> <span class="n">device</span><span class="p">,</span>
+      <span class="k">const</span> <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">ScalarType</span><span class="o">&gt;&amp;</span> <span class="n">dtype</span><span class="p">,</span>
+      <span class="kt">bool</span> <span class="n">non_blocking</span><span class="p">);</span>
+
+  <span class="k">static</span> <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="nf">toString</span><span class="p">(</span><span class="n">EntityType</span> <span class="n">t</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">switch</span> <span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">case</span> <span class="n">EntityType</span><span class="o">::</span><span class="nl">MODULE</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s">&quot;module&quot;</span><span class="p">;</span>
+      <span class="k">case</span> <span class="n">EntityType</span><span class="o">::</span><span class="nl">PARAMETER</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s">&quot;parameter&quot;</span><span class="p">;</span>
+      <span class="k">case</span> <span class="n">EntityType</span><span class="o">::</span><span class="nl">ATTRIBUTE</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s">&quot;attribute&quot;</span><span class="p">;</span>
+      <span class="k">case</span> <span class="n">EntityType</span><span class="o">::</span><span class="nl">METHOD</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s">&quot;method&quot;</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="k">nullptr</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="k">struct</span> <span class="n">Entry</span> <span class="p">{</span>
+    <span class="n">EntityType</span> <span class="n">type</span><span class="p">;</span>
+    <span class="kt">size_t</span> <span class="n">offset</span><span class="p">;</span>
+  <span class="p">};</span>
+
+  <span class="kt">size_t</span> <span class="nf">get_offset</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span> <span class="n">EntityType</span> <span class="n">expected_type</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">auto</span> <span class="n">it</span> <span class="o">=</span> <span class="n">dict_</span><span class="p">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">it</span> <span class="o">==</span> <span class="n">dict_</span><span class="p">.</span><span class="n">end</span><span class="p">())</span> <span class="p">{</span>
+      <span class="n">AT_ERROR</span><span class="p">(</span><span class="n">toString</span><span class="p">(</span><span class="n">expected_type</span><span class="p">),</span> <span class="s">&quot; &#39;&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="s">&quot;&#39; is not defined.&quot;</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">it</span><span class="o">-&gt;</span><span class="n">second</span><span class="p">.</span><span class="n">type</span> <span class="o">!=</span> <span class="n">expected_type</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">AT_ERROR</span><span class="p">(</span>
+          <span class="s">&quot;The field &#39;&quot;</span><span class="p">,</span>
+          <span class="n">name</span><span class="p">,</span>
+          <span class="s">&quot;&#39; is a &quot;</span><span class="p">,</span>
+          <span class="n">toString</span><span class="p">(</span><span class="n">it</span><span class="o">-&gt;</span><span class="n">second</span><span class="p">.</span><span class="n">type</span><span class="p">),</span>
+          <span class="s">&quot; but this call is&quot;</span>
+          <span class="s">&quot; trying to use it as a &quot;</span><span class="p">,</span>
+          <span class="n">toString</span><span class="p">(</span><span class="n">expected_type</span><span class="p">));</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">it</span><span class="o">-&gt;</span><span class="n">second</span><span class="p">.</span><span class="n">offset</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="n">at</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="o">&gt;</span> <span class="n">find_offset</span><span class="p">(</span>
+      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span>
+      <span class="n">EntityType</span> <span class="n">expected_type</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">auto</span> <span class="n">it</span> <span class="o">=</span> <span class="n">dict_</span><span class="p">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">it</span> <span class="o">==</span> <span class="n">dict_</span><span class="p">.</span><span class="n">end</span><span class="p">()</span> <span class="o">||</span> <span class="n">it</span><span class="o">-&gt;</span><span class="n">second</span><span class="p">.</span><span class="n">type</span> <span class="o">!=</span> <span class="n">expected_type</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="n">at</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">it</span><span class="o">-&gt;</span><span class="n">second</span><span class="p">.</span><span class="n">offset</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+  <span class="n">T</span><span class="o">&amp;</span> <span class="n">insert</span><span class="p">(</span>
+      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">list</span><span class="p">,</span>
+      <span class="n">EntityType</span> <span class="n">type</span><span class="p">,</span>
+      <span class="n">T</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">auto</span> <span class="n">it</span> <span class="o">=</span> <span class="n">dict_</span><span class="p">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">it</span> <span class="o">!=</span> <span class="n">dict_</span><span class="p">.</span><span class="n">end</span><span class="p">())</span> <span class="p">{</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">type</span> <span class="o">!=</span> <span class="n">it</span><span class="o">-&gt;</span><span class="n">second</span><span class="p">.</span><span class="n">type</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">AT_ERROR</span><span class="p">(</span>
+            <span class="s">&quot;attempting to add &quot;</span><span class="p">,</span>
+            <span class="n">toString</span><span class="p">(</span><span class="n">type</span><span class="p">),</span>
+            <span class="s">&quot; &#39;&quot;</span><span class="p">,</span>
+            <span class="n">name</span><span class="p">,</span>
+            <span class="s">&quot;&#39; but it already exists as a &quot;</span><span class="p">,</span>
+            <span class="n">toString</span><span class="p">(</span><span class="n">it</span><span class="o">-&gt;</span><span class="n">second</span><span class="p">.</span><span class="n">type</span><span class="p">));</span>
+      <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="n">AT_ERROR</span><span class="p">(</span><span class="n">toString</span><span class="p">(</span><span class="n">type</span><span class="p">),</span> <span class="s">&quot; &#39;&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="s">&quot;&#39; already defined.&quot;</span><span class="p">);</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="n">dict_</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">Entry</span><span class="p">{</span><span class="n">type</span><span class="p">,</span> <span class="n">list</span><span class="p">.</span><span class="n">size</span><span class="p">()};</span>
+    <span class="n">list</span><span class="p">.</span><span class="n">emplace_back</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">value</span><span class="p">));</span>
+    <span class="k">return</span> <span class="n">list</span><span class="p">.</span><span class="n">back</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="c1">// add a new entry to the singleton object that represents this</span>
+  <span class="c1">// Module as a first-class value in code, and update the corresponding</span>
+  <span class="c1">// ClassType to match.</span>
+  <span class="n">Slot</span> <span class="n">appendSlot</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span> <span class="n">TypePtr</span> <span class="n">typ</span><span class="p">,</span> <span class="n">IValue</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">const</span> <span class="n">ClassTypePtr</span><span class="o">&amp;</span> <span class="n">type</span> <span class="o">=</span> <span class="n">module_value_</span><span class="o">-&gt;</span><span class="n">type</span><span class="p">();</span>
+    <span class="n">type</span><span class="o">-&gt;</span><span class="n">addAttribute</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">typ</span><span class="p">));</span>
+    <span class="k">auto</span> <span class="n">slot_index</span> <span class="o">=</span> <span class="n">type</span><span class="o">-&gt;</span><span class="n">getAttributeSlot</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
+    <span class="n">module_value_</span><span class="o">-&gt;</span><span class="n">setSlot</span><span class="p">(</span><span class="n">slot_index</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">value</span><span class="p">));</span>
+    <span class="k">return</span> <span class="nf">Slot</span><span class="p">(</span><span class="n">module_value_</span><span class="p">,</span> <span class="n">slot_index</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="c1">// modules have a single namespace, but spread over 4 different concepts:</span>
+  <span class="c1">// parameters, attributes, methods, and sub-modules</span>
+  <span class="c1">// we store individual lists of each concept, and a single map to</span>
+  <span class="c1">// unify the namespace and ensure fast lookup</span>
+
+  <span class="c1">// invariant: to ensure initial_ivalues of Methods stay valid,</span>
+  <span class="c1">// it is only legal to _add_ new modules and parameters.</span>
+  <span class="c1">// removing them will allow initial_ivalues to point to invalid parameters</span>
+  <span class="c1">// no such restriction exists for methods</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Module</span><span class="o">&gt;&gt;</span> <span class="n">modules_</span><span class="p">;</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Slot</span><span class="o">&gt;</span> <span class="n">parameters_</span><span class="p">;</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Slot</span><span class="o">&gt;</span> <span class="n">attributes_</span><span class="p">;</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Method</span><span class="o">&gt;&gt;</span> <span class="n">methods_</span><span class="p">;</span>
+
+  <span class="n">std</span><span class="o">::</span><span class="n">unordered_map</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">,</span> <span class="n">Entry</span><span class="o">&gt;</span> <span class="n">dict_</span><span class="p">;</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">name_</span><span class="p">;</span>
+
+  <span class="n">ModulePtr</span> <span class="n">module_value_</span><span class="p">;</span>
+
+  <span class="c1">// back reference to parent of this Module if present</span>
+  <span class="n">Module</span><span class="o">*</span> <span class="n">parent_</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">;</span>
+
+  <span class="c1">// Currently we are in a transitionary state</span>
+  <span class="c1">// where we construct such first class functions but we lower them</span>
+  <span class="c1">// to a form where the modules does not exist before execution.</span>
+
+  <span class="c1">// So each Method is actually stored twice once in first-class Module</span>
+  <span class="c1">// form and once in lowered form.</span>
+
+  <span class="c1">// first-class: module_value_-&gt;type().compilation_unit() holds Functions that</span>
+  <span class="c1">// treat modules as first class.</span>
+
+  <span class="k">mutable</span> <span class="n">std</span><span class="o">::</span><span class="n">recursive_mutex</span> <span class="n">create_method_guard_</span><span class="p">;</span>
+  <span class="k">friend</span> <span class="k">struct</span> <span class="n">Method</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="p">}</span> <span class="c1">// namespace script</span>
+<span class="p">}</span> <span class="c1">// namespace jit</span>
+<span class="p">}</span> <span class="c1">// namespace torch</span>
 </pre></div>
 </div>
 </div>
