@@ -31,9 +31,7 @@
   <!-- <link rel="stylesheet" href="../_static/pygments.css" type="text/css" /> -->
   <link rel="stylesheet" href="../_static/collapsible-lists/css/tree_view.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="File cloneable.h" href="file_torch_csrc_api_include_torch_nn_cloneable.h.html" />
-    <link rel="prev" title="File chunk.h" href="file_torch_csrc_api_include_torch_data_datasets_chunk.h.html" /> 
+    <link rel="search" title="Search" href="../search.html" /> 
 
   
   <script src="../_static/js/modernizr.min.js"></script>
@@ -136,11 +134,11 @@
               
             
             
-              <ul class="current">
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../installing.html">Installing C++ Distributions of PyTorch</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../frontend.html">The C++ Frontend</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing to PyTorch</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="library_root.html">Library API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="library_root.html">Library API</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Notes</span></p>
 <ul>
@@ -189,10 +187,6 @@
       </li>
 
         
-          <li><a href="library_root.html">Library API</a> &gt;</li>
-        
-          <li><a href="file_torch_csrc_api_include_torch_data_datasets_chunk.h.html">File chunk.h</a> &gt;</li>
-        
       <li>Program Listing for File chunk.h</li>
     
     
@@ -233,16 +227,22 @@
 <p>↰ <a class="reference internal" href="file_torch_csrc_api_include_torch_data_datasets_chunk.h.html#file-torch-csrc-api-include-torch-data-datasets-chunk-h"><span class="std std-ref">Return to documentation for file</span></a> (<code class="docutils literal notranslate"><span class="pre">torch/csrc/api/include/torch/data/datasets/chunk.h</span></code>)</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#pragma once</span>
 
+<span class="cp">#include</span> <span class="cpf">&lt;torch/arg.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/utils/memory.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;torch/data/datasets/stateful.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/data/samplers.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;queue&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;thread&gt;</span><span class="cp"></span>
 
 <span class="k">namespace</span> <span class="n">torch</span> <span class="p">{</span>
 <span class="k">namespace</span> <span class="n">data</span> <span class="p">{</span>
 <span class="k">namespace</span> <span class="n">datasets</span> <span class="p">{</span>
 
-<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Chunk</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Example</span><span class="o">&lt;&gt;&gt;&gt;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">ExampleType_</span><span class="p">,</span> <span class="k">typename</span> <span class="n">ChunkType_</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">ExampleType_</span><span class="o">&gt;&gt;</span>
 <span class="k">class</span> <span class="nc">ChunkDataReader</span> <span class="p">{</span>
  <span class="k">public</span><span class="o">:</span>
-  <span class="k">using</span> <span class="n">ChunkType</span> <span class="o">=</span> <span class="n">Chunk</span><span class="p">;</span>
+  <span class="k">using</span> <span class="n">ChunkType</span> <span class="o">=</span> <span class="n">ChunkType_</span><span class="p">;</span>
+  <span class="k">using</span> <span class="n">ExampleType</span> <span class="o">=</span> <span class="n">ExampleType_</span><span class="p">;</span>
 
   <span class="k">virtual</span> <span class="n">ChunkType</span> <span class="nf">read_chunk</span><span class="p">(</span><span class="kt">size_t</span> <span class="n">chunk_index</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
 
@@ -253,7 +253,7 @@
 
 <span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
 <span class="k">template</span> <span class="o">&lt;</span>
-    <span class="k">typename</span> <span class="n">UnwrappedBatch</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Example</span><span class="o">&lt;&gt;&gt;</span><span class="p">,</span>
+    <span class="k">typename</span> <span class="n">UnwrappedBatch</span><span class="p">,</span>
     <span class="k">typename</span> <span class="n">ExampleSampler</span> <span class="o">=</span> <span class="n">samplers</span><span class="o">::</span><span class="n">RandomSampler</span><span class="o">&gt;</span>
 <span class="k">class</span> <span class="nc">BatchDataBuffer</span> <span class="p">{</span>
  <span class="k">public</span><span class="o">:</span>
@@ -321,7 +321,7 @@
           <span class="n">batch_example_indices</span><span class="p">.</span><span class="n">value</span><span class="p">().</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="n">example_count</span><span class="p">)</span>
       <span class="n">BatchRequestType</span><span class="o">&amp;</span> <span class="n">indices</span> <span class="o">=</span> <span class="n">batch_example_indices</span><span class="p">.</span><span class="n">value</span><span class="p">();</span>
       <span class="k">for</span> <span class="p">(</span><span class="kt">size_t</span> <span class="nl">i</span> <span class="p">:</span> <span class="n">indices</span><span class="p">)</span> <span class="p">{</span>
-        <span class="n">AT_CHECK</span><span class="p">(</span><span class="n">i</span> <span class="o">&lt;</span> <span class="n">data_size</span><span class="p">,</span> <span class="s">&quot;Index out of range&quot;</span><span class="p">);</span>
+        <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">i</span> <span class="o">&lt;</span> <span class="n">data_size</span><span class="p">,</span> <span class="s">&quot;Index out of range&quot;</span><span class="p">);</span>
         <span class="n">batch</span><span class="p">.</span><span class="n">emplace_back</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]));</span>
       <span class="p">}</span>
       <span class="n">remaining_size</span> <span class="o">-=</span> <span class="n">example_count</span><span class="p">;</span>
@@ -444,16 +444,16 @@
       <span class="o">:</span> <span class="n">preloader_count_</span><span class="p">(</span><span class="n">preloader_count</span><span class="p">),</span>
         <span class="n">batch_size_</span><span class="p">(</span><span class="n">batch_size</span><span class="p">),</span>
         <span class="n">cache_size_</span><span class="p">(</span><span class="n">cache_size</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">AT_CHECK</span><span class="p">(</span>
+    <span class="n">TORCH_CHECK</span><span class="p">(</span>
         <span class="n">preloader_count_</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
         <span class="s">&quot;Preloader count is 0. At least one preloader needs to be specified.&quot;</span><span class="p">);</span>
-    <span class="n">AT_CHECK</span><span class="p">(</span>
+    <span class="n">TORCH_CHECK</span><span class="p">(</span>
         <span class="n">batch_size_</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
         <span class="s">&quot;Batch size is 0. A positive batch size needs to be specified.&quot;</span><span class="p">);</span>
-    <span class="n">AT_CHECK</span><span class="p">(</span>
+    <span class="n">TORCH_CHECK</span><span class="p">(</span>
         <span class="n">cache_size_</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
         <span class="s">&quot;Cache size is 0. A positive cache size needs to be specified.&quot;</span><span class="p">);</span>
-    <span class="n">AT_CHECK</span><span class="p">(</span>
+    <span class="n">TORCH_CHECK</span><span class="p">(</span>
         <span class="n">cache_size_</span> <span class="o">&gt;=</span> <span class="n">batch_size_</span><span class="p">,</span>
         <span class="s">&quot;Cache size is less than batch size. Cache needs to be large enough to &quot;</span>
         <span class="s">&quot;hold at least one batch.&quot;</span><span class="p">);</span>
@@ -504,17 +504,21 @@
   <span class="p">}</span>
 
   <span class="n">BatchType</span> <span class="n">get_batch</span><span class="p">(</span><span class="kt">size_t</span> <span class="n">batch_size</span><span class="p">)</span> <span class="k">override</span> <span class="p">{</span>
-    <span class="n">AT_CHECK</span><span class="p">(</span>
+    <span class="n">TORCH_CHECK</span><span class="p">(</span>
       <span class="n">batch_buffer_</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">,</span>
       <span class="s">&quot;Dataset needs to call reset() before calling get_batch().&quot;</span><span class="p">);</span>
 
-    <span class="n">AT_CHECK</span><span class="p">(</span>
+    <span class="n">TORCH_CHECK</span><span class="p">(</span>
       <span class="n">batch_size</span> <span class="o">==</span> <span class="n">options_</span><span class="p">.</span><span class="n">batch_size_</span><span class="p">,</span>
       <span class="s">&quot;The requested batch size does not match with the initialized batch size.</span><span class="se">\n</span><span class="s">&quot;</span>
       <span class="s">&quot; The requested batch size is &quot;</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">,</span>
       <span class="s">&quot;, while the dataset is created with batch size equal to &quot;</span><span class="p">,</span> <span class="n">options_</span><span class="p">.</span><span class="n">batch_size_</span><span class="p">);</span>
 
     <span class="k">return</span> <span class="n">batch_buffer_</span><span class="o">-&gt;</span><span class="n">get_batch</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="n">BatchType</span> <span class="n">get_batch</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">get_batch</span><span class="p">(</span><span class="n">options_</span><span class="p">.</span><span class="n">batch_size_</span><span class="p">);</span>
   <span class="p">}</span>
 
   <span class="kt">void</span> <span class="n">reset</span><span class="p">()</span> <span class="k">override</span> <span class="p">{</span>
@@ -640,15 +644,6 @@
             </div>
             <footer>
   
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="file_torch_csrc_api_include_torch_nn_cloneable.h.html" class="btn btn-neutral float-right" title="File cloneable.h" accesskey="n" rel="next">Next <img src="../_static/images/chevron-right-orange.svg" class="next-page"></a>
-      
-      
-        <a href="file_torch_csrc_api_include_torch_data_datasets_chunk.h.html" class="btn btn-neutral" title="File chunk.h" accesskey="p" rel="prev"><img src="../_static/images/chevron-right-orange.svg" class="previous-page"> Previous</a>
-      
-    </div>
-  
 
   
 
@@ -658,7 +653,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2018, Torch Contributors.
+        &copy; Copyright 2019, Torch Contributors.
 
     </p>
   </div>

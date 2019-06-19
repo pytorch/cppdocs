@@ -31,9 +31,7 @@
   <!-- <link rel="stylesheet" href="../_static/pygments.css" type="text/css" /> -->
   <link rel="stylesheet" href="../_static/collapsible-lists/css/tree_view.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="File tensor.h" href="file_torch_csrc_api_include_torch_data_datasets_tensor.h.html" />
-    <link rel="prev" title="File Tensor.h" href="file_aten_src_ATen_core_Tensor.h.html" /> 
+    <link rel="search" title="Search" href="../search.html" /> 
 
   
   <script src="../_static/js/modernizr.min.js"></script>
@@ -136,11 +134,11 @@
               
             
             
-              <ul class="current">
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../installing.html">Installing C++ Distributions of PyTorch</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../frontend.html">The C++ Frontend</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing to PyTorch</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="library_root.html">Library API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="library_root.html">Library API</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Notes</span></p>
 <ul>
@@ -189,10 +187,6 @@
       </li>
 
         
-          <li><a href="library_root.html">Library API</a> &gt;</li>
-        
-          <li><a href="file_aten_src_ATen_core_Tensor.h.html">File Tensor.h</a> &gt;</li>
-        
       <li>Program Listing for File Tensor.h</li>
     
     
@@ -236,9 +230,10 @@
 #include &lt;ATen/core/Type.h&gt;
 #include &lt;c10/core/Device.h&gt;
 #include &lt;c10/core/Layout.h&gt;
+#include &lt;c10/core/MemoryFormat.h&gt;
+#include &lt;c10/core/QScheme.h&gt;
 #include &lt;c10/core/Scalar.h&gt;
 #include &lt;c10/core/ScalarType.h&gt;
-#include &lt;ATen/core/SparseTensorRef.h&gt;
 #include &lt;c10/core/Storage.h&gt;
 #include &lt;ATen/core/TensorAccessor.h&gt;
 #include &lt;c10/core/TensorImpl.h&gt;
@@ -247,6 +242,9 @@
 #include &lt;c10/util/Optional.h&gt;
 #include &lt;ATen/core/LegacyTypeDispatch.h&gt;
 #include &lt;ATen/core/DeprecatedTypePropertiesRegistry.h&gt;
+#ifdef NAMEDTENSOR_ENABLED
+#include &lt;ATen/NamedTensor.h&gt;
+#endif
 
 namespace caffe2 {
 class Tensor;
@@ -387,7 +385,7 @@ class CAFFE2_API Tensor {
     return impl_.weak_use_count();
   }
 
-  const char * toString() const;
+  std::string toString() const;
 
   IntArrayRef sizes() const {
     return impl_-&gt;sizes();
@@ -395,11 +393,21 @@ class CAFFE2_API Tensor {
   IntArrayRef strides() const {
     return impl_-&gt;strides();
   }
+#ifdef NAMEDTENSOR_ENABLED
+  optional&lt;DimnameList&gt; names() const {
+    const auto* meta = get_named_tensor_meta();
+    if (meta == nullptr) {
+      return nullopt;
+    } else {
+      return meta-&gt;names();
+    }
+  }
+#endif
   int64_t ndimension() const {
     return dim();
   }
-  bool is_contiguous() const {
-    return impl_-&gt;is_contiguous();
+  bool is_contiguous(at::MemoryFormat memory_format=at::MemoryFormat::Any) const {
+    return impl_-&gt;is_contiguous(memory_format);
   }
 
   // Total bytes consumed by the &quot;view&quot; of elements of the array.  Does not
@@ -426,7 +434,7 @@ class CAFFE2_API Tensor {
     return globalDeprecatedTypePropertiesRegistry().getDeprecatedTypeProperties(
         tensorTypeIdToBackend(type_id()),
         scalar_type(),
-        is_variable() &amp;&amp; !at::NonVariableTypeMode::is_enabled());
+        is_variable());
   }
   Type &amp; dispatch_type() const {
     return legacyTensorType(*impl_);
@@ -470,7 +478,18 @@ class CAFFE2_API Tensor {
 
   bool is_quantized() const;
 
+#ifdef NAMEDTENSOR_ENABLED
+  bool is_named() const;
+
+  const NamedTensorMeta* get_named_tensor_meta() const;
+  NamedTensorMeta* get_named_tensor_meta();
+#endif
+
   TensorOptions options() const;
+
+  void* data_ptr() const {
+    return this-&gt;unsafeGetTensorImpl()-&gt;data();
+  }
 
   template&lt;typename T&gt;
   T * data() const;
@@ -486,7 +505,7 @@ class CAFFE2_API Tensor {
   template&lt;typename T, size_t N&gt;
   TensorAccessor&lt;T,N&gt; accessor() const&amp; {
     static_assert(N &gt; 0, &quot;accessor is used for indexing tensor, for scalars use *data&lt;T&gt;()&quot;);
-    AT_CHECK(dim() == N, &quot;expected &quot;, N, &quot; dims but tensor has &quot;, dim());
+    TORCH_CHECK(dim() == N, &quot;expected &quot;, N, &quot; dims but tensor has &quot;, dim());
     return TensorAccessor&lt;T,N&gt;(data&lt;T&gt;(),sizes().data(),strides().data());
   }
   template&lt;typename T, size_t N&gt;
@@ -500,7 +519,7 @@ class CAFFE2_API Tensor {
   template&lt;typename T, size_t N, template &lt;typename U&gt; class PtrTraits = DefaultPtrTraits, typename index_t = int64_t&gt;
   PackedTensorAccessor&lt;T,N,PtrTraits,index_t&gt; packed_accessor() const&amp; {
     static_assert(N &gt; 0, &quot;accessor is used for indexing tensor, for scalars use *data&lt;T&gt;()&quot;);
-    AT_CHECK(dim() == N, &quot;expected &quot;, N, &quot; dims but tensor has &quot;, dim());
+    TORCH_CHECK(dim() == N, &quot;expected &quot;, N, &quot; dims but tensor has &quot;, dim());
     return PackedTensorAccessor&lt;T,N,PtrTraits,index_t&gt;(static_cast&lt;typename PtrTraits&lt;T&gt;::PtrType&gt;(data&lt;T&gt;()),sizes().data(),strides().data());
   }
   template&lt;typename T, size_t N,  template &lt;typename U&gt; class PtrTraits = DefaultPtrTraits, typename index_t = int64_t&gt;
@@ -592,7 +611,7 @@ class CAFFE2_API Tensor {
   Tensor &amp; clamp_max_(Scalar max);
   Tensor clamp_min(Scalar min) const;
   Tensor &amp; clamp_min_(Scalar min);
-  Tensor contiguous() const;
+  Tensor contiguous(MemoryFormat memory_format=MemoryFormat::Contiguous) const;
   Tensor &amp; copy_(const Tensor &amp; src, bool non_blocking=false);
   Tensor cos() const;
   Tensor &amp; cos_();
@@ -684,6 +703,7 @@ class CAFFE2_API Tensor {
   Tensor narrow_copy(int64_t dim, int64_t start, int64_t length) const;
   Tensor narrow(int64_t dim, int64_t start, int64_t length) const;
   Tensor permute(IntArrayRef dims) const;
+  Tensor numpy_T() const;
   Tensor pin_memory() const;
   Tensor pinverse(double rcond=1e-15) const;
   Tensor reciprocal() const;
@@ -780,7 +800,7 @@ class CAFFE2_API Tensor {
   Tensor &amp; addmm_(const Tensor &amp; mat1, const Tensor &amp; mat2, Scalar beta=1, Scalar alpha=1);
   Tensor &amp; sparse_resize_(IntArrayRef size, int64_t sparse_dim, int64_t dense_dim);
   Tensor &amp; sparse_resize_and_clear_(IntArrayRef size, int64_t sparse_dim, int64_t dense_dim);
-  Tensor sparse_mask(SparseTensorRef mask) const;
+  Tensor sparse_mask(const Tensor &amp; mask) const;
   Tensor to_dense() const;
   int64_t sparse_dim() const;
   int64_t _dimI() const;
@@ -799,17 +819,16 @@ class CAFFE2_API Tensor {
   Tensor to_sparse(int64_t sparse_dim) const;
   Tensor to_sparse() const;
   Tensor to_mkldnn() const;
-  Tensor quantize_linear(double scale, int64_t zero_point) const;
   Tensor dequantize() const;
   Scalar q_scale() const;
   Scalar q_zero_point() const;
   Tensor int_repr() const;
+  QScheme qscheme() const;
   Tensor to(const TensorOptions &amp; options, bool non_blocking=false, bool copy=false) const;
   Tensor to(Device device, ScalarType dtype, bool non_blocking=false, bool copy=false) const;
   Tensor to(ScalarType dtype, bool non_blocking=false, bool copy=false) const;
   Tensor to(const Tensor &amp; other, bool non_blocking=false, bool copy=false) const;
   Scalar item() const;
-  void* data_ptr() const;
   Tensor &amp; set_(Storage source);
   Tensor &amp; set_(Storage source, int64_t storage_offset, IntArrayRef size, IntArrayRef stride={});
   Tensor &amp; set_(const Tensor &amp; source);
@@ -918,6 +937,7 @@ class CAFFE2_API Tensor {
   Tensor index_select(int64_t dim, const Tensor &amp; index) const;
   Tensor masked_select(const Tensor &amp; mask) const;
   Tensor nonzero() const;
+  std::vector&lt;Tensor&gt; nonzero_numpy() const;
   Tensor gather(int64_t dim, const Tensor &amp; index, bool sparse_grad=false) const;
   Tensor addcmul(const Tensor &amp; tensor1, const Tensor &amp; tensor2, Scalar value=1) const;
   Tensor addcdiv(const Tensor &amp; tensor1, const Tensor &amp; tensor2, Scalar value=1) const;
@@ -931,7 +951,7 @@ class CAFFE2_API Tensor {
   std::tuple&lt;Tensor,Tensor&gt; solve(const Tensor &amp; A) const;
   Tensor cholesky_inverse(bool upper=false) const;
   std::tuple&lt;Tensor,Tensor&gt; pstrf(bool upper=true, Scalar tol=-1) const;
-  std::tuple&lt;Tensor,Tensor&gt; qr() const;
+  std::tuple&lt;Tensor,Tensor&gt; qr(bool some=true) const;
   std::tuple&lt;Tensor,Tensor&gt; geqrf() const;
   Tensor orgqr(const Tensor &amp; input2) const;
   Tensor ormqr(const Tensor &amp; input2, const Tensor &amp; input3, bool left=true, bool transpose=false) const;
@@ -984,41 +1004,11 @@ class CAFFE2_API Tensor {
     return func(*this, std::forward&lt;Args&gt;(params)...);
   }
 
-  friend struct WeakTensor;
-
 protected:
   friend class ::caffe2::Tensor;
 
   void enforce_invariants();
   c10::intrusive_ptr&lt;TensorImpl, UndefinedTensorImpl&gt; impl_;
-};
-
-struct CAFFE2_API WeakTensor {
-  WeakTensor(const Tensor&amp; t) : weak_impl_(t.impl_) {}
-
-  // XXX: this can return undefined tensors
-  // Ideally it would be c10::optional&lt;Tensor&gt;, but MSVC is too cool for that
-  Tensor lock() const {
-    return Tensor(weak_impl_.lock());
-  }
-
-  bool is_same(const WeakTensor&amp; other) const noexcept {
-    return weak_impl_ == other.weak_impl_;
-  }
-
-  size_t use_count() const noexcept {
-    return weak_impl_.use_count();
-  }
-  size_t weak_use_count() const noexcept {
-    return weak_impl_.weak_use_count();
-  }
-
-  TensorImpl* unsafeGetTensorImpl() const {
-    return weak_impl_._unsafe_get_target();
-  }
-
-private:
-  c10::weak_intrusive_ptr&lt;TensorImpl, UndefinedTensorImpl&gt; weak_impl_;
 };
 
 namespace detail {
@@ -1044,15 +1034,6 @@ Tensor make_tensor(Args&amp;&amp;... args) {
             </div>
             <footer>
   
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="file_torch_csrc_api_include_torch_data_datasets_tensor.h.html" class="btn btn-neutral float-right" title="File tensor.h" accesskey="n" rel="next">Next <img src="../_static/images/chevron-right-orange.svg" class="next-page"></a>
-      
-      
-        <a href="file_aten_src_ATen_core_Tensor.h.html" class="btn btn-neutral" title="File Tensor.h" accesskey="p" rel="prev"><img src="../_static/images/chevron-right-orange.svg" class="previous-page"> Previous</a>
-      
-    </div>
-  
 
   
 
@@ -1062,7 +1043,7 @@ Tensor make_tensor(Args&amp;&amp;... args) {
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2018, Torch Contributors.
+        &copy; Copyright 2019, Torch Contributors.
 
     </p>
   </div>

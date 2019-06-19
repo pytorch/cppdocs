@@ -31,9 +31,7 @@
   <!-- <link rel="stylesheet" href="../_static/pygments.css" type="text/css" /> -->
   <link rel="stylesheet" href="../_static/collapsible-lists/css/tree_view.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="File data_shuttle.h" href="file_torch_csrc_api_include_torch_data_detail_data_shuttle.h.html" />
-    <link rel="prev" title="File data_parallel.h" href="file_torch_csrc_api_include_torch_nn_parallel_data_parallel.h.html" /> 
+    <link rel="search" title="Search" href="../search.html" /> 
 
   
   <script src="../_static/js/modernizr.min.js"></script>
@@ -136,11 +134,11 @@
               
             
             
-              <ul class="current">
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../installing.html">Installing C++ Distributions of PyTorch</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../frontend.html">The C++ Frontend</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing to PyTorch</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="library_root.html">Library API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="library_root.html">Library API</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Notes</span></p>
 <ul>
@@ -189,10 +187,6 @@
       </li>
 
         
-          <li><a href="library_root.html">Library API</a> &gt;</li>
-        
-          <li><a href="file_torch_csrc_api_include_torch_nn_parallel_data_parallel.h.html">File data_parallel.h</a> &gt;</li>
-        
       <li>Program Listing for File data_parallel.h</li>
     
     
@@ -239,6 +233,7 @@
 <span class="cp">#include</span> <span class="cpf">&lt;torch/types.h&gt;</span><span class="cp"></span>
 
 <span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/autograd/functions/comm.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/autograd/functions/utils.h&gt;</span><span class="cp"></span>
 <span class="cp">#ifdef USE_CUDA</span>
 <span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/cuda/comm.h&gt;</span><span class="cp"></span>
 <span class="cp">#endif</span>
@@ -257,6 +252,116 @@
 
 <span class="k">namespace</span> <span class="n">torch</span> <span class="p">{</span>
 <span class="k">namespace</span> <span class="n">nn</span> <span class="p">{</span>
+
+<span class="k">namespace</span> <span class="p">{</span>
+
+<span class="c1">// Note [Replicating Modules]</span>
+<span class="c1">// ~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
+<span class="c1">//</span>
+<span class="c1">// Module replication is implemented in the following two steps:</span>
+<span class="c1">// 1) create a module replica on each destination device using Module.clone().</span>
+<span class="c1">// 2) manually add a gradient edge pointing from every parameter X in every</span>
+<span class="c1">//    module replica to the same parameter X in the original module, using</span>
+<span class="c1">//    ReduceAdd as the grad_fn.</span>
+<span class="c1">//</span>
+<span class="c1">// ReduceAdd can ONLY be used during the backward pass of data parallel. Forward</span>
+<span class="c1">// pass cannot use this function as it does not setup gradient function and</span>
+<span class="c1">// history at all. Do NOT try to use ReduceAdd for any other purposes.</span>
+<span class="c1">//</span>
+<span class="c1">// NB: An alternative is to add Broadcast and ReduceAddCoalesce to</span>
+<span class="c1">// torch/csrc/autograd/functions/comm.cpp as normal autograd functions,</span>
+<span class="c1">// implement a Replicatable (like cloneable) class and add it as a friend class</span>
+<span class="c1">// in Module.h. In the forward pass, the Replicatable could use the Broadcast</span>
+<span class="c1">// function to replicate every module parameter and set gradient functions using</span>
+<span class="c1">// ReduceAddCoalesce (like how it is implemented in Python). However, unlike in</span>
+<span class="c1">// Python, where changes to Linear._parameters[&quot;weight&quot;] would also apply to</span>
+<span class="c1">// Linear.weight (using Linear as an example), Linear.weight and</span>
+<span class="c1">// Linear.parameters_[&quot;weight&quot;] are two tensor objects pointing to the same</span>
+<span class="c1">// TensorImpl. Assigning a new tensor to Linear.parameters_[&quot;weight&quot;] will not</span>
+<span class="c1">// change Linear.weight. To make this work, we will have to:</span>
+<span class="c1">// 1) force every module to also inherit from Replicatable</span>
+<span class="c1">// 2) force every module to implement an additional function, e.g.,</span>
+<span class="c1">//    Replicatable::load_params(), to pick up changes from parameters_ to their</span>
+<span class="c1">//    own member fields.</span>
+<span class="c1">// This will be an overkill as Replicatable will only be used in data_parallel,</span>
+<span class="c1">// not even ddp.</span>
+
+<span class="c1">// Autograd function for the replicate step in data parallel. This is only used</span>
+<span class="c1">// in data parallel, and should not be exposed as a user API.</span>
+<span class="k">struct</span> <span class="nl">ReduceAdd</span> <span class="p">:</span> <span class="k">public</span> <span class="n">autograd</span><span class="o">::</span><span class="n">Function</span> <span class="p">{</span>
+  <span class="k">explicit</span> <span class="n">ReduceAdd</span><span class="p">(</span><span class="k">const</span> <span class="n">at</span><span class="o">::</span><span class="n">Device</span><span class="o">&amp;</span> <span class="n">destination_device</span><span class="p">)</span>
+      <span class="o">:</span> <span class="n">destination_device_</span><span class="p">(</span><span class="n">destination_device</span><span class="p">)</span> <span class="p">{};</span>
+  <span class="o">~</span><span class="n">ReduceAdd</span><span class="p">()</span> <span class="k">override</span> <span class="p">{}</span>
+
+  <span class="n">autograd</span><span class="o">::</span><span class="n">variable_list</span> <span class="n">apply</span><span class="p">(</span><span class="n">autograd</span><span class="o">::</span><span class="n">variable_list</span><span class="o">&amp;&amp;</span> <span class="n">inputs</span><span class="p">)</span> <span class="k">override</span> <span class="p">{</span>
+    <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="o">!</span><span class="n">compute_requires_grad</span><span class="p">(</span><span class="n">inputs</span><span class="p">),</span>
+        <span class="s">&quot;ReduceAdd can only be used during the backward pass of data parallel.&quot;</span><span class="p">);</span>
+
+    <span class="n">Tensor</span> <span class="n">output</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">inputs</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="p">{</span><span class="n">destination_device_</span><span class="p">});</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="k">auto</span><span class="o">&amp;</span> <span class="nl">input</span><span class="p">:</span> <span class="n">inputs</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">input</span><span class="p">.</span><span class="n">sizes</span><span class="p">()</span> <span class="o">==</span> <span class="n">inputs</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">sizes</span><span class="p">(),</span>
+          <span class="s">&quot;All inputs of ReduceAdd must have the same size, but got &quot;</span><span class="p">,</span>
+          <span class="n">input</span><span class="p">.</span><span class="n">sizes</span><span class="p">(),</span> <span class="s">&quot; and &quot;</span><span class="p">,</span> <span class="n">inputs</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">sizes</span><span class="p">());</span>
+
+      <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">input</span><span class="p">.</span><span class="n">dtype</span><span class="p">()</span> <span class="o">==</span> <span class="n">inputs</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">dtype</span><span class="p">(),</span>
+          <span class="s">&quot;All inputs of ReduceAdd must have the same dtype, but got &quot;</span><span class="p">,</span>
+          <span class="n">input</span><span class="p">.</span><span class="n">dtype</span><span class="p">(),</span> <span class="s">&quot; and &quot;</span><span class="p">,</span> <span class="n">inputs</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">dtype</span><span class="p">());</span>
+
+      <span class="c1">// TODO: use nccl reduce</span>
+      <span class="n">output</span><span class="p">.</span><span class="n">add_</span><span class="p">(</span><span class="n">input</span><span class="p">.</span><span class="n">to</span><span class="p">(</span><span class="n">destination_device_</span><span class="p">));</span>
+    <span class="p">}</span>
+
+    <span class="k">return</span> <span class="p">{</span><span class="n">output</span><span class="p">};</span>
+  <span class="p">}</span>
+
+ <span class="k">private</span><span class="o">:</span>
+  <span class="n">at</span><span class="o">::</span><span class="n">Device</span> <span class="n">destination_device_</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="p">}</span> <span class="c1">// namespace</span>
+
+<span class="c1">// A friend function to Module, it recursively sets gradient edges pointing from</span>
+<span class="c1">// every parameter X in every module replica to the same parameter X in the</span>
+<span class="c1">// original module. See [Replicating Modules]</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">ModuleType</span><span class="o">&gt;</span>
+<span class="kt">void</span> <span class="n">replicate_grad_edges</span><span class="p">(</span>
+    <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Module</span><span class="o">&gt;&amp;</span> <span class="n">module</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;&gt;&amp;</span> <span class="n">replicas</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Device</span><span class="o">&gt;&amp;</span> <span class="n">devices</span><span class="p">)</span> <span class="p">{</span>
+
+  <span class="k">for</span> <span class="p">(</span><span class="k">auto</span><span class="o">&amp;</span> <span class="nl">parameter</span> <span class="p">:</span> <span class="n">module</span><span class="o">-&gt;</span><span class="n">parameters_</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">auto</span> <span class="n">grad_fn</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">ReduceAdd</span><span class="o">&gt;</span><span class="p">((</span><span class="o">*</span><span class="n">parameter</span><span class="p">).</span><span class="n">device</span><span class="p">());</span>
+    <span class="n">grad_fn</span><span class="o">-&gt;</span><span class="n">set_next_edges</span><span class="p">(</span><span class="n">autograd</span><span class="o">::</span><span class="n">collect_next_edges</span><span class="p">(</span><span class="o">*</span><span class="n">parameter</span><span class="p">));</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="kt">size_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">devices</span><span class="p">.</span><span class="n">size</span><span class="p">();</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">autograd</span><span class="o">::</span><span class="n">set_history</span><span class="p">(</span><span class="n">replicas</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">parameters_</span><span class="p">[</span><span class="n">parameter</span><span class="p">.</span><span class="n">key</span><span class="p">()],</span> <span class="n">grad_fn</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="k">for</span> <span class="p">(</span><span class="k">auto</span><span class="o">&amp;</span> <span class="nl">buffer</span> <span class="p">:</span> <span class="n">module</span><span class="o">-&gt;</span><span class="n">buffers_</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">buffer</span><span class="p">.</span><span class="n">value</span><span class="p">().</span><span class="n">requires_grad</span><span class="p">()){</span>
+      <span class="k">auto</span> <span class="n">grad_fn</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">ReduceAdd</span><span class="o">&gt;</span><span class="p">((</span><span class="o">*</span><span class="n">buffer</span><span class="p">).</span><span class="n">device</span><span class="p">());</span>
+      <span class="n">grad_fn</span><span class="o">-&gt;</span><span class="n">set_next_edges</span><span class="p">(</span><span class="n">autograd</span><span class="o">::</span><span class="n">collect_next_edges</span><span class="p">(</span><span class="o">*</span><span class="n">buffer</span><span class="p">));</span>
+
+      <span class="k">for</span> <span class="p">(</span><span class="kt">size_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">devices</span><span class="p">.</span><span class="n">size</span><span class="p">();</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">autograd</span><span class="o">::</span><span class="n">set_history</span><span class="p">(</span><span class="n">replicas</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">buffers_</span><span class="p">[</span><span class="n">buffer</span><span class="p">.</span><span class="n">key</span><span class="p">()],</span> <span class="n">grad_fn</span><span class="p">);</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="k">for</span> <span class="p">(</span><span class="k">auto</span><span class="o">&amp;</span> <span class="nl">child</span> <span class="p">:</span> <span class="n">module</span><span class="o">-&gt;</span><span class="n">children_</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Module</span><span class="o">&gt;&gt;</span> <span class="n">child_replicas</span><span class="p">;</span>
+    <span class="n">child_replicas</span><span class="p">.</span><span class="n">reserve</span><span class="p">(</span><span class="n">devices</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
+    <span class="k">for</span> <span class="p">(</span><span class="k">auto</span><span class="o">&amp;</span> <span class="nl">replica</span> <span class="p">:</span> <span class="n">replicas</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">child_replicas</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">replica</span><span class="o">-&gt;</span><span class="n">children_</span><span class="p">[</span><span class="n">child</span><span class="p">.</span><span class="n">key</span><span class="p">()]);</span>
+    <span class="p">}</span>
+
+    <span class="c1">// recursively set gradient edges for all children</span>
+    <span class="n">replicate_grad_edges</span><span class="p">(</span><span class="o">*</span><span class="n">child</span><span class="p">,</span> <span class="n">child_replicas</span><span class="p">,</span> <span class="n">devices</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
 <span class="k">namespace</span> <span class="n">parallel</span> <span class="p">{</span>
 
 <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">ModuleType</span><span class="o">&gt;</span>
@@ -269,6 +374,9 @@
     <span class="n">replicas</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span>
         <span class="n">std</span><span class="o">::</span><span class="n">dynamic_pointer_cast</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;</span><span class="p">(</span><span class="n">module</span><span class="o">-&gt;</span><span class="n">clone</span><span class="p">(</span><span class="n">device</span><span class="p">)));</span>
   <span class="p">}</span>
+  <span class="c1">// Configure gradient edges to point from replcia parameters to original</span>
+  <span class="c1">// module parameters. See [Replicating Modules]</span>
+  <span class="n">replicate_grad_edges</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">replicas</span><span class="p">,</span> <span class="n">devices</span><span class="p">);</span>
   <span class="k">return</span> <span class="n">replicas</span><span class="p">;</span>
 <span class="p">}</span>
 
@@ -285,10 +393,10 @@
     <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;&amp;</span> <span class="n">modules</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;&amp;</span> <span class="n">inputs</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Device</span><span class="o">&gt;&gt;&amp;</span> <span class="n">devices</span> <span class="o">=</span> <span class="n">nullopt</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">AT_CHECK</span><span class="p">(</span>
+  <span class="n">TORCH_CHECK</span><span class="p">(</span>
       <span class="n">modules</span><span class="p">.</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="n">inputs</span><span class="p">.</span><span class="n">size</span><span class="p">(),</span> <span class="s">&quot;Must have as many inputs as modules&quot;</span><span class="p">);</span>
   <span class="k">if</span> <span class="p">(</span><span class="n">devices</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">AT_CHECK</span><span class="p">(</span>
+    <span class="n">TORCH_CHECK</span><span class="p">(</span>
         <span class="n">modules</span><span class="p">.</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="n">devices</span><span class="o">-&gt;</span><span class="n">size</span><span class="p">(),</span>
         <span class="s">&quot;Must have as many devices as modules&quot;</span><span class="p">);</span>
   <span class="p">}</span>
@@ -340,7 +448,7 @@
     <span class="kt">int64_t</span> <span class="n">dim</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
   <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">devices</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">const</span> <span class="k">auto</span> <span class="n">device_count</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">device_count</span><span class="p">();</span>
-    <span class="n">AT_CHECK</span><span class="p">(</span>
+    <span class="n">TORCH_CHECK</span><span class="p">(</span>
         <span class="n">device_count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&quot;Expected at least one CUDA device to be available&quot;</span><span class="p">);</span>
     <span class="n">devices</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Device</span><span class="o">&gt;</span><span class="p">();</span>
     <span class="n">devices</span><span class="o">-&gt;</span><span class="n">reserve</span><span class="p">(</span><span class="n">device_count</span><span class="p">);</span>
@@ -386,15 +494,6 @@
             </div>
             <footer>
   
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="file_torch_csrc_api_include_torch_data_detail_data_shuttle.h.html" class="btn btn-neutral float-right" title="File data_shuttle.h" accesskey="n" rel="next">Next <img src="../_static/images/chevron-right-orange.svg" class="next-page"></a>
-      
-      
-        <a href="file_torch_csrc_api_include_torch_nn_parallel_data_parallel.h.html" class="btn btn-neutral" title="File data_parallel.h" accesskey="p" rel="prev"><img src="../_static/images/chevron-right-orange.svg" class="previous-page"> Previous</a>
-      
-    </div>
-  
 
   
 
@@ -404,7 +503,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2018, Torch Contributors.
+        &copy; Copyright 2019, Torch Contributors.
 
     </p>
   </div>

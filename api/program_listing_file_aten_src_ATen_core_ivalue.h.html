@@ -31,9 +31,7 @@
   <!-- <link rel="stylesheet" href="../_static/pygments.css" type="text/css" /> -->
   <link rel="stylesheet" href="../_static/collapsible-lists/css/tree_view.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="File jit.h" href="file_torch_csrc_api_include_torch_jit.h.html" />
-    <link rel="prev" title="File ivalue.h" href="file_aten_src_ATen_core_ivalue.h.html" /> 
+    <link rel="search" title="Search" href="../search.html" /> 
 
   
   <script src="../_static/js/modernizr.min.js"></script>
@@ -136,11 +134,11 @@
               
             
             
-              <ul class="current">
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../installing.html">Installing C++ Distributions of PyTorch</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../frontend.html">The C++ Frontend</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing to PyTorch</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="library_root.html">Library API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="library_root.html">Library API</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Notes</span></p>
 <ul>
@@ -189,10 +187,6 @@
       </li>
 
         
-          <li><a href="library_root.html">Library API</a> &gt;</li>
-        
-          <li><a href="file_aten_src_ATen_core_ivalue.h.html">File ivalue.h</a> &gt;</li>
-        
       <li>Program Listing for File ivalue.h</li>
     
     
@@ -233,102 +227,24 @@
 <p>↰ <a class="reference internal" href="file_aten_src_ATen_core_ivalue.h.html#file-aten-src-aten-core-ivalue-h"><span class="std std-ref">Return to documentation for file</span></a> (<code class="docutils literal notranslate"><span class="pre">aten/src/ATen/core/ivalue.h</span></code>)</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#pragma once</span>
 
-<span class="cp">#include</span> <span class="cpf">&lt;condition_variable&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;type_traits&gt;</span><span class="cp"></span>
-
 <span class="cp">#include</span> <span class="cpf">&lt;ATen/core/blob.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;ATen/core/interned_strings.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;c10/core/Scalar.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;c10/core/TensorImpl.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;c10/core/UndefinedTensorImpl.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;c10/util/intrusive_ptr.h&gt;</span><span class="cp"></span>
-
 <span class="cp">#include</span> <span class="cpf">&lt;ATen/core/Tensor.h&gt;</span><span class="cp"></span>
 
+<span class="k">namespace</span> <span class="n">torch</span> <span class="p">{</span>
+<span class="k">namespace</span> <span class="n">jit</span> <span class="p">{</span>
+<span class="k">struct</span> <span class="n">Function</span><span class="p">;</span>
+<span class="p">}</span> <span class="c1">// namespace jit</span>
+<span class="p">}</span> <span class="c1">// namespace torch</span>
 <span class="k">namespace</span> <span class="n">c10</span> <span class="p">{</span>
+<span class="k">template</span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">Key</span><span class="p">,</span> <span class="k">class</span> <span class="nc">Value</span><span class="o">&gt;</span> <span class="k">class</span> <span class="nc">DictPtr</span><span class="p">;</span>
+<span class="k">template</span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span> <span class="k">class</span> <span class="nc">ListPtr</span><span class="p">;</span>
 <span class="k">struct</span> <span class="n">IValue</span><span class="p">;</span>
-<span class="k">struct</span> <span class="n">ClassType</span><span class="p">;</span>
-
 <span class="k">namespace</span> <span class="n">ivalue</span> <span class="p">{</span>
-
-<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
-<span class="k">using</span> <span class="n">Shared</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">;</span>
-
-<span class="c1">// string</span>
-<span class="k">struct</span> <span class="n">CAFFE2_API</span> <span class="n">ConstantString</span> <span class="k">final</span> <span class="o">:</span> <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr_target</span> <span class="p">{</span>
- <span class="k">private</span><span class="o">:</span>
-  <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">str_</span><span class="p">;</span>
- <span class="k">public</span><span class="o">:</span>
-  <span class="n">ConstantString</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">str</span><span class="p">)</span>
-  <span class="o">:</span> <span class="n">str_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">str</span><span class="p">))</span> <span class="p">{}</span>
-  <span class="k">static</span> <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ConstantString</span><span class="o">&gt;</span> <span class="n">create</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">str_</span><span class="p">);</span>
-  <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="o">&amp;</span> <span class="n">string</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">str_</span><span class="p">;</span>
-  <span class="p">}</span>
-  <span class="k">operator</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="o">&amp;</span> <span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">string</span><span class="p">();</span>
-  <span class="p">}</span>
-  <span class="n">CAFFE2_API</span> <span class="k">friend</span> <span class="n">std</span><span class="o">::</span><span class="n">ostream</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">&lt;&lt;</span><span class="p">(</span>
-      <span class="n">std</span><span class="o">::</span><span class="n">ostream</span><span class="o">&amp;</span> <span class="n">out</span><span class="p">,</span>
-      <span class="k">const</span> <span class="n">ConstantString</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">);</span>
-<span class="p">};</span>
-
-<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Elem</span><span class="o">&gt;</span>
-<span class="k">struct</span> <span class="n">CAFFE2_API</span> <span class="nl">List</span> <span class="p">:</span> <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr_target</span> <span class="p">{</span>
- <span class="k">private</span><span class="o">:</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Elem</span><span class="o">&gt;</span> <span class="n">elements_</span><span class="p">;</span>
-
- <span class="k">public</span><span class="o">:</span>
-  <span class="k">typedef</span> <span class="n">Elem</span> <span class="n">ElemType</span><span class="p">;</span>
-
-  <span class="n">List</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Elem</span><span class="o">&gt;</span> <span class="n">elements_</span><span class="p">)</span> <span class="o">:</span> <span class="n">elements_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">elements_</span><span class="p">))</span> <span class="p">{}</span>
-  <span class="k">static</span> <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">List</span><span class="o">&lt;</span><span class="n">Elem</span><span class="o">&gt;&gt;</span> <span class="n">create</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Elem</span><span class="o">&gt;</span> <span class="n">elements_</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">make_intrusive</span><span class="o">&lt;</span><span class="n">List</span><span class="o">&lt;</span><span class="n">Elem</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">elements_</span><span class="p">));</span>
-  <span class="p">}</span>
-  <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Elem</span><span class="o">&gt;&amp;</span> <span class="n">elements</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">elements_</span><span class="p">;</span>
-  <span class="p">}</span>
-  <span class="k">operator</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Elem</span><span class="o">&gt;&amp;</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">elements</span><span class="p">();</span>
-  <span class="p">}</span>
-
-  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Elem</span><span class="o">&gt;&amp;</span> <span class="n">elements</span><span class="p">()</span> <span class="o">&amp;</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">elements_</span><span class="p">;</span>
-  <span class="p">}</span>
-  <span class="k">operator</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Elem</span><span class="o">&gt;&amp;</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">elements</span><span class="p">();</span>
-  <span class="p">}</span>
-
-  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Elem</span><span class="o">&gt;&amp;&amp;</span> <span class="n">elements</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">elements_</span><span class="p">);</span>
-  <span class="p">}</span>
-<span class="p">};</span>
-
-<span class="k">struct</span> <span class="n">DictHash</span> <span class="p">{</span>
-  <span class="kt">size_t</span> <span class="k">operator</span><span class="p">()(</span><span class="k">const</span> <span class="n">IValue</span><span class="o">&amp;</span> <span class="n">ivalue</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
-<span class="p">};</span>
-
-<span class="k">struct</span> <span class="n">DictEqualTo</span> <span class="p">{</span>
-  <span class="kt">bool</span> <span class="k">operator</span><span class="p">()(</span><span class="k">const</span> <span class="n">IValue</span><span class="o">&amp;</span> <span class="n">lhs</span><span class="p">,</span> <span class="k">const</span> <span class="n">IValue</span><span class="o">&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
-<span class="p">};</span>
-
-<span class="k">using</span> <span class="n">UnorderedMap</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">unordered_map</span><span class="o">&lt;</span><span class="n">IValue</span><span class="p">,</span> <span class="n">IValue</span><span class="p">,</span> <span class="n">DictHash</span><span class="p">,</span> <span class="n">DictEqualTo</span><span class="o">&gt;</span><span class="p">;</span>
-
+<span class="k">struct</span> <span class="n">Tuple</span><span class="p">;</span>
 <span class="k">struct</span> <span class="n">Future</span><span class="p">;</span>
+<span class="k">struct</span> <span class="n">ConstantString</span><span class="p">;</span>
 <span class="k">struct</span> <span class="n">GenericDict</span><span class="p">;</span>
-
-<span class="k">struct</span> <span class="n">CAFFE2_API</span> <span class="nl">Tuple</span> <span class="p">:</span> <span class="k">public</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">IValue</span><span class="o">&gt;</span> <span class="p">{</span>
-  <span class="k">using</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">IValue</span><span class="o">&gt;::</span><span class="n">List</span><span class="p">;</span>
-  <span class="k">static</span> <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">Tuple</span><span class="o">&gt;</span> <span class="n">create</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IValue</span><span class="o">&gt;</span> <span class="n">elements_</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">make_intrusive</span><span class="o">&lt;</span><span class="n">Tuple</span><span class="o">&gt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">elements_</span><span class="p">));</span>
-  <span class="p">}</span>
-<span class="p">};</span>
-<span class="k">using</span> <span class="n">IntList</span> <span class="o">=</span> <span class="n">List</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span><span class="p">;</span>
-<span class="k">using</span> <span class="n">TensorList</span> <span class="o">=</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&gt;</span><span class="p">;</span>
-<span class="k">using</span> <span class="n">DoubleList</span> <span class="o">=</span> <span class="n">List</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span><span class="p">;</span>
-<span class="k">using</span> <span class="n">BoolList</span> <span class="o">=</span> <span class="n">List</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;</span><span class="p">;</span>
-<span class="k">using</span> <span class="n">GenericList</span> <span class="o">=</span> <span class="n">List</span><span class="o">&lt;</span><span class="n">IValue</span><span class="o">&gt;</span><span class="p">;</span>
-
 <span class="k">struct</span> <span class="n">Object</span><span class="p">;</span>
 <span class="p">}</span>
 
@@ -356,17 +272,13 @@
 <span class="cp">  _(GenericDict) \</span>
 <span class="cp">  _(Future) \</span>
 <span class="cp">  _(Device) \</span>
+<span class="cp">  _(Uninitialized) \</span>
 <span class="cp">  _(Object)</span>
 
 <span class="k">struct</span> <span class="n">CAFFE2_API</span> <span class="n">IValue</span> <span class="k">final</span> <span class="p">{</span>
-  <span class="n">IValue</span><span class="p">()</span>
-  <span class="o">:</span> <span class="n">payload</span><span class="p">{</span><span class="mi">0</span><span class="p">}</span>
-  <span class="p">,</span> <span class="n">tag</span><span class="p">(</span><span class="n">Tag</span><span class="o">::</span><span class="n">None</span><span class="p">)</span>
-  <span class="p">,</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span> <span class="p">{}</span>
+  <span class="n">IValue</span><span class="p">()</span> <span class="o">:</span> <span class="n">payload</span><span class="p">{</span><span class="mi">0</span><span class="p">},</span> <span class="n">tag</span><span class="p">(</span><span class="n">Tag</span><span class="o">::</span><span class="n">None</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span> <span class="p">{}</span>
   <span class="n">IValue</span><span class="p">(</span><span class="k">const</span> <span class="n">IValue</span><span class="o">&amp;</span> <span class="n">rhs</span><span class="p">)</span>
-      <span class="o">:</span> <span class="n">payload</span><span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">payload</span><span class="p">),</span>
-        <span class="n">tag</span><span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">tag</span><span class="p">),</span>
-        <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">is_intrusive_ptr</span><span class="p">)</span> <span class="p">{</span>
+      <span class="o">:</span> <span class="n">IValue</span><span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">payload</span><span class="p">,</span> <span class="n">rhs</span><span class="p">.</span><span class="n">tag</span><span class="p">,</span> <span class="n">rhs</span><span class="p">.</span><span class="n">is_intrusive_ptr</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">is_intrusive_ptr</span><span class="p">)</span> <span class="p">{</span>
       <span class="n">c10</span><span class="o">::</span><span class="n">raw</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">::</span><span class="n">incref</span><span class="p">(</span><span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">);</span>
     <span class="p">}</span>
@@ -434,13 +346,10 @@
     <span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">=</span> <span class="n">t</span><span class="p">.</span><span class="n">unsafeReleaseTensorImpl</span><span class="p">();</span>
   <span class="p">}</span>
   <span class="kt">bool</span> <span class="n">isTensor</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Tag</span><span class="o">::</span><span class="n">Tensor</span> <span class="o">==</span> <span class="n">tag</span><span class="p">;</span> <span class="p">}</span>
-  <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">toTensor</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
-    <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">isTensor</span><span class="p">());</span>
-    <span class="k">return</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="p">(</span><span class="n">moveToIntrusivePtr</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="p">,</span> <span class="n">at</span><span class="o">::</span><span class="n">UndefinedTensorImpl</span><span class="o">&gt;</span><span class="p">());</span>
-  <span class="p">}</span>
-  <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">toTensor</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span> <span class="p">{</span>
-    <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">isTensor</span><span class="p">());</span>
-    <span class="k">return</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="p">(</span><span class="n">toIntrusivePtr</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="p">,</span> <span class="n">at</span><span class="o">::</span><span class="n">UndefinedTensorImpl</span><span class="o">&gt;</span><span class="p">());</span>
+  <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">toTensor</span><span class="p">()</span> <span class="o">&amp;&amp;</span><span class="p">;</span>
+  <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">toTensor</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span><span class="p">;</span>
+  <span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="o">*</span> <span class="n">unsafeToTensorImpl</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">);</span>
   <span class="p">}</span>
 
   <span class="k">const</span> <span class="n">IValue</span><span class="o">&amp;</span> <span class="n">toIValue</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
@@ -459,26 +368,14 @@
   <span class="kt">bool</span> <span class="n">isBlob</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">Tag</span><span class="o">::</span><span class="n">Blob</span> <span class="o">==</span> <span class="n">tag</span><span class="p">;</span>
   <span class="p">}</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">caffe2</span><span class="o">::</span><span class="n">Blob</span><span class="o">&gt;</span> <span class="n">toBlob</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
-    <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">isBlob</span><span class="p">());</span>
-    <span class="k">return</span> <span class="n">moveToIntrusivePtr</span><span class="o">&lt;</span><span class="n">caffe2</span><span class="o">::</span><span class="n">Blob</span><span class="o">&gt;</span><span class="p">();</span>
-  <span class="p">}</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">caffe2</span><span class="o">::</span><span class="n">Blob</span><span class="o">&gt;</span> <span class="n">toBlob</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span> <span class="p">{</span>
-    <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">isBlob</span><span class="p">());</span>
-    <span class="k">return</span> <span class="n">toIntrusivePtr</span><span class="o">&lt;</span><span class="n">caffe2</span><span class="o">::</span><span class="n">Blob</span><span class="o">&gt;</span><span class="p">();;</span>
-  <span class="p">}</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">caffe2</span><span class="o">::</span><span class="n">Blob</span><span class="o">&gt;</span> <span class="n">toBlob</span><span class="p">()</span> <span class="o">&amp;&amp;</span><span class="p">;</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">caffe2</span><span class="o">::</span><span class="n">Blob</span><span class="o">&gt;</span> <span class="n">toBlob</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span><span class="p">;</span>
 
   <span class="c1">// Tuple</span>
   <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Tuple</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
   <span class="kt">bool</span> <span class="nf">isTuple</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Tag</span><span class="o">::</span><span class="n">Tuple</span> <span class="o">==</span> <span class="n">tag</span><span class="p">;</span> <span class="p">}</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Tuple</span><span class="o">&gt;</span> <span class="n">toTuple</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
-    <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">isTuple</span><span class="p">());</span>
-    <span class="k">return</span> <span class="n">moveToIntrusivePtr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Tuple</span><span class="o">&gt;</span><span class="p">();</span>
-  <span class="p">}</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Tuple</span><span class="o">&gt;</span> <span class="n">toTuple</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span> <span class="p">{</span>
-    <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">isTuple</span><span class="p">());</span>
-    <span class="k">return</span> <span class="n">toIntrusivePtr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Tuple</span><span class="o">&gt;</span><span class="p">();</span>
-  <span class="p">}</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Tuple</span><span class="o">&gt;</span> <span class="n">toTuple</span><span class="p">()</span> <span class="o">&amp;&amp;</span><span class="p">;</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Tuple</span><span class="o">&gt;</span> <span class="n">toTuple</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span><span class="p">;</span>
 
   <span class="c1">// Double</span>
   <span class="n">IValue</span><span class="p">(</span><span class="kt">double</span> <span class="n">d</span><span class="p">)</span>
@@ -494,14 +391,8 @@
   <span class="c1">// Future</span>
   <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Future</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
   <span class="kt">bool</span> <span class="nf">isFuture</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Tag</span><span class="o">::</span><span class="n">Future</span> <span class="o">==</span> <span class="n">tag</span><span class="p">;</span> <span class="p">}</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Future</span><span class="o">&gt;</span> <span class="n">toFuture</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
-    <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">isFuture</span><span class="p">());</span>
-    <span class="k">return</span> <span class="n">moveToIntrusivePtr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Future</span><span class="o">&gt;</span><span class="p">();</span>
-  <span class="p">}</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Future</span><span class="o">&gt;</span> <span class="n">toFuture</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span> <span class="p">{</span>
-    <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">isFuture</span><span class="p">());</span>
-    <span class="k">return</span> <span class="n">toIntrusivePtr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Future</span><span class="o">&gt;</span><span class="p">();</span>
-  <span class="p">}</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Future</span><span class="o">&gt;</span> <span class="n">toFuture</span><span class="p">()</span> <span class="o">&amp;&amp;</span><span class="p">;</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Future</span><span class="o">&gt;</span> <span class="n">toFuture</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span><span class="p">;</span>
 
   <span class="c1">// Int</span>
   <span class="n">IValue</span><span class="p">(</span><span class="kt">int64_t</span> <span class="n">i</span><span class="p">)</span>
@@ -532,127 +423,103 @@
   <span class="p">}</span>
 
   <span class="c1">// IntList</span>
-  <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">IntList</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
+  <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">ListPtr</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
+  <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">ArrayRef</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
+  <span class="n">C10_DEPRECATED_MESSAGE</span><span class="p">(</span><span class="s">&quot;IValues based on std::vector&lt;T&gt; are potentially slow and deprecated. Please use c10::ListPtr&lt;T&gt; instead.&quot;</span><span class="p">)</span>
   <span class="n">IValue</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
-  <span class="n">IValue</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">ArrayRef</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">)</span>
-  <span class="o">:</span> <span class="n">IValue</span><span class="p">(</span><span class="n">v</span><span class="p">.</span><span class="n">vec</span><span class="p">())</span> <span class="p">{}</span>
-  <span class="kt">bool</span> <span class="n">isIntList</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Tag</span><span class="o">::</span><span class="n">IntList</span> <span class="o">==</span> <span class="n">tag</span><span class="p">;</span> <span class="p">}</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">IntList</span><span class="o">&gt;</span> <span class="n">toIntList</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
-    <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">isIntList</span><span class="p">());</span>
-    <span class="k">return</span> <span class="n">moveToIntrusivePtr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">IntList</span><span class="o">&gt;</span><span class="p">();</span>
-  <span class="p">}</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">IntList</span><span class="o">&gt;</span> <span class="n">toIntList</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span> <span class="p">{</span>
-    <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">isIntList</span><span class="p">());</span>
-    <span class="k">return</span> <span class="n">toIntrusivePtr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">IntList</span><span class="o">&gt;</span><span class="p">();</span>
-  <span class="p">}</span>
-
-  <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;&amp;</span> <span class="n">toIntListRef</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
-  <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;&amp;</span> <span class="n">toDoubleListRef</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
-  <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;&amp;</span> <span class="n">toBoolListRef</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
-  <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&gt;&amp;</span> <span class="n">toTensorListRef</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
-  <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IValue</span><span class="o">&gt;&amp;</span> <span class="n">toGenericListRef</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
-  <span class="k">const</span> <span class="n">ivalue</span><span class="o">::</span><span class="n">UnorderedMap</span><span class="o">&amp;</span> <span class="n">toGenericDictRef</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
-  <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">toStringRef</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+  <span class="kt">bool</span> <span class="nf">isIntList</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Tag</span><span class="o">::</span><span class="n">IntList</span> <span class="o">==</span> <span class="n">tag</span><span class="p">;</span> <span class="p">}</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">ListPtr</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span> <span class="n">toIntList</span><span class="p">()</span> <span class="o">&amp;&amp;</span><span class="p">;</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">ListPtr</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span> <span class="n">toIntList</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span><span class="p">;</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">ArrayRef</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span> <span class="n">toIntListRef</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
 
   <span class="c1">// ConstantString</span>
   <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">ConstantString</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
   <span class="n">IValue</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">v</span><span class="p">);</span>
   <span class="n">IValue</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">v</span><span class="p">)</span><span class="o">:</span> <span class="n">IValue</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">(</span><span class="n">v</span><span class="p">))</span> <span class="p">{}</span>
   <span class="kt">bool</span> <span class="n">isString</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Tag</span><span class="o">::</span><span class="n">String</span> <span class="o">==</span> <span class="n">tag</span><span class="p">;</span> <span class="p">}</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">ConstantString</span><span class="o">&gt;</span> <span class="n">toString</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
-    <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">isString</span><span class="p">());</span>
-    <span class="k">return</span> <span class="n">moveToIntrusivePtr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">ConstantString</span><span class="o">&gt;</span><span class="p">();</span>
-  <span class="p">}</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">ConstantString</span><span class="o">&gt;</span> <span class="n">toString</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span> <span class="p">{</span>
-    <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">isString</span><span class="p">());</span>
-    <span class="k">return</span> <span class="n">toIntrusivePtr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">ConstantString</span><span class="o">&gt;</span><span class="p">();</span>
-  <span class="p">}</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">ConstantString</span><span class="o">&gt;</span> <span class="n">toString</span><span class="p">()</span> <span class="o">&amp;&amp;</span><span class="p">;</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">ConstantString</span><span class="o">&gt;</span> <span class="n">toString</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span><span class="p">;</span>
+  <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">toStringRef</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
 
   <span class="c1">// DoubleList</span>
-  <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">DoubleList</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
+  <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">ListPtr</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
+  <span class="n">C10_DEPRECATED_MESSAGE</span><span class="p">(</span><span class="s">&quot;IValues based on std::vector&lt;T&gt; are potentially slow and deprecated. Please use c10::ListPtr&lt;T&gt; instead.&quot;</span><span class="p">)</span>
   <span class="n">IValue</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
   <span class="kt">bool</span> <span class="nf">isDoubleList</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Tag</span><span class="o">::</span><span class="n">DoubleList</span> <span class="o">==</span> <span class="n">tag</span><span class="p">;</span> <span class="p">}</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">DoubleList</span><span class="o">&gt;</span> <span class="n">toDoubleList</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
-    <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">isDoubleList</span><span class="p">());</span>
-    <span class="k">return</span> <span class="n">moveToIntrusivePtr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">DoubleList</span><span class="o">&gt;</span><span class="p">();</span>
-  <span class="p">}</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">DoubleList</span><span class="o">&gt;</span> <span class="n">toDoubleList</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span> <span class="p">{</span>
-    <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">isDoubleList</span><span class="p">());</span>
-    <span class="k">return</span> <span class="n">toIntrusivePtr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">DoubleList</span><span class="o">&gt;</span><span class="p">();</span>
-  <span class="p">}</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">ListPtr</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span> <span class="n">toDoubleList</span><span class="p">()</span> <span class="o">&amp;&amp;</span><span class="p">;</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">ListPtr</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span> <span class="n">toDoubleList</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span><span class="p">;</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">ArrayRef</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span> <span class="n">toDoubleListRef</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
 
   <span class="c1">// BoolList</span>
-  <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">BoolList</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
+  <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">ListPtr</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
+  <span class="n">C10_DEPRECATED_MESSAGE</span><span class="p">(</span><span class="s">&quot;IValues based on std::vector&lt;T&gt; are potentially slow and deprecated. Please use c10::ListPtr&lt;T&gt; instead.&quot;</span><span class="p">)</span>
   <span class="n">IValue</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
   <span class="kt">bool</span> <span class="nf">isBoolList</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Tag</span><span class="o">::</span><span class="n">BoolList</span> <span class="o">==</span> <span class="n">tag</span><span class="p">;</span> <span class="p">}</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">BoolList</span><span class="o">&gt;</span> <span class="n">toBoolList</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
-    <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">isBoolList</span><span class="p">());</span>
-    <span class="k">return</span> <span class="n">moveToIntrusivePtr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">BoolList</span><span class="o">&gt;</span><span class="p">();</span>
-  <span class="p">}</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">BoolList</span><span class="o">&gt;</span> <span class="n">toBoolList</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span> <span class="p">{</span>
-    <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">isBoolList</span><span class="p">());</span>
-    <span class="k">return</span> <span class="n">toIntrusivePtr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">BoolList</span><span class="o">&gt;</span><span class="p">();</span>
-  <span class="p">}</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">ListPtr</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;</span> <span class="n">toBoolList</span><span class="p">()</span> <span class="o">&amp;&amp;</span><span class="p">;</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">ListPtr</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;</span> <span class="n">toBoolList</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span><span class="p">;</span>
 
   <span class="c1">//TensorList</span>
-  <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">TensorList</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
+  <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">ListPtr</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
   <span class="n">IValue</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
   <span class="kt">bool</span> <span class="nf">isTensorList</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Tag</span><span class="o">::</span><span class="n">TensorList</span> <span class="o">==</span> <span class="n">tag</span><span class="p">;</span> <span class="p">}</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">TensorList</span><span class="o">&gt;</span> <span class="n">toTensorList</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
-    <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">isTensorList</span><span class="p">());</span>
-    <span class="k">return</span> <span class="n">moveToIntrusivePtr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">TensorList</span><span class="o">&gt;</span><span class="p">();</span>
-  <span class="p">}</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">TensorList</span><span class="o">&gt;</span> <span class="n">toTensorList</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span> <span class="p">{</span>
-    <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">isTensorList</span><span class="p">());</span>
-    <span class="k">return</span> <span class="n">toIntrusivePtr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">TensorList</span><span class="o">&gt;</span><span class="p">();</span>
-  <span class="p">}</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">ListPtr</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">toTensorList</span><span class="p">()</span> <span class="o">&amp;&amp;</span><span class="p">;</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">ListPtr</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">toTensorList</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span><span class="p">;</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">ArrayRef</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">toTensorListRef</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
 
   <span class="c1">//GenericList</span>
-  <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">GenericList</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
+  <span class="n">C10_DEPRECATED_MESSAGE</span><span class="p">(</span><span class="s">&quot;IValues based on std::vector&lt;T&gt; are potentially slow and deprecated. Please use c10::ListPtr&lt;T&gt; instead.&quot;</span><span class="p">)</span>
   <span class="n">IValue</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IValue</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
+  <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">ListPtr</span><span class="o">&lt;</span><span class="n">IValue</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
   <span class="kt">bool</span> <span class="nf">isGenericList</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Tag</span><span class="o">::</span><span class="n">GenericList</span> <span class="o">==</span> <span class="n">tag</span><span class="p">;</span> <span class="p">}</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">GenericList</span><span class="o">&gt;</span> <span class="n">toGenericList</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
-    <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">isGenericList</span><span class="p">());</span>
-    <span class="k">return</span> <span class="n">moveToIntrusivePtr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">GenericList</span><span class="o">&gt;</span><span class="p">();</span>
-  <span class="p">}</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">GenericList</span><span class="o">&gt;</span> <span class="n">toGenericList</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span> <span class="p">{</span>
-    <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">isGenericList</span><span class="p">());</span>
-    <span class="k">return</span> <span class="n">toIntrusivePtr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">GenericList</span><span class="o">&gt;</span><span class="p">();</span>
-  <span class="p">}</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">ListPtr</span><span class="o">&lt;</span><span class="n">IValue</span><span class="o">&gt;</span> <span class="n">toGenericList</span><span class="p">()</span> <span class="o">&amp;&amp;</span><span class="p">;</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">ListPtr</span><span class="o">&lt;</span><span class="n">IValue</span><span class="o">&gt;</span> <span class="n">toGenericList</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span><span class="p">;</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">ArrayRef</span><span class="o">&lt;</span><span class="n">IValue</span><span class="o">&gt;</span> <span class="n">toGenericListRef</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+
+  <span class="k">template</span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+  <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">ListPtr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
+  <span class="k">template</span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+  <span class="n">C10_DEPRECATED_MESSAGE</span><span class="p">(</span><span class="s">&quot;IValues based on std::vector&lt;T&gt; are potentially slow and deprecated. Please use c10::ListPtr&lt;T&gt; instead.&quot;</span><span class="p">)</span>
+  <span class="n">IValue</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
 
   <span class="c1">// GenericDict</span>
-  <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">GenericDict</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
-  <span class="n">IValue</span><span class="p">(</span><span class="n">ivalue</span><span class="o">::</span><span class="n">UnorderedMap</span> <span class="n">v</span><span class="p">);</span>
+  <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">DictPtr</span><span class="o">&lt;</span><span class="n">IValue</span><span class="p">,</span> <span class="n">IValue</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
   <span class="kt">bool</span> <span class="nf">isGenericDict</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Tag</span><span class="o">::</span><span class="n">GenericDict</span> <span class="o">==</span> <span class="n">tag</span><span class="p">;</span> <span class="p">}</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">GenericDict</span><span class="o">&gt;</span> <span class="n">toGenericDict</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
-    <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">isGenericDict</span><span class="p">());</span>
-    <span class="k">return</span> <span class="n">moveToIntrusivePtr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">GenericDict</span><span class="o">&gt;</span><span class="p">();</span>
-  <span class="p">}</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">GenericDict</span><span class="o">&gt;</span> <span class="n">toGenericDict</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span> <span class="p">{</span>
-    <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">isGenericDict</span><span class="p">());</span>
-    <span class="k">return</span> <span class="n">toIntrusivePtr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">GenericDict</span><span class="o">&gt;</span><span class="p">();</span>
-  <span class="p">}</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">DictPtr</span><span class="o">&lt;</span><span class="n">IValue</span><span class="p">,</span> <span class="n">IValue</span><span class="o">&gt;</span> <span class="n">toGenericDict</span><span class="p">()</span> <span class="o">&amp;&amp;</span><span class="p">;</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">DictPtr</span><span class="o">&lt;</span><span class="n">IValue</span><span class="p">,</span> <span class="n">IValue</span><span class="o">&gt;</span> <span class="n">toGenericDict</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span><span class="p">;</span>
+
+  <span class="k">template</span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">Key</span><span class="p">,</span> <span class="k">class</span> <span class="nc">Value</span><span class="o">&gt;</span>
+  <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">DictPtr</span><span class="o">&lt;</span><span class="n">Key</span><span class="p">,</span> <span class="n">Value</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
+
+  <span class="k">template</span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">Key</span><span class="p">,</span> <span class="k">class</span> <span class="nc">Value</span><span class="o">&gt;</span>
+  <span class="n">C10_DEPRECATED_MESSAGE</span><span class="p">(</span><span class="s">&quot;IValues based on std::unordered_map&lt;K, V&gt; are slow and deprecated. Please use c10::DictPtr&lt;K, V&gt; instead.&quot;</span><span class="p">)</span>
+  <span class="n">IValue</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">unordered_map</span><span class="o">&lt;</span><span class="n">Key</span><span class="p">,</span> <span class="n">Value</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
+
+  <span class="k">template</span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+  <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
+  <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">nullopt_t</span><span class="p">);</span>
 
   <span class="c1">// ClassType</span>
   <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Object</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
   <span class="kt">bool</span> <span class="nf">isObject</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">tag</span> <span class="o">==</span> <span class="n">Tag</span><span class="o">::</span><span class="n">Object</span><span class="p">;</span> <span class="p">}</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Object</span><span class="o">&gt;</span> <span class="n">toObject</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
-    <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">isObject</span><span class="p">());</span>
-    <span class="k">return</span> <span class="n">toIntrusivePtr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Object</span><span class="o">&gt;</span><span class="p">();</span>
-  <span class="p">}</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Object</span><span class="o">&gt;</span> <span class="n">toObject</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span> <span class="p">{</span>
-    <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">isObject</span><span class="p">());</span>
-    <span class="k">return</span> <span class="n">toIntrusivePtr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Object</span><span class="o">&gt;</span><span class="p">();</span>
-  <span class="p">}</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Object</span><span class="o">&gt;</span> <span class="n">toObject</span><span class="p">()</span> <span class="o">&amp;&amp;</span><span class="p">;</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Object</span><span class="o">&gt;</span> <span class="n">toObject</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span> <span class="p">;</span>
+  <span class="k">const</span> <span class="n">ivalue</span><span class="o">::</span><span class="n">Object</span><span class="o">&amp;</span> <span class="n">toObjectRef</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
 
   <span class="c1">// None</span>
-  <span class="kt">bool</span> <span class="n">isNone</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+  <span class="kt">bool</span> <span class="nf">isNone</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">Tag</span><span class="o">::</span><span class="n">None</span> <span class="o">==</span> <span class="n">tag</span><span class="p">;</span>
   <span class="p">}</span>
   <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">toNone</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">isNone</span><span class="p">());</span>
     <span class="k">return</span> <span class="s">&quot;None&quot;</span><span class="p">;</span>
   <span class="p">}</span>
+
+  <span class="k">static</span> <span class="n">IValue</span> <span class="n">uninitialized</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">auto</span> <span class="n">i</span> <span class="o">=</span> <span class="n">IValue</span><span class="p">();</span>
+    <span class="n">i</span><span class="p">.</span><span class="n">tag</span> <span class="o">=</span> <span class="n">Tag</span><span class="o">::</span><span class="n">Uninitialized</span><span class="p">;</span>
+    <span class="k">return</span> <span class="n">i</span><span class="p">;</span>
+  <span class="p">}</span>
+
   <span class="c1">// Scalar, which gets encoded as either an Int or a Double</span>
   <span class="n">IValue</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">Scalar</span> <span class="n">s</span><span class="p">)</span>
   <span class="o">:</span> <span class="n">IValue</span><span class="p">()</span> <span class="p">{</span>
@@ -695,6 +562,22 @@
     <span class="k">return</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Layout</span><span class="o">&gt;</span><span class="p">(</span><span class="n">toInt</span><span class="p">());</span>
   <span class="p">}</span>
 
+  <span class="c1">// MemoryFormat</span>
+  <span class="n">at</span><span class="o">::</span><span class="n">MemoryFormat</span> <span class="n">toMemoryFormat</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">MemoryFormat</span><span class="o">&gt;</span><span class="p">(</span><span class="n">toInt</span><span class="p">());</span>
+  <span class="p">}</span>
+
+  <span class="c1">// QScheme</span>
+  <span class="n">IValue</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">QScheme</span> <span class="n">qscheme</span><span class="p">)</span>
+  <span class="o">:</span> <span class="n">tag</span><span class="p">(</span><span class="n">Tag</span><span class="o">::</span><span class="n">Int</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">payload</span><span class="p">.</span><span class="n">as_int</span> <span class="o">=</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">qscheme</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="n">at</span><span class="o">::</span><span class="n">QScheme</span> <span class="n">toQScheme</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">QScheme</span><span class="o">&gt;</span><span class="p">(</span><span class="n">toInt</span><span class="p">());</span>
+  <span class="p">}</span>
+
+
   <span class="c1">// for debugging</span>
   <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">tagKind</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">switch</span><span class="p">(</span><span class="n">tag</span><span class="p">)</span> <span class="p">{</span>
@@ -702,7 +585,7 @@
       <span class="n">TORCH_FORALL_TAGS</span><span class="p">(</span><span class="n">DEFINE_CASE</span><span class="p">)</span>
       <span class="cp">#undef DEFINE_CASE</span>
     <span class="p">}</span>
-    <span class="k">return</span> <span class="s">&quot;Invalid Tag&quot;</span><span class="p">;</span>
+    <span class="k">return</span> <span class="s">&quot;InvalidTag(&quot;</span> <span class="o">+</span> <span class="n">c10</span><span class="o">::</span><span class="n">guts</span><span class="o">::</span><span class="n">to_string</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="p">(</span><span class="n">tag</span><span class="p">))</span> <span class="o">+</span> <span class="s">&quot;)&quot;</span><span class="p">;</span>
   <span class="p">}</span>
 
   <span class="c1">// generic v.to&lt;at::Tensor&gt;() implementations</span>
@@ -724,7 +607,7 @@
   <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">toOptional</span><span class="p">();</span>
 
   <span class="c1">// this is a shallow comparison of two IValues to test the object identity</span>
-  <span class="kt">bool</span> <span class="nf">isSameIdentity</span><span class="p">(</span><span class="n">IValue</span><span class="o">&amp;</span> <span class="n">rhs</span><span class="p">);</span>
+  <span class="kt">bool</span> <span class="nf">isSameIdentity</span><span class="p">(</span><span class="k">const</span> <span class="n">IValue</span><span class="o">&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
 
   <span class="n">CAFFE2_API</span> <span class="k">friend</span> <span class="n">std</span><span class="o">::</span><span class="n">ostream</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">&lt;&lt;</span><span class="p">(</span>
       <span class="n">std</span><span class="o">::</span><span class="n">ostream</span><span class="o">&amp;</span> <span class="n">out</span><span class="p">,</span>
@@ -732,6 +615,11 @@
 
   <span class="kt">bool</span> <span class="nf">isPtrType</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">is_intrusive_ptr</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="k">const</span> <span class="kt">void</span><span class="o">*</span> <span class="nf">internalToPointer</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span><span class="n">isPtrType</span><span class="p">(),</span> <span class="s">&quot;Can only call internalToPointer() for pointer types&quot;</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">;</span>
   <span class="p">}</span>
 
  <span class="k">private</span><span class="o">:</span>
@@ -748,24 +636,17 @@
   <span class="p">};</span>
 
   <span class="k">template</span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="p">,</span> <span class="k">class</span> <span class="nc">NullType</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">detail</span><span class="o">::</span><span class="n">intrusive_target_default_null_type</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span> <span class="n">NullType</span><span class="o">&gt;</span> <span class="n">moveToIntrusivePtr</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">auto</span> <span class="n">t</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span> <span class="n">NullType</span><span class="o">&gt;::</span><span class="n">reclaim</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="n">T</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">));</span>
-    <span class="n">clearToNone</span><span class="p">();</span>
-    <span class="k">return</span> <span class="n">t</span><span class="p">;</span>
-  <span class="p">}</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span> <span class="n">NullType</span><span class="o">&gt;</span> <span class="n">moveToIntrusivePtr</span><span class="p">();</span>
   <span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="p">,</span> <span class="k">class</span> <span class="nc">NullType</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">detail</span><span class="o">::</span><span class="n">intrusive_target_default_null_type</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span> <span class="n">NullType</span><span class="o">&gt;</span> <span class="n">toIntrusivePtr</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">auto</span> <span class="n">r</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span> <span class="n">NullType</span><span class="o">&gt;::</span><span class="n">reclaim</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="n">T</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">));</span>
-    <span class="k">auto</span> <span class="n">p</span> <span class="o">=</span> <span class="n">r</span><span class="p">;</span>
-    <span class="n">r</span><span class="p">.</span><span class="n">release</span><span class="p">();</span>
-    <span class="k">return</span> <span class="n">p</span><span class="p">;</span>
-  <span class="p">}</span>
-  <span class="kt">void</span> <span class="n">clearToNone</span><span class="p">()</span> <span class="p">{</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span> <span class="n">NullType</span><span class="o">&gt;</span> <span class="n">toIntrusivePtr</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+
+  <span class="kt">void</span> <span class="nf">clearToNone</span><span class="p">()</span> <span class="p">{</span>
     <span class="n">payload</span><span class="p">.</span><span class="n">as_int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
     <span class="n">tag</span> <span class="o">=</span> <span class="n">Tag</span><span class="o">::</span><span class="n">None</span><span class="p">;</span>
     <span class="n">is_intrusive_ptr</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
   <span class="p">}</span>
-  <span class="k">union</span> <span class="p">{</span>
+<span class="k">private</span><span class="o">:</span>
+  <span class="k">union</span> <span class="n">Payload</span> <span class="p">{</span>
     <span class="kt">int64_t</span> <span class="n">as_int</span><span class="p">;</span>
     <span class="kt">double</span> <span class="n">as_double</span><span class="p">;</span>
     <span class="kt">bool</span> <span class="n">as_bool</span><span class="p">;</span>
@@ -774,479 +655,116 @@
       <span class="n">DeviceType</span> <span class="n">type</span><span class="p">;</span>
       <span class="n">DeviceIndex</span> <span class="n">index</span><span class="p">;</span>
     <span class="p">}</span> <span class="n">as_device</span><span class="p">;</span>
-  <span class="p">}</span> <span class="n">payload</span><span class="p">;</span>
+  <span class="p">};</span>
+
+  <span class="n">IValue</span><span class="p">(</span><span class="n">Payload</span> <span class="n">p</span><span class="p">,</span> <span class="n">Tag</span> <span class="n">t</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">i</span><span class="p">)</span>
+  <span class="o">:</span> <span class="n">payload</span><span class="p">(</span><span class="n">p</span><span class="p">),</span> <span class="n">tag</span><span class="p">(</span><span class="n">t</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="p">{}</span>
+
+  <span class="n">Payload</span> <span class="n">payload</span><span class="p">;</span>
   <span class="n">Tag</span> <span class="n">tag</span><span class="p">;</span>
+  <span class="kt">bool</span> <span class="n">is_intrusive_ptr</span><span class="p">;</span>
+  <span class="k">friend</span> <span class="k">struct</span> <span class="n">WeakIValue</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="k">struct</span> <span class="n">CAFFE2_API</span> <span class="n">WeakIValue</span> <span class="k">final</span> <span class="p">{</span>
+  <span class="n">WeakIValue</span><span class="p">()</span>
+  <span class="o">:</span> <span class="n">payload</span><span class="p">{</span><span class="mi">0</span><span class="p">}</span>
+  <span class="p">,</span> <span class="n">tag</span><span class="p">(</span><span class="n">IValue</span><span class="o">::</span><span class="n">Tag</span><span class="o">::</span><span class="n">None</span><span class="p">)</span>
+  <span class="p">,</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span> <span class="p">{}</span>
+
+  <span class="n">WeakIValue</span><span class="p">(</span><span class="k">const</span> <span class="n">WeakIValue</span><span class="o">&amp;</span> <span class="n">rhs</span><span class="p">)</span>
+      <span class="o">:</span> <span class="n">payload</span><span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">payload</span><span class="p">),</span>
+        <span class="n">tag</span><span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">tag</span><span class="p">),</span>
+        <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">is_intrusive_ptr</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">is_intrusive_ptr</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">c10</span><span class="o">::</span><span class="n">raw</span><span class="o">::</span><span class="n">weak_intrusive_ptr</span><span class="o">::</span><span class="n">incref</span><span class="p">(</span><span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+  <span class="n">WeakIValue</span><span class="p">(</span><span class="k">const</span> <span class="n">IValue</span><span class="o">&amp;</span> <span class="n">rhs</span><span class="p">)</span>
+      <span class="o">:</span> <span class="n">payload</span><span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">payload</span><span class="p">),</span>
+        <span class="n">tag</span><span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">tag</span><span class="p">),</span>
+        <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">is_intrusive_ptr</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">is_intrusive_ptr</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">c10</span><span class="o">::</span><span class="n">raw</span><span class="o">::</span><span class="n">weak_intrusive_ptr</span><span class="o">::</span><span class="n">incref</span><span class="p">(</span><span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+  <span class="n">WeakIValue</span><span class="p">(</span><span class="n">WeakIValue</span><span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="k">noexcept</span> <span class="o">:</span> <span class="n">WeakIValue</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">swap</span><span class="p">(</span><span class="n">rhs</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="o">~</span><span class="n">WeakIValue</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">is_intrusive_ptr</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">c10</span><span class="o">::</span><span class="n">raw</span><span class="o">::</span><span class="n">weak_intrusive_ptr</span><span class="o">::</span><span class="n">decref</span><span class="p">(</span><span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+  <span class="n">WeakIValue</span> <span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">WeakIValue</span> <span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="o">&amp;</span> <span class="k">noexcept</span> <span class="p">{</span>
+    <span class="n">WeakIValue</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">rhs</span><span class="p">)).</span><span class="n">swap</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">);</span> <span class="c1">// this also sets rhs to None</span>
+    <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="n">WeakIValue</span> <span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">WeakIValue</span> <span class="k">const</span> <span class="o">&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">{</span>
+    <span class="n">WeakIValue</span><span class="p">(</span><span class="n">rhs</span><span class="p">).</span><span class="n">swap</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">);</span>
+    <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="kt">void</span> <span class="n">swap</span><span class="p">(</span><span class="n">WeakIValue</span> <span class="o">&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">swap</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="n">rhs</span><span class="p">.</span><span class="n">payload</span><span class="p">);</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">swap</span><span class="p">(</span><span class="n">is_intrusive_ptr</span><span class="p">,</span> <span class="n">rhs</span><span class="p">.</span><span class="n">is_intrusive_ptr</span><span class="p">);</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">swap</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="n">rhs</span><span class="p">.</span><span class="n">tag</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="kt">bool</span> <span class="n">isSameIdentity</span><span class="p">(</span><span class="k">const</span> <span class="n">WeakIValue</span><span class="o">&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">payload</span><span class="p">.</span><span class="n">as_int</span> <span class="o">==</span> <span class="n">rhs</span><span class="p">.</span><span class="n">payload</span><span class="p">.</span><span class="n">as_int</span> <span class="o">&amp;&amp;</span> <span class="n">tag</span> <span class="o">==</span> <span class="n">rhs</span><span class="p">.</span><span class="n">tag</span> <span class="o">&amp;&amp;</span>
+        <span class="n">is_intrusive_ptr</span> <span class="o">==</span> <span class="n">rhs</span><span class="p">.</span><span class="n">is_intrusive_ptr</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="n">IValue</span> <span class="n">lock</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">is_intrusive_ptr</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="n">IValue</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="n">tag</span><span class="p">,</span> <span class="nb">false</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="k">auto</span> <span class="n">temp</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">weak_intrusive_ptr</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr_target</span><span class="o">&gt;::</span><span class="n">reclaim</span><span class="p">(</span>
+        <span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">);</span>
+    <span class="n">IValue</span><span class="o">::</span><span class="n">Payload</span> <span class="n">pl</span><span class="p">;</span>
+    <span class="n">pl</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">=</span> <span class="n">temp</span><span class="p">.</span><span class="n">lock</span><span class="p">().</span><span class="n">release</span><span class="p">();</span>
+    <span class="n">temp</span><span class="p">.</span><span class="n">release</span><span class="p">();</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">pl</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="n">IValue</span><span class="p">();</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="n">IValue</span><span class="p">(</span><span class="n">pl</span><span class="p">,</span> <span class="n">tag</span><span class="p">,</span> <span class="nb">true</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="kt">size_t</span> <span class="n">use_count</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">is_intrusive_ptr</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">auto</span> <span class="n">temp</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">weak_intrusive_ptr</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr_target</span><span class="o">&gt;::</span><span class="n">reclaim</span><span class="p">(</span>
+        <span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">);</span>
+    <span class="kt">size_t</span> <span class="n">result</span> <span class="o">=</span> <span class="n">temp</span><span class="p">.</span><span class="n">use_count</span><span class="p">();</span>
+    <span class="n">temp</span><span class="p">.</span><span class="n">release</span><span class="p">();</span>
+    <span class="k">return</span> <span class="n">result</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="kt">size_t</span> <span class="n">weak_use_count</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">is_intrusive_ptr</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">auto</span> <span class="n">temp</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">weak_intrusive_ptr</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr_target</span><span class="o">&gt;::</span><span class="n">reclaim</span><span class="p">(</span>
+        <span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">);</span>
+    <span class="kt">size_t</span> <span class="n">result</span> <span class="o">=</span> <span class="n">temp</span><span class="p">.</span><span class="n">weak_use_count</span><span class="p">();</span>
+    <span class="n">temp</span><span class="p">.</span><span class="n">release</span><span class="p">();</span>
+    <span class="k">return</span> <span class="n">result</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="kt">size_t</span> <span class="n">hash</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">payload</span><span class="p">.</span><span class="n">as_int</span><span class="p">;</span>
+  <span class="p">}</span>
+
+<span class="k">private</span><span class="o">:</span>
+  <span class="n">IValue</span><span class="o">::</span><span class="n">Payload</span> <span class="n">payload</span><span class="p">;</span>
+  <span class="n">IValue</span><span class="o">::</span><span class="n">Tag</span> <span class="n">tag</span><span class="p">;</span>
   <span class="kt">bool</span> <span class="n">is_intrusive_ptr</span><span class="p">;</span>
 <span class="p">};</span>
 
-<span class="c1">// Future</span>
-<span class="k">struct</span> <span class="n">C10_EXPORT</span> <span class="n">ivalue</span><span class="o">::</span><span class="n">Future</span> <span class="k">final</span> <span class="o">:</span> <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr_target</span> <span class="p">{</span>
- <span class="k">private</span><span class="o">:</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">Future</span><span class="o">&gt;</span> <span class="n">intrusive_from_this</span><span class="p">()</span> <span class="p">{</span>
-    <span class="n">c10</span><span class="o">::</span><span class="n">raw</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">::</span><span class="n">incref</span><span class="p">(</span><span class="k">this</span><span class="p">);</span> <span class="c1">// we are creating a new pointer</span>
-                                           <span class="c1">// from a raw `this` pointer</span>
-                                           <span class="c1">// so we need to bump the refcount</span>
-                                           <span class="c1">// to account for this ownership</span>
-    <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">Future</span><span class="o">&gt;::</span><span class="n">reclaim</span><span class="p">(</span><span class="k">this</span><span class="p">);</span>
-  <span class="p">}</span>
-
- <span class="k">public</span><span class="o">:</span>
-  <span class="k">struct</span> <span class="n">CAFFE2_API</span> <span class="n">FutureError</span> <span class="k">final</span> <span class="o">:</span> <span class="k">public</span> <span class="n">std</span><span class="o">::</span><span class="n">exception</span> <span class="p">{</span>
-    <span class="n">FutureError</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;&amp;</span> <span class="n">error_msg_</span><span class="p">)</span>
-        <span class="o">:</span> <span class="n">error_msg</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">error_msg_</span><span class="p">))</span> <span class="p">{}</span>
-
-    <span class="n">FutureError</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
-
-    <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="nf">what</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="k">override</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="n">error_msg</span><span class="p">.</span><span class="n">c_str</span><span class="p">();</span>
-    <span class="p">}</span>
-
-    <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">error_msg</span><span class="p">;</span>
-  <span class="p">};</span>
-
-  <span class="kt">void</span> <span class="nf">wait</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">completed</span><span class="p">())</span> <span class="p">{</span>
-      <span class="k">return</span><span class="p">;</span>
-    <span class="p">}</span>
-    <span class="n">std</span><span class="o">::</span><span class="n">condition_variable</span> <span class="n">finished</span><span class="p">;</span>
-    <span class="kt">bool</span> <span class="n">fired</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
-
-    <span class="c1">// Add a callback to notify the current thread</span>
-    <span class="c1">// when the current future completes.</span>
-    <span class="n">addCallback</span><span class="p">([</span><span class="o">&amp;</span><span class="p">]</span> <span class="p">{</span>
-      <span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lock</span><span class="p">(</span><span class="n">mutex_</span><span class="p">);</span>
-      <span class="n">finished</span><span class="p">.</span><span class="n">notify_all</span><span class="p">();</span>
-      <span class="n">fired</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
-    <span class="p">});</span>
-
-    <span class="c1">// The current thread will be blocked unless the above callback is fired.</span>
-    <span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lock</span><span class="p">(</span><span class="n">mutex_</span><span class="p">);</span>
-    <span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">fired</span><span class="p">)</span> <span class="p">{</span>
-      <span class="n">finished</span><span class="p">.</span><span class="n">wait</span><span class="p">(</span><span class="n">lock</span><span class="p">);</span>
-    <span class="p">}</span>
-
-    <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">completed</span><span class="p">());</span>
-  <span class="p">}</span>
-
-  <span class="kt">void</span> <span class="nf">markCompleted</span><span class="p">(</span><span class="n">IValue</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
-    <span class="p">{</span>
-      <span class="c1">// This is not to protect completed_ but to create a barrier</span>
-      <span class="c1">// from possible addCallback() calls</span>
-      <span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lock</span><span class="p">(</span><span class="n">mutex_</span><span class="p">);</span>
-      <span class="n">AT_ASSERT</span><span class="p">(</span><span class="o">!</span><span class="n">completed</span><span class="p">());</span>
-      <span class="n">completed_</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
-      <span class="n">value_</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">value</span><span class="p">);</span>
-    <span class="p">}</span>
-
-    <span class="n">fireCallbacks</span><span class="p">();</span>
-  <span class="p">}</span>
-
-  <span class="kt">void</span> <span class="nf">markCompleted</span><span class="p">(</span><span class="n">FutureError</span><span class="o">&amp;&amp;</span> <span class="n">error_</span><span class="p">)</span> <span class="p">{</span>
-    <span class="p">{</span>
-      <span class="c1">// This is not to protect completed_ but to create a barrier</span>
-      <span class="c1">// from possible addCallback() calls</span>
-      <span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lock</span><span class="p">(</span><span class="n">mutex_</span><span class="p">);</span>
-      <span class="n">AT_ASSERT</span><span class="p">(</span><span class="o">!</span><span class="n">completed</span><span class="p">());</span>
-      <span class="n">completed_</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
-      <span class="n">has_error</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
-      <span class="n">error</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">error_</span><span class="p">);</span>
-    <span class="p">}</span>
-
-    <span class="n">fireCallbacks</span><span class="p">();</span>
-  <span class="p">}</span>
-
-  <span class="c1">// Get the result of the current future.</span>
-  <span class="n">IValue</span> <span class="nf">value</span><span class="p">()</span> <span class="p">{</span>
-    <span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lock</span><span class="p">(</span><span class="n">mutex_</span><span class="p">);</span>
-    <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">completed</span><span class="p">());</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">has_error</span><span class="p">)</span> <span class="p">{</span>
-      <span class="k">throw</span> <span class="n">error</span><span class="p">;</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="n">value_</span><span class="p">;</span>
-  <span class="p">}</span>
-
-  <span class="kt">void</span> <span class="nf">addCallback</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="o">&gt;</span> <span class="n">callback</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lock</span><span class="p">(</span><span class="n">mutex_</span><span class="p">);</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">completed</span><span class="p">())</span> <span class="p">{</span>
-      <span class="n">lock</span><span class="p">.</span><span class="n">unlock</span><span class="p">();</span>
-      <span class="n">callback</span><span class="p">();</span>
-      <span class="k">return</span><span class="p">;</span>
-    <span class="p">}</span>
-    <span class="n">callbacks</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">callback</span><span class="p">);</span>
-  <span class="p">}</span>
-
-  <span class="c1">// Check if the current future has completed</span>
-  <span class="kt">bool</span> <span class="nf">completed</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">completed_</span><span class="p">;</span>
-  <span class="p">}</span>
-
-  <span class="n">CAFFE2_API</span> <span class="k">friend</span> <span class="n">std</span><span class="o">::</span><span class="n">ostream</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">&lt;&lt;</span><span class="p">(</span>
-      <span class="n">std</span><span class="o">::</span><span class="n">ostream</span><span class="o">&amp;</span> <span class="n">out</span><span class="p">,</span>
-      <span class="k">const</span> <span class="n">Future</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">);</span>
-
- <span class="k">private</span><span class="o">:</span>
-  <span class="kt">void</span> <span class="n">fireCallbacks</span><span class="p">()</span> <span class="p">{</span>
-    <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">completed</span><span class="p">());</span>
-    <span class="c1">// There is no need to protect callbacks with the lock.</span>
-    <span class="c1">// Once completed_ is set to true, no one can add new callback to the list.</span>
-    <span class="k">for</span> <span class="p">(</span><span class="k">auto</span><span class="o">&amp;</span> <span class="nl">callback</span> <span class="p">:</span> <span class="n">callbacks</span><span class="p">)</span> <span class="p">{</span>
-      <span class="n">callback</span><span class="p">();</span>
-    <span class="p">}</span>
-    <span class="n">callbacks</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span>
-  <span class="p">}</span>
-
-  <span class="n">std</span><span class="o">::</span><span class="n">mutex</span> <span class="n">mutex_</span><span class="p">;</span>
-  <span class="n">IValue</span> <span class="n">value_</span><span class="p">;</span> <span class="c1">// when finished the value</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">atomic_bool</span> <span class="n">completed_</span> <span class="o">=</span> <span class="p">{</span><span class="nb">false</span><span class="p">};</span> <span class="c1">// is this future complete</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="o">&gt;&gt;</span> <span class="n">callbacks</span><span class="p">;</span>
-  <span class="kt">bool</span> <span class="n">has_error</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
-  <span class="n">FutureError</span> <span class="n">error</span><span class="p">;</span>
-<span class="p">};</span>
-
-<span class="c1">// User-defined object.</span>
-<span class="k">struct</span> <span class="n">C10_EXPORT</span> <span class="n">ivalue</span><span class="o">::</span><span class="n">Object</span> <span class="k">final</span> <span class="o">:</span> <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr_target</span> <span class="p">{</span>
- <span class="k">public</span><span class="o">:</span>
-  <span class="n">Object</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ClassType</span><span class="o">&gt;</span> <span class="n">type</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">numSlots</span><span class="p">)</span> <span class="o">:</span> <span class="n">type_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">type</span><span class="p">))</span> <span class="p">{</span>
-    <span class="n">slots_</span><span class="p">.</span><span class="n">resize</span><span class="p">(</span><span class="n">numSlots</span><span class="p">);</span>
-  <span class="p">}</span>
-
-  <span class="k">static</span> <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">Object</span><span class="o">&gt;</span> <span class="n">create</span><span class="p">(</span>
-      <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ClassType</span><span class="o">&gt;</span> <span class="n">type</span><span class="p">,</span>
-      <span class="kt">size_t</span> <span class="n">numSlots</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">make_intrusive</span><span class="o">&lt;</span><span class="n">Object</span><span class="o">&gt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">type</span><span class="p">),</span> <span class="n">numSlots</span><span class="p">);</span>
-  <span class="p">}</span>
-
-  <span class="kt">void</span> <span class="n">setSlot</span><span class="p">(</span><span class="kt">size_t</span> <span class="n">slot</span><span class="p">,</span> <span class="n">IValue</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">slot</span> <span class="o">&gt;=</span> <span class="n">slots_</span><span class="p">.</span><span class="n">size</span><span class="p">())</span> <span class="p">{</span>
-      <span class="c1">// for module types, it is possible that the members of the class have</span>
-      <span class="c1">// expanded after the object was created. In this case, we expand</span>
-      <span class="c1">// the slots to the right size</span>
-      <span class="n">resizeObject</span><span class="p">(</span><span class="n">slot</span><span class="p">);</span>
-    <span class="p">}</span>
-    <span class="n">slots_</span><span class="p">[</span><span class="n">slot</span><span class="p">]</span> <span class="o">=</span> <span class="n">v</span><span class="p">;</span>
-  <span class="p">}</span>
-
-  <span class="k">const</span> <span class="n">IValue</span><span class="o">&amp;</span> <span class="n">getSlot</span><span class="p">(</span><span class="kt">size_t</span> <span class="n">slot</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">slots_</span><span class="p">.</span><span class="n">at</span><span class="p">(</span><span class="n">slot</span><span class="p">);</span>
-  <span class="p">}</span>
-
-  <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">name</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
-
-  <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IValue</span><span class="o">&gt;&amp;</span> <span class="n">slots</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">slots_</span><span class="p">;</span>
-  <span class="p">}</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ClassType</span><span class="o">&gt;</span> <span class="n">type</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">type_</span><span class="p">;</span>
-  <span class="p">}</span>
-
- <span class="k">private</span><span class="o">:</span>
-  <span class="kt">void</span> <span class="n">resizeObject</span><span class="p">(</span><span class="kt">size_t</span> <span class="n">slot</span><span class="p">);</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ClassType</span><span class="o">&gt;</span> <span class="n">type_</span><span class="p">;</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IValue</span><span class="o">&gt;</span> <span class="n">slots_</span><span class="p">;</span>
-<span class="p">};</span>
-
-<span class="k">struct</span> <span class="n">C10_EXPORT</span> <span class="n">ivalue</span><span class="o">::</span><span class="nl">GenericDict</span> <span class="p">:</span> <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr_target</span> <span class="p">{</span>
- <span class="k">private</span><span class="o">:</span>
-  <span class="n">UnorderedMap</span> <span class="n">elements_</span><span class="p">;</span>
-
- <span class="k">public</span><span class="o">:</span>
-  <span class="n">GenericDict</span><span class="p">(</span><span class="n">UnorderedMap</span> <span class="n">elements_</span><span class="p">)</span>
-      <span class="o">:</span> <span class="n">elements_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">elements_</span><span class="p">))</span> <span class="p">{}</span>
-  <span class="k">static</span> <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">GenericDict</span><span class="o">&gt;</span> <span class="n">create</span><span class="p">(</span>
-      <span class="n">UnorderedMap</span> <span class="n">elements_</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">make_intrusive</span><span class="o">&lt;</span><span class="n">GenericDict</span><span class="o">&gt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">elements_</span><span class="p">));</span>
-  <span class="p">}</span>
-  <span class="k">const</span> <span class="n">UnorderedMap</span><span class="o">&amp;</span> <span class="n">elements</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">elements_</span><span class="p">;</span>
-  <span class="p">}</span>
-  <span class="k">operator</span> <span class="k">const</span> <span class="n">UnorderedMap</span><span class="o">&amp;</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">elements</span><span class="p">();</span>
-  <span class="p">}</span>
-
-  <span class="n">UnorderedMap</span><span class="o">&amp;</span> <span class="n">elements</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">elements_</span><span class="p">;</span>
-  <span class="p">}</span>
-  <span class="k">operator</span> <span class="n">UnorderedMap</span><span class="o">&amp;</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">elements</span><span class="p">();</span>
-  <span class="p">}</span>
-
-  <span class="k">using</span> <span class="n">IterationOrder</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">pair</span><span class="o">&lt;</span><span class="n">IValue</span><span class="p">,</span> <span class="n">IValue</span><span class="o">&gt;&gt;</span><span class="p">;</span>
-  <span class="k">const</span> <span class="n">IterationOrder</span> <span class="nf">iterationOrder</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
-<span class="p">};</span>
-
-<span class="cp">#undef TORCH_FORALL_TAGS</span>
-
-<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
-
-<span class="k">struct</span> <span class="n">_guarded_unsigned_long_unique_dummy</span> <span class="k">final</span> <span class="p">{</span>
-  <span class="n">_guarded_unsigned_long_unique_dummy</span><span class="p">(</span><span class="kt">int64_t</span><span class="p">){};</span>
-<span class="p">};</span>
-<span class="k">using</span> <span class="n">_guarded_unsigned_long</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">guts</span><span class="o">::</span><span class="n">conditional_t</span><span class="o">&lt;</span>
-    <span class="n">std</span><span class="o">::</span><span class="n">is_same</span><span class="o">&lt;</span><span class="kt">unsigned</span> <span class="kt">long</span><span class="p">,</span> <span class="kt">uint32_t</span><span class="o">&gt;::</span><span class="n">value</span> <span class="o">||</span>
-        <span class="n">std</span><span class="o">::</span><span class="n">is_same</span><span class="o">&lt;</span><span class="kt">unsigned</span> <span class="kt">long</span><span class="p">,</span> <span class="kt">uint64_t</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span>
-    <span class="n">_guarded_unsigned_long_unique_dummy</span><span class="p">,</span>
-    <span class="kt">unsigned</span> <span class="kt">long</span><span class="o">&gt;</span><span class="p">;</span>
-
-<span class="p">}</span> <span class="c1">// namespace detail</span>
-
-<span class="cp">#define DEFINE_TO(type, method_name) \</span>
-<span class="cp">template&lt;&gt; \</span>
-<span class="cp">inline type IValue::to&lt;type&gt;() &amp;&amp; { \</span>
-<span class="cp">  return std::move(*this).method_name(); \</span>
-<span class="cp">} \</span>
-<span class="cp">template&lt;&gt; \</span>
-<span class="cp">inline type IValue::to&lt;type&gt;() const &amp; { \</span>
-<span class="cp">  return this-&gt;method_name(); \</span>
-<span class="cp">}</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">toTensor</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Tuple</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">toTuple</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="kt">float</span><span class="p">,</span> <span class="n">toDouble</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="kt">double</span><span class="p">,</span> <span class="n">toDouble</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="kt">unsigned</span> <span class="kt">char</span><span class="p">,</span> <span class="n">toInt</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="kt">signed</span> <span class="kt">char</span><span class="p">,</span> <span class="n">toInt</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="kt">unsigned</span> <span class="kt">short</span><span class="p">,</span> <span class="n">toInt</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="kt">short</span><span class="p">,</span> <span class="n">toInt</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="kt">int</span><span class="p">,</span> <span class="n">toInt</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="kt">uint32_t</span><span class="p">,</span> <span class="n">toInt</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="kt">uint64_t</span><span class="p">,</span> <span class="n">toInt</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="n">detail</span><span class="o">::</span><span class="n">_guarded_unsigned_long</span><span class="p">,</span> <span class="n">toInt</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="kt">int64_t</span><span class="p">,</span> <span class="n">toInt</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="kt">bool</span><span class="p">,</span> <span class="n">toBool</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">caffe2</span><span class="o">::</span><span class="n">Blob</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">toBlob</span><span class="p">);</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">DoubleList</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">toDoubleList</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">IntList</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">toIntList</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">BoolList</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">toBoolList</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">TensorList</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">toTensorList</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">GenericList</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">toGenericList</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">GenericDict</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">toGenericDict</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">ConstantString</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">toString</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Object</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">toObject</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">Scalar</span><span class="p">,</span> <span class="n">toScalar</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">toIntListRef</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">toDoubleListRef</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">toBoolListRef</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">toTensorListRef</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IValue</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">toGenericListRef</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">,</span> <span class="n">toStringRef</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Future</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">toFuture</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="n">IValue</span><span class="p">,</span> <span class="n">toIValue</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">Device</span><span class="p">,</span> <span class="n">toDevice</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">ScalarType</span><span class="p">,</span> <span class="n">toScalarType</span><span class="p">)</span>
-<span class="n">DEFINE_TO</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">Layout</span><span class="p">,</span> <span class="n">toLayout</span><span class="p">)</span>
-
-<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
-<span class="k">struct</span> <span class="n">_fake_type</span> <span class="p">{};</span>
-
-<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Elem</span><span class="o">&gt;</span>
-<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Elem</span><span class="o">&gt;</span> <span class="n">generic_to</span><span class="p">(</span>
-    <span class="k">const</span> <span class="n">IValue</span><span class="o">*</span> <span class="n">ivalue</span><span class="p">,</span>
-    <span class="n">_fake_type</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Elem</span><span class="o">&gt;&gt;</span><span class="p">)</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="n">fmap</span><span class="p">(</span><span class="n">ivalue</span><span class="o">-&gt;</span><span class="n">toGenericListRef</span><span class="p">(),</span> <span class="p">[](</span><span class="n">IValue</span> <span class="n">item_ivalue</span><span class="p">)</span> <span class="p">{</span> <span class="k">return</span> <span class="n">item_ivalue</span><span class="p">.</span><span class="n">to</span><span class="o">&lt;</span><span class="n">Elem</span><span class="o">&gt;</span><span class="p">();</span> <span class="p">});</span>
 <span class="p">}</span>
 
-<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">K</span><span class="p">,</span> <span class="k">typename</span> <span class="n">V</span><span class="o">&gt;</span>
-<span class="n">std</span><span class="o">::</span><span class="n">unordered_map</span><span class="o">&lt;</span><span class="n">K</span><span class="p">,</span> <span class="n">V</span><span class="o">&gt;</span> <span class="n">generic_to</span><span class="p">(</span>
-    <span class="k">const</span> <span class="n">IValue</span><span class="o">*</span> <span class="n">ivalue</span><span class="p">,</span>
-    <span class="n">_fake_type</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unordered_map</span><span class="o">&lt;</span><span class="n">K</span><span class="p">,</span> <span class="n">V</span><span class="o">&gt;&gt;</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">unordered_map</span><span class="o">&lt;</span><span class="n">K</span><span class="p">,</span> <span class="n">V</span><span class="o">&gt;</span> <span class="n">specialized_dict</span><span class="p">;</span>
-
-  <span class="k">for</span> <span class="p">(</span><span class="k">auto</span> <span class="nl">item</span> <span class="p">:</span> <span class="n">ivalue</span><span class="o">-&gt;</span><span class="n">toGenericDictRef</span><span class="p">())</span> <span class="p">{</span>
-    <span class="n">specialized_dict</span><span class="p">[</span><span class="n">item</span><span class="p">.</span><span class="n">first</span><span class="p">.</span><span class="n">to</span><span class="o">&lt;</span><span class="n">K</span><span class="o">&gt;</span><span class="p">()]</span> <span class="o">=</span> <span class="n">item</span><span class="p">.</span><span class="n">second</span><span class="p">.</span><span class="n">to</span><span class="o">&lt;</span><span class="n">V</span><span class="o">&gt;</span><span class="p">();</span>
-  <span class="p">}</span>
-
-  <span class="k">return</span> <span class="n">specialized_dict</span><span class="p">;</span>
-<span class="p">}</span>
-
-<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
-<span class="kr">inline</span> <span class="n">T</span> <span class="n">IValue</span><span class="o">::</span><span class="n">to</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="n">generic_to</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="n">_fake_type</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">{});</span>
-<span class="p">}</span>
-
-<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
-<span class="kr">inline</span> <span class="n">T</span> <span class="n">IValue</span><span class="o">::</span><span class="n">to</span><span class="p">()</span> <span class="k">const</span><span class="o">&amp;</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="n">generic_to</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="n">_fake_type</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">{});</span>
-<span class="p">}</span>
-
-<span class="c1">// note: when adding a DEFINE_TO case here you should also add a</span>
-<span class="c1">// toX method to IValue. These named methods are much more discoverable</span>
-<span class="c1">// than the to templated function.</span>
-
-<span class="kr">inline</span> <span class="n">IValue</span><span class="o">::</span><span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Tuple</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">)</span>
-<span class="o">:</span> <span class="n">tag</span><span class="p">(</span><span class="n">Tag</span><span class="o">::</span><span class="n">Tuple</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="nb">true</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">=</span> <span class="n">v</span><span class="p">.</span><span class="n">release</span><span class="p">();</span>
-<span class="p">}</span>
-
-<span class="kr">inline</span> <span class="n">IValue</span><span class="o">::</span><span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">IntList</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">)</span>
-<span class="o">:</span> <span class="n">tag</span><span class="p">(</span><span class="n">Tag</span><span class="o">::</span><span class="n">IntList</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="nb">true</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">=</span> <span class="n">v</span><span class="p">.</span><span class="n">release</span><span class="p">();</span>
-<span class="p">}</span>
-<span class="kr">inline</span> <span class="n">IValue</span><span class="o">::</span><span class="n">IValue</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">)</span>
-<span class="o">:</span> <span class="n">IValue</span><span class="p">(</span><span class="n">ivalue</span><span class="o">::</span><span class="n">IntList</span><span class="o">::</span><span class="n">create</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">v</span><span class="p">)))</span> <span class="p">{}</span>
-
-<span class="kr">inline</span> <span class="n">IValue</span><span class="o">::</span><span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">ConstantString</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">)</span>
-<span class="o">:</span> <span class="n">tag</span><span class="p">(</span><span class="n">Tag</span><span class="o">::</span><span class="n">String</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="nb">true</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">=</span> <span class="n">v</span><span class="p">.</span><span class="n">release</span><span class="p">();</span>
-<span class="p">}</span>
-<span class="kr">inline</span> <span class="n">IValue</span><span class="o">::</span><span class="n">IValue</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">v</span><span class="p">)</span>
-<span class="o">:</span> <span class="n">IValue</span><span class="p">(</span><span class="n">ivalue</span><span class="o">::</span><span class="n">ConstantString</span><span class="o">::</span><span class="n">create</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">v</span><span class="p">)))</span> <span class="p">{}</span>
-
-<span class="kr">inline</span> <span class="n">IValue</span><span class="o">::</span><span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">DoubleList</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">)</span>
-<span class="o">:</span> <span class="n">tag</span><span class="p">(</span><span class="n">Tag</span><span class="o">::</span><span class="n">DoubleList</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="nb">true</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">=</span> <span class="n">v</span><span class="p">.</span><span class="n">release</span><span class="p">();</span>
-<span class="p">}</span>
-<span class="kr">inline</span> <span class="n">IValue</span><span class="o">::</span><span class="n">IValue</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">)</span>
-<span class="o">:</span> <span class="n">IValue</span><span class="p">(</span><span class="n">ivalue</span><span class="o">::</span><span class="n">DoubleList</span><span class="o">::</span><span class="n">create</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">v</span><span class="p">)))</span> <span class="p">{}</span>
-
-<span class="kr">inline</span> <span class="n">IValue</span><span class="o">::</span><span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">BoolList</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">)</span>
-<span class="o">:</span> <span class="n">tag</span><span class="p">(</span><span class="n">Tag</span><span class="o">::</span><span class="n">BoolList</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="nb">true</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">=</span> <span class="n">v</span><span class="p">.</span><span class="n">release</span><span class="p">();</span>
-<span class="p">}</span>
-<span class="kr">inline</span> <span class="n">IValue</span><span class="o">::</span><span class="n">IValue</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">)</span>
-<span class="o">:</span> <span class="n">IValue</span><span class="p">(</span><span class="n">ivalue</span><span class="o">::</span><span class="n">BoolList</span><span class="o">::</span><span class="n">create</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">v</span><span class="p">)))</span> <span class="p">{}</span>
-
-<span class="kr">inline</span> <span class="n">IValue</span><span class="o">::</span><span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">TensorList</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">)</span>
-<span class="o">:</span> <span class="n">tag</span><span class="p">(</span><span class="n">Tag</span><span class="o">::</span><span class="n">TensorList</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="nb">true</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">=</span> <span class="n">v</span><span class="p">.</span><span class="n">release</span><span class="p">();</span>
-<span class="p">}</span>
-<span class="kr">inline</span> <span class="n">IValue</span><span class="o">::</span><span class="n">IValue</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">)</span>
-<span class="o">:</span> <span class="n">IValue</span><span class="p">(</span><span class="n">ivalue</span><span class="o">::</span><span class="n">TensorList</span><span class="o">::</span><span class="n">create</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">v</span><span class="p">)))</span> <span class="p">{}</span>
-
-<span class="kr">inline</span> <span class="n">IValue</span><span class="o">::</span><span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">GenericList</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">)</span>
-<span class="o">:</span> <span class="n">tag</span><span class="p">(</span><span class="n">Tag</span><span class="o">::</span><span class="n">GenericList</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="nb">true</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">=</span> <span class="n">v</span><span class="p">.</span><span class="n">release</span><span class="p">();</span>
-<span class="p">}</span>
-<span class="kr">inline</span> <span class="n">IValue</span><span class="o">::</span><span class="n">IValue</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IValue</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">)</span>
-<span class="o">:</span> <span class="n">IValue</span><span class="p">(</span><span class="n">ivalue</span><span class="o">::</span><span class="n">GenericList</span><span class="o">::</span><span class="n">create</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">v</span><span class="p">)))</span> <span class="p">{}</span>
-
-<span class="kr">inline</span> <span class="n">IValue</span><span class="o">::</span><span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">GenericDict</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">)</span>
-<span class="o">:</span> <span class="n">tag</span><span class="p">(</span><span class="n">Tag</span><span class="o">::</span><span class="n">GenericDict</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="nb">true</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">=</span> <span class="n">v</span><span class="p">.</span><span class="n">release</span><span class="p">();</span>
-<span class="p">}</span>
-<span class="kr">inline</span> <span class="n">IValue</span><span class="o">::</span><span class="n">IValue</span><span class="p">(</span><span class="n">ivalue</span><span class="o">::</span><span class="n">UnorderedMap</span> <span class="n">v</span><span class="p">)</span>
-<span class="o">:</span> <span class="n">IValue</span><span class="p">(</span><span class="n">ivalue</span><span class="o">::</span><span class="n">GenericDict</span><span class="o">::</span><span class="n">create</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">v</span><span class="p">)))</span> <span class="p">{}</span>
-
-<span class="kr">inline</span> <span class="n">IValue</span><span class="o">::</span><span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Object</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">)</span>
-<span class="o">:</span> <span class="n">tag</span><span class="p">(</span><span class="n">Tag</span><span class="o">::</span><span class="n">Object</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="nb">true</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">=</span> <span class="n">v</span><span class="p">.</span><span class="n">release</span><span class="p">();</span>
-<span class="p">}</span>
-<span class="kr">inline</span> <span class="n">IValue</span><span class="o">::</span><span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Future</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">)</span>
-<span class="o">:</span> <span class="n">tag</span><span class="p">(</span><span class="n">Tag</span><span class="o">::</span><span class="n">Future</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="nb">true</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">=</span> <span class="n">v</span><span class="p">.</span><span class="n">release</span><span class="p">();</span>
-<span class="p">}</span>
-
-<span class="kr">inline</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;&amp;</span> <span class="n">IValue</span><span class="o">::</span><span class="n">toIntListRef</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="n">toIntList</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">elements</span><span class="p">();</span>
-<span class="p">}</span>
-
-<span class="kr">inline</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;&amp;</span> <span class="n">IValue</span><span class="o">::</span><span class="n">toDoubleListRef</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="n">toDoubleList</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">elements</span><span class="p">();</span>
-<span class="p">}</span>
-
-<span class="kr">inline</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&gt;&amp;</span> <span class="n">IValue</span><span class="o">::</span><span class="n">toTensorListRef</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="n">toTensorList</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">elements</span><span class="p">();</span>
-<span class="p">}</span>
-
-<span class="kr">inline</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;&amp;</span> <span class="n">IValue</span><span class="o">::</span><span class="n">toBoolListRef</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="n">toBoolList</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">elements</span><span class="p">();</span>
-<span class="p">}</span>
-
-<span class="kr">inline</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IValue</span><span class="o">&gt;&amp;</span> <span class="n">IValue</span><span class="o">::</span><span class="n">toGenericListRef</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="n">toGenericList</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">elements</span><span class="p">();</span>
-<span class="p">}</span>
-
-<span class="kr">inline</span> <span class="k">const</span> <span class="n">c10</span><span class="o">::</span><span class="n">ivalue</span><span class="o">::</span><span class="n">UnorderedMap</span><span class="o">&amp;</span> <span class="n">IValue</span><span class="o">::</span>
-    <span class="n">toGenericDictRef</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="n">toGenericDict</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">elements</span><span class="p">();</span>
-<span class="p">}</span>
-
-<span class="kr">inline</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">IValue</span><span class="o">::</span><span class="n">toStringRef</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="n">toString</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">string</span><span class="p">();</span>
-<span class="p">}</span>
-
-<span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
-<span class="kr">inline</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">IValue</span><span class="o">::</span><span class="n">toOptional</span><span class="p">()</span> <span class="p">{</span>
-  <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">isNone</span><span class="p">())</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">nullopt</span><span class="p">;</span>
-  <span class="p">}</span>
-  <span class="k">return</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">to</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">();</span>
-<span class="p">}</span>
-
-<span class="kr">inline</span> <span class="kt">bool</span> <span class="n">IValue</span><span class="o">::</span><span class="n">isSameIdentity</span><span class="p">(</span><span class="n">IValue</span><span class="o">&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="p">{</span>
-  <span class="c1">// We choose to not use memcmp for payload check due to potential random padding characters on union type</span>
-
-  <span class="c1">// Semantics:</span>
-  <span class="c1">// 1. None is None, False is False, and True is True are all true</span>
-  <span class="c1">// 2. If it is a tensor type, we need to take undefined tensor into account</span>
-  <span class="c1">// 3. Undefined_tensor is None and vice versa should be true</span>
-  <span class="c1">// 4. If it is a reference type (i.e. is_intrusive_ptr), then is is True when the pointed-to object is the same.</span>
-  <span class="c1">// 5. False for all other comparisons.</span>
-  <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">isNone</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">.</span><span class="n">isNone</span><span class="p">())</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
-  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">isBool</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">.</span><span class="n">isBool</span><span class="p">())</span> <span class="p">{</span>
-    <span class="c1">// for bool type, do equality check</span>
-    <span class="k">return</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">toBool</span><span class="p">()</span> <span class="o">==</span> <span class="n">rhs</span><span class="p">.</span><span class="n">toBool</span><span class="p">();</span>
-  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">isTensor</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">.</span><span class="n">isTensor</span><span class="p">())</span> <span class="p">{</span>
-    <span class="c1">// for tensor type, just check the as_intrusive_ptr since is_intrusive_ptr is false for undefined tensor</span>
-    <span class="k">return</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">==</span> <span class="n">rhs</span><span class="p">.</span><span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">;</span>
-  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">isTensor</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">.</span><span class="n">isNone</span><span class="p">())</span> <span class="p">{</span>
-    <span class="c1">// special case: undefined tensor and None are the same identity</span>
-    <span class="k">return</span> <span class="o">!</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">is_intrusive_ptr</span><span class="p">;</span>
-  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">isNone</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">.</span><span class="n">isTensor</span><span class="p">())</span> <span class="p">{</span>
-    <span class="c1">// special case: undefined tensor and None are the same identity</span>
-    <span class="k">return</span> <span class="o">!</span><span class="n">rhs</span><span class="p">.</span><span class="n">is_intrusive_ptr</span><span class="p">;</span>
-  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-    <span class="c1">// for objects holding in IValue, do shallow compare on pointer address to testify the identity</span>
-    <span class="k">return</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">is_intrusive_ptr</span> <span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">.</span><span class="n">is_intrusive_ptr</span>
-        <span class="o">&amp;&amp;</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">==</span> <span class="n">rhs</span><span class="p">.</span><span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">;</span>
-  <span class="p">}</span>
-<span class="p">}</span>
-
-<span class="kr">inline</span> <span class="kt">bool</span> <span class="n">shallowEquals</span><span class="p">(</span><span class="k">const</span> <span class="n">IValue</span><span class="o">&amp;</span> <span class="n">lhs</span><span class="p">,</span> <span class="k">const</span> <span class="n">IValue</span><span class="o">&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="p">{</span>
-  <span class="k">if</span> <span class="p">(</span><span class="n">lhs</span><span class="p">.</span><span class="n">isNone</span><span class="p">())</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">rhs</span><span class="p">.</span><span class="n">isNone</span><span class="p">();</span>
-  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">lhs</span><span class="p">.</span><span class="n">isInt</span><span class="p">())</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">rhs</span><span class="p">.</span><span class="n">isInt</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">lhs</span><span class="p">.</span><span class="n">toInt</span><span class="p">()</span> <span class="o">==</span> <span class="n">rhs</span><span class="p">.</span><span class="n">toInt</span><span class="p">();</span>
-  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">lhs</span><span class="p">.</span><span class="n">isString</span><span class="p">())</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">rhs</span><span class="p">.</span><span class="n">isString</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">lhs</span><span class="p">.</span><span class="n">toStringRef</span><span class="p">()</span> <span class="o">==</span> <span class="n">rhs</span><span class="p">.</span><span class="n">toStringRef</span><span class="p">();</span>
-  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">lhs</span><span class="p">.</span><span class="n">isDouble</span><span class="p">())</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">rhs</span><span class="p">.</span><span class="n">isDouble</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">lhs</span><span class="p">.</span><span class="n">toDouble</span><span class="p">()</span> <span class="o">==</span> <span class="n">rhs</span><span class="p">.</span><span class="n">toDouble</span><span class="p">();</span>
-  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">lhs</span><span class="p">.</span><span class="n">isBool</span><span class="p">())</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">rhs</span><span class="p">.</span><span class="n">isBool</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">lhs</span><span class="p">.</span><span class="n">toBool</span><span class="p">()</span> <span class="o">==</span> <span class="n">rhs</span><span class="p">.</span><span class="n">toBool</span><span class="p">();</span>
-  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-    <span class="n">AT_ERROR</span><span class="p">(</span><span class="s">&quot;shallowEquals(IValue, IValue) not implemented for type &quot;</span><span class="p">,</span> <span class="n">lhs</span><span class="p">.</span><span class="n">tagKind</span><span class="p">());</span>
-  <span class="p">}</span>
-<span class="p">}</span>
-
-<span class="p">}</span> <span class="c1">// namespace c10</span>
-
-<span class="kr">inline</span> <span class="kt">size_t</span> <span class="n">at</span><span class="o">::</span><span class="n">ivalue</span><span class="o">::</span><span class="n">DictHash</span><span class="o">::</span><span class="k">operator</span><span class="p">()(</span>
-    <span class="k">const</span> <span class="n">c10</span><span class="o">::</span><span class="n">IValue</span><span class="o">&amp;</span> <span class="n">ivalue</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
-  <span class="k">if</span> <span class="p">(</span><span class="n">ivalue</span><span class="p">.</span><span class="n">isInt</span><span class="p">())</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">hash</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span><span class="p">()(</span><span class="n">ivalue</span><span class="p">.</span><span class="n">toInt</span><span class="p">());</span>
-  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">ivalue</span><span class="p">.</span><span class="n">isString</span><span class="p">())</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">hash</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="p">()(</span><span class="n">ivalue</span><span class="p">.</span><span class="n">toStringRef</span><span class="p">());</span>
-  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">ivalue</span><span class="p">.</span><span class="n">isDouble</span><span class="p">())</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">hash</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span><span class="p">()(</span><span class="n">ivalue</span><span class="p">.</span><span class="n">toDouble</span><span class="p">());</span>
-  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-    <span class="k">throw</span> <span class="n">std</span><span class="o">::</span><span class="n">runtime_error</span><span class="p">(</span><span class="s">&quot;Can&#39;t hash IValues with this tag&quot;</span><span class="p">);</span>
-  <span class="p">}</span>
-<span class="p">}</span>
-
-<span class="kr">inline</span> <span class="kt">bool</span> <span class="n">at</span><span class="o">::</span><span class="n">ivalue</span><span class="o">::</span><span class="n">DictEqualTo</span><span class="o">::</span><span class="k">operator</span><span class="p">()(</span>
-    <span class="k">const</span> <span class="n">c10</span><span class="o">::</span><span class="n">IValue</span><span class="o">&amp;</span> <span class="n">lhs</span><span class="p">,</span>
-    <span class="k">const</span> <span class="n">c10</span><span class="o">::</span><span class="n">IValue</span><span class="o">&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
-  <span class="k">if</span> <span class="p">(</span><span class="n">lhs</span><span class="p">.</span><span class="n">isNone</span><span class="p">())</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">rhs</span><span class="p">.</span><span class="n">isNone</span><span class="p">();</span>
-  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">lhs</span><span class="p">.</span><span class="n">isInt</span><span class="p">())</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">lhs</span><span class="p">.</span><span class="n">toInt</span><span class="p">()</span> <span class="o">==</span> <span class="n">rhs</span><span class="p">.</span><span class="n">toInt</span><span class="p">();</span>
-  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">lhs</span><span class="p">.</span><span class="n">isString</span><span class="p">())</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">lhs</span><span class="p">.</span><span class="n">toStringRef</span><span class="p">()</span> <span class="o">==</span> <span class="n">rhs</span><span class="p">.</span><span class="n">toStringRef</span><span class="p">();</span>
-  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">lhs</span><span class="p">.</span><span class="n">isDouble</span><span class="p">())</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">lhs</span><span class="p">.</span><span class="n">toDouble</span><span class="p">()</span> <span class="o">==</span> <span class="n">rhs</span><span class="p">.</span><span class="n">toDouble</span><span class="p">();</span>
-  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-    <span class="k">throw</span> <span class="n">std</span><span class="o">::</span><span class="n">runtime_error</span><span class="p">(</span><span class="s">&quot;Can&#39;t compare IValues with this tag&quot;</span><span class="p">);</span>
-  <span class="p">}</span>
-<span class="p">}</span>
+<span class="cp">#include</span> <span class="cpf">&lt;ATen/core/ivalue_inl.h&gt;</span><span class="cp"></span>
 </pre></div>
 </div>
 </div>
@@ -1257,15 +775,6 @@
             </div>
             <footer>
   
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="file_torch_csrc_api_include_torch_jit.h.html" class="btn btn-neutral float-right" title="File jit.h" accesskey="n" rel="next">Next <img src="../_static/images/chevron-right-orange.svg" class="next-page"></a>
-      
-      
-        <a href="file_aten_src_ATen_core_ivalue.h.html" class="btn btn-neutral" title="File ivalue.h" accesskey="p" rel="prev"><img src="../_static/images/chevron-right-orange.svg" class="previous-page"> Previous</a>
-      
-    </div>
-  
 
   
 
@@ -1275,7 +784,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2018, Torch Contributors.
+        &copy; Copyright 2019, Torch Contributors.
 
     </p>
   </div>

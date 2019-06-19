@@ -31,9 +31,7 @@
   <!-- <link rel="stylesheet" href="../_static/pygments.css" type="text/css" /> -->
   <link rel="stylesheet" href="../_static/collapsible-lists/css/tree_view.css" type="text/css" />
     <link rel="index" title="Index" href="../genindex.html" />
-    <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="File module.h" href="file_torch_csrc_jit_script_module.h.html" />
-    <link rel="prev" title="File module.h" href="file_torch_csrc_api_include_torch_nn_module.h.html" /> 
+    <link rel="search" title="Search" href="../search.html" /> 
 
   
   <script src="../_static/js/modernizr.min.js"></script>
@@ -136,11 +134,11 @@
               
             
             
-              <ul class="current">
+              <ul>
 <li class="toctree-l1"><a class="reference internal" href="../installing.html">Installing C++ Distributions of PyTorch</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../frontend.html">The C++ Frontend</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../contributing.html">Contributing to PyTorch</a></li>
-<li class="toctree-l1 current"><a class="reference internal" href="library_root.html">Library API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="library_root.html">Library API</a></li>
 </ul>
 <p class="caption"><span class="caption-text">Notes</span></p>
 <ul>
@@ -188,10 +186,6 @@
         </a> &gt;
       </li>
 
-        
-          <li><a href="library_root.html">Library API</a> &gt;</li>
-        
-          <li><a href="file_torch_csrc_api_include_torch_nn_module.h.html">File module.h</a> &gt;</li>
         
       <li>Program Listing for File module.h</li>
     
@@ -379,6 +373,14 @@
       <span class="n">std</span><span class="o">::</span><span class="n">ostream</span><span class="o">&amp;</span> <span class="n">stream</span><span class="p">,</span>
       <span class="k">const</span> <span class="n">nn</span><span class="o">::</span><span class="n">Module</span><span class="o">&amp;</span> <span class="n">module</span><span class="p">);</span>
 
+  <span class="c1">// data parallel using this method to configure gradient edges during the</span>
+  <span class="c1">// replicate step.</span>
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">ModuleType</span><span class="o">&gt;</span>
+  <span class="k">friend</span> <span class="kt">void</span> <span class="n">replicate_grad_edges</span><span class="p">(</span>
+      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Module</span><span class="o">&gt;&amp;</span> <span class="n">module</span><span class="p">,</span>
+      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;&gt;&amp;</span> <span class="n">replicas</span><span class="p">,</span>
+      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Device</span><span class="o">&gt;&amp;</span> <span class="n">devices</span><span class="p">);</span>
+
   <span class="c1">// Private methods.</span>
 
   <span class="k">virtual</span> <span class="kt">void</span> <span class="nf">clone_</span><span class="p">(</span><span class="n">Module</span><span class="o">&amp;</span> <span class="n">other</span><span class="p">,</span> <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">Device</span><span class="o">&gt;&amp;</span> <span class="n">device</span><span class="p">);</span>
@@ -445,8 +447,8 @@
 <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;</span> <span class="n">Module</span><span class="o">::</span><span class="n">register_module</span><span class="p">(</span>
     <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">name</span><span class="p">,</span>
     <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;</span> <span class="n">module</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">AT_CHECK</span><span class="p">(</span><span class="o">!</span><span class="n">name</span><span class="p">.</span><span class="n">empty</span><span class="p">(),</span> <span class="s">&quot;Submodule name must not be empty&quot;</span><span class="p">);</span>
-  <span class="n">AT_CHECK</span><span class="p">(</span>
+  <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="o">!</span><span class="n">name</span><span class="p">.</span><span class="n">empty</span><span class="p">(),</span> <span class="s">&quot;Submodule name must not be empty&quot;</span><span class="p">);</span>
+  <span class="n">TORCH_CHECK</span><span class="p">(</span>
       <span class="n">name</span><span class="p">.</span><span class="n">find</span><span class="p">(</span><span class="sc">&#39;.&#39;</span><span class="p">)</span> <span class="o">==</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">::</span><span class="n">npos</span><span class="p">,</span>
       <span class="s">&quot;Submodule name must not contain a dot (got &#39;&quot;</span><span class="p">,</span>
       <span class="n">name</span><span class="p">,</span>
@@ -470,11 +472,11 @@
   <span class="p">}</span>
   <span class="c1">// Then move every parameter to the new dtype/device.</span>
   <span class="k">for</span> <span class="p">(</span><span class="k">auto</span><span class="o">&amp;</span> <span class="nl">parameter</span> <span class="p">:</span> <span class="n">parameters_</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">parameter</span><span class="o">-&gt;</span><span class="n">set_data</span><span class="p">(</span><span class="n">autograd</span><span class="o">::</span><span class="n">Variable</span><span class="p">(</span><span class="o">*</span><span class="n">parameter</span><span class="p">).</span><span class="n">data</span><span class="p">().</span><span class="n">to</span><span class="p">(</span><span class="n">ts</span><span class="p">...));</span>
+    <span class="n">parameter</span><span class="o">-&gt;</span><span class="n">set_data</span><span class="p">(</span><span class="n">autograd</span><span class="o">::</span><span class="n">Variable</span><span class="p">(</span><span class="o">*</span><span class="n">parameter</span><span class="p">).</span><span class="n">to</span><span class="p">(</span><span class="n">ts</span><span class="p">...));</span>
   <span class="p">}</span>
   <span class="c1">// Then move every buffer to the new dtype/device.</span>
   <span class="k">for</span> <span class="p">(</span><span class="k">auto</span><span class="o">&amp;</span> <span class="nl">buffer</span> <span class="p">:</span> <span class="n">buffers_</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">buffer</span><span class="o">-&gt;</span><span class="n">set_data</span><span class="p">(</span><span class="n">autograd</span><span class="o">::</span><span class="n">Variable</span><span class="p">(</span><span class="o">*</span><span class="n">buffer</span><span class="p">).</span><span class="n">data</span><span class="p">().</span><span class="n">to</span><span class="p">(</span><span class="n">ts</span><span class="p">...));</span>
+    <span class="n">buffer</span><span class="o">-&gt;</span><span class="n">set_data</span><span class="p">(</span><span class="n">autograd</span><span class="o">::</span><span class="n">Variable</span><span class="p">(</span><span class="o">*</span><span class="n">buffer</span><span class="p">).</span><span class="n">to</span><span class="p">(</span><span class="n">ts</span><span class="p">...));</span>
   <span class="p">}</span>
 <span class="p">}</span>
 
@@ -490,15 +492,6 @@
             </div>
             <footer>
   
-    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
-      
-        <a href="file_torch_csrc_jit_script_module.h.html" class="btn btn-neutral float-right" title="File module.h" accesskey="n" rel="next">Next <img src="../_static/images/chevron-right-orange.svg" class="next-page"></a>
-      
-      
-        <a href="file_torch_csrc_api_include_torch_nn_module.h.html" class="btn btn-neutral" title="File module.h" accesskey="p" rel="prev"><img src="../_static/images/chevron-right-orange.svg" class="previous-page"> Previous</a>
-      
-    </div>
-  
 
   
 
@@ -508,7 +501,7 @@
 
   <div role="contentinfo">
     <p>
-        &copy; Copyright 2018, Torch Contributors.
+        &copy; Copyright 2019, Torch Contributors.
 
     </p>
   </div>
