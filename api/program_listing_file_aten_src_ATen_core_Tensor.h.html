@@ -240,6 +240,7 @@
 #include &lt;c10/core/UndefinedTensorImpl.h&gt;
 #include &lt;c10/util/Exception.h&gt;
 #include &lt;c10/util/Optional.h&gt;
+#include &lt;c10/util/intrusive_ptr.h&gt;
 #include &lt;ATen/core/LegacyTypeDispatch.h&gt;
 #include &lt;ATen/core/DeprecatedTypePropertiesRegistry.h&gt;
 #ifdef NAMEDTENSOR_ENABLED
@@ -263,6 +264,12 @@ namespace at {
 
 class Tensor;
 using TensorList = ArrayRef&lt;Tensor&gt;;
+
+struct Quantizer;
+// This is temporary typedef to enable Quantizer in aten native function API
+// we&#39;ll remove them when we are actually exposing Quantizer class
+// to frontend
+using ConstQuantizerPtr = const c10::intrusive_ptr&lt;Quantizer&gt;&amp;;
 
 // Tensor is a &quot;generic&quot; object holding a pointer to the underlying TensorImpl object, which
 // has an embedded reference count. In this way, Tensor is similar to boost::intrusive_ptr.
@@ -833,6 +840,7 @@ class CAFFE2_API Tensor {
   Tensor &amp; set_(Storage source, int64_t storage_offset, IntArrayRef size, IntArrayRef stride={});
   Tensor &amp; set_(const Tensor &amp; source);
   Tensor &amp; set_();
+  Tensor &amp; set_quantizer_(ConstQuantizerPtr quantizer);
   bool is_set_to(const Tensor &amp; tensor) const;
   Tensor &amp; masked_fill_(const Tensor &amp; mask, Scalar value);
   Tensor masked_fill(const Tensor &amp; mask, Scalar value) const;
