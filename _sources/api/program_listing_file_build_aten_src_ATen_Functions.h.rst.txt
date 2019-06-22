@@ -213,6 +213,9 @@ Program Listing for File Functions.h
    static inline Tensor _embedding_bag_sparse_backward(const Tensor & grad, const Tensor & indices, const Tensor & offsets, const Tensor & offset2bag, const Tensor & bag_size, int64_t num_weights, bool scale_grad_by_freq, int64_t mode, const Tensor & per_sample_weights);
    static inline Tensor _embedding_bag_dense_backward(const Tensor & grad, const Tensor & indices, const Tensor & offsets, const Tensor & offset2bag, const Tensor & bag_size, const Tensor & maximum_indices, int64_t num_weights, bool scale_grad_by_freq, int64_t mode, const Tensor & per_sample_weights);
    static inline Tensor _embedding_bag_per_sample_weights_backward(const Tensor & grad, const Tensor & weight, const Tensor & indices, const Tensor & offsets, const Tensor & offset2bag, int64_t mode);
+   #ifdef NAMEDTENSOR_ENABLED
+   static inline Tensor empty(IntArrayRef size, c10::optional<DimnameList> names, const TensorOptions & options={});
+   #endif
    static inline Tensor empty(IntArrayRef size, const TensorOptions & options={});
    static inline Tensor _empty_affine_quantized(IntArrayRef size, const TensorOptions & options={}, double scale=1, int64_t zero_point=0);
    static inline Tensor & empty_out(Tensor & out, IntArrayRef size);
@@ -472,6 +475,9 @@ Program Listing for File Functions.h
    static inline Tensor rsqrt(const Tensor & self);
    static inline Tensor & rsqrt_(Tensor & self);
    static inline Tensor & rsqrt_out(Tensor & out, const Tensor & self);
+   #ifdef NAMEDTENSOR_ENABLED
+   static inline Tensor select(const Tensor & self, Dimname dim, int64_t index);
+   #endif
    static inline Tensor select(const Tensor & self, int64_t dim, int64_t index);
    static inline Tensor selu(const Tensor & self);
    static inline Tensor & selu_(Tensor & self);
@@ -1883,6 +1889,13 @@ Program Listing for File Functions.h
        static auto table = globalATenDispatch().getOpTable("aten::_embedding_bag_per_sample_weights_backward(Tensor grad, Tensor weight, Tensor indices, Tensor offsets, Tensor offset2bag, int mode) -> Tensor");
        return table->getOp<Tensor (const Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, int64_t)>(at::detail::infer_backend(grad), at::detail::infer_is_variable(grad))(grad, weight, indices, offsets, offset2bag, mode);
    }
+   #ifdef NAMEDTENSOR_ENABLED
+   static inline Tensor empty(IntArrayRef size, c10::optional<DimnameList> names, const TensorOptions & options) {
+       globalLegacyTypeDispatch().initForBackend(options.backend());
+       static auto table = globalATenDispatch().getOpTable("aten::empty(int[] size, *, Dimname[]? names, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor");
+       return table->getOp<Tensor (IntArrayRef, c10::optional<DimnameList>, const TensorOptions &)>(options.backend(), options.is_variable())(size, names, options);
+   }
+   #endif
    static inline Tensor empty(IntArrayRef size, const TensorOptions & options) {
        globalLegacyTypeDispatch().initForBackend(options.backend());
        static auto table = globalATenDispatch().getOpTable("aten::empty(int[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor");
@@ -2955,6 +2968,12 @@ Program Listing for File Functions.h
        static auto table = globalATenDispatch().getOpTable("aten::rsqrt(Tensor self, *, Tensor(a!) out) -> Tensor(a!)");
        return table->getOp<Tensor & (Tensor &, const Tensor &)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(out, self);
    }
+   #ifdef NAMEDTENSOR_ENABLED
+   static inline Tensor select(const Tensor & self, Dimname dim, int64_t index) {
+       static auto table = globalATenDispatch().getOpTable("aten::select(Tensor(a) self, Dimname dim, int index) -> Tensor(a)");
+       return table->getOp<Tensor (const Tensor &, Dimname, int64_t)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self, dim, index);
+   }
+   #endif
    static inline Tensor select(const Tensor & self, int64_t dim, int64_t index) {
        static auto table = globalATenDispatch().getOpTable("aten::select(Tensor(a) self, int dim, int index) -> Tensor(a)");
        return table->getOp<Tensor (const Tensor &, int64_t, int64_t)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self, dim, index);
