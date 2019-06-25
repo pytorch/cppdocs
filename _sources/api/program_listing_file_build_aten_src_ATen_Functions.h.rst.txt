@@ -762,6 +762,7 @@ Program Listing for File Functions.h
    static inline std::tuple<Tensor,Tensor> _triangular_solve_helper(const Tensor & self, const Tensor & A, bool upper, bool transpose, bool unitriangular);
    static inline std::tuple<Tensor &,Tensor &> symeig_out(Tensor & e, Tensor & V, const Tensor & self, bool eigenvectors=false, bool upper=true);
    static inline std::tuple<Tensor,Tensor> symeig(const Tensor & self, bool eigenvectors=false, bool upper=true);
+   static inline std::tuple<Tensor,Tensor> _symeig_helper(const Tensor & self, bool eigenvectors, bool upper);
    static inline std::tuple<Tensor &,Tensor &> eig_out(Tensor & e, Tensor & v, const Tensor & self, bool eigenvectors=false);
    static inline std::tuple<Tensor,Tensor> eig(const Tensor & self, bool eigenvectors=false);
    static inline std::tuple<Tensor &,Tensor &,Tensor &> svd_out(Tensor & U, Tensor & S, Tensor & V, const Tensor & self, bool some=true, bool compute_uv=true);
@@ -4108,6 +4109,10 @@ Program Listing for File Functions.h
    }
    static inline std::tuple<Tensor,Tensor> symeig(const Tensor & self, bool eigenvectors, bool upper) {
        static auto table = globalATenDispatch().getOpTable("aten::symeig(Tensor self, bool eigenvectors=False, bool upper=True) -> (Tensor eigenvalues, Tensor eigenvectors)");
+       return table->getOp<std::tuple<Tensor,Tensor> (const Tensor &, bool, bool)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self, eigenvectors, upper);
+   }
+   static inline std::tuple<Tensor,Tensor> _symeig_helper(const Tensor & self, bool eigenvectors, bool upper) {
+       static auto table = globalATenDispatch().getOpTable("aten::_symeig_helper(Tensor self, bool eigenvectors, bool upper) -> (Tensor, Tensor)");
        return table->getOp<std::tuple<Tensor,Tensor> (const Tensor &, bool, bool)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self, eigenvectors, upper);
    }
    static inline std::tuple<Tensor &,Tensor &> eig_out(Tensor & e, Tensor & v, const Tensor & self, bool eigenvectors) {
