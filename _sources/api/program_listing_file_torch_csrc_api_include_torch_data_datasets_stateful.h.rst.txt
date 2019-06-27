@@ -32,7 +32,28 @@ Program Listing for File stateful.h
        : public BatchDataset<Self, optional<Batch>, BatchRequest> {
     public:
      virtual void reset() = 0;
+   
+     virtual void save(serialize::OutputArchive& archive) const = 0;
+   
+     virtual void load(serialize::InputArchive& archive) = 0;
    };
+   
+   template <typename... Args>
+   serialize::OutputArchive& operator<<(
+       serialize::OutputArchive& archive,
+       const StatefulDataset<Args...>& statefulDataset) {
+     statefulDataset.save(archive);
+     return archive;
+   }
+   
+   template <typename... Args>
+   serialize::InputArchive& operator>>(
+       serialize::InputArchive& archive,
+       StatefulDataset<Args...>& statefulDataset) {
+     statefulDataset.load(archive);
+     return archive;
+   }
+   
    } // namespace datasets
    } // namespace data
    } // namespace torch

@@ -234,6 +234,8 @@
 <span class="cp">#include</span> <span class="cpf">&lt;queue&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;thread&gt;</span><span class="cp"></span>
 
+<span class="cp">#include</span> <span class="cpf">&lt;torch/serialize.h&gt;</span><span class="cp"></span>
+
 <span class="k">namespace</span> <span class="n">torch</span> <span class="p">{</span>
 <span class="k">namespace</span> <span class="n">data</span> <span class="p">{</span>
 <span class="k">namespace</span> <span class="n">datasets</span> <span class="p">{</span>
@@ -463,7 +465,6 @@
 
   <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">size_t</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">);</span>
 
-  <span class="c1">// the capacity of the queue for batch caching.</span>
   <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">size_t</span><span class="p">,</span> <span class="n">cache_size</span><span class="p">)</span> <span class="o">=</span> <span class="mi">2048</span><span class="p">;</span>
 <span class="p">};</span>
 
@@ -493,7 +494,8 @@
         <span class="n">example_sampler_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">example_sampler</span><span class="p">)),</span>
         <span class="n">options_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">options</span><span class="p">)),</span>
         <span class="n">quit_worker_</span><span class="p">(</span><span class="nb">false</span><span class="p">),</span>
-        <span class="n">running_preloaders_</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="p">{}</span>
+        <span class="n">running_preloaders_</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+        <span class="n">load_checkpoint_</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span> <span class="p">{}</span>
 
   <span class="k">virtual</span> <span class="o">~</span><span class="n">ChunkDataset</span><span class="p">()</span> <span class="p">{</span>
     <span class="c1">// stop batch buffer first.</span>
@@ -513,7 +515,6 @@
       <span class="s">&quot;The requested batch size does not match with the initialized batch size.</span><span class="se">\n</span><span class="s">&quot;</span>
       <span class="s">&quot; The requested batch size is &quot;</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">,</span>
       <span class="s">&quot;, while the dataset is created with batch size equal to &quot;</span><span class="p">,</span> <span class="n">options_</span><span class="p">.</span><span class="n">batch_size_</span><span class="p">);</span>
-
     <span class="k">return</span> <span class="n">batch_buffer_</span><span class="o">-&gt;</span><span class="n">get_batch</span><span class="p">();</span>
   <span class="p">}</span>
 
@@ -530,9 +531,11 @@
     <span class="n">free_workers</span><span class="p">();</span>
     <span class="n">preload_threads_</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span>
 
-    <span class="n">chunk_reader_</span><span class="p">.</span><span class="n">reset</span><span class="p">();</span>
-
-    <span class="n">chunk_sampler_</span><span class="p">.</span><span class="n">reset</span><span class="p">(</span><span class="n">chunk_reader_</span><span class="p">.</span><span class="n">chunk_count</span><span class="p">());</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">load_checkpoint_</span><span class="p">){</span>
+      <span class="n">chunk_reader_</span><span class="p">.</span><span class="n">reset</span><span class="p">();</span>
+      <span class="n">chunk_sampler_</span><span class="p">.</span><span class="n">reset</span><span class="p">(</span><span class="n">chunk_reader_</span><span class="p">.</span><span class="n">chunk_count</span><span class="p">());</span>
+      <span class="n">load_checkpoint_</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+    <span class="p">}</span>
 
     <span class="c1">// Throw out any existing cached batch in the buffer and re-creates a new</span>
     <span class="c1">// chunk buffer.</span>
@@ -560,6 +563,17 @@
   <span class="c1">// loading to set the epoch number for the sampler.</span>
   <span class="n">ChunkSamplerType</span><span class="o">&amp;</span> <span class="n">chunk_sampler</span><span class="p">()</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">chunk_sampler_</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="kt">void</span> <span class="n">save</span><span class="p">(</span><span class="n">serialize</span><span class="o">::</span><span class="n">OutputArchive</span><span class="o">&amp;</span> <span class="n">archive</span><span class="p">)</span> <span class="k">const</span> <span class="k">override</span> <span class="p">{</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lock</span><span class="p">(</span><span class="n">chunk_index_guard_</span><span class="p">);</span>
+    <span class="n">chunk_sampler_</span><span class="p">.</span><span class="n">save</span><span class="p">(</span><span class="n">archive</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="kt">void</span> <span class="n">load</span><span class="p">(</span><span class="n">serialize</span><span class="o">::</span><span class="n">InputArchive</span><span class="o">&amp;</span> <span class="n">archive</span><span class="p">)</span> <span class="k">override</span><span class="p">{</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lock</span><span class="p">(</span><span class="n">chunk_index_guard_</span><span class="p">);</span>
+    <span class="n">chunk_sampler_</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">archive</span><span class="p">);</span>
+    <span class="n">load_checkpoint_</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
   <span class="p">}</span>
 
  <span class="k">private</span><span class="o">:</span>
@@ -629,7 +643,10 @@
   <span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="o">&gt;</span> <span class="n">running_preloaders_</span><span class="p">;</span>
 
   <span class="c1">// mutex to synchronize chunk sampler next() call.</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">mutex</span> <span class="n">chunk_index_guard_</span><span class="p">;</span>
+  <span class="k">mutable</span> <span class="n">std</span><span class="o">::</span><span class="n">mutex</span> <span class="n">chunk_index_guard_</span><span class="p">;</span>
+
+  <span class="c1">// boolean value to indicate whether we need to load the checkpoint for chunk_sampler_.</span>
+  <span class="kt">bool</span> <span class="n">load_checkpoint_</span><span class="p">;</span>
 <span class="p">};</span>
 <span class="p">}</span> <span class="c1">// namespace datasets</span>
 <span class="p">}</span> <span class="c1">// namespace data</span>
