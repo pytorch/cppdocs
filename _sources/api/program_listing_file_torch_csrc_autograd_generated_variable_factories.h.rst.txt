@@ -18,6 +18,7 @@ Program Listing for File variable_factories.h
    
    #include <ATen/ATen.h>
    #include <c10/util/ArrayRef.h>
+   #include <c10/core/MemoryFormat.h>
    #include <torch/csrc/autograd/variable.h>
    #include <torch/csrc/jit/tracer.h>
    #include <torch/csrc/jit/ir.h>
@@ -59,6 +60,7 @@ Program Listing for File variable_factories.h
    #undef TENSOR
    
    using Deleter = std::function<void(void*)>;
+   using at::MemoryFormat;
    
    inline at::Tensor from_blob(
        void* data,
@@ -300,7 +302,7 @@ Program Listing for File variable_factories.h
      }
      return result;
    }
-   inline at::Tensor empty(at::IntArrayRef size, const at::TensorOptions & options = {}) {
+   inline at::Tensor empty(at::IntArrayRef size, const at::TensorOptions & options = {}, c10::optional<MemoryFormat> memory_format = c10::nullopt) {
      torch::jit::Node* node = nullptr;
      std::shared_ptr<jit::tracer::TracingState> tracer_state;
      if (jit::tracer::isTracing()) {
@@ -311,11 +313,12 @@ Program Listing for File variable_factories.h
        jit::tracer::recordSourceLocation(node);
        jit::tracer::addInputs(node, "size", size);
        jit::tracer::addInputs(node, "options", options);
+       jit::tracer::addInputs(node, "memory_format", memory_format);
        tracer_state->graph->insertNode(node);
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::empty(size, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = at::empty(size, at::TensorOptions(options).is_variable(false), memory_format);
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -324,7 +327,7 @@ Program Listing for File variable_factories.h
      }
      return result;
    }
-   inline at::Tensor _empty_affine_quantized(at::IntArrayRef size, const at::TensorOptions & options = {}, double scale = 1, int64_t zero_point = 0) {
+   inline at::Tensor _empty_affine_quantized(at::IntArrayRef size, const at::TensorOptions & options = {}, double scale = 1, int64_t zero_point = 0, c10::optional<MemoryFormat> memory_format = MemoryFormat::Contiguous) {
      torch::jit::Node* node = nullptr;
      std::shared_ptr<jit::tracer::TracingState> tracer_state;
      if (jit::tracer::isTracing()) {
@@ -337,11 +340,12 @@ Program Listing for File variable_factories.h
        jit::tracer::addInputs(node, "options", options);
        jit::tracer::addInputs(node, "scale", scale);
        jit::tracer::addInputs(node, "zero_point", zero_point);
+       jit::tracer::addInputs(node, "memory_format", memory_format);
        tracer_state->graph->insertNode(node);
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::_empty_affine_quantized(size, at::TensorOptions(options).is_variable(false), scale, zero_point);
+     at::Tensor tensor = at::_empty_affine_quantized(size, at::TensorOptions(options).is_variable(false), scale, zero_point, memory_format);
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -373,7 +377,7 @@ Program Listing for File variable_factories.h
      }
      return result;
    }
-   inline at::Tensor empty_like(const at::Tensor & self, const at::TensorOptions & options) {
+   inline at::Tensor empty_like(const at::Tensor & self, const at::TensorOptions & options, c10::optional<MemoryFormat> memory_format = MemoryFormat::Contiguous) {
      torch::jit::Node* node = nullptr;
      std::shared_ptr<jit::tracer::TracingState> tracer_state;
      if (jit::tracer::isTracing()) {
@@ -384,11 +388,12 @@ Program Listing for File variable_factories.h
        jit::tracer::recordSourceLocation(node);
        jit::tracer::addInputs(node, "self", self);
        jit::tracer::addInputs(node, "options", options);
+       jit::tracer::addInputs(node, "memory_format", memory_format);
        tracer_state->graph->insertNode(node);
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::empty_like(self, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = at::empty_like(self, at::TensorOptions(options).is_variable(false), memory_format);
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
