@@ -227,7 +227,6 @@
 <p>↰ <a class="reference internal" href="file_aten_src_ATen_core_Tensor.h.html#file-aten-src-aten-core-tensor-h"><span class="std std-ref">Return to documentation for file</span></a> (<code class="docutils literal notranslate"><span class="pre">aten/src/ATen/core/Tensor.h</span></code>)</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span>#pragma once
 
-#include &lt;ATen/core/Type.h&gt;
 #include &lt;c10/core/Device.h&gt;
 #include &lt;c10/core/Layout.h&gt;
 #include &lt;c10/core/MemoryFormat.h&gt;
@@ -438,9 +437,6 @@ class CAFFE2_API Tensor {
         scalar_type(),
         is_variable());
   }
-  Type &amp; dispatch_type() const {
-    return legacyTensorType(*impl_);
-  }
   TensorTypeId type_id() const {
     return impl_-&gt;type_id();
   }
@@ -561,18 +557,13 @@ class CAFFE2_API Tensor {
     return impl_-&gt;grad();
   }
 
-  void set_data(Tensor new_data);
-
-  void backward(
-      c10::optional&lt;Tensor&gt; gradient = c10::nullopt,
-      bool keep_graph = false,
-      bool create_graph = false);
-
   // STOP.  Thinking of adding a method here, which only makes use
   // of other ATen methods?  Define it in native_functions.yaml.
 
   //example
   //Tensor * add(Tensor &amp; b);
+  void backward(const Tensor &amp; gradient={}, bool keep_graph=false, bool create_graph=false) const;
+  void set_data(const Tensor &amp; new_data) const;
   Tensor abs() const;
   Tensor &amp; abs_();
   Tensor acos() const;
