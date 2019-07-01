@@ -36,8 +36,10 @@ Program Listing for File variable_factories.h
    #define TENSOR(T, S, _1)                                                   \
      inline at::Tensor tensor(                                                \
          at::ArrayRef<T> values, const at::TensorOptions& options) {          \
-       at::Tensor result =                                                    \
-           at::tensor(values, at::TensorOptions(options).is_variable(false)); \
+       at::Tensor result = ([&]() {                                           \
+         at::AutoNonVariableTypeMode non_var_type_mode(true);                 \
+         return at::tensor(values, at::TensorOptions(options).is_variable(false)); \
+       })();                                                                  \
        return autograd::make_variable(result, options.requires_grad());       \
      }                                                                        \
      inline at::Tensor tensor(                                                \
@@ -68,8 +70,10 @@ Program Listing for File variable_factories.h
        at::IntArrayRef strides,
        const Deleter& deleter,
        const at::TensorOptions& options = at::TensorOptions()) {
-     at::Tensor tensor =
-         at::from_blob(data, sizes, strides, deleter, options.is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::from_blob(data, sizes, strides, deleter, options.is_variable(false));
+     })();
      return autograd::make_variable(tensor, options.requires_grad());
    }
    
@@ -91,8 +95,10 @@ Program Listing for File variable_factories.h
        at::IntArrayRef sizes,
        const Deleter& deleter,
        const at::TensorOptions& options = at::TensorOptions()) {
-     at::Tensor tensor =
-         at::from_blob(data, sizes, deleter, options.is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::from_blob(data, sizes, deleter, options.is_variable(false));
+     })();
      return autograd::make_variable(tensor, options.requires_grad());
    }
    
@@ -120,7 +126,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::_cudnn_init_dropout_state(dropout, train, dropout_seed, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::_cudnn_init_dropout_state(dropout, train, dropout_seed, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -144,7 +153,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::arange(end, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::arange(end, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -169,7 +181,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::arange(start, end, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::arange(start, end, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -195,7 +210,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::arange(start, end, step, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::arange(start, end, step, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -219,7 +237,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::bartlett_window(window_length, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::bartlett_window(window_length, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -244,7 +265,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::bartlett_window(window_length, periodic, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::bartlett_window(window_length, periodic, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -268,7 +292,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::blackman_window(window_length, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::blackman_window(window_length, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -293,7 +320,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::blackman_window(window_length, periodic, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::blackman_window(window_length, periodic, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -318,7 +348,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::empty(size, at::TensorOptions(options).is_variable(false), memory_format);
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::empty(size, at::TensorOptions(options).is_variable(false), memory_format);
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -345,7 +378,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::_empty_affine_quantized(size, at::TensorOptions(options).is_variable(false), scale, zero_point, memory_format);
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::_empty_affine_quantized(size, at::TensorOptions(options).is_variable(false), scale, zero_point, memory_format);
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -368,7 +404,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::empty_like(self, self.options().is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::empty_like(self, self.options().is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/false);
      if (tracer_state) {
@@ -393,7 +432,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::empty_like(self, at::TensorOptions(options).is_variable(false), memory_format);
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::empty_like(self, at::TensorOptions(options).is_variable(false), memory_format);
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -418,7 +460,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::empty_strided(size, stride, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::empty_strided(size, stride, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -442,7 +487,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::eye(n, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::eye(n, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -467,7 +515,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::eye(n, m, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::eye(n, m, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -492,7 +543,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::full(size, fill_value, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::full(size, fill_value, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -516,7 +570,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::full_like(self, fill_value, self.options().is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::full_like(self, fill_value, self.options().is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/false);
      if (tracer_state) {
@@ -541,7 +598,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::full_like(self, fill_value, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::full_like(self, fill_value, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -567,7 +627,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::from_file(filename, shared, size, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::from_file(filename, shared, size, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -591,7 +654,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::hann_window(window_length, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::hann_window(window_length, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -616,7 +682,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::hann_window(window_length, periodic, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::hann_window(window_length, periodic, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -640,7 +709,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::hamming_window(window_length, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::hamming_window(window_length, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -665,7 +737,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::hamming_window(window_length, periodic, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::hamming_window(window_length, periodic, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -691,7 +766,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::hamming_window(window_length, periodic, alpha, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::hamming_window(window_length, periodic, alpha, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -718,7 +796,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::hamming_window(window_length, periodic, alpha, beta, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::hamming_window(window_length, periodic, alpha, beta, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -744,7 +825,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::linspace(start, end, steps, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::linspace(start, end, steps, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -771,7 +855,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::logspace(start, end, steps, base, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::logspace(start, end, steps, base, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -795,7 +882,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::ones(size, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::ones(size, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -818,7 +908,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::ones_like(self, self.options().is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::ones_like(self, self.options().is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/false);
      if (tracer_state) {
@@ -842,7 +935,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::ones_like(self, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::ones_like(self, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -866,7 +962,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::scalar_tensor(s, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::scalar_tensor(s, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -890,7 +989,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::rand(size, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::rand(size, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -915,7 +1017,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::rand(size, generator, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::rand(size, generator, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -938,7 +1043,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::rand_like(self, self.options().is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::rand_like(self, self.options().is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/false);
      if (tracer_state) {
@@ -962,7 +1070,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::rand_like(self, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::rand_like(self, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -987,7 +1098,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::randint(high, size, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::randint(high, size, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -1013,7 +1127,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::randint(high, size, generator, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::randint(high, size, generator, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -1039,7 +1156,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::randint(low, high, size, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::randint(low, high, size, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -1066,7 +1186,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::randint(low, high, size, generator, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::randint(low, high, size, generator, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -1090,7 +1213,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::randint_like(self, high, self.options().is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::randint_like(self, high, self.options().is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/false);
      if (tracer_state) {
@@ -1115,7 +1241,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::randint_like(self, low, high, self.options().is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::randint_like(self, low, high, self.options().is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/false);
      if (tracer_state) {
@@ -1140,7 +1269,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::randint_like(self, high, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::randint_like(self, high, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -1166,7 +1298,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::randint_like(self, low, high, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::randint_like(self, low, high, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -1190,7 +1325,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::randn(size, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::randn(size, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -1215,7 +1353,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::randn(size, generator, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::randn(size, generator, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -1238,7 +1379,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::randn_like(self, self.options().is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::randn_like(self, self.options().is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/false);
      if (tracer_state) {
@@ -1262,7 +1406,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::randn_like(self, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::randn_like(self, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -1286,7 +1433,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::randperm(n, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::randperm(n, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -1311,7 +1461,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::randperm(n, generator, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::randperm(n, generator, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -1337,7 +1490,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::range(start, end, step, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::range(start, end, step, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -1362,7 +1518,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::range(start, end, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::range(start, end, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -1386,7 +1545,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::zeros(size, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::zeros(size, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -1409,7 +1571,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::zeros_like(self, self.options().is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::zeros_like(self, self.options().is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/false);
      if (tracer_state) {
@@ -1433,7 +1598,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::zeros_like(self, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::zeros_like(self, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -1457,7 +1625,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::sparse_coo_tensor(size, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::sparse_coo_tensor(size, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -1482,7 +1653,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::sparse_coo_tensor(indices, values, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::sparse_coo_tensor(indices, values, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -1508,7 +1682,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::sparse_coo_tensor(indices, values, size, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::sparse_coo_tensor(indices, values, size, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -1534,7 +1711,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::_sparse_coo_tensor_unsafe(indices, values, size, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::_sparse_coo_tensor_unsafe(indices, values, size, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -1560,7 +1740,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::_sparse_coo_tensor_with_dims(sparse_dim, dense_dim, size, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::_sparse_coo_tensor_with_dims(sparse_dim, dense_dim, size, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -1588,7 +1771,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::_sparse_coo_tensor_with_dims_and_tensors(sparse_dim, dense_dim, size, indices, values, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::_sparse_coo_tensor_with_dims_and_tensors(sparse_dim, dense_dim, size, indices, values, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -1614,7 +1800,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::tril_indices(row, col, offset, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::tril_indices(row, col, offset, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
@@ -1640,7 +1829,10 @@ Program Listing for File variable_factories.h
      
        jit::tracer::setTracingState(nullptr);
      }
-     at::Tensor tensor = at::triu_indices(row, col, offset, at::TensorOptions(options).is_variable(false));
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::triu_indices(row, col, offset, at::TensorOptions(options).is_variable(false));
+     })();
      at::Tensor result =
        autograd::make_variable_consuming(std::move(tensor), /*requires_grad=*/options.requires_grad());
      if (tracer_state) {
