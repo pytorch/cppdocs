@@ -442,10 +442,12 @@
   <span class="n">ChunkDatasetOptions</span><span class="p">(</span>
       <span class="kt">size_t</span> <span class="n">preloader_count</span><span class="p">,</span>
       <span class="kt">size_t</span> <span class="n">batch_size</span><span class="p">,</span>
-      <span class="kt">size_t</span> <span class="n">cache_size</span> <span class="o">=</span> <span class="mi">2048</span><span class="p">)</span>
+      <span class="kt">size_t</span> <span class="n">cache_size</span> <span class="o">=</span> <span class="mi">2048</span><span class="p">,</span>
+      <span class="kt">size_t</span> <span class="n">cross_chunk_shuffle_count</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span>
       <span class="o">:</span> <span class="n">preloader_count_</span><span class="p">(</span><span class="n">preloader_count</span><span class="p">),</span>
         <span class="n">batch_size_</span><span class="p">(</span><span class="n">batch_size</span><span class="p">),</span>
-        <span class="n">cache_size_</span><span class="p">(</span><span class="n">cache_size</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">cache_size_</span><span class="p">(</span><span class="n">cache_size</span><span class="p">),</span>
+        <span class="n">cross_chunk_shuffle_count_</span><span class="p">(</span><span class="n">cross_chunk_shuffle_count</span><span class="p">)</span> <span class="p">{</span>
     <span class="n">TORCH_CHECK</span><span class="p">(</span>
         <span class="n">preloader_count_</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
         <span class="s">&quot;Preloader count is 0. At least one preloader needs to be specified.&quot;</span><span class="p">);</span>
@@ -459,6 +461,9 @@
         <span class="n">cache_size_</span> <span class="o">&gt;=</span> <span class="n">batch_size_</span><span class="p">,</span>
         <span class="s">&quot;Cache size is less than batch size. Cache needs to be large enough to &quot;</span>
         <span class="s">&quot;hold at least one batch.&quot;</span><span class="p">);</span>
+    <span class="n">TORCH_CHECK</span><span class="p">(</span>
+        <span class="n">cross_chunk_shuffle_count_</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="s">&quot;cross_chunk_shuffle_count needs to be greater than 0.&quot;</span><span class="p">);</span>
   <span class="p">}</span>
 
   <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">size_t</span><span class="p">,</span> <span class="n">preloader_count</span><span class="p">);</span>
@@ -466,6 +471,17 @@
   <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">size_t</span><span class="p">,</span> <span class="n">batch_size</span><span class="p">);</span>
 
   <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">size_t</span><span class="p">,</span> <span class="n">cache_size</span><span class="p">)</span> <span class="o">=</span> <span class="mi">2048</span><span class="p">;</span>
+
+  <span class="c1">// The number of chunks to perfrom cross-chunk shuffling. Default to 1 meaning</span>
+  <span class="c1">// no cross-chunk shuffling. When it is equal to n (n &gt; 1), n random</span>
+  <span class="c1">// chunks will be loaded at once and example shuffling will be performed</span>
+  <span class="c1">// across all those n chunks.</span>
+  <span class="c1">// Note: Usually the default config (1 chunk shuffle + example shuffle) is</span>
+  <span class="c1">// good enough to generate random distributed data. Use this parameter only if</span>
+  <span class="c1">// you know cross-shuffle is needed in your case. Also there is a performance</span>
+  <span class="c1">// penalty when this value is greater than 1, as we need to do extra merge</span>
+  <span class="c1">// between multiple chunks before performing example sampling.</span>
+  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">size_t</span><span class="p">,</span> <span class="n">cross_chunk_shuffle_count</span><span class="p">)</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
 <span class="p">};</span>
 
 <span class="k">template</span> <span class="o">&lt;</span>
@@ -580,16 +596,21 @@
   <span class="kt">void</span> <span class="n">preloader</span><span class="p">(</span><span class="kt">size_t</span> <span class="n">id</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">quit_worker_</span><span class="p">.</span><span class="n">load</span><span class="p">())</span> <span class="p">{</span>
       <span class="k">try</span> <span class="p">{</span>
-        <span class="kt">size_t</span> <span class="n">chunk_id</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+        <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="o">&gt;</span> <span class="n">chunk_idx</span><span class="p">;</span>
         <span class="p">{</span>
           <span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span> <span class="n">lock</span><span class="p">(</span><span class="n">chunk_index_guard_</span><span class="p">);</span>
-          <span class="k">if</span> <span class="p">(</span><span class="k">auto</span> <span class="n">chunk_sampler_result</span> <span class="o">=</span> <span class="n">chunk_sampler_</span><span class="p">.</span><span class="n">next</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="p">{</span>
-            <span class="n">chunk_id</span> <span class="o">=</span> <span class="n">chunk_sampler_result</span><span class="p">.</span><span class="n">value</span><span class="p">()[</span><span class="mi">0</span><span class="p">];</span>
+          <span class="k">if</span> <span class="p">(</span><span class="k">auto</span> <span class="n">chunk_sampler_result</span> <span class="o">=</span> <span class="n">chunk_sampler_</span><span class="p">.</span><span class="n">next</span><span class="p">(</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">options_</span><span class="p">.</span><span class="n">cross_chunk_shuffle_count_</span><span class="p">))</span> <span class="p">{</span>
+            <span class="n">chunk_idx</span> <span class="o">=</span> <span class="n">chunk_sampler_result</span><span class="p">.</span><span class="n">value</span><span class="p">();</span>
           <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
             <span class="k">break</span><span class="p">;</span>
           <span class="p">}</span>
         <span class="p">}</span>
-        <span class="n">UnwrappedBatchType</span> <span class="n">data</span> <span class="o">=</span> <span class="n">chunk_reader_</span><span class="p">.</span><span class="n">read_chunk</span><span class="p">(</span><span class="n">chunk_id</span><span class="p">);</span>
+        <span class="n">UnwrappedBatchType</span> <span class="n">data</span> <span class="o">=</span> <span class="n">chunk_reader_</span><span class="p">.</span><span class="n">read_chunk</span><span class="p">(</span><span class="n">chunk_idx</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
+        <span class="k">for</span> <span class="p">(</span><span class="kt">size_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">chunk_idx</span><span class="p">.</span><span class="n">size</span><span class="p">();</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+          <span class="k">auto</span> <span class="n">chunk_data</span> <span class="o">=</span> <span class="n">chunk_reader_</span><span class="p">.</span><span class="n">read_chunk</span><span class="p">(</span><span class="n">chunk_idx</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+          <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span>
+              <span class="n">chunk_data</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span> <span class="n">chunk_data</span><span class="p">.</span><span class="n">end</span><span class="p">(),</span> <span class="n">std</span><span class="o">::</span><span class="n">back_inserter</span><span class="p">(</span><span class="n">data</span><span class="p">));</span>
+        <span class="p">}</span>
         <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">data</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span> <span class="p">{</span> <span class="c1">// skip empty chunks.</span>
           <span class="n">batch_buffer_</span><span class="o">-&gt;</span><span class="n">add_chunk_data</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">data</span><span class="p">));</span>
         <span class="p">}</span>
