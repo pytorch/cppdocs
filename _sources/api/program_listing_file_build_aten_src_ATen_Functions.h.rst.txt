@@ -581,6 +581,7 @@ Program Listing for File Functions.h
    static inline std::tuple<Tensor,Tensor> var_mean(const Tensor & self, bool unbiased=true);
    static inline std::tuple<Tensor,Tensor> var_mean(const Tensor & self, IntArrayRef dim, bool unbiased=true, bool keepdim=false);
    static inline Tensor where(const Tensor & condition, const Tensor & self, const Tensor & other);
+   static inline std::vector<Tensor> where(const Tensor & condition);
    static inline Tensor _s_where(const Tensor & condition, const Tensor & self, const Tensor & other);
    static inline Tensor norm_except_dim(const Tensor & v, int64_t pow=2, int64_t dim=0);
    static inline Tensor _weight_norm(const Tensor & v, const Tensor & g, int64_t dim=0);
@@ -848,6 +849,8 @@ Program Listing for File Functions.h
    static inline Tensor normal(double mean, const Tensor & std, Generator * generator=nullptr);
    static inline Tensor & normal_out(Tensor & out, const Tensor & mean, const Tensor & std, Generator * generator=nullptr);
    static inline Tensor normal(const Tensor & mean, const Tensor & std, Generator * generator=nullptr);
+   static inline Tensor normal(double mean, double std, IntArrayRef size, Generator * generator=nullptr, const TensorOptions & options={});
+   static inline Tensor & normal_out(Tensor & out, double mean, double std, IntArrayRef size, Generator * generator=nullptr);
    static inline Tensor alias(const Tensor & self);
    static inline Tensor _addr(const Tensor & self, const Tensor & vec1, const Tensor & vec2, Scalar beta=1, Scalar alpha=1);
    static inline Tensor & _addr_(Tensor & self, const Tensor & vec1, const Tensor & vec2, Scalar beta=1, Scalar alpha=1);
@@ -3383,6 +3386,10 @@ Program Listing for File Functions.h
        static auto table = globalATenDispatch().getOpTable("aten::where(Tensor condition, Tensor self, Tensor other) -> Tensor");
        return table->getOp<Tensor (const Tensor &, const Tensor &, const Tensor &)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(condition, self, other);
    }
+   static inline std::vector<Tensor> where(const Tensor & condition) {
+       static auto table = globalATenDispatch().getOpTable("aten::where(Tensor condition) -> Tensor[]");
+       return table->getOp<std::vector<Tensor> (const Tensor &)>(at::detail::infer_backend(condition), at::detail::infer_is_variable(condition))(condition);
+   }
    static inline Tensor _s_where(const Tensor & condition, const Tensor & self, const Tensor & other) {
        static auto table = globalATenDispatch().getOpTable("aten::_s_where(Tensor condition, Tensor self, Tensor other) -> Tensor");
        return table->getOp<Tensor (const Tensor &, const Tensor &, const Tensor &)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(condition, self, other);
@@ -4460,6 +4467,15 @@ Program Listing for File Functions.h
    static inline Tensor normal(const Tensor & mean, const Tensor & std, Generator * generator) {
        static auto table = globalATenDispatch().getOpTable("aten::normal(Tensor mean, Tensor std, *, Generator? generator=None) -> Tensor");
        return table->getOp<Tensor (const Tensor &, const Tensor &, Generator *)>(at::detail::infer_backend(mean), at::detail::infer_is_variable(mean))(mean, std, generator);
+   }
+   static inline Tensor normal(double mean, double std, IntArrayRef size, Generator * generator, const TensorOptions & options) {
+       globalLegacyTypeDispatch().initForBackend(options.backend());
+       static auto table = globalATenDispatch().getOpTable("aten::normal(float mean, float std, int[] size, *, Generator? generator=None, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor");
+       return table->getOp<Tensor (double, double, IntArrayRef, Generator *, const TensorOptions &)>(options.backend(), options.is_variable())(mean, std, size, generator, options);
+   }
+   static inline Tensor & normal_out(Tensor & out, double mean, double std, IntArrayRef size, Generator * generator) {
+       static auto table = globalATenDispatch().getOpTable("aten::normal(float mean, float std, int[] size, *, Generator? generator=None, Tensor(a!) out) -> Tensor(a!)");
+       return table->getOp<Tensor & (Tensor &, double, double, IntArrayRef, Generator *)>(at::detail::infer_backend(out), at::detail::infer_is_variable(out))(out, mean, std, size, generator);
    }
    static inline Tensor alias(const Tensor & self) {
        static auto table = globalATenDispatch().getOpTable("aten::alias(Tensor(a) self) -> Tensor(a)");
