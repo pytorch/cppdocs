@@ -342,6 +342,10 @@
   <span class="n">Module</span><span class="p">(</span><span class="n">ModulePtr</span> <span class="n">module_value</span><span class="p">)</span> <span class="o">:</span> <span class="n">module_value_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">module_value</span><span class="p">))</span> <span class="p">{}</span>
   <span class="o">~</span><span class="n">Module</span><span class="p">()</span> <span class="p">{}</span>
 
+  <span class="k">const</span> <span class="n">c10</span><span class="o">::</span><span class="n">QualifiedName</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="o">*</span><span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">qualified_name_obj</span><span class="p">();</span>
+  <span class="p">}</span>
+
   <span class="c1">// note this doesn&#39;t change the flags of existing methods just ones</span>
   <span class="c1">// added afterward.</span>
   <span class="kt">void</span> <span class="n">set_optimized</span><span class="p">(</span><span class="kt">bool</span> <span class="n">o</span><span class="p">)</span> <span class="p">{</span>
@@ -449,8 +453,9 @@
     <span class="p">}</span>
     <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span>
   <span class="p">}</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Method</span><span class="o">&gt;</span> <span class="n">find_method</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="p">(</span><span class="k">const</span> <span class="k">auto</span> <span class="n">fn</span> <span class="o">=</span> <span class="n">class_compilation_unit</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">find_function</span><span class="p">(</span><span class="n">name</span><span class="p">))</span> <span class="p">{</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Method</span><span class="o">&gt;</span> <span class="n">find_method</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">basename</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="k">const</span> <span class="k">auto</span> <span class="n">fn</span> <span class="o">=</span> <span class="n">class_compilation_unit</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">find_function</span><span class="p">(</span>
+            <span class="n">getNameForMethod</span><span class="p">(</span><span class="n">basename</span><span class="p">)))</span> <span class="p">{</span>
       <span class="k">return</span> <span class="n">Method</span><span class="p">(</span><span class="n">module_object</span><span class="p">(),</span> <span class="n">fn</span><span class="p">);</span>
     <span class="p">}</span>
     <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span>
@@ -498,7 +503,7 @@
   <span class="kt">void</span> <span class="nf">clone_method</span><span class="p">(</span><span class="k">const</span> <span class="n">Module</span><span class="o">&amp;</span> <span class="n">orig</span><span class="p">,</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">);</span>
 
   <span class="n">at</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">EntityType</span><span class="o">&gt;</span> <span class="n">kind_of</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">class_compilation_unit</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">find_function</span><span class="p">(</span><span class="n">name</span><span class="p">))</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">class_compilation_unit</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">find_function</span><span class="p">(</span><span class="n">getNameForMethod</span><span class="p">(</span><span class="n">name</span><span class="p">)))</span> <span class="p">{</span>
       <span class="k">return</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">METHOD</span><span class="p">;</span>
     <span class="p">}</span>
     <span class="k">if</span> <span class="p">(</span><span class="k">auto</span> <span class="n">offset</span> <span class="o">=</span> <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">findAttributeSlot</span><span class="p">(</span><span class="n">name</span><span class="p">))</span> <span class="p">{</span>
@@ -545,9 +550,13 @@
  <span class="k">private</span><span class="o">:</span>
   <span class="kt">void</span> <span class="n">clone_method</span><span class="p">(</span>
       <span class="k">const</span> <span class="n">Module</span><span class="o">&amp;</span> <span class="n">orig</span><span class="p">,</span>
-      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span>
+      <span class="k">const</span> <span class="n">QualifiedName</span><span class="o">&amp;</span> <span class="n">orig_method_name</span><span class="p">,</span>
       <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">unordered_map</span><span class="o">&lt;</span><span class="n">TypePtr</span><span class="p">,</span> <span class="n">TypePtr</span><span class="o">&gt;&amp;</span> <span class="n">type_remap</span><span class="p">);</span>
-  <span class="k">static</span> <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="nf">toString</span><span class="p">(</span><span class="n">EntityType</span> <span class="n">t</span><span class="p">)</span> <span class="p">{</span>
+
+  <span class="n">c10</span><span class="o">::</span><span class="n">QualifiedName</span> <span class="n">getNameForMethod</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">basename</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">QualifiedName</span><span class="p">(</span><span class="n">name</span><span class="p">(),</span> <span class="n">basename</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="k">static</span> <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">toString</span><span class="p">(</span><span class="n">EntityType</span> <span class="n">t</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">switch</span> <span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="p">{</span>
       <span class="k">case</span> <span class="n">EntityType</span><span class="o">::</span><span class="nl">MODULE</span><span class="p">:</span>
         <span class="k">return</span> <span class="s">&quot;module&quot;</span><span class="p">;</span>
@@ -560,7 +569,7 @@
     <span class="p">}</span>
     <span class="k">return</span> <span class="k">nullptr</span><span class="p">;</span>
   <span class="p">}</span>
-  <span class="kt">void</span> <span class="nf">check_entity</span><span class="p">(</span><span class="n">EntityType</span> <span class="n">expected</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">slot</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+  <span class="kt">void</span> <span class="n">check_entity</span><span class="p">(</span><span class="n">EntityType</span> <span class="n">expected</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">slot</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
     <span class="n">EntityType</span> <span class="n">actual</span> <span class="o">=</span> <span class="n">get_slot</span><span class="p">(</span><span class="n">slot</span><span class="p">).</span><span class="n">entity_type</span><span class="p">();</span>
     <span class="n">TORCH_CHECK</span><span class="p">(</span>
         <span class="n">expected</span> <span class="o">==</span> <span class="n">actual</span><span class="p">,</span>
@@ -573,7 +582,7 @@
         <span class="n">toString</span><span class="p">(</span><span class="n">expected</span><span class="p">));</span>
   <span class="p">}</span>
 
-  <span class="kt">void</span> <span class="nf">set_or_add_slot</span><span class="p">(</span>
+  <span class="kt">void</span> <span class="n">set_or_add_slot</span><span class="p">(</span>
       <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span>
       <span class="k">const</span> <span class="n">TypePtr</span><span class="o">&amp;</span> <span class="n">slot_type</span><span class="p">,</span>
       <span class="n">IValue</span> <span class="n">v</span><span class="p">,</span>
@@ -590,10 +599,10 @@
     <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">setSlot</span><span class="p">(</span><span class="o">*</span><span class="n">slot</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">v</span><span class="p">));</span>
   <span class="p">}</span>
 
-  <span class="n">Slot</span> <span class="nf">get_slot</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span> <span class="n">EntityType</span> <span class="n">etype</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+  <span class="n">Slot</span> <span class="n">get_slot</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span> <span class="n">EntityType</span> <span class="n">etype</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
     <span class="kt">size_t</span> <span class="n">slot</span> <span class="o">=</span> <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getAttributeSlot</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
     <span class="n">check_entity</span><span class="p">(</span><span class="n">etype</span><span class="p">,</span> <span class="n">slot</span><span class="p">);</span>
-    <span class="k">return</span> <span class="n">get_slot</span><span class="p">(</span><span class="n">slot</span><span class="p">);</span>
+    <span class="k">return</span> <span class="nf">get_slot</span><span class="p">(</span><span class="n">slot</span><span class="p">);</span>
   <span class="p">}</span>
   <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Slot</span><span class="o">&gt;</span> <span class="n">find_slot</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span> <span class="n">EntityType</span> <span class="n">etype</span><span class="p">)</span>
       <span class="k">const</span> <span class="p">{</span>
