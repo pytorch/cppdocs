@@ -301,6 +301,8 @@ Program Listing for File Functions.h
    static inline Tensor mkldnn_linear(const Tensor & input, const Tensor & weight, const Tensor & bias={});
    static inline Tensor fbgemm_linear_int8_weight(const Tensor & input, const Tensor & weight, const Tensor & packed, const Tensor & col_offsets, Scalar weight_scale, Scalar weight_zero_point, const Tensor & bias);
    static inline std::tuple<Tensor,Tensor,double,int64_t> fbgemm_linear_quantize_weight(const Tensor & input);
+   static inline Tensor fbgemm_pack_gemm_matrix_fp16(const Tensor & input);
+   static inline Tensor fbgemm_linear_fp16_weight(const Tensor & input, const Tensor & packed_weight, const Tensor & bias);
    static inline Tensor fbgemm_pack_quantized_matrix(const Tensor & input, int64_t K, int64_t N);
    static inline bool fbgemm_is_cpu_supported();
    static inline Tensor linspace(Scalar start, Scalar end, int64_t steps=100, const TensorOptions & options={});
@@ -2234,6 +2236,14 @@ Program Listing for File Functions.h
    static inline std::tuple<Tensor,Tensor,double,int64_t> fbgemm_linear_quantize_weight(const Tensor & input) {
        static auto table = globalATenDispatch().getOpTable("aten::fbgemm_linear_quantize_weight(Tensor input) -> (Tensor, Tensor, float, int)");
        return table->getOp<std::tuple<Tensor,Tensor,double,int64_t> (const Tensor &)>(at::detail::infer_backend(input), at::detail::infer_is_variable(input))(input);
+   }
+   static inline Tensor fbgemm_pack_gemm_matrix_fp16(const Tensor & input) {
+       static auto table = globalATenDispatch().getOpTable("aten::fbgemm_pack_gemm_matrix_fp16(Tensor input) -> Tensor");
+       return table->getOp<Tensor (const Tensor &)>(at::detail::infer_backend(input), at::detail::infer_is_variable(input))(input);
+   }
+   static inline Tensor fbgemm_linear_fp16_weight(const Tensor & input, const Tensor & packed_weight, const Tensor & bias) {
+       static auto table = globalATenDispatch().getOpTable("aten::fbgemm_linear_fp16_weight(Tensor input, Tensor packed_weight, Tensor bias) -> Tensor");
+       return table->getOp<Tensor (const Tensor &, const Tensor &, const Tensor &)>(at::detail::infer_backend(input), at::detail::infer_is_variable(input))(input, packed_weight, bias);
    }
    static inline Tensor fbgemm_pack_quantized_matrix(const Tensor & input, int64_t K, int64_t N) {
        static auto table = globalATenDispatch().getOpTable("aten::fbgemm_pack_quantized_matrix(Tensor input, int K, int N) -> Tensor");
