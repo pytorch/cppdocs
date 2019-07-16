@@ -640,6 +640,8 @@ Program Listing for File Functions.h
    static inline int64_t q_zero_point(const Tensor & self);
    static inline Tensor int_repr(const Tensor & self);
    static inline Tensor _per_tensor_affine_qtensor(const Tensor & self, double scale, int64_t zero_point);
+   static inline Tensor fake_quantize_per_tensor_affine(const Tensor & self, double scale, int64_t zero_point, int64_t quant_min, int64_t quant_max);
+   static inline Tensor fake_quantize_per_tensor_affine_backward(const Tensor & grad, const Tensor & self, double scale, int64_t zero_point, int64_t quant_min, int64_t quant_max);
    static inline std::vector<Tensor> meshgrid(TensorList tensors);
    static inline Tensor cartesian_prod(TensorList tensors);
    static inline Tensor combinations(const Tensor & self, int64_t r=2, bool with_replacement=false);
@@ -754,6 +756,7 @@ Program Listing for File Functions.h
    static inline std::tuple<Tensor,Tensor> eig(const Tensor & self, bool eigenvectors=false);
    static inline std::tuple<Tensor &,Tensor &,Tensor &> svd_out(Tensor & U, Tensor & S, Tensor & V, const Tensor & self, bool some=true, bool compute_uv=true);
    static inline std::tuple<Tensor,Tensor,Tensor> svd(const Tensor & self, bool some=true, bool compute_uv=true);
+   static inline std::tuple<Tensor,Tensor,Tensor> _svd_helper(const Tensor & self, bool some, bool compute_uv);
    static inline Tensor & cholesky_out(Tensor & out, const Tensor & self, bool upper=false);
    static inline Tensor cholesky(const Tensor & self, bool upper=false);
    static inline Tensor _cholesky_helper(const Tensor & self, bool upper);
@@ -3618,6 +3621,14 @@ Program Listing for File Functions.h
        static auto table = globalATenDispatch().getOpTable("aten::_per_tensor_affine_qtensor(Tensor self, float scale, int zero_point) -> Tensor");
        return table->getOp<Tensor (const Tensor &, double, int64_t)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self, scale, zero_point);
    }
+   static inline Tensor fake_quantize_per_tensor_affine(const Tensor & self, double scale, int64_t zero_point, int64_t quant_min, int64_t quant_max) {
+       static auto table = globalATenDispatch().getOpTable("aten::fake_quantize_per_tensor_affine(Tensor self, float scale, int zero_point, int quant_min, int quant_max) -> Tensor");
+       return table->getOp<Tensor (const Tensor &, double, int64_t, int64_t, int64_t)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self, scale, zero_point, quant_min, quant_max);
+   }
+   static inline Tensor fake_quantize_per_tensor_affine_backward(const Tensor & grad, const Tensor & self, double scale, int64_t zero_point, int64_t quant_min, int64_t quant_max) {
+       static auto table = globalATenDispatch().getOpTable("aten::fake_quantize_per_tensor_affine_backward(Tensor grad, Tensor self, float scale, int zero_point, int quant_min, int quant_max) -> Tensor");
+       return table->getOp<Tensor (const Tensor &, const Tensor &, double, int64_t, int64_t, int64_t)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(grad, self, scale, zero_point, quant_min, quant_max);
+   }
    static inline std::vector<Tensor> meshgrid(TensorList tensors) {
        static auto table = globalATenDispatch().getOpTable("aten::meshgrid(Tensor[] tensors) -> Tensor[]");
        return table->getOp<std::vector<Tensor> (TensorList)>(at::detail::infer_backend(tensors), at::detail::infer_is_variable(tensors))(tensors);
@@ -4074,6 +4085,10 @@ Program Listing for File Functions.h
    }
    static inline std::tuple<Tensor,Tensor,Tensor> svd(const Tensor & self, bool some, bool compute_uv) {
        static auto table = globalATenDispatch().getOpTable("aten::svd(Tensor self, bool some=True, bool compute_uv=True) -> (Tensor U, Tensor S, Tensor V)");
+       return table->getOp<std::tuple<Tensor,Tensor,Tensor> (const Tensor &, bool, bool)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self, some, compute_uv);
+   }
+   static inline std::tuple<Tensor,Tensor,Tensor> _svd_helper(const Tensor & self, bool some, bool compute_uv) {
+       static auto table = globalATenDispatch().getOpTable("aten::_svd_helper(Tensor self, bool some, bool compute_uv) -> (Tensor, Tensor, Tensor)");
        return table->getOp<std::tuple<Tensor,Tensor,Tensor> (const Tensor &, bool, bool)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self, some, compute_uv);
    }
    static inline Tensor & cholesky_out(Tensor & out, const Tensor & self, bool upper) {
