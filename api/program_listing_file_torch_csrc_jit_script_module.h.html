@@ -335,8 +335,8 @@
 <span class="p">};</span>
 
 <span class="k">struct</span> <span class="n">TORCH_API</span> <span class="n">Module</span> <span class="p">{</span>
-  <span class="n">Module</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">class_name</span><span class="p">)</span>
-      <span class="o">:</span> <span class="n">module_value_</span><span class="p">(</span><span class="n">create_module_object</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">class_name</span><span class="p">)))</span> <span class="p">{}</span>
+  <span class="k">explicit</span> <span class="n">Module</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">QualifiedName</span> <span class="n">class_name</span><span class="p">);</span>
+  <span class="n">Module</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">QualifiedName</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">CompilationUnit</span><span class="o">&gt;</span> <span class="n">cu</span><span class="p">);</span>
   <span class="c1">// module_value_ null and will be lazily initialized if is needed</span>
   <span class="n">Module</span><span class="p">()</span> <span class="p">{}</span>
   <span class="n">Module</span><span class="p">(</span><span class="n">ModulePtr</span> <span class="n">module_value</span><span class="p">)</span> <span class="o">:</span> <span class="n">module_value_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">module_value</span><span class="p">))</span> <span class="p">{}</span>
@@ -512,15 +512,9 @@
     <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span>
   <span class="p">}</span>
 
-  <span class="n">ModulePtr</span> <span class="n">module_object</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">module_value_</span><span class="p">)</span> <span class="p">{</span>
-      <span class="c1">// User has created a Model without assigning it to something already</span>
-      <span class="c1">// loaded. This is done in tests, and when using the .define method.</span>
-      <span class="n">module_value_</span> <span class="o">=</span> <span class="n">create_module_object</span><span class="p">(</span><span class="s">&quot;__main__&quot;</span><span class="p">);</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="n">module_value_</span><span class="p">;</span>
-  <span class="p">}</span>
-  <span class="n">ClassTypePtr</span> <span class="n">type</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+  <span class="n">ModulePtr</span> <span class="n">module_object</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+
+  <span class="n">ClassTypePtr</span> <span class="nf">type</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">type</span><span class="p">();</span>
   <span class="p">}</span>
   <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">CompilationUnit</span><span class="o">&gt;</span> <span class="n">class_compilation_unit</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
@@ -622,13 +616,6 @@
       <span class="k">const</span> <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">ScalarType</span><span class="o">&gt;&amp;</span> <span class="n">dtype</span><span class="p">,</span>
       <span class="kt">bool</span> <span class="n">non_blocking</span><span class="p">);</span>
 
-  <span class="k">static</span> <span class="n">ModulePtr</span> <span class="nf">create_module_object</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">class_name</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">auto</span> <span class="n">cu</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">CompilationUnit</span><span class="o">&gt;</span><span class="p">();</span>
-    <span class="k">auto</span> <span class="n">cls</span> <span class="o">=</span> <span class="n">ClassType</span><span class="o">::</span><span class="n">create</span><span class="p">(</span>
-        <span class="n">QualifiedName</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">class_name</span><span class="p">)),</span> <span class="n">cu</span><span class="p">,</span> <span class="cm">/*is_module=*/</span><span class="nb">true</span><span class="p">);</span>
-    <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Object</span><span class="o">::</span><span class="n">create</span><span class="p">(</span>
-        <span class="n">c10</span><span class="o">::</span><span class="n">StrongTypePtr</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">cu</span><span class="p">),</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">cls</span><span class="p">)),</span> <span class="mi">0</span><span class="p">);</span>
-  <span class="p">}</span>
   <span class="c1">// mutable be we lazily initialize in module_object.</span>
   <span class="k">mutable</span> <span class="n">ModulePtr</span> <span class="n">module_value_</span><span class="p">;</span>
 <span class="p">};</span>
