@@ -491,6 +491,9 @@ Program Listing for File Functions.h
    static inline Tensor detach(const Tensor & self);
    static inline Tensor & detach_(Tensor & self);
    static inline int64_t size(const Tensor & self, int64_t dim);
+   #ifdef BUILD_NAMEDTENSOR
+   static inline int64_t size(const Tensor & self, Dimname dim);
+   #endif
    static inline Tensor slice(const Tensor & self, int64_t dim=0, int64_t start=0, int64_t end=9223372036854775807, int64_t step=1);
    static inline std::tuple<Tensor,Tensor> slogdet(const Tensor & self);
    static inline Tensor smm(const Tensor & self, const Tensor & mat2);
@@ -514,6 +517,9 @@ Program Listing for File Functions.h
    static inline Tensor & stack_out(Tensor & out, TensorList tensors, int64_t dim=0);
    static inline Tensor stft(const Tensor & self, int64_t n_fft, c10::optional<int64_t> hop_length=c10::nullopt, c10::optional<int64_t> win_length=c10::nullopt, const Tensor & window={}, bool normalized=false, bool onesided=true);
    static inline int64_t stride(const Tensor & self, int64_t dim);
+   #ifdef BUILD_NAMEDTENSOR
+   static inline int64_t stride(const Tensor & self, Dimname dim);
+   #endif
    static inline Tensor sum(const Tensor & self, c10::optional<ScalarType> dtype=c10::nullopt);
    static inline Tensor sum(const Tensor & self, IntArrayRef dim, bool keepdim=false, c10::optional<ScalarType> dtype=c10::nullopt);
    static inline Tensor & sum_out(Tensor & out, const Tensor & self, IntArrayRef dim, bool keepdim=false, c10::optional<ScalarType> dtype=c10::nullopt);
@@ -3016,6 +3022,12 @@ Program Listing for File Functions.h
        static auto table = globalATenDispatch().getOpTable("aten::size(Tensor self, int dim) -> int");
        return table->getOp<int64_t (const Tensor &, int64_t)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self, dim);
    }
+   #ifdef BUILD_NAMEDTENSOR
+   static inline int64_t size(const Tensor & self, Dimname dim) {
+       static auto table = globalATenDispatch().getOpTable("aten::size(Tensor self, Dimname dim) -> int");
+       return table->getOp<int64_t (const Tensor &, Dimname)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self, dim);
+   }
+   #endif
    static inline Tensor slice(const Tensor & self, int64_t dim, int64_t start, int64_t end, int64_t step) {
        static auto table = globalATenDispatch().getOpTable("aten::slice(Tensor(a) self, int dim=0, int start=0, int end=9223372036854775807, int step=1) -> Tensor(a)");
        return table->getOp<Tensor (const Tensor &, int64_t, int64_t, int64_t, int64_t)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self, dim, start, end, step);
@@ -3108,6 +3120,12 @@ Program Listing for File Functions.h
        static auto table = globalATenDispatch().getOpTable("aten::stride(Tensor self, int dim) -> int");
        return table->getOp<int64_t (const Tensor &, int64_t)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self, dim);
    }
+   #ifdef BUILD_NAMEDTENSOR
+   static inline int64_t stride(const Tensor & self, Dimname dim) {
+       static auto table = globalATenDispatch().getOpTable("aten::stride(Tensor self, Dimname dim) -> int");
+       return table->getOp<int64_t (const Tensor &, Dimname)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self, dim);
+   }
+   #endif
    static inline Tensor sum(const Tensor & self, c10::optional<ScalarType> dtype) {
        static auto table = globalATenDispatch().getOpTable("aten::sum(Tensor self, *, ScalarType? dtype=None) -> Tensor");
        return table->getOp<Tensor (const Tensor &, c10::optional<ScalarType>)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self, dtype);
