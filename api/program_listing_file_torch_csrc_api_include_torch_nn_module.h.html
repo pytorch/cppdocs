@@ -345,6 +345,18 @@
 
   <span class="k">virtual</span> <span class="kt">bool</span> <span class="nf">is_serializable</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
 
+  <span class="c1">//  assign the submodule as well, i.e. use as</span>
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">ModuleType</span><span class="o">&gt;</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;</span> <span class="n">replace_module</span><span class="p">(</span>
+      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;</span> <span class="n">module</span><span class="p">);</span>
+
+  <span class="c1">//  assign the submodule as well, i.e. use as</span>
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">ModuleType</span><span class="o">&gt;</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;</span> <span class="n">replace_module</span><span class="p">(</span>
+      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span>
+      <span class="n">ModuleHolder</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;</span> <span class="n">module_holder</span><span class="p">);</span>
+
  <span class="k">protected</span><span class="o">:</span>
   <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">register_parameter</span><span class="p">(</span>
       <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">name</span><span class="p">,</span>
@@ -462,6 +474,21 @@
     <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">name</span><span class="p">,</span>
     <span class="n">ModuleHolder</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;</span> <span class="n">module_holder</span><span class="p">)</span> <span class="p">{</span>
   <span class="k">return</span> <span class="n">register_module</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="n">module_holder</span><span class="p">.</span><span class="n">ptr</span><span class="p">());</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">ModuleType</span><span class="o">&gt;</span>
+<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;</span> <span class="n">Module</span><span class="o">::</span><span class="n">replace_module</span><span class="p">(</span>
+    <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;</span> <span class="n">module</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">auto</span><span class="o">&amp;</span> <span class="n">base_module</span> <span class="o">=</span> <span class="p">(</span><span class="n">children_</span><span class="p">[</span><span class="n">name</span><span class="p">]</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">module</span><span class="p">));</span>
+  <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">dynamic_pointer_cast</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;</span><span class="p">(</span><span class="n">base_module</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">ModuleType</span><span class="o">&gt;</span>
+<span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;</span> <span class="n">Module</span><span class="o">::</span><span class="n">replace_module</span><span class="p">(</span>
+    <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span>
+    <span class="n">ModuleHolder</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;</span> <span class="n">module_holder</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">replace_module</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">module_holder</span><span class="p">.</span><span class="n">ptr</span><span class="p">());</span>
 <span class="p">}</span>
 
 <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span><span class="p">...</span> <span class="n">Ts</span><span class="o">&gt;</span>
