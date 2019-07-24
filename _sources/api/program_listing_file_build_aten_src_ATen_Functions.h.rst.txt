@@ -787,6 +787,7 @@ Program Listing for File Functions.h
    static inline std::tuple<Tensor,Tensor,Tensor> _lu_with_info(const Tensor & self, bool pivot=true, bool check_errors=true);
    static inline Tensor & lu_solve_out(Tensor & out, const Tensor & self, const Tensor & LU_data, const Tensor & LU_pivots);
    static inline Tensor lu_solve(const Tensor & self, const Tensor & LU_data, const Tensor & LU_pivots);
+   static inline Tensor _lu_solve_helper(const Tensor & self, const Tensor & LU_data, const Tensor & LU_pivots);
    static inline Tensor & multinomial_out(Tensor & out, const Tensor & self, int64_t num_samples, bool replacement=false, Generator * generator=nullptr);
    static inline Tensor multinomial(const Tensor & self, int64_t num_samples, bool replacement=false, Generator * generator=nullptr);
    static inline std::tuple<Tensor,Tensor> _multinomial_alias_setup(const Tensor & probs);
@@ -4202,6 +4203,10 @@ Program Listing for File Functions.h
    }
    static inline Tensor lu_solve(const Tensor & self, const Tensor & LU_data, const Tensor & LU_pivots) {
        static auto table = globalATenDispatch().getOpTable("aten::lu_solve(Tensor self, Tensor LU_data, Tensor LU_pivots) -> Tensor");
+       return table->getOp<Tensor (const Tensor &, const Tensor &, const Tensor &)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self, LU_data, LU_pivots);
+   }
+   static inline Tensor _lu_solve_helper(const Tensor & self, const Tensor & LU_data, const Tensor & LU_pivots) {
+       static auto table = globalATenDispatch().getOpTable("aten::_lu_solve_helper(Tensor self, Tensor LU_data, Tensor LU_pivots) -> Tensor");
        return table->getOp<Tensor (const Tensor &, const Tensor &, const Tensor &)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self, LU_data, LU_pivots);
    }
    static inline Tensor & multinomial_out(Tensor & out, const Tensor & self, int64_t num_samples, bool replacement, Generator * generator) {
