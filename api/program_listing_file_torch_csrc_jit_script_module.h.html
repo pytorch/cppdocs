@@ -336,7 +336,10 @@
 
 <span class="k">struct</span> <span class="n">TORCH_API</span> <span class="n">Module</span> <span class="p">{</span>
   <span class="k">explicit</span> <span class="n">Module</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">QualifiedName</span> <span class="n">class_name</span><span class="p">);</span>
-  <span class="n">Module</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">QualifiedName</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">CompilationUnit</span><span class="o">&gt;</span> <span class="n">cu</span><span class="p">);</span>
+  <span class="n">Module</span><span class="p">(</span>
+      <span class="n">c10</span><span class="o">::</span><span class="n">QualifiedName</span><span class="p">,</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">CompilationUnit</span><span class="o">&gt;</span> <span class="n">cu</span><span class="p">,</span>
+      <span class="kt">bool</span> <span class="n">shouldMangle</span> <span class="o">=</span> <span class="nb">false</span><span class="p">);</span>
   <span class="c1">// module_value_ null and will be lazily initialized if is needed</span>
   <span class="n">Module</span><span class="p">()</span> <span class="p">{}</span>
   <span class="n">Module</span><span class="p">(</span><span class="n">ModulePtr</span> <span class="n">module_value</span><span class="p">)</span> <span class="o">:</span> <span class="n">module_value_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">module_value</span><span class="p">))</span> <span class="p">{}</span>
@@ -431,7 +434,7 @@
 
   <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Method</span><span class="o">&gt;</span> <span class="n">get_methods</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">fmap</span><span class="p">(</span>
-        <span class="n">class_compilation_unit</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">get_functions</span><span class="p">(),</span>
+        <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">methods</span><span class="p">(),</span>
         <span class="p">[</span><span class="o">&amp;</span><span class="p">](</span><span class="n">Function</span><span class="o">*</span> <span class="n">func</span><span class="p">)</span> <span class="p">{</span>
           <span class="k">return</span> <span class="n">Method</span><span class="p">(</span><span class="n">module_object</span><span class="p">(),</span> <span class="n">func</span><span class="p">);</span>
         <span class="p">});</span>
@@ -457,9 +460,11 @@
     <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span>
   <span class="p">}</span>
   <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Method</span><span class="o">&gt;</span> <span class="n">find_method</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">basename</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="p">(</span><span class="k">const</span> <span class="k">auto</span> <span class="n">fn</span> <span class="o">=</span> <span class="n">class_compilation_unit</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">find_function</span><span class="p">(</span>
-            <span class="n">getNameForMethod</span><span class="p">(</span><span class="n">basename</span><span class="p">)))</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="n">Method</span><span class="p">(</span><span class="n">module_object</span><span class="p">(),</span> <span class="n">fn</span><span class="p">);</span>
+    <span class="k">for</span> <span class="p">(</span><span class="n">Function</span><span class="o">*</span> <span class="nl">fn</span> <span class="p">:</span> <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">methods</span><span class="p">())</span> <span class="p">{</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">fn</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">()</span> <span class="o">==</span> <span class="n">basename</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">Method</span><span class="p">(</span><span class="n">module_object</span><span class="p">(),</span> <span class="n">fn</span><span class="p">);</span>
+      <span class="p">}</span>
+
     <span class="p">}</span>
     <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span>
   <span class="p">}</span>
@@ -506,7 +511,7 @@
   <span class="kt">void</span> <span class="nf">clone_method</span><span class="p">(</span><span class="k">const</span> <span class="n">Module</span><span class="o">&amp;</span> <span class="n">orig</span><span class="p">,</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">);</span>
 
   <span class="n">at</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">EntityType</span><span class="o">&gt;</span> <span class="n">kind_of</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">class_compilation_unit</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">find_function</span><span class="p">(</span><span class="n">getNameForMethod</span><span class="p">(</span><span class="n">name</span><span class="p">)))</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">find_method</span><span class="p">(</span><span class="n">name</span><span class="p">))</span> <span class="p">{</span>
       <span class="k">return</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">METHOD</span><span class="p">;</span>
     <span class="p">}</span>
     <span class="k">if</span> <span class="p">(</span><span class="k">auto</span> <span class="n">offset</span> <span class="o">=</span> <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">findAttributeSlot</span><span class="p">(</span><span class="n">name</span><span class="p">))</span> <span class="p">{</span>
@@ -547,7 +552,7 @@
  <span class="k">private</span><span class="o">:</span>
   <span class="kt">void</span> <span class="n">clone_method</span><span class="p">(</span>
       <span class="k">const</span> <span class="n">Module</span><span class="o">&amp;</span> <span class="n">orig</span><span class="p">,</span>
-      <span class="k">const</span> <span class="n">QualifiedName</span><span class="o">&amp;</span> <span class="n">orig_method_name</span><span class="p">,</span>
+      <span class="k">const</span> <span class="n">Function</span><span class="o">&amp;</span> <span class="n">method</span><span class="p">,</span>
       <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">unordered_map</span><span class="o">&lt;</span><span class="n">TypePtr</span><span class="p">,</span> <span class="n">TypePtr</span><span class="o">&gt;&amp;</span> <span class="n">type_remap</span><span class="p">);</span>
 
   <span class="n">c10</span><span class="o">::</span><span class="n">QualifiedName</span> <span class="n">getNameForMethod</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">basename</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
