@@ -230,9 +230,11 @@
 <span class="cp">#include</span> <span class="cpf">&lt;ATen/core/blob.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;c10/util/intrusive_ptr.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;ATen/core/Tensor.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/WindowsTorchApiMacro.h&gt;</span><span class="cp"></span>
 
 <span class="k">namespace</span> <span class="n">torch</span> <span class="p">{</span>
 <span class="k">namespace</span> <span class="n">jit</span> <span class="p">{</span>
+<span class="k">class</span> <span class="nc">CustomClassHolder</span> <span class="o">:</span> <span class="k">public</span> <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr_target</span> <span class="p">{};</span>
 <span class="k">struct</span> <span class="n">Function</span><span class="p">;</span>
 <span class="k">namespace</span> <span class="n">script</span> <span class="p">{</span>
 <span class="k">struct</span> <span class="n">CompilationUnit</span><span class="p">;</span>
@@ -276,8 +278,10 @@
 <span class="cp">  _(GenericDict) \</span>
 <span class="cp">  _(Future) \</span>
 <span class="cp">  _(Device) \</span>
+<span class="cp">  _(Object) \</span>
 <span class="cp">  _(Uninitialized) \</span>
-<span class="cp">  _(Object)</span>
+<span class="cp">  _(Capsule) \</span>
+
 
 <span class="k">struct</span> <span class="n">CAFFE2_API</span> <span class="n">IValue</span> <span class="k">final</span> <span class="p">{</span>
   <span class="n">IValue</span><span class="p">()</span> <span class="o">:</span> <span class="n">payload</span><span class="p">{</span><span class="mi">0</span><span class="p">},</span> <span class="n">tag</span><span class="p">(</span><span class="n">Tag</span><span class="o">::</span><span class="n">None</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span> <span class="p">{}</span>
@@ -374,6 +378,14 @@
   <span class="p">}</span>
   <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">caffe2</span><span class="o">::</span><span class="n">Blob</span><span class="o">&gt;</span> <span class="n">toBlob</span><span class="p">()</span> <span class="o">&amp;&amp;</span><span class="p">;</span>
   <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">caffe2</span><span class="o">::</span><span class="n">Blob</span><span class="o">&gt;</span> <span class="n">toBlob</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span><span class="p">;</span>
+
+  <span class="c1">// Capsule</span>
+  <span class="n">IValue</span><span class="p">(</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">torch</span><span class="o">::</span><span class="n">jit</span><span class="o">::</span><span class="n">CustomClassHolder</span><span class="o">&gt;</span> <span class="n">blob</span><span class="p">);</span>
+  <span class="kt">bool</span> <span class="nf">isCapsule</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">Tag</span><span class="o">::</span><span class="n">Capsule</span> <span class="o">==</span> <span class="n">tag</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">torch</span><span class="o">::</span><span class="n">jit</span><span class="o">::</span><span class="n">CustomClassHolder</span><span class="o">&gt;</span> <span class="n">toCapsule</span><span class="p">()</span> <span class="o">&amp;&amp;</span><span class="p">;</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">torch</span><span class="o">::</span><span class="n">jit</span><span class="o">::</span><span class="n">CustomClassHolder</span><span class="o">&gt;</span> <span class="n">toCapsule</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span><span class="p">;</span>
 
   <span class="c1">// Tuple</span>
   <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Tuple</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
@@ -779,6 +791,26 @@
   <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">torch</span><span class="o">::</span><span class="n">jit</span><span class="o">::</span><span class="n">script</span><span class="o">::</span><span class="n">CompilationUnit</span><span class="o">&gt;</span> <span class="n">cu_</span><span class="p">;</span>
   <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ClassType</span><span class="o">&gt;</span> <span class="n">type_</span><span class="p">;</span>
 <span class="p">};</span>
+
+<span class="n">TORCH_API</span> <span class="n">std</span><span class="o">::</span><span class="n">unordered_map</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">,</span> <span class="n">c10</span><span class="o">::</span><span class="n">StrongTypePtr</span><span class="o">&gt;&amp;</span> <span class="n">getCustomClassTypeMap</span><span class="p">();</span>
+<span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+<span class="n">c10</span><span class="o">::</span><span class="n">StrongTypePtr</span> <span class="n">getCustomClassType</span><span class="p">()</span> <span class="p">{</span>
+  <span class="k">auto</span> <span class="n">tmap</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">getCustomClassTypeMap</span><span class="p">();</span>
+  <span class="k">auto</span> <span class="n">res</span> <span class="o">=</span> <span class="n">tmap</span><span class="p">.</span><span class="n">find</span><span class="p">(</span><span class="k">typeid</span><span class="p">(</span><span class="n">T</span><span class="p">).</span><span class="n">name</span><span class="p">());</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">res</span> <span class="o">==</span> <span class="n">tmap</span><span class="p">.</span><span class="n">end</span><span class="p">())</span> <span class="p">{</span>
+    <span class="k">throw</span> <span class="n">c10</span><span class="o">::</span><span class="n">Error</span><span class="p">(</span><span class="s">&quot;Can&#39;t find class id in custom class type map&quot;</span><span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="n">res</span><span class="o">-&gt;</span><span class="n">second</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+<span class="kr">inline</span> <span class="kt">bool</span> <span class="n">isCustomClassRegistered</span><span class="p">()</span> <span class="p">{</span>
+  <span class="k">auto</span> <span class="n">tmap</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">getCustomClassTypeMap</span><span class="p">();</span>
+  <span class="k">return</span> <span class="n">tmap</span><span class="p">.</span><span class="n">find</span><span class="p">(</span><span class="k">typeid</span><span class="p">(</span><span class="n">T</span><span class="p">).</span><span class="n">name</span><span class="p">())</span> <span class="o">!=</span> <span class="n">tmap</span><span class="p">.</span><span class="n">end</span><span class="p">();</span>
+<span class="p">}</span>
+
+<span class="n">TORCH_API</span> <span class="n">std</span><span class="o">::</span><span class="n">unordered_map</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">PyObject</span><span class="o">*</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="p">)</span><span class="o">&gt;&gt;&amp;</span>
+<span class="n">getClassConverter</span><span class="p">();</span>
 <span class="p">}</span>
 
 <span class="cp">#include</span> <span class="cpf">&lt;ATen/core/ivalue_inl.h&gt;</span><span class="cp"></span>
