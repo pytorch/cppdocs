@@ -299,9 +299,11 @@ Program Listing for File Functions.h
    static inline std::tuple<Tensor,Tensor,Tensor> native_layer_norm_double_backward(const Tensor & ggI, const Tensor & ggW, const Tensor & ggb, const Tensor & gO, const Tensor & input, const Tensor & mean, const Tensor & rstd, const Tensor & weight, int64_t M, int64_t N, std::array<bool,3> output_mask);
    static inline Tensor linear(const Tensor & input, const Tensor & weight, const Tensor & bias={});
    static inline Tensor mkldnn_linear(const Tensor & input, const Tensor & weight, const Tensor & bias={});
+   static inline Tensor fbgemm_linear_int8_weight_fp32_activation(const Tensor & input, const Tensor & weight, const Tensor & packed, const Tensor & col_offsets, Scalar weight_scale, Scalar weight_zero_point, const Tensor & bias);
    static inline Tensor fbgemm_linear_int8_weight(const Tensor & input, const Tensor & weight, const Tensor & packed, const Tensor & col_offsets, Scalar weight_scale, Scalar weight_zero_point, const Tensor & bias);
    static inline std::tuple<Tensor,Tensor,double,int64_t> fbgemm_linear_quantize_weight(const Tensor & input);
    static inline Tensor fbgemm_pack_gemm_matrix_fp16(const Tensor & input);
+   static inline Tensor fbgemm_linear_fp16_weight_fp32_activation(const Tensor & input, const Tensor & packed_weight, const Tensor & bias);
    static inline Tensor fbgemm_linear_fp16_weight(const Tensor & input, const Tensor & packed_weight, const Tensor & bias);
    static inline Tensor fbgemm_pack_quantized_matrix(const Tensor & input, int64_t K, int64_t N);
    static inline bool fbgemm_is_cpu_supported();
@@ -2251,6 +2253,10 @@ Program Listing for File Functions.h
        static auto table = globalATenDispatch().getOpTable("aten::mkldnn_linear(Tensor input, Tensor weight, Tensor? bias=None) -> Tensor");
        return table->getOp<Tensor (const Tensor &, const Tensor &, const Tensor &)>(at::detail::infer_backend(input), at::detail::infer_is_variable(input))(input, weight, bias);
    }
+   static inline Tensor fbgemm_linear_int8_weight_fp32_activation(const Tensor & input, const Tensor & weight, const Tensor & packed, const Tensor & col_offsets, Scalar weight_scale, Scalar weight_zero_point, const Tensor & bias) {
+       static auto table = globalATenDispatch().getOpTable("aten::fbgemm_linear_int8_weight_fp32_activation(Tensor input, Tensor weight, Tensor packed, Tensor col_offsets, Scalar weight_scale, Scalar weight_zero_point, Tensor bias) -> Tensor");
+       return table->getOp<Tensor (const Tensor &, const Tensor &, const Tensor &, const Tensor &, Scalar, Scalar, const Tensor &)>(at::detail::infer_backend(input), at::detail::infer_is_variable(input))(input, weight, packed, col_offsets, weight_scale, weight_zero_point, bias);
+   }
    static inline Tensor fbgemm_linear_int8_weight(const Tensor & input, const Tensor & weight, const Tensor & packed, const Tensor & col_offsets, Scalar weight_scale, Scalar weight_zero_point, const Tensor & bias) {
        static auto table = globalATenDispatch().getOpTable("aten::fbgemm_linear_int8_weight(Tensor input, Tensor weight, Tensor packed, Tensor col_offsets, Scalar weight_scale, Scalar weight_zero_point, Tensor bias) -> Tensor");
        return table->getOp<Tensor (const Tensor &, const Tensor &, const Tensor &, const Tensor &, Scalar, Scalar, const Tensor &)>(at::detail::infer_backend(input), at::detail::infer_is_variable(input))(input, weight, packed, col_offsets, weight_scale, weight_zero_point, bias);
@@ -2262,6 +2268,10 @@ Program Listing for File Functions.h
    static inline Tensor fbgemm_pack_gemm_matrix_fp16(const Tensor & input) {
        static auto table = globalATenDispatch().getOpTable("aten::fbgemm_pack_gemm_matrix_fp16(Tensor input) -> Tensor");
        return table->getOp<Tensor (const Tensor &)>(at::detail::infer_backend(input), at::detail::infer_is_variable(input))(input);
+   }
+   static inline Tensor fbgemm_linear_fp16_weight_fp32_activation(const Tensor & input, const Tensor & packed_weight, const Tensor & bias) {
+       static auto table = globalATenDispatch().getOpTable("aten::fbgemm_linear_fp16_weight_fp32_activation(Tensor input, Tensor packed_weight, Tensor bias) -> Tensor");
+       return table->getOp<Tensor (const Tensor &, const Tensor &, const Tensor &)>(at::detail::infer_backend(input), at::detail::infer_is_variable(input))(input, packed_weight, bias);
    }
    static inline Tensor fbgemm_linear_fp16_weight(const Tensor & input, const Tensor & packed_weight, const Tensor & bias) {
        static auto table = globalATenDispatch().getOpTable("aten::fbgemm_linear_fp16_weight(Tensor input, Tensor packed_weight, Tensor bias) -> Tensor");
