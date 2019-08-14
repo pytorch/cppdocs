@@ -42,6 +42,12 @@ Program Listing for File Functions.h
    static inline Tensor _cast_Long(const Tensor & self, bool non_blocking=false);
    static inline Tensor _cast_Short(const Tensor & self, bool non_blocking=false);
    static inline Tensor _cast_Half(const Tensor & self, bool non_blocking=false);
+   #ifdef BUILD_NAMEDTENSOR
+   static inline Tensor align_to(const Tensor & self, DimnameList names);
+   #endif
+   #ifdef BUILD_NAMEDTENSOR
+   static inline std::vector<Tensor> align_tensors(TensorList tensors);
+   #endif
    static inline std::tuple<Tensor,Tensor> _cudnn_ctc_loss(const Tensor & log_probs, const Tensor & targets, IntArrayRef input_lengths, IntArrayRef target_lengths, int64_t blank, bool deterministic, bool zero_infinity);
    static inline Tensor _cudnn_rnn_flatten_weight(TensorList weight_arr, int64_t weight_stride0, int64_t input_size, int64_t mode, int64_t hidden_size, int64_t num_layers, bool batch_first, bool bidirectional);
    static inline std::tuple<Tensor,Tensor,Tensor,Tensor,Tensor> _cudnn_rnn(const Tensor & input, TensorList weight, int64_t weight_stride0, const Tensor & weight_buf, const Tensor & hx, const Tensor & cx, int64_t mode, int64_t hidden_size, int64_t num_layers, bool batch_first, double dropout, bool train, bool bidirectional, IntArrayRef batch_sizes, const Tensor & dropout_state);
@@ -1229,6 +1235,18 @@ Program Listing for File Functions.h
        static auto table = globalATenDispatch().getOpTable("aten::_cast_Half(Tensor self, bool non_blocking=False) -> Tensor");
        return table->getOp<Tensor (const Tensor &, bool)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self, non_blocking);
    }
+   #ifdef BUILD_NAMEDTENSOR
+   static inline Tensor align_to(const Tensor & self, DimnameList names) {
+       static auto table = globalATenDispatch().getOpTable("aten::align_to(Tensor self, DimnameList names) -> Tensor");
+       return table->getOp<Tensor (const Tensor &, DimnameList)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self, names);
+   }
+   #endif
+   #ifdef BUILD_NAMEDTENSOR
+   static inline std::vector<Tensor> align_tensors(TensorList tensors) {
+       static auto table = globalATenDispatch().getOpTable("aten::align_tensors(Tensor[] tensors) -> Tensor[]");
+       return table->getOp<std::vector<Tensor> (TensorList)>(at::detail::infer_backend(tensors), at::detail::infer_is_variable(tensors))(tensors);
+   }
+   #endif
    static inline std::tuple<Tensor,Tensor> _cudnn_ctc_loss(const Tensor & log_probs, const Tensor & targets, IntArrayRef input_lengths, IntArrayRef target_lengths, int64_t blank, bool deterministic, bool zero_infinity) {
        static auto table = globalATenDispatch().getOpTable("aten::_cudnn_ctc_loss(Tensor log_probs, Tensor targets, int[] input_lengths, int[] target_lengths, int blank, bool deterministic, bool zero_infinity) -> (Tensor, Tensor)");
        return table->getOp<std::tuple<Tensor,Tensor> (const Tensor &, const Tensor &, IntArrayRef, IntArrayRef, int64_t, bool, bool)>(at::detail::infer_backend(log_probs), at::detail::infer_is_variable(log_probs))(log_probs, targets, input_lengths, target_lengths, blank, deterministic, zero_infinity);
