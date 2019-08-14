@@ -210,7 +210,7 @@ Program Listing for File Functions.h
    static inline Tensor _embedding_bag_dense_backward(const Tensor & grad, const Tensor & indices, const Tensor & offsets, const Tensor & offset2bag, const Tensor & bag_size, const Tensor & maximum_indices, int64_t num_weights, bool scale_grad_by_freq, int64_t mode, const Tensor & per_sample_weights);
    static inline Tensor _embedding_bag_per_sample_weights_backward(const Tensor & grad, const Tensor & weight, const Tensor & indices, const Tensor & offsets, const Tensor & offset2bag, int64_t mode);
    #ifdef BUILD_NAMEDTENSOR
-   static inline Tensor empty(IntArrayRef size, c10::optional<DimnameList> names, const TensorOptions & options={});
+   static inline Tensor empty(IntArrayRef size, c10::optional<DimnameList> names, const TensorOptions & options={}, c10::optional<MemoryFormat> memory_format=c10::nullopt);
    #endif
    static inline Tensor empty(IntArrayRef size, const TensorOptions & options={}, c10::optional<MemoryFormat> memory_format=c10::nullopt);
    static inline Tensor _empty_affine_quantized(IntArrayRef size, const TensorOptions & options={}, double scale=1, int64_t zero_point=0, c10::optional<MemoryFormat> memory_format=MemoryFormat::Contiguous);
@@ -243,6 +243,9 @@ Program Listing for File Functions.h
    static inline Tensor frac(const Tensor & self);
    static inline Tensor & frac_(Tensor & self);
    static inline Tensor & frac_out(Tensor & out, const Tensor & self);
+   #ifdef BUILD_NAMEDTENSOR
+   static inline Tensor full(IntArrayRef size, Scalar fill_value, c10::optional<DimnameList> names, const TensorOptions & options={});
+   #endif
    static inline Tensor full(IntArrayRef size, Scalar fill_value, const TensorOptions & options={});
    static inline Tensor & full_out(Tensor & out, IntArrayRef size, Scalar fill_value);
    static inline Tensor full_like(const Tensor & self, Scalar fill_value);
@@ -400,6 +403,9 @@ Program Listing for File Functions.h
    static inline std::tuple<Tensor,Tensor,Tensor> _nnpack_spatial_convolution_backward(const Tensor & input, const Tensor & grad_output, const Tensor & weight, IntArrayRef padding, std::array<bool,3> output_mask);
    static inline Tensor _nnpack_spatial_convolution_backward_input(const Tensor & input, const Tensor & grad_output, const Tensor & weight, IntArrayRef padding);
    static inline Tensor _nnpack_spatial_convolution_backward_weight(const Tensor & input, IntArrayRef weightsize, const Tensor & grad_output, IntArrayRef padding);
+   #ifdef BUILD_NAMEDTENSOR
+   static inline Tensor ones(IntArrayRef size, c10::optional<DimnameList> names, const TensorOptions & options={});
+   #endif
    static inline Tensor ones(IntArrayRef size, const TensorOptions & options={});
    static inline Tensor & ones_out(Tensor & out, IntArrayRef size);
    static inline Tensor ones_like(const Tensor & self);
@@ -415,6 +421,12 @@ Program Listing for File Functions.h
    static inline Tensor pinverse(const Tensor & self, double rcond=1e-15);
    static inline Tensor poisson_nll_loss(const Tensor & input, const Tensor & target, bool log_input, bool full, double eps, int64_t reduction);
    static inline Tensor scalar_tensor(Scalar s, const TensorOptions & options={});
+   #ifdef BUILD_NAMEDTENSOR
+   static inline Tensor rand(IntArrayRef size, c10::optional<DimnameList> names, const TensorOptions & options={});
+   #endif
+   #ifdef BUILD_NAMEDTENSOR
+   static inline Tensor rand(IntArrayRef size, Generator * generator, c10::optional<DimnameList> names, const TensorOptions & options={});
+   #endif
    static inline Tensor rand(IntArrayRef size, const TensorOptions & options={});
    static inline Tensor rand(IntArrayRef size, Generator * generator, const TensorOptions & options={});
    static inline Tensor & rand_out(Tensor & out, IntArrayRef size);
@@ -435,6 +447,12 @@ Program Listing for File Functions.h
    static inline Tensor randint_like(const Tensor & self, int64_t low, int64_t high, const TensorOptions & options);
    static inline Tensor randn(IntArrayRef size, const TensorOptions & options={});
    static inline Tensor randn(IntArrayRef size, Generator * generator, const TensorOptions & options={});
+   #ifdef BUILD_NAMEDTENSOR
+   static inline Tensor randn(IntArrayRef size, c10::optional<DimnameList> names, const TensorOptions & options={});
+   #endif
+   #ifdef BUILD_NAMEDTENSOR
+   static inline Tensor randn(IntArrayRef size, Generator * generator, c10::optional<DimnameList> names, const TensorOptions & options={});
+   #endif
    static inline Tensor & randn_out(Tensor & out, IntArrayRef size);
    static inline Tensor & randn_out(Tensor & out, IntArrayRef size, Generator * generator);
    static inline Tensor randn_like(const Tensor & self);
@@ -595,6 +613,9 @@ Program Listing for File Functions.h
    static inline std::tuple<Tensor,Tensor> _weight_norm_cuda_interface(const Tensor & v, const Tensor & g, int64_t dim=0);
    static inline std::tuple<Tensor,Tensor> _weight_norm_cuda_interface_backward(const Tensor & grad_w, const Tensor & saved_v, const Tensor & saved_g, const Tensor & saved_norms, int64_t dim);
    static inline std::tuple<Tensor,Tensor> _weight_norm_differentiable_backward(const Tensor & grad_w, const Tensor & saved_v, const Tensor & saved_g, const Tensor & saved_norms, int64_t dim);
+   #ifdef BUILD_NAMEDTENSOR
+   static inline Tensor zeros(IntArrayRef size, c10::optional<DimnameList> names, const TensorOptions & options={});
+   #endif
    static inline Tensor zeros(IntArrayRef size, const TensorOptions & options={});
    static inline Tensor & zeros_out(Tensor & out, IntArrayRef size);
    static inline Tensor zeros_like(const Tensor & self);
@@ -1885,10 +1906,10 @@ Program Listing for File Functions.h
        return table->getOp<Tensor (const Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, int64_t)>(at::detail::infer_backend(grad), at::detail::infer_is_variable(grad))(grad, weight, indices, offsets, offset2bag, mode);
    }
    #ifdef BUILD_NAMEDTENSOR
-   static inline Tensor empty(IntArrayRef size, c10::optional<DimnameList> names, const TensorOptions & options) {
+   static inline Tensor empty(IntArrayRef size, c10::optional<DimnameList> names, const TensorOptions & options, c10::optional<MemoryFormat> memory_format) {
        globalLegacyTypeDispatch().initForBackend(options.backend());
-       static auto table = globalATenDispatch().getOpTable("aten::empty.names(int[] size, *, Dimname[]? names, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor");
-       return table->getOp<Tensor (IntArrayRef, c10::optional<DimnameList>, const TensorOptions &)>(options.backend(), options.is_variable())(size, names, options);
+       static auto table = globalATenDispatch().getOpTable("aten::empty.names(int[] size, *, Dimname[]? names, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, MemoryFormat? memory_format=None) -> Tensor");
+       return table->getOp<Tensor (IntArrayRef, c10::optional<DimnameList>, const TensorOptions &, c10::optional<MemoryFormat>)>(options.backend(), options.is_variable())(size, names, options, memory_format);
    }
    #endif
    static inline Tensor empty(IntArrayRef size, const TensorOptions & options, c10::optional<MemoryFormat> memory_format) {
@@ -2021,6 +2042,13 @@ Program Listing for File Functions.h
        static auto table = globalATenDispatch().getOpTable("aten::frac.out(Tensor self, *, Tensor(a!) out) -> Tensor(a!)");
        return table->getOp<Tensor & (Tensor &, const Tensor &)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(out, self);
    }
+   #ifdef BUILD_NAMEDTENSOR
+   static inline Tensor full(IntArrayRef size, Scalar fill_value, c10::optional<DimnameList> names, const TensorOptions & options) {
+       globalLegacyTypeDispatch().initForBackend(options.backend());
+       static auto table = globalATenDispatch().getOpTable("aten::full.names(int[] size, Scalar fill_value, *, Dimname[]? names, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor");
+       return table->getOp<Tensor (IntArrayRef, Scalar, c10::optional<DimnameList>, const TensorOptions &)>(options.backend(), options.is_variable())(size, fill_value, names, options);
+   }
+   #endif
    static inline Tensor full(IntArrayRef size, Scalar fill_value, const TensorOptions & options) {
        globalLegacyTypeDispatch().initForBackend(options.backend());
        static auto table = globalATenDispatch().getOpTable("aten::full(int[] size, Scalar fill_value, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor");
@@ -2660,6 +2688,13 @@ Program Listing for File Functions.h
        static auto table = globalATenDispatch().getOpTable("aten::_nnpack_spatial_convolution_backward_weight(Tensor input, int[] weightsize, Tensor grad_output, int[2] padding) -> Tensor");
        return table->getOp<Tensor (const Tensor &, IntArrayRef, const Tensor &, IntArrayRef)>(at::detail::infer_backend(input), at::detail::infer_is_variable(input))(input, weightsize, grad_output, padding);
    }
+   #ifdef BUILD_NAMEDTENSOR
+   static inline Tensor ones(IntArrayRef size, c10::optional<DimnameList> names, const TensorOptions & options) {
+       globalLegacyTypeDispatch().initForBackend(options.backend());
+       static auto table = globalATenDispatch().getOpTable("aten::ones.names(int[] size, *, Dimname[]? names, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor");
+       return table->getOp<Tensor (IntArrayRef, c10::optional<DimnameList>, const TensorOptions &)>(options.backend(), options.is_variable())(size, names, options);
+   }
+   #endif
    static inline Tensor ones(IntArrayRef size, const TensorOptions & options) {
        globalLegacyTypeDispatch().initForBackend(options.backend());
        static auto table = globalATenDispatch().getOpTable("aten::ones(int[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor");
@@ -2723,6 +2758,20 @@ Program Listing for File Functions.h
        static auto table = globalATenDispatch().getOpTable("aten::scalar_tensor(Scalar s, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor");
        return table->getOp<Tensor (Scalar, const TensorOptions &)>(options.backend(), options.is_variable())(s, options);
    }
+   #ifdef BUILD_NAMEDTENSOR
+   static inline Tensor rand(IntArrayRef size, c10::optional<DimnameList> names, const TensorOptions & options) {
+       globalLegacyTypeDispatch().initForBackend(options.backend());
+       static auto table = globalATenDispatch().getOpTable("aten::rand.names(int[] size, *, Dimname[]? names, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor");
+       return table->getOp<Tensor (IntArrayRef, c10::optional<DimnameList>, const TensorOptions &)>(options.backend(), options.is_variable())(size, names, options);
+   }
+   #endif
+   #ifdef BUILD_NAMEDTENSOR
+   static inline Tensor rand(IntArrayRef size, Generator * generator, c10::optional<DimnameList> names, const TensorOptions & options) {
+       globalLegacyTypeDispatch().initForBackend(options.backend());
+       static auto table = globalATenDispatch().getOpTable("aten::rand.generator_with_names(int[] size, *, Generator? generator, Dimname[]? names, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor");
+       return table->getOp<Tensor (IntArrayRef, Generator *, c10::optional<DimnameList>, const TensorOptions &)>(options.backend(), options.is_variable())(size, generator, names, options);
+   }
+   #endif
    static inline Tensor rand(IntArrayRef size, const TensorOptions & options) {
        globalLegacyTypeDispatch().initForBackend(options.backend());
        static auto table = globalATenDispatch().getOpTable("aten::rand(int[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor");
@@ -2814,6 +2863,20 @@ Program Listing for File Functions.h
        static auto table = globalATenDispatch().getOpTable("aten::randn.generator(int[] size, *, Generator? generator, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor");
        return table->getOp<Tensor (IntArrayRef, Generator *, const TensorOptions &)>(options.backend(), options.is_variable())(size, generator, options);
    }
+   #ifdef BUILD_NAMEDTENSOR
+   static inline Tensor randn(IntArrayRef size, c10::optional<DimnameList> names, const TensorOptions & options) {
+       globalLegacyTypeDispatch().initForBackend(options.backend());
+       static auto table = globalATenDispatch().getOpTable("aten::randn.names(int[] size, *, Dimname[]? names, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor");
+       return table->getOp<Tensor (IntArrayRef, c10::optional<DimnameList>, const TensorOptions &)>(options.backend(), options.is_variable())(size, names, options);
+   }
+   #endif
+   #ifdef BUILD_NAMEDTENSOR
+   static inline Tensor randn(IntArrayRef size, Generator * generator, c10::optional<DimnameList> names, const TensorOptions & options) {
+       globalLegacyTypeDispatch().initForBackend(options.backend());
+       static auto table = globalATenDispatch().getOpTable("aten::randn.generator_with_names(int[] size, *, Generator? generator, Dimname[]? names, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor");
+       return table->getOp<Tensor (IntArrayRef, Generator *, c10::optional<DimnameList>, const TensorOptions &)>(options.backend(), options.is_variable())(size, generator, names, options);
+   }
+   #endif
    static inline Tensor & randn_out(Tensor & out, IntArrayRef size) {
        static auto table = globalATenDispatch().getOpTable("aten::randn.out(int[] size, *, Tensor(a!) out) -> Tensor(a!)");
        return table->getOp<Tensor & (Tensor &, IntArrayRef)>(at::detail::infer_backend(out), at::detail::infer_is_variable(out))(out, size);
@@ -3417,6 +3480,13 @@ Program Listing for File Functions.h
        static auto table = globalATenDispatch().getOpTable("aten::_weight_norm_differentiable_backward(Tensor grad_w, Tensor saved_v, Tensor saved_g, Tensor saved_norms, int dim) -> (Tensor, Tensor)");
        return table->getOp<std::tuple<Tensor,Tensor> (const Tensor &, const Tensor &, const Tensor &, const Tensor &, int64_t)>(at::detail::infer_backend(grad_w), at::detail::infer_is_variable(grad_w))(grad_w, saved_v, saved_g, saved_norms, dim);
    }
+   #ifdef BUILD_NAMEDTENSOR
+   static inline Tensor zeros(IntArrayRef size, c10::optional<DimnameList> names, const TensorOptions & options) {
+       globalLegacyTypeDispatch().initForBackend(options.backend());
+       static auto table = globalATenDispatch().getOpTable("aten::zeros.names(int[] size, *, Dimname[]? names, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor");
+       return table->getOp<Tensor (IntArrayRef, c10::optional<DimnameList>, const TensorOptions &)>(options.backend(), options.is_variable())(size, names, options);
+   }
+   #endif
    static inline Tensor zeros(IntArrayRef size, const TensorOptions & options) {
        globalLegacyTypeDispatch().initForBackend(options.backend());
        static auto table = globalATenDispatch().getOpTable("aten::zeros(int[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor");
