@@ -521,6 +521,7 @@ class CAFFE2_API Tensor {
 
   template&lt;typename T&gt;
   T * data() const {
+    TORCH_WARN(&quot;Tensor.data&lt;T&gt;() is deprecated. Please use Tensor.data_ptr&lt;T&gt;() instead.&quot;);
     return data_ptr&lt;T&gt;();
   }
 
@@ -534,9 +535,9 @@ class CAFFE2_API Tensor {
   // dimension.
   template&lt;typename T, size_t N&gt;
   TensorAccessor&lt;T,N&gt; accessor() const&amp; {
-    static_assert(N &gt; 0, &quot;accessor is used for indexing tensor, for scalars use *data&lt;T&gt;()&quot;);
+    static_assert(N &gt; 0, &quot;accessor is used for indexing tensor, for scalars use *data_ptr&lt;T&gt;()&quot;);
     TORCH_CHECK(dim() == N, &quot;expected &quot;, N, &quot; dims but tensor has &quot;, dim());
-    return TensorAccessor&lt;T,N&gt;(data&lt;T&gt;(),sizes().data(),strides().data());
+    return TensorAccessor&lt;T,N&gt;(data_ptr&lt;T&gt;(),sizes().data(),strides().data());
   }
   template&lt;typename T, size_t N&gt;
   TensorAccessor&lt;T,N&gt; accessor() &amp;&amp; = delete;
@@ -548,9 +549,9 @@ class CAFFE2_API Tensor {
   // as an argument.
   template&lt;typename T, size_t N, template &lt;typename U&gt; class PtrTraits = DefaultPtrTraits, typename index_t = int64_t&gt;
   PackedTensorAccessor&lt;T,N,PtrTraits,index_t&gt; packed_accessor() const&amp; {
-    static_assert(N &gt; 0, &quot;accessor is used for indexing tensor, for scalars use *data&lt;T&gt;()&quot;);
+    static_assert(N &gt; 0, &quot;accessor is used for indexing tensor, for scalars use *data_ptr&lt;T&gt;()&quot;);
     TORCH_CHECK(dim() == N, &quot;expected &quot;, N, &quot; dims but tensor has &quot;, dim());
-    return PackedTensorAccessor&lt;T,N,PtrTraits,index_t&gt;(static_cast&lt;typename PtrTraits&lt;T&gt;::PtrType&gt;(data&lt;T&gt;()),sizes().data(),strides().data());
+    return PackedTensorAccessor&lt;T,N,PtrTraits,index_t&gt;(static_cast&lt;typename PtrTraits&lt;T&gt;::PtrType&gt;(data_ptr&lt;T&gt;()),sizes().data(),strides().data());
   }
   template&lt;typename T, size_t N,  template &lt;typename U&gt; class PtrTraits = DefaultPtrTraits, typename index_t = int64_t&gt;
   PackedTensorAccessor&lt;T,N&gt; packed_accessor() &amp;&amp; = delete;

@@ -87,8 +87,8 @@ Program Listing for File Functions.h
    static inline Tensor & addmv_out(Tensor & out, const Tensor & self, const Tensor & mat, const Tensor & vec, Scalar beta=1, Scalar alpha=1);
    static inline Tensor addr(const Tensor & self, const Tensor & vec1, const Tensor & vec2, Scalar beta=1, Scalar alpha=1);
    static inline Tensor & addr_out(Tensor & out, const Tensor & self, const Tensor & vec1, const Tensor & vec2, Scalar beta=1, Scalar alpha=1);
-   static inline Tensor affine_grid_generator(const Tensor & theta, IntArrayRef size);
-   static inline Tensor affine_grid_generator_backward(const Tensor & grad, IntArrayRef size);
+   static inline Tensor affine_grid_generator(const Tensor & theta, IntArrayRef size, bool align_corners);
+   static inline Tensor affine_grid_generator_backward(const Tensor & grad, IntArrayRef size, bool align_corners);
    static inline Tensor all(const Tensor & self, int64_t dim, bool keepdim=false);
    static inline Tensor & all_out(Tensor & out, const Tensor & self, int64_t dim, bool keepdim=false);
    static inline bool allclose(const Tensor & self, const Tensor & other, double rtol=1e-05, double atol=1e-08, bool equal_nan=false);
@@ -261,11 +261,11 @@ Program Listing for File Functions.h
    static inline Tensor full_like(const Tensor & self, Scalar fill_value);
    static inline Tensor full_like(const Tensor & self, Scalar fill_value, const TensorOptions & options);
    static inline Tensor from_file(std::string filename, c10::optional<bool> shared=c10::nullopt, c10::optional<int64_t> size=0, const TensorOptions & options={});
-   static inline Tensor grid_sampler(const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode);
-   static inline Tensor grid_sampler_2d(const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode);
-   static inline std::tuple<Tensor,Tensor> grid_sampler_2d_backward(const Tensor & grad_output, const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode);
-   static inline Tensor grid_sampler_3d(const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode);
-   static inline std::tuple<Tensor,Tensor> grid_sampler_3d_backward(const Tensor & grad_output, const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode);
+   static inline Tensor grid_sampler(const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode, bool align_corners);
+   static inline Tensor grid_sampler_2d(const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode, bool align_corners);
+   static inline std::tuple<Tensor,Tensor> grid_sampler_2d_backward(const Tensor & grad_output, const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode, bool align_corners);
+   static inline Tensor grid_sampler_3d(const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode, bool align_corners);
+   static inline std::tuple<Tensor,Tensor> grid_sampler_3d_backward(const Tensor & grad_output, const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode, bool align_corners);
    static inline Tensor hann_window(int64_t window_length, const TensorOptions & options={});
    static inline Tensor hann_window(int64_t window_length, bool periodic, const TensorOptions & options={});
    static inline Tensor hamming_window(int64_t window_length, const TensorOptions & options={});
@@ -1675,20 +1675,20 @@ Program Listing for File Functions.h
        return table->getOp<Tensor & (Tensor &, const Tensor &, const Tensor &, const Tensor &, Scalar, Scalar)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(out, self, vec1, vec2, beta, alpha);
    #endif
    }
-   static inline Tensor affine_grid_generator(const Tensor & theta, IntArrayRef size) {
+   static inline Tensor affine_grid_generator(const Tensor & theta, IntArrayRef size, bool align_corners) {
    #ifdef USE_STATIC_DISPATCH
-       return TypeDefault::affine_grid_generator(theta, size);
+       return TypeDefault::affine_grid_generator(theta, size, align_corners);
    #else
-       static auto table = globalATenDispatch().getOpTable("aten::affine_grid_generator(Tensor theta, int[] size) -> Tensor");
-       return table->getOp<Tensor (const Tensor &, IntArrayRef)>(at::detail::infer_backend(theta), at::detail::infer_is_variable(theta))(theta, size);
+       static auto table = globalATenDispatch().getOpTable("aten::affine_grid_generator(Tensor theta, int[] size, bool align_corners) -> Tensor");
+       return table->getOp<Tensor (const Tensor &, IntArrayRef, bool)>(at::detail::infer_backend(theta), at::detail::infer_is_variable(theta))(theta, size, align_corners);
    #endif
    }
-   static inline Tensor affine_grid_generator_backward(const Tensor & grad, IntArrayRef size) {
+   static inline Tensor affine_grid_generator_backward(const Tensor & grad, IntArrayRef size, bool align_corners) {
    #ifdef USE_STATIC_DISPATCH
-       return TypeDefault::affine_grid_generator_backward(grad, size);
+       return TypeDefault::affine_grid_generator_backward(grad, size, align_corners);
    #else
-       static auto table = globalATenDispatch().getOpTable("aten::affine_grid_generator_backward(Tensor grad, int[] size) -> Tensor");
-       return table->getOp<Tensor (const Tensor &, IntArrayRef)>(at::detail::infer_backend(grad), at::detail::infer_is_variable(grad))(grad, size);
+       static auto table = globalATenDispatch().getOpTable("aten::affine_grid_generator_backward(Tensor grad, int[] size, bool align_corners) -> Tensor");
+       return table->getOp<Tensor (const Tensor &, IntArrayRef, bool)>(at::detail::infer_backend(grad), at::detail::infer_is_variable(grad))(grad, size, align_corners);
    #endif
    }
    static inline Tensor all(const Tensor & self, int64_t dim, bool keepdim) {
@@ -3443,68 +3443,68 @@ Program Listing for File Functions.h
        return table->getOp<Tensor (std::string, c10::optional<bool>, c10::optional<int64_t>, const TensorOptions &)>(options.backend(), options.is_variable())(filename, shared, size, options);
    #endif
    }
-   static inline Tensor grid_sampler(const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode) {
+   static inline Tensor grid_sampler(const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode, bool align_corners) {
    #ifdef USE_STATIC_DISPATCH
-       return TypeDefault::grid_sampler(input, grid, interpolation_mode, padding_mode);
+       return TypeDefault::grid_sampler(input, grid, interpolation_mode, padding_mode, align_corners);
    #else
-       static auto table = globalATenDispatch().getOpTable("aten::grid_sampler(Tensor input, Tensor grid, int interpolation_mode, int padding_mode) -> Tensor");
-       return table->getOp<Tensor (const Tensor &, const Tensor &, int64_t, int64_t)>(at::detail::infer_backend(input), at::detail::infer_is_variable(input))(input, grid, interpolation_mode, padding_mode);
+       static auto table = globalATenDispatch().getOpTable("aten::grid_sampler(Tensor input, Tensor grid, int interpolation_mode, int padding_mode, bool align_corners) -> Tensor");
+       return table->getOp<Tensor (const Tensor &, const Tensor &, int64_t, int64_t, bool)>(at::detail::infer_backend(input), at::detail::infer_is_variable(input))(input, grid, interpolation_mode, padding_mode, align_corners);
    #endif
    }
-   static inline Tensor grid_sampler_2d(const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode) {
+   static inline Tensor grid_sampler_2d(const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode, bool align_corners) {
    #ifdef USE_STATIC_DISPATCH
        switch(at::detail::infer_backend(input)) {
            case Backend::CPU:
-               return CPUType::grid_sampler_2d(input, grid, interpolation_mode, padding_mode);
+               return CPUType::grid_sampler_2d(input, grid, interpolation_mode, padding_mode, align_corners);
                break;
            default:
                AT_ERROR("grid_sampler_2d not implemented for ", at::toString(at::detail::infer_backend(input)));
        }
    #else
-       static auto table = globalATenDispatch().getOpTable("aten::grid_sampler_2d(Tensor input, Tensor grid, int interpolation_mode, int padding_mode) -> Tensor");
-       return table->getOp<Tensor (const Tensor &, const Tensor &, int64_t, int64_t)>(at::detail::infer_backend(input), at::detail::infer_is_variable(input))(input, grid, interpolation_mode, padding_mode);
+       static auto table = globalATenDispatch().getOpTable("aten::grid_sampler_2d(Tensor input, Tensor grid, int interpolation_mode, int padding_mode, bool align_corners) -> Tensor");
+       return table->getOp<Tensor (const Tensor &, const Tensor &, int64_t, int64_t, bool)>(at::detail::infer_backend(input), at::detail::infer_is_variable(input))(input, grid, interpolation_mode, padding_mode, align_corners);
    #endif
    }
-   static inline std::tuple<Tensor,Tensor> grid_sampler_2d_backward(const Tensor & grad_output, const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode) {
+   static inline std::tuple<Tensor,Tensor> grid_sampler_2d_backward(const Tensor & grad_output, const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode, bool align_corners) {
    #ifdef USE_STATIC_DISPATCH
        switch(at::detail::infer_backend(grad_output)) {
            case Backend::CPU:
-               return CPUType::grid_sampler_2d_backward(grad_output, input, grid, interpolation_mode, padding_mode);
+               return CPUType::grid_sampler_2d_backward(grad_output, input, grid, interpolation_mode, padding_mode, align_corners);
                break;
            default:
                AT_ERROR("grid_sampler_2d_backward not implemented for ", at::toString(at::detail::infer_backend(grad_output)));
        }
    #else
-       static auto table = globalATenDispatch().getOpTable("aten::grid_sampler_2d_backward(Tensor grad_output, Tensor input, Tensor grid, int interpolation_mode, int padding_mode) -> (Tensor, Tensor)");
-       return table->getOp<std::tuple<Tensor,Tensor> (const Tensor &, const Tensor &, const Tensor &, int64_t, int64_t)>(at::detail::infer_backend(grad_output), at::detail::infer_is_variable(grad_output))(grad_output, input, grid, interpolation_mode, padding_mode);
+       static auto table = globalATenDispatch().getOpTable("aten::grid_sampler_2d_backward(Tensor grad_output, Tensor input, Tensor grid, int interpolation_mode, int padding_mode, bool align_corners) -> (Tensor, Tensor)");
+       return table->getOp<std::tuple<Tensor,Tensor> (const Tensor &, const Tensor &, const Tensor &, int64_t, int64_t, bool)>(at::detail::infer_backend(grad_output), at::detail::infer_is_variable(grad_output))(grad_output, input, grid, interpolation_mode, padding_mode, align_corners);
    #endif
    }
-   static inline Tensor grid_sampler_3d(const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode) {
+   static inline Tensor grid_sampler_3d(const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode, bool align_corners) {
    #ifdef USE_STATIC_DISPATCH
        switch(at::detail::infer_backend(input)) {
            case Backend::CPU:
-               return CPUType::grid_sampler_3d(input, grid, interpolation_mode, padding_mode);
+               return CPUType::grid_sampler_3d(input, grid, interpolation_mode, padding_mode, align_corners);
                break;
            default:
                AT_ERROR("grid_sampler_3d not implemented for ", at::toString(at::detail::infer_backend(input)));
        }
    #else
-       static auto table = globalATenDispatch().getOpTable("aten::grid_sampler_3d(Tensor input, Tensor grid, int interpolation_mode, int padding_mode) -> Tensor");
-       return table->getOp<Tensor (const Tensor &, const Tensor &, int64_t, int64_t)>(at::detail::infer_backend(input), at::detail::infer_is_variable(input))(input, grid, interpolation_mode, padding_mode);
+       static auto table = globalATenDispatch().getOpTable("aten::grid_sampler_3d(Tensor input, Tensor grid, int interpolation_mode, int padding_mode, bool align_corners) -> Tensor");
+       return table->getOp<Tensor (const Tensor &, const Tensor &, int64_t, int64_t, bool)>(at::detail::infer_backend(input), at::detail::infer_is_variable(input))(input, grid, interpolation_mode, padding_mode, align_corners);
    #endif
    }
-   static inline std::tuple<Tensor,Tensor> grid_sampler_3d_backward(const Tensor & grad_output, const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode) {
+   static inline std::tuple<Tensor,Tensor> grid_sampler_3d_backward(const Tensor & grad_output, const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode, bool align_corners) {
    #ifdef USE_STATIC_DISPATCH
        switch(at::detail::infer_backend(grad_output)) {
            case Backend::CPU:
-               return CPUType::grid_sampler_3d_backward(grad_output, input, grid, interpolation_mode, padding_mode);
+               return CPUType::grid_sampler_3d_backward(grad_output, input, grid, interpolation_mode, padding_mode, align_corners);
                break;
            default:
                AT_ERROR("grid_sampler_3d_backward not implemented for ", at::toString(at::detail::infer_backend(grad_output)));
        }
    #else
-       static auto table = globalATenDispatch().getOpTable("aten::grid_sampler_3d_backward(Tensor grad_output, Tensor input, Tensor grid, int interpolation_mode, int padding_mode) -> (Tensor, Tensor)");
-       return table->getOp<std::tuple<Tensor,Tensor> (const Tensor &, const Tensor &, const Tensor &, int64_t, int64_t)>(at::detail::infer_backend(grad_output), at::detail::infer_is_variable(grad_output))(grad_output, input, grid, interpolation_mode, padding_mode);
+       static auto table = globalATenDispatch().getOpTable("aten::grid_sampler_3d_backward(Tensor grad_output, Tensor input, Tensor grid, int interpolation_mode, int padding_mode, bool align_corners) -> (Tensor, Tensor)");
+       return table->getOp<std::tuple<Tensor,Tensor> (const Tensor &, const Tensor &, const Tensor &, int64_t, int64_t, bool)>(at::detail::infer_backend(grad_output), at::detail::infer_is_variable(grad_output))(grad_output, input, grid, interpolation_mode, padding_mode, align_corners);
    #endif
    }
    static inline Tensor hann_window(int64_t window_length, const TensorOptions & options) {
