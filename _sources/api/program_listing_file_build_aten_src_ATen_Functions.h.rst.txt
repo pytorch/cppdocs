@@ -595,6 +595,9 @@ Program Listing for File Functions.h
    static inline Tensor & threshold_out(Tensor & out, const Tensor & self, Scalar threshold, Scalar value);
    static inline Tensor threshold_backward(const Tensor & grad_output, const Tensor & self, Scalar threshold);
    static inline Tensor transpose(const Tensor & self, int64_t dim0, int64_t dim1);
+   #ifdef BUILD_NAMEDTENSOR
+   static inline Tensor transpose(const Tensor & self, Dimname dim0, Dimname dim1);
+   #endif
    static inline Tensor _mkldnn_transpose(const Tensor & self, int64_t dim0, int64_t dim1);
    static inline Tensor & _mkldnn_transpose_(Tensor & self, int64_t dim0, int64_t dim1);
    static inline Tensor one_hot(const Tensor & self, int64_t num_classes=-1);
@@ -6538,6 +6541,16 @@ Program Listing for File Functions.h
        return table->getOp<Tensor (const Tensor &, int64_t, int64_t)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self, dim0, dim1);
    #endif
    }
+   #ifdef BUILD_NAMEDTENSOR
+   static inline Tensor transpose(const Tensor & self, Dimname dim0, Dimname dim1) {
+   #ifdef USE_STATIC_DISPATCH
+       return TypeDefault::transpose(self, dim0, dim1);
+   #else
+       static auto table = globalATenDispatch().getOpTable("aten::transpose(Tensor(a) self, Dimname dim0, Dimname dim1) -> Tensor(a)");
+       return table->getOp<Tensor (const Tensor &, Dimname, Dimname)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self, dim0, dim1);
+   #endif
+   }
+   #endif
    static inline Tensor _mkldnn_transpose(const Tensor & self, int64_t dim0, int64_t dim1) {
    #ifdef USE_STATIC_DISPATCH
        switch(at::detail::infer_backend(self)) {
