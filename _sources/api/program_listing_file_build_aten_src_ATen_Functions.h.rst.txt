@@ -224,6 +224,7 @@ Program Listing for File Functions.h
    #endif
    static inline Tensor empty(IntArrayRef size, const TensorOptions & options={}, c10::optional<MemoryFormat> memory_format=c10::nullopt);
    static inline Tensor _empty_affine_quantized(IntArrayRef size, const TensorOptions & options={}, double scale=1, int64_t zero_point=0, c10::optional<MemoryFormat> memory_format=MemoryFormat::Contiguous);
+   static inline Tensor _empty_per_channel_affine_quantized_like(const Tensor & self, const Tensor & zero_points, IntArrayRef size, IntArrayRef axis, const TensorOptions & options={}, c10::optional<MemoryFormat> memory_format=MemoryFormat::Contiguous);
    static inline Tensor & empty_out(Tensor & out, IntArrayRef size, c10::optional<MemoryFormat> memory_format=c10::nullopt);
    static inline Tensor empty_like(const Tensor & self);
    static inline Tensor empty_like(const Tensor & self, const TensorOptions & options, c10::optional<MemoryFormat> memory_format=MemoryFormat::Contiguous);
@@ -701,6 +702,7 @@ Program Listing for File Functions.h
    static inline int64_t q_zero_point(const Tensor & self);
    static inline Tensor int_repr(const Tensor & self);
    static inline Tensor _per_tensor_affine_qtensor(const Tensor & self, double scale, int64_t zero_point);
+   static inline Tensor _per_channel_affine_qtensor(const Tensor & self, const Tensor & scale, const Tensor & zero_point, IntArrayRef axis);
    static inline Tensor fake_quantize_per_tensor_affine(const Tensor & self, double scale, int64_t zero_point, int64_t quant_min, int64_t quant_max);
    static inline Tensor fake_quantize_per_tensor_affine_backward(const Tensor & grad, const Tensor & self, double scale, int64_t zero_point, int64_t quant_min, int64_t quant_max);
    static inline std::vector<Tensor> meshgrid(TensorList tensors);
@@ -3058,6 +3060,21 @@ Program Listing for File Functions.h
        globalLegacyTypeDispatch().initForBackend(options.backend());
        static auto table = globalATenDispatch().getOpTable("aten::_empty_affine_quantized(int[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, float scale=1, int zero_point=0, MemoryFormat? memory_format=contiguous_format) -> Tensor");
        return table->getOp<Tensor (IntArrayRef, const TensorOptions &, double, int64_t, c10::optional<MemoryFormat>)>(options.backend(), options.is_variable())(size, options, scale, zero_point, memory_format);
+   #endif
+   }
+   static inline Tensor _empty_per_channel_affine_quantized_like(const Tensor & self, const Tensor & zero_points, IntArrayRef size, IntArrayRef axis, const TensorOptions & options, c10::optional<MemoryFormat> memory_format) {
+   #ifdef USE_STATIC_DISPATCH
+       switch(options.backend()) {
+           case Backend::QuantizedCPU:
+               return QuantizedCPUType::_empty_per_channel_affine_quantized_like(self, zero_points, size, axis, options, memory_format);
+               break;
+           default:
+               AT_ERROR("_empty_per_channel_affine_quantized_like not implemented for ", at::toString(options.backend()));
+       }
+   #else
+       globalLegacyTypeDispatch().initForBackend(options.backend());
+       static auto table = globalATenDispatch().getOpTable("aten::_empty_per_channel_affine_quantized_like(Tensor self, Tensor zero_points, int[] size, int[] axis, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, MemoryFormat? memory_format=contiguous_format) -> Tensor");
+       return table->getOp<Tensor (const Tensor &, const Tensor &, IntArrayRef, IntArrayRef, const TensorOptions &, c10::optional<MemoryFormat>)>(options.backend(), options.is_variable())(self, zero_points, size, axis, options, memory_format);
    #endif
    }
    static inline Tensor & empty_out(Tensor & out, IntArrayRef size, c10::optional<MemoryFormat> memory_format) {
@@ -7634,6 +7651,20 @@ Program Listing for File Functions.h
    #else
        static auto table = globalATenDispatch().getOpTable("aten::_per_tensor_affine_qtensor(Tensor self, float scale, int zero_point) -> Tensor");
        return table->getOp<Tensor (const Tensor &, double, int64_t)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self, scale, zero_point);
+   #endif
+   }
+   static inline Tensor _per_channel_affine_qtensor(const Tensor & self, const Tensor & scale, const Tensor & zero_point, IntArrayRef axis) {
+   #ifdef USE_STATIC_DISPATCH
+       switch(at::detail::infer_backend(self)) {
+           case Backend::CPU:
+               return CPUType::_per_channel_affine_qtensor(self, scale, zero_point, axis);
+               break;
+           default:
+               AT_ERROR("_per_channel_affine_qtensor not implemented for ", at::toString(at::detail::infer_backend(self)));
+       }
+   #else
+       static auto table = globalATenDispatch().getOpTable("aten::_per_channel_affine_qtensor(Tensor self, Tensor scale, Tensor zero_point, int[] axis) -> Tensor");
+       return table->getOp<Tensor (const Tensor &, const Tensor &, const Tensor &, IntArrayRef)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self, scale, zero_point, axis);
    #endif
    }
    static inline Tensor fake_quantize_per_tensor_affine(const Tensor & self, double scale, int64_t zero_point, int64_t quant_min, int64_t quant_max) {
