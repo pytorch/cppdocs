@@ -700,6 +700,8 @@ Program Listing for File Functions.h
    static inline Tensor _dequantize_linear(const Tensor & self, double scale, int64_t zero_point, ScalarType dtype);
    static inline double q_scale(const Tensor & self);
    static inline int64_t q_zero_point(const Tensor & self);
+   static inline Tensor q_per_channel_scales(const Tensor & self);
+   static inline Tensor q_per_channel_zero_points(const Tensor & self);
    static inline Tensor int_repr(const Tensor & self);
    static inline Tensor _per_tensor_affine_qtensor(const Tensor & self, double scale, int64_t zero_point);
    static inline Tensor _per_channel_affine_qtensor(const Tensor & self, const Tensor & scale, const Tensor & zero_point, IntArrayRef axis);
@@ -7623,6 +7625,34 @@ Program Listing for File Functions.h
    #else
        static auto table = globalATenDispatch().getOpTable("aten::q_zero_point(Tensor self) -> int");
        return table->getOp<int64_t (const Tensor &)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self);
+   #endif
+   }
+   static inline Tensor q_per_channel_scales(const Tensor & self) {
+   #ifdef USE_STATIC_DISPATCH
+       switch(at::detail::infer_backend(self)) {
+           case Backend::QuantizedCPU:
+               return QuantizedCPUType::q_per_channel_scales(self);
+               break;
+           default:
+               AT_ERROR("q_per_channel_scales not implemented for ", at::toString(at::detail::infer_backend(self)));
+       }
+   #else
+       static auto table = globalATenDispatch().getOpTable("aten::q_per_channel_scales(Tensor self) -> Tensor");
+       return table->getOp<Tensor (const Tensor &)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self);
+   #endif
+   }
+   static inline Tensor q_per_channel_zero_points(const Tensor & self) {
+   #ifdef USE_STATIC_DISPATCH
+       switch(at::detail::infer_backend(self)) {
+           case Backend::QuantizedCPU:
+               return QuantizedCPUType::q_per_channel_zero_points(self);
+               break;
+           default:
+               AT_ERROR("q_per_channel_zero_points not implemented for ", at::toString(at::detail::infer_backend(self)));
+       }
+   #else
+       static auto table = globalATenDispatch().getOpTable("aten::q_per_channel_zero_points(Tensor self) -> Tensor");
+       return table->getOp<Tensor (const Tensor &)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self);
    #endif
    }
    static inline Tensor int_repr(const Tensor & self) {
