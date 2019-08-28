@@ -860,6 +860,8 @@ Program Listing for File Functions.h
    static inline Tensor polygamma(int64_t n, const Tensor & self);
    static inline Tensor & erfinv_out(Tensor & out, const Tensor & self);
    static inline Tensor erfinv(const Tensor & self);
+   static inline Tensor sign(const Tensor & self);
+   static inline Tensor & sign_out(Tensor & out, const Tensor & self);
    static inline Tensor dist(const Tensor & self, const Tensor & other, Scalar p=2);
    static inline Tensor & atan2_out(Tensor & out, const Tensor & self, const Tensor & other);
    static inline Tensor atan2(const Tensor & self, const Tensor & other);
@@ -869,8 +871,6 @@ Program Listing for File Functions.h
    static inline Tensor lerp(const Tensor & self, const Tensor & end, const Tensor & weight);
    static inline Tensor & histc_out(Tensor & out, const Tensor & self, int64_t bins=100, Scalar min=0, Scalar max=0);
    static inline Tensor histc(const Tensor & self, int64_t bins=100, Scalar min=0, Scalar max=0);
-   static inline Tensor & sign_out(Tensor & out, const Tensor & self);
-   static inline Tensor sign(const Tensor & self);
    static inline Tensor & fmod_out(Tensor & out, const Tensor & self, Scalar other);
    static inline Tensor fmod(const Tensor & self, Scalar other);
    static inline Tensor & fmod_out(Tensor & out, const Tensor & self, const Tensor & other);
@@ -9491,6 +9491,28 @@ Program Listing for File Functions.h
        return table->getOp<Tensor (const Tensor &)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self);
    #endif
    }
+   static inline Tensor sign(const Tensor & self) {
+   #ifdef USE_STATIC_DISPATCH
+       return TypeDefault::sign(self);
+   #else
+       static auto table = globalATenDispatch().getOpTable("aten::sign(Tensor self) -> Tensor");
+       return table->getOp<Tensor (const Tensor &)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self);
+   #endif
+   }
+   static inline Tensor & sign_out(Tensor & out, const Tensor & self) {
+   #ifdef USE_STATIC_DISPATCH
+       switch(at::detail::infer_backend(self)) {
+           case Backend::CPU:
+               return CPUType::sign_out(out, self);
+               break;
+           default:
+               AT_ERROR("sign_out not implemented for ", at::toString(at::detail::infer_backend(self)));
+       }
+   #else
+       static auto table = globalATenDispatch().getOpTable("aten::sign.out(Tensor self, *, Tensor(a!) out) -> Tensor(a!)");
+       return table->getOp<Tensor & (Tensor &, const Tensor &)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(out, self);
+   #endif
+   }
    static inline Tensor dist(const Tensor & self, const Tensor & other, Scalar p) {
    #ifdef USE_STATIC_DISPATCH
        switch(at::detail::infer_backend(self)) {
@@ -9603,34 +9625,6 @@ Program Listing for File Functions.h
    #else
        static auto table = globalATenDispatch().getOpTable("aten::histc(Tensor self, int bins=100, Scalar min=0, Scalar max=0) -> Tensor");
        return table->getOp<Tensor (const Tensor &, int64_t, Scalar, Scalar)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self, bins, min, max);
-   #endif
-   }
-   static inline Tensor & sign_out(Tensor & out, const Tensor & self) {
-   #ifdef USE_STATIC_DISPATCH
-       switch(at::detail::infer_backend(self)) {
-           case Backend::CPU:
-               return CPUType::sign_out(out, self);
-               break;
-           default:
-               AT_ERROR("sign_out not implemented for ", at::toString(at::detail::infer_backend(self)));
-       }
-   #else
-       static auto table = globalATenDispatch().getOpTable("aten::sign.out(Tensor self, *, Tensor(a!) out) -> Tensor(a!)");
-       return table->getOp<Tensor & (Tensor &, const Tensor &)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(out, self);
-   #endif
-   }
-   static inline Tensor sign(const Tensor & self) {
-   #ifdef USE_STATIC_DISPATCH
-       switch(at::detail::infer_backend(self)) {
-           case Backend::CPU:
-               return CPUType::sign(self);
-               break;
-           default:
-               AT_ERROR("sign not implemented for ", at::toString(at::detail::infer_backend(self)));
-       }
-   #else
-       static auto table = globalATenDispatch().getOpTable("aten::sign(Tensor self) -> Tensor");
-       return table->getOp<Tensor (const Tensor &)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self);
    #endif
    }
    static inline Tensor & fmod_out(Tensor & out, const Tensor & self, Scalar other) {
