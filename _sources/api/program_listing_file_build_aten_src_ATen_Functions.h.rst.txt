@@ -858,8 +858,8 @@ Program Listing for File Functions.h
    static inline Tensor digamma(const Tensor & self);
    static inline Tensor & polygamma_out(Tensor & out, int64_t n, const Tensor & self);
    static inline Tensor polygamma(int64_t n, const Tensor & self);
-   static inline Tensor & erfinv_out(Tensor & out, const Tensor & self);
    static inline Tensor erfinv(const Tensor & self);
+   static inline Tensor & erfinv_out(Tensor & out, const Tensor & self);
    static inline Tensor sign(const Tensor & self);
    static inline Tensor & sign_out(Tensor & out, const Tensor & self);
    static inline Tensor dist(const Tensor & self, const Tensor & other, Scalar p=2);
@@ -9529,6 +9529,14 @@ Program Listing for File Functions.h
        return table->getOp<Tensor (int64_t, const Tensor &)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(n, self);
    #endif
    }
+   static inline Tensor erfinv(const Tensor & self) {
+   #ifdef USE_STATIC_DISPATCH
+       return TypeDefault::erfinv(self);
+   #else
+       static auto table = globalATenDispatch().getOpTable("aten::erfinv(Tensor self) -> Tensor");
+       return table->getOp<Tensor (const Tensor &)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self);
+   #endif
+   }
    static inline Tensor & erfinv_out(Tensor & out, const Tensor & self) {
    #ifdef USE_STATIC_DISPATCH
        switch(at::detail::infer_backend(self)) {
@@ -9541,14 +9549,6 @@ Program Listing for File Functions.h
    #else
        static auto table = globalATenDispatch().getOpTable("aten::erfinv.out(Tensor self, *, Tensor(a!) out) -> Tensor(a!)");
        return table->getOp<Tensor & (Tensor &, const Tensor &)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(out, self);
-   #endif
-   }
-   static inline Tensor erfinv(const Tensor & self) {
-   #ifdef USE_STATIC_DISPATCH
-       return TypeDefault::erfinv(self);
-   #else
-       static auto table = globalATenDispatch().getOpTable("aten::erfinv(Tensor self) -> Tensor");
-       return table->getOp<Tensor (const Tensor &)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self);
    #endif
    }
    static inline Tensor sign(const Tensor & self) {
