@@ -270,6 +270,18 @@ this:</p>
 <span class="nb">add_executable</span><span class="p">(</span><span class="s">example-app</span> <span class="s">example-app.cpp</span><span class="p">)</span>
 <span class="nb">target_link_libraries</span><span class="p">(</span><span class="s">example-app</span> <span class="s2">&quot;${TORCH_LIBRARIES}&quot;</span><span class="p">)</span>
 <span class="nb">set_property</span><span class="p">(</span><span class="s">TARGET</span> <span class="s">example-app</span> <span class="s">PROPERTY</span> <span class="s">CXX_STANDARD</span> <span class="s">11</span><span class="p">)</span>
+
+<span class="c"># The following code block is suggested to be used on Windows.</span>
+<span class="c"># According to https://github.com/pytorch/pytorch/issues/25457,</span>
+<span class="c"># the DLLs need to be copied to avoid memory errors.</span>
+<span class="nb">if</span> <span class="p">(</span><span class="s">MSVC</span><span class="p">)</span>
+  <span class="nb">file</span><span class="p">(</span><span class="s">GLOB</span> <span class="s">TORCH_DLLS</span> <span class="s2">&quot;${TORCH_INSTALL_PREFIX}/lib/*.dll&quot;</span><span class="p">)</span>
+  <span class="nb">add_custom_command</span><span class="p">(</span><span class="s">TARGET</span> <span class="s">example-app</span>
+                     <span class="s">POST_BUILD</span>
+                     <span class="s">COMMAND</span> <span class="o">${</span><span class="nv">CMAKE_COMMAND</span><span class="o">}</span> <span class="s">-E</span> <span class="s">copy_if_different</span>
+                     <span class="o">${</span><span class="nv">TORCH_DLLS</span><span class="o">}</span>
+                     <span class="o">$&lt;</span><span class="nv">TARGET_FILE_DIR:example-app</span><span class="o">&gt;</span><span class="p">)</span>
+<span class="nb">endif</span> <span class="p">(</span><span class="s">MSVC</span><span class="p">)</span>
 </pre></div>
 </div>
 <p>The implementation of our example will simply create a new <cite>torch::Tensor</cite> and
