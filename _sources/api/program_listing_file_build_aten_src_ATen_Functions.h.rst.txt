@@ -138,6 +138,12 @@ Program Listing for File Functions.h
    static inline std::vector<Tensor> broadcast_tensors(TensorList tensors);
    static inline Tensor cat(TensorList tensors, int64_t dim=0);
    static inline Tensor & cat_out(Tensor & out, TensorList tensors, int64_t dim=0);
+   #ifdef BUILD_NAMEDTENSOR
+   static inline Tensor cat(TensorList tensors, Dimname dim);
+   #endif
+   #ifdef BUILD_NAMEDTENSOR
+   static inline Tensor & cat_out(Tensor & out, TensorList tensors, Dimname dim);
+   #endif
    static inline Tensor ceil(const Tensor & self);
    static inline Tensor & ceil_(Tensor & self);
    static inline Tensor & ceil_out(Tensor & out, const Tensor & self);
@@ -2252,6 +2258,26 @@ Program Listing for File Functions.h
        return table->getOp<Tensor & (Tensor &, TensorList, int64_t)>(at::detail::infer_backend(out), at::detail::infer_is_variable(out))(out, tensors, dim);
    #endif
    }
+   #ifdef BUILD_NAMEDTENSOR
+   static inline Tensor cat(TensorList tensors, Dimname dim) {
+   #ifdef USE_STATIC_DISPATCH
+       return TypeDefault::cat(tensors, dim);
+   #else
+       static auto table = globalATenDispatch().getOpTable("aten::cat.names(Tensor[] tensors, Dimname dim) -> Tensor");
+       return table->getOp<Tensor (TensorList, Dimname)>(at::detail::infer_backend(tensors), at::detail::infer_is_variable(tensors))(tensors, dim);
+   #endif
+   }
+   #endif
+   #ifdef BUILD_NAMEDTENSOR
+   static inline Tensor & cat_out(Tensor & out, TensorList tensors, Dimname dim) {
+   #ifdef USE_STATIC_DISPATCH
+       return TypeDefault::cat_out(out, tensors, dim);
+   #else
+       static auto table = globalATenDispatch().getOpTable("aten::cat.names_out(Tensor[] tensors, Dimname dim, *, Tensor(a!) out) -> Tensor(a!)");
+       return table->getOp<Tensor & (Tensor &, TensorList, Dimname)>(at::detail::infer_backend(out), at::detail::infer_is_variable(out))(out, tensors, dim);
+   #endif
+   }
+   #endif
    static inline Tensor ceil(const Tensor & self) {
    #ifdef USE_STATIC_DISPATCH
        return TypeDefault::ceil(self);
