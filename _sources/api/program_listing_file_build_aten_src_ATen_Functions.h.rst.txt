@@ -775,6 +775,9 @@ Program Listing for File Functions.h
    static inline Tensor & copy_sparse_to_sparse_(Tensor & self, const Tensor & src, bool non_blocking=false);
    static inline int64_t numel(const Tensor & self);
    static inline std::vector<Tensor> unbind(const Tensor & self, int64_t dim=0);
+   #ifdef BUILD_NAMEDTENSOR
+   static inline std::vector<Tensor> unbind(const Tensor & self, Dimname dim);
+   #endif
    static inline Tensor mkldnn_reorder_conv2d_weight(const Tensor & self, IntArrayRef padding=0, IntArrayRef stride=1, IntArrayRef dilation=1, int64_t groups=1);
    static inline Tensor to_mkldnn_backward(const Tensor & grad, const Tensor & input);
    static inline Tensor quantize_linear(const Tensor & self, double scale, int64_t zero_point, ScalarType dtype);
@@ -7886,6 +7889,16 @@ Program Listing for File Functions.h
        return table->getOp<std::vector<Tensor> (const Tensor &, int64_t)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self, dim);
    #endif
    }
+   #ifdef BUILD_NAMEDTENSOR
+   static inline std::vector<Tensor> unbind(const Tensor & self, Dimname dim) {
+   #ifdef USE_STATIC_DISPATCH
+       return TypeDefault::unbind(self, dim);
+   #else
+       static auto table = globalATenDispatch().getOpTable("aten::unbind(Tensor(a) self, Dimname dim) -> Tensor(a)[]");
+       return table->getOp<std::vector<Tensor> (const Tensor &, Dimname)>(at::detail::infer_backend(self), at::detail::infer_is_variable(self))(self, dim);
+   #endif
+   }
+   #endif
    static inline Tensor mkldnn_reorder_conv2d_weight(const Tensor & self, IntArrayRef padding, IntArrayRef stride, IntArrayRef dilation, int64_t groups) {
    #ifdef USE_STATIC_DISPATCH
        switch(at::detail::infer_backend(self)) {
