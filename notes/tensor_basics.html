@@ -301,7 +301,7 @@ for CUDA tensors.</p>
 <div class="section" id="cuda-accessors">
 <h3>CUDA accessors<a class="headerlink" href="#cuda-accessors" title="Permalink to this headline">¶</a></h3>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">__global__</span> <span class="kt">void</span> <span class="nf">packed_accessor_kernel</span><span class="p">(</span>
-    <span class="n">PackedTensorAccessor</span><span class="o">&lt;</span><span class="kt">float</span><span class="p">,</span> <span class="mi">2</span><span class="o">&gt;</span> <span class="n">foo</span><span class="p">,</span>
+    <span class="n">PackedTensorAccessor64</span><span class="o">&lt;</span><span class="kt">float</span><span class="p">,</span> <span class="mi">2</span><span class="o">&gt;</span> <span class="n">foo</span><span class="p">,</span>
     <span class="kt">float</span><span class="o">*</span> <span class="n">trace</span><span class="p">)</span> <span class="p">{</span>
   <span class="kt">int</span> <span class="n">i</span><span class="o">=</span><span class="n">threadIdx</span><span class="p">.</span><span class="n">x</span>
   <span class="n">atomicAdd</span><span class="p">(</span><span class="n">trace</span><span class="p">,</span> <span class="n">foo</span><span class="p">[</span><span class="n">i</span><span class="p">][</span><span class="n">i</span><span class="p">])</span>
@@ -310,12 +310,16 @@ for CUDA tensors.</p>
 <span class="n">torch</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">foo</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">rand</span><span class="p">({</span><span class="mi">12</span><span class="p">,</span> <span class="mi">12</span><span class="p">});</span>
 
 <span class="c1">// assert foo is 2-dimensional and holds floats.</span>
-<span class="k">auto</span> <span class="n">foo_a</span> <span class="o">=</span> <span class="n">foo</span><span class="p">.</span><span class="n">packed_accessor</span><span class="o">&lt;</span><span class="kt">float</span><span class="p">,</span><span class="mi">2</span><span class="o">&gt;</span><span class="p">();</span>
+<span class="k">auto</span> <span class="n">foo_a</span> <span class="o">=</span> <span class="n">foo</span><span class="p">.</span><span class="n">packed_accessor64</span><span class="o">&lt;</span><span class="kt">float</span><span class="p">,</span><span class="mi">2</span><span class="o">&gt;</span><span class="p">();</span>
 <span class="kt">float</span> <span class="n">trace</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
 
 <span class="n">packed_accessor_kernel</span><span class="o">&lt;&lt;&lt;</span><span class="mi">1</span><span class="p">,</span> <span class="mi">12</span><span class="o">&gt;&gt;&gt;</span><span class="p">(</span><span class="n">foo_a</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">trace</span><span class="p">);</span>
 </pre></div>
 </div>
+<p>In addition to <code class="docutils literal notranslate"><span class="pre">PackedTensorAccessor64</span></code> and <code class="docutils literal notranslate"><span class="pre">packed_accessor64</span></code> there are
+also the corresponding <code class="docutils literal notranslate"><span class="pre">PackedTensorAccessor32</span></code> and <code class="docutils literal notranslate"><span class="pre">packed_accessor32</span></code>
+which use 32-bit integers for indexing. This can be quite a bit faster on CUDA
+but may lead to overflows in the indexing calculations.</p>
 <p>Note that the template can hold other parameters such as the pointer restriction
 and the integer type for indexing. See documentation for a thorough template
 description of <em>accessors</em> and <em>packed accessors</em>.</p>
