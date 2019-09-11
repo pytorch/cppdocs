@@ -1,0 +1,94 @@
+:github_url: https://github.com/pytorch/pytorch
+
+
+.. _program_listing_file_torch_csrc_api_include_torch_nn_modules_maxpool.h:
+
+Program Listing for File maxpool.h
+==================================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_torch_csrc_api_include_torch_nn_modules_maxpool.h>` (``torch/csrc/api/include/torch/nn/modules/maxpool.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: cpp
+
+   #pragma once
+   
+   #include <torch/expanding_array.h>
+   #include <torch/nn/cloneable.h>
+   
+   #include <torch/csrc/WindowsTorchApiMacro.h>
+   
+   namespace torch {
+   namespace nn {
+   
+   template <size_t D>
+   struct MaxPoolOptions {
+     MaxPoolOptions(ExpandingArray<D> kernel_size)
+         : kernel_size_(kernel_size), stride_(kernel_size) {}
+   
+     TORCH_ARG(ExpandingArray<D>, kernel_size);
+   
+     TORCH_ARG(ExpandingArray<D>, stride);
+   
+     TORCH_ARG(ExpandingArray<D>, padding) = 0;
+   
+     TORCH_ARG(ExpandingArray<D>, dilation) = 1;
+   
+     TORCH_ARG(bool, return_indices) = false;
+   
+     TORCH_ARG(bool, ceil_mode) = false;
+   };
+   
+   template <size_t D, typename Derived>
+   class TORCH_API MaxPoolImpl : public torch::nn::Cloneable<Derived> {
+    public:
+     MaxPoolImpl(ExpandingArray<D> kernel_size)
+         : MaxPoolImpl(MaxPoolOptions<D>(kernel_size)) {}
+     explicit MaxPoolImpl(MaxPoolOptions<D> options);
+   
+     void reset() override;
+   
+     void pretty_print(std::ostream& stream) const override;
+   
+     MaxPoolOptions<D> options;
+   };
+   
+   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ MaxPool1d ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   
+   class TORCH_API MaxPool1dImpl : public MaxPoolImpl<1, MaxPool1dImpl> {
+    public:
+     using MaxPoolImpl<1, MaxPool1dImpl>::MaxPoolImpl;
+     Tensor forward(const Tensor& input);
+   };
+   
+   using MaxPool1dOptions = MaxPoolOptions<1>;
+   
+   TORCH_MODULE(MaxPool1d);
+   
+   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ MaxPool2d ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   
+   class TORCH_API MaxPool2dImpl : public MaxPoolImpl<2, MaxPool2dImpl> {
+    public:
+     using MaxPoolImpl<2, MaxPool2dImpl>::MaxPoolImpl;
+     Tensor forward(const Tensor& input);
+   };
+   
+   using MaxPool2dOptions = MaxPoolOptions<2>;
+   
+   TORCH_MODULE(MaxPool2d);
+   
+   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ MaxPool3d ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   
+   class TORCH_API MaxPool3dImpl : public MaxPoolImpl<3, MaxPool3dImpl> {
+    public:
+     using MaxPoolImpl<3, MaxPool3dImpl>::MaxPoolImpl;
+     Tensor forward(const Tensor& input);
+   };
+   
+   using MaxPool3dOptions = MaxPoolOptions<3>;
+   
+   TORCH_MODULE(MaxPool3d);
+   
+   } // namespace nn
+   } // namespace torch
