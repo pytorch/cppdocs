@@ -1,0 +1,61 @@
+:github_url: https://github.com/pytorch/pytorch
+
+
+.. _program_listing_file_torch_csrc_api_include_torch_nn_modules_fold.h:
+
+Program Listing for File fold.h
+===============================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_torch_csrc_api_include_torch_nn_modules_fold.h>` (``torch/csrc/api/include/torch/nn/modules/fold.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: cpp
+
+   #pragma once
+   
+   #include <torch/expanding_array.h>
+   #include <torch/nn/cloneable.h>
+   #include <torch/nn/pimpl.h>
+   #include <torch/types.h>
+   
+   namespace torch {
+   namespace nn {
+   
+   struct FoldOptions {
+     FoldOptions(ExpandingArray<2> output_size, ExpandingArray<2> kernel_size)
+         : output_size_(std::move(output_size)),
+           kernel_size_(std::move(kernel_size)) {}
+   
+     TORCH_ARG(ExpandingArray<2>, output_size);
+   
+     TORCH_ARG(ExpandingArray<2>, kernel_size);
+   
+     TORCH_ARG(ExpandingArray<2>, dilation) = 1;
+   
+     TORCH_ARG(ExpandingArray<2>, padding) = 0;
+   
+     TORCH_ARG(ExpandingArray<2>, stride) = 1;
+   };
+   
+   class TORCH_API FoldImpl : public torch::nn::Cloneable<FoldImpl> {
+    public:
+     FoldImpl(ExpandingArray<2> output_size, ExpandingArray<2> kernel_size)
+         : FoldImpl(FoldOptions(output_size, kernel_size)) {}
+     explicit FoldImpl(FoldOptions options) : options(std::move(options)) {}
+   
+     void reset() override {}
+   
+     void pretty_print(std::ostream& stream) const override {
+       stream << "torch::nn::Fold";
+     }
+   
+     Tensor forward(const Tensor& input);
+   
+     FoldOptions options;
+   };
+   
+   TORCH_MODULE(Fold);
+   
+   } // namespace nn
+   } // namespace torch
