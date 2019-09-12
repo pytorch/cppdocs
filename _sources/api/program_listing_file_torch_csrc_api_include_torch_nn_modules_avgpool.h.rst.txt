@@ -1,0 +1,94 @@
+:github_url: https://github.com/pytorch/pytorch
+
+
+.. _program_listing_file_torch_csrc_api_include_torch_nn_modules_avgpool.h:
+
+Program Listing for File avgpool.h
+==================================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_torch_csrc_api_include_torch_nn_modules_avgpool.h>` (``torch/csrc/api/include/torch/nn/modules/avgpool.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: cpp
+
+   #pragma once
+   
+   #include <torch/expanding_array.h>
+   #include <torch/nn/cloneable.h>
+   
+   #include <torch/csrc/WindowsTorchApiMacro.h>
+   
+   namespace torch {
+   namespace nn {
+   
+   template <size_t D>
+   struct AvgPoolOptions {
+     AvgPoolOptions(ExpandingArray<D> kernel_size)
+         : kernel_size_(kernel_size), stride_(kernel_size) {}
+   
+     TORCH_ARG(ExpandingArray<D>, kernel_size);
+   
+     TORCH_ARG(ExpandingArray<D>, stride);
+   
+     TORCH_ARG(ExpandingArray<D>, padding) = 0;
+   
+     TORCH_ARG(bool, ceil_mode) = false;
+   
+     TORCH_ARG(bool, count_include_pad) = true;
+   
+     TORCH_ARG(c10::optional<int64_t>, divisor_override) = c10::nullopt;
+   };
+   
+   template <size_t D, typename Derived>
+   class TORCH_API AvgPoolImpl : public torch::nn::Cloneable<Derived> {
+    public:
+     AvgPoolImpl(ExpandingArray<D> kernel_size)
+         : AvgPoolImpl(AvgPoolOptions<D>(kernel_size)) {}
+     explicit AvgPoolImpl(AvgPoolOptions<D> options);
+   
+     void reset() override;
+   
+     void pretty_print(std::ostream& stream) const override;
+   
+     AvgPoolOptions<D> options;
+   };
+   
+   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ AvgPool1d ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   
+   class TORCH_API AvgPool1dImpl : public AvgPoolImpl<1, AvgPool1dImpl> {
+    public:
+     using AvgPoolImpl<1, AvgPool1dImpl>::AvgPoolImpl;
+     Tensor forward(const Tensor& input);
+   };
+   
+   using AvgPool1dOptions = AvgPoolOptions<1>;
+   
+   TORCH_MODULE(AvgPool1d);
+   
+   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ AvgPool2d ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   
+   class TORCH_API AvgPool2dImpl : public AvgPoolImpl<2, AvgPool2dImpl> {
+    public:
+     using AvgPoolImpl<2, AvgPool2dImpl>::AvgPoolImpl;
+     Tensor forward(const Tensor& input);
+   };
+   
+   using AvgPool2dOptions = AvgPoolOptions<2>;
+   
+   TORCH_MODULE(AvgPool2d);
+   
+   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ AvgPool3d ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   
+   class TORCH_API AvgPool3dImpl : public AvgPoolImpl<3, AvgPool3dImpl> {
+    public:
+     using AvgPoolImpl<3, AvgPool3dImpl>::AvgPoolImpl;
+     Tensor forward(const Tensor& input);
+   };
+   
+   using AvgPool3dOptions = AvgPoolOptions<3>;
+   
+   TORCH_MODULE(AvgPool3d);
+   
+   } // namespace nn
+   } // namespace torch
