@@ -248,6 +248,7 @@
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#pragma once</span>
 
 <span class="cp">#include</span> <span class="cpf">&lt;torch/nn/cloneable.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/nn/options/rnn.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;torch/nn/modules/dropout.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;torch/nn/pimpl.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;torch/types.h&gt;</span><span class="cp"></span>
@@ -269,19 +270,6 @@
 <span class="p">};</span>
 
 <span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
-
-<span class="k">struct</span> <span class="n">TORCH_API</span> <span class="n">RNNOptionsBase</span> <span class="p">{</span>
-  <span class="n">RNNOptionsBase</span><span class="p">(</span><span class="kt">int64_t</span> <span class="n">input_size</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">hidden_size</span><span class="p">);</span>
-  <span class="k">virtual</span> <span class="o">~</span><span class="n">RNNOptionsBase</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
-  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">int64_t</span><span class="p">,</span> <span class="n">input_size</span><span class="p">);</span>
-  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">int64_t</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">);</span>
-  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">int64_t</span><span class="p">,</span> <span class="n">layers</span><span class="p">)</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">bool</span><span class="p">,</span> <span class="n">with_bias</span><span class="p">)</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
-  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">double</span><span class="p">,</span> <span class="n">dropout</span><span class="p">)</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
-  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">bool</span><span class="p">,</span> <span class="n">bidirectional</span><span class="p">)</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
-  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">bool</span><span class="p">,</span> <span class="n">batch_first</span><span class="p">)</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
-<span class="p">};</span>
-
 <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Derived</span><span class="o">&gt;</span>
 <span class="k">class</span> <span class="nc">TORCH_API</span> <span class="nl">RNNImplBase</span> <span class="p">:</span> <span class="k">public</span> <span class="n">torch</span><span class="o">::</span><span class="n">nn</span><span class="o">::</span><span class="n">Cloneable</span><span class="o">&lt;</span><span class="n">Derived</span><span class="o">&gt;</span> <span class="p">{</span>
  <span class="k">public</span><span class="o">:</span>
@@ -341,24 +329,6 @@
 
 <span class="c1">// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ RNN ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
 
-<span class="k">enum</span> <span class="k">class</span> <span class="nc">RNNActivation</span> <span class="o">:</span> <span class="kt">uint32_t</span> <span class="p">{</span><span class="n">ReLU</span><span class="p">,</span> <span class="n">Tanh</span><span class="p">};</span>
-
-<span class="k">struct</span> <span class="n">TORCH_API</span> <span class="n">RNNOptions</span> <span class="p">{</span>
-  <span class="n">RNNOptions</span><span class="p">(</span><span class="kt">int64_t</span> <span class="n">input_size</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">hidden_size</span><span class="p">);</span>
-
-  <span class="n">RNNOptions</span><span class="o">&amp;</span> <span class="n">tanh</span><span class="p">();</span>
-  <span class="n">RNNOptions</span><span class="o">&amp;</span> <span class="n">relu</span><span class="p">();</span>
-
-  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">int64_t</span><span class="p">,</span> <span class="n">input_size</span><span class="p">);</span>
-  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">int64_t</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">);</span>
-  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">int64_t</span><span class="p">,</span> <span class="n">layers</span><span class="p">)</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">bool</span><span class="p">,</span> <span class="n">with_bias</span><span class="p">)</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
-  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">double</span><span class="p">,</span> <span class="n">dropout</span><span class="p">)</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
-  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">bool</span><span class="p">,</span> <span class="n">bidirectional</span><span class="p">)</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
-  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">bool</span><span class="p">,</span> <span class="n">batch_first</span><span class="p">)</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
-  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="n">RNNActivation</span><span class="p">,</span> <span class="n">activation</span><span class="p">)</span> <span class="o">=</span> <span class="n">RNNActivation</span><span class="o">::</span><span class="n">ReLU</span><span class="p">;</span>
-<span class="p">};</span>
-
 <span class="k">class</span> <span class="nc">TORCH_API</span> <span class="nl">RNNImpl</span> <span class="p">:</span> <span class="k">public</span> <span class="n">detail</span><span class="o">::</span><span class="n">RNNImplBase</span><span class="o">&lt;</span><span class="n">RNNImpl</span><span class="o">&gt;</span> <span class="p">{</span>
  <span class="k">public</span><span class="o">:</span>
   <span class="n">RNNImpl</span><span class="p">(</span><span class="kt">int64_t</span> <span class="n">input_size</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">hidden_size</span><span class="p">)</span>
@@ -376,8 +346,6 @@
 
 <span class="c1">// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ LSTM ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
 
-<span class="k">using</span> <span class="n">LSTMOptions</span> <span class="o">=</span> <span class="n">detail</span><span class="o">::</span><span class="n">RNNOptionsBase</span><span class="p">;</span>
-
 <span class="k">class</span> <span class="nc">TORCH_API</span> <span class="nl">LSTMImpl</span> <span class="p">:</span> <span class="k">public</span> <span class="n">detail</span><span class="o">::</span><span class="n">RNNImplBase</span><span class="o">&lt;</span><span class="n">LSTMImpl</span><span class="o">&gt;</span> <span class="p">{</span>
  <span class="k">public</span><span class="o">:</span>
   <span class="n">LSTMImpl</span><span class="p">(</span><span class="kt">int64_t</span> <span class="n">input_size</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">hidden_size</span><span class="p">)</span>
@@ -390,8 +358,6 @@
 <span class="n">TORCH_MODULE</span><span class="p">(</span><span class="n">LSTM</span><span class="p">);</span>
 
 <span class="c1">// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ GRU ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
-
-<span class="k">using</span> <span class="n">GRUOptions</span> <span class="o">=</span> <span class="n">detail</span><span class="o">::</span><span class="n">RNNOptionsBase</span><span class="p">;</span>
 
 <span class="k">class</span> <span class="nc">TORCH_API</span> <span class="nl">GRUImpl</span> <span class="p">:</span> <span class="k">public</span> <span class="n">detail</span><span class="o">::</span><span class="n">RNNImplBase</span><span class="o">&lt;</span><span class="n">GRUImpl</span><span class="o">&gt;</span> <span class="p">{</span>
  <span class="k">public</span><span class="o">:</span>

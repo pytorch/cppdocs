@@ -19,6 +19,7 @@ Program Listing for File variable_factories.h
    #include <ATen/ATen.h>
    #include <c10/util/ArrayRef.h>
    #include <c10/core/MemoryFormat.h>
+   #include <ATen/core/EnableNamedTensor.h>
    #include <torch/csrc/autograd/variable.h>
    #include <torch/csrc/jit/tracer.h>
    #include <torch/csrc/jit/ir.h>
@@ -332,6 +333,35 @@ Program Listing for File variable_factories.h
      }
      return result;
    }
+   inline at::Tensor empty(at::IntArrayRef size, c10::optional<DimnameList> names, const at::TensorOptions & options = {}, c10::optional<MemoryFormat> memory_format = c10::nullopt) {
+     torch::jit::Node* node = nullptr;
+     std::shared_ptr<jit::tracer::TracingState> tracer_state;
+     if (jit::tracer::isTracing()) {
+       tracer_state = jit::tracer::getTracingState();
+       at::Symbol op_name;
+       op_name = jit::Symbol::fromQualString("aten::empty");
+       node = tracer_state->graph->create(op_name, /*num_outputs=*/0);
+       jit::tracer::recordSourceLocation(node);
+       jit::tracer::addInputs(node, "size", size);
+       jit::tracer::addInputs(node, "names", names);
+       jit::tracer::addInputs(node, "options", options);
+       jit::tracer::addInputs(node, "memory_format", memory_format);
+       tracer_state->graph->insertNode(node);
+     
+       jit::tracer::setTracingState(nullptr);
+     }
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::empty(size, names, at::TensorOptions(options).is_variable(false), memory_format);
+     })();
+     at::Tensor result =
+       autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
+     if (tracer_state) {
+       jit::tracer::setTracingState(std::move(tracer_state));
+       jit::tracer::addOutput(node, result);
+     }
+     return result;
+   }
    inline at::Tensor empty(at::IntArrayRef size, const at::TensorOptions & options = {}, c10::optional<MemoryFormat> memory_format = c10::nullopt) {
      torch::jit::Node* node = nullptr;
      std::shared_ptr<jit::tracer::TracingState> tracer_state;
@@ -549,6 +579,35 @@ Program Listing for File variable_factories.h
      at::Tensor tensor = ([&]() {
        at::AutoNonVariableTypeMode non_var_type_mode(true);
        return at::eye(n, m, at::TensorOptions(options).is_variable(false));
+     })();
+     at::Tensor result =
+       autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
+     if (tracer_state) {
+       jit::tracer::setTracingState(std::move(tracer_state));
+       jit::tracer::addOutput(node, result);
+     }
+     return result;
+   }
+   inline at::Tensor full(at::IntArrayRef size, at::Scalar fill_value, c10::optional<DimnameList> names, const at::TensorOptions & options = {}) {
+     torch::jit::Node* node = nullptr;
+     std::shared_ptr<jit::tracer::TracingState> tracer_state;
+     if (jit::tracer::isTracing()) {
+       tracer_state = jit::tracer::getTracingState();
+       at::Symbol op_name;
+       op_name = jit::Symbol::fromQualString("aten::full");
+       node = tracer_state->graph->create(op_name, /*num_outputs=*/0);
+       jit::tracer::recordSourceLocation(node);
+       jit::tracer::addInputs(node, "size", size);
+       jit::tracer::addInputs(node, "fill_value", fill_value);
+       jit::tracer::addInputs(node, "names", names);
+       jit::tracer::addInputs(node, "options", options);
+       tracer_state->graph->insertNode(node);
+     
+       jit::tracer::setTracingState(nullptr);
+     }
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::full(size, fill_value, names, at::TensorOptions(options).is_variable(false));
      })();
      at::Tensor result =
        autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -898,6 +957,34 @@ Program Listing for File variable_factories.h
      }
      return result;
    }
+   inline at::Tensor ones(at::IntArrayRef size, c10::optional<DimnameList> names, const at::TensorOptions & options = {}) {
+     torch::jit::Node* node = nullptr;
+     std::shared_ptr<jit::tracer::TracingState> tracer_state;
+     if (jit::tracer::isTracing()) {
+       tracer_state = jit::tracer::getTracingState();
+       at::Symbol op_name;
+       op_name = jit::Symbol::fromQualString("aten::ones");
+       node = tracer_state->graph->create(op_name, /*num_outputs=*/0);
+       jit::tracer::recordSourceLocation(node);
+       jit::tracer::addInputs(node, "size", size);
+       jit::tracer::addInputs(node, "names", names);
+       jit::tracer::addInputs(node, "options", options);
+       tracer_state->graph->insertNode(node);
+     
+       jit::tracer::setTracingState(nullptr);
+     }
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::ones(size, names, at::TensorOptions(options).is_variable(false));
+     })();
+     at::Tensor result =
+       autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
+     if (tracer_state) {
+       jit::tracer::setTracingState(std::move(tracer_state));
+       jit::tracer::addOutput(node, result);
+     }
+     return result;
+   }
    inline at::Tensor ones(at::IntArrayRef size, const at::TensorOptions & options = {}) {
      torch::jit::Node* node = nullptr;
      std::shared_ptr<jit::tracer::TracingState> tracer_state;
@@ -996,6 +1083,63 @@ Program Listing for File variable_factories.h
      at::Tensor tensor = ([&]() {
        at::AutoNonVariableTypeMode non_var_type_mode(true);
        return at::scalar_tensor(s, at::TensorOptions(options).is_variable(false));
+     })();
+     at::Tensor result =
+       autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
+     if (tracer_state) {
+       jit::tracer::setTracingState(std::move(tracer_state));
+       jit::tracer::addOutput(node, result);
+     }
+     return result;
+   }
+   inline at::Tensor rand(at::IntArrayRef size, c10::optional<DimnameList> names, const at::TensorOptions & options = {}) {
+     torch::jit::Node* node = nullptr;
+     std::shared_ptr<jit::tracer::TracingState> tracer_state;
+     if (jit::tracer::isTracing()) {
+       tracer_state = jit::tracer::getTracingState();
+       at::Symbol op_name;
+       op_name = jit::Symbol::fromQualString("aten::rand");
+       node = tracer_state->graph->create(op_name, /*num_outputs=*/0);
+       jit::tracer::recordSourceLocation(node);
+       jit::tracer::addInputs(node, "size", size);
+       jit::tracer::addInputs(node, "names", names);
+       jit::tracer::addInputs(node, "options", options);
+       tracer_state->graph->insertNode(node);
+     
+       jit::tracer::setTracingState(nullptr);
+     }
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::rand(size, names, at::TensorOptions(options).is_variable(false));
+     })();
+     at::Tensor result =
+       autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
+     if (tracer_state) {
+       jit::tracer::setTracingState(std::move(tracer_state));
+       jit::tracer::addOutput(node, result);
+     }
+     return result;
+   }
+   inline at::Tensor rand(at::IntArrayRef size, at::Generator * generator, c10::optional<DimnameList> names, const at::TensorOptions & options = {}) {
+     torch::jit::Node* node = nullptr;
+     std::shared_ptr<jit::tracer::TracingState> tracer_state;
+     if (jit::tracer::isTracing()) {
+       tracer_state = jit::tracer::getTracingState();
+       at::Symbol op_name;
+       op_name = jit::Symbol::fromQualString("aten::rand");
+       node = tracer_state->graph->create(op_name, /*num_outputs=*/0);
+       jit::tracer::recordSourceLocation(node);
+       jit::tracer::addInputs(node, "size", size);
+       jit::tracer::addInputs(node, "generator", generator);
+       jit::tracer::addInputs(node, "names", names);
+       jit::tracer::addInputs(node, "options", options);
+       tracer_state->graph->insertNode(node);
+     
+       jit::tracer::setTracingState(nullptr);
+     }
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::rand(size, generator, names, at::TensorOptions(options).is_variable(false));
      })();
      at::Tensor result =
        autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
@@ -1396,6 +1540,63 @@ Program Listing for File variable_factories.h
      }
      return result;
    }
+   inline at::Tensor randn(at::IntArrayRef size, c10::optional<DimnameList> names, const at::TensorOptions & options = {}) {
+     torch::jit::Node* node = nullptr;
+     std::shared_ptr<jit::tracer::TracingState> tracer_state;
+     if (jit::tracer::isTracing()) {
+       tracer_state = jit::tracer::getTracingState();
+       at::Symbol op_name;
+       op_name = jit::Symbol::fromQualString("aten::randn");
+       node = tracer_state->graph->create(op_name, /*num_outputs=*/0);
+       jit::tracer::recordSourceLocation(node);
+       jit::tracer::addInputs(node, "size", size);
+       jit::tracer::addInputs(node, "names", names);
+       jit::tracer::addInputs(node, "options", options);
+       tracer_state->graph->insertNode(node);
+     
+       jit::tracer::setTracingState(nullptr);
+     }
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::randn(size, names, at::TensorOptions(options).is_variable(false));
+     })();
+     at::Tensor result =
+       autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
+     if (tracer_state) {
+       jit::tracer::setTracingState(std::move(tracer_state));
+       jit::tracer::addOutput(node, result);
+     }
+     return result;
+   }
+   inline at::Tensor randn(at::IntArrayRef size, at::Generator * generator, c10::optional<DimnameList> names, const at::TensorOptions & options = {}) {
+     torch::jit::Node* node = nullptr;
+     std::shared_ptr<jit::tracer::TracingState> tracer_state;
+     if (jit::tracer::isTracing()) {
+       tracer_state = jit::tracer::getTracingState();
+       at::Symbol op_name;
+       op_name = jit::Symbol::fromQualString("aten::randn");
+       node = tracer_state->graph->create(op_name, /*num_outputs=*/0);
+       jit::tracer::recordSourceLocation(node);
+       jit::tracer::addInputs(node, "size", size);
+       jit::tracer::addInputs(node, "generator", generator);
+       jit::tracer::addInputs(node, "names", names);
+       jit::tracer::addInputs(node, "options", options);
+       tracer_state->graph->insertNode(node);
+     
+       jit::tracer::setTracingState(nullptr);
+     }
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::randn(size, generator, names, at::TensorOptions(options).is_variable(false));
+     })();
+     at::Tensor result =
+       autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
+     if (tracer_state) {
+       jit::tracer::setTracingState(std::move(tracer_state));
+       jit::tracer::addOutput(node, result);
+     }
+     return result;
+   }
    inline at::Tensor randn_like(const at::Tensor & self) {
      torch::jit::Node* node = nullptr;
      std::shared_ptr<jit::tracer::TracingState> tracer_state;
@@ -1552,6 +1753,34 @@ Program Listing for File variable_factories.h
      at::Tensor tensor = ([&]() {
        at::AutoNonVariableTypeMode non_var_type_mode(true);
        return at::range(start, end, at::TensorOptions(options).is_variable(false));
+     })();
+     at::Tensor result =
+       autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
+     if (tracer_state) {
+       jit::tracer::setTracingState(std::move(tracer_state));
+       jit::tracer::addOutput(node, result);
+     }
+     return result;
+   }
+   inline at::Tensor zeros(at::IntArrayRef size, c10::optional<DimnameList> names, const at::TensorOptions & options = {}) {
+     torch::jit::Node* node = nullptr;
+     std::shared_ptr<jit::tracer::TracingState> tracer_state;
+     if (jit::tracer::isTracing()) {
+       tracer_state = jit::tracer::getTracingState();
+       at::Symbol op_name;
+       op_name = jit::Symbol::fromQualString("aten::zeros");
+       node = tracer_state->graph->create(op_name, /*num_outputs=*/0);
+       jit::tracer::recordSourceLocation(node);
+       jit::tracer::addInputs(node, "size", size);
+       jit::tracer::addInputs(node, "names", names);
+       jit::tracer::addInputs(node, "options", options);
+       tracer_state->graph->insertNode(node);
+     
+       jit::tracer::setTracingState(nullptr);
+     }
+     at::Tensor tensor = ([&]() {
+       at::AutoNonVariableTypeMode non_var_type_mode(true);
+       return at::zeros(size, names, at::TensorOptions(options).is_variable(false));
      })();
      at::Tensor result =
        autograd::make_variable(std::move(tensor), /*requires_grad=*/options.requires_grad());
