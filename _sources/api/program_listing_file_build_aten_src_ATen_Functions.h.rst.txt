@@ -772,7 +772,7 @@ Program Listing for File Functions.h
    static inline Tensor mkldnn_reorder_conv2d_weight(const Tensor & self, IntArrayRef padding=0, IntArrayRef stride=1, IntArrayRef dilation=1, int64_t groups=1);
    static inline Tensor to_mkldnn_backward(const Tensor & grad, const Tensor & input);
    static inline Tensor quantize_per_tensor(const Tensor & self, double scale, int64_t zero_point, ScalarType dtype);
-   static inline Tensor quantize_linear_per_channel(const Tensor & self, const Tensor & scales, const Tensor & zero_points, IntArrayRef axis, ScalarType dtype);
+   static inline Tensor quantize_per_channel(const Tensor & self, const Tensor & scales, const Tensor & zero_points, IntArrayRef axis, ScalarType dtype);
    static inline Tensor dequantize(const Tensor & self);
    static inline Tensor _dequantize_linear(const Tensor & self, double scale, int64_t zero_point, ScalarType dtype);
    static inline double q_scale(const Tensor & self);
@@ -8534,17 +8534,17 @@ Program Listing for File Functions.h
        return table->getOp<Tensor (const Tensor &, double, int64_t, ScalarType)>(at::detail::multi_dispatch_tensor_type_set(self))(self, scale, zero_point, dtype);
    #endif
    }
-   static inline Tensor quantize_linear_per_channel(const Tensor & self, const Tensor & scales, const Tensor & zero_points, IntArrayRef axis, ScalarType dtype) {
+   static inline Tensor quantize_per_channel(const Tensor & self, const Tensor & scales, const Tensor & zero_points, IntArrayRef axis, ScalarType dtype) {
    #ifdef USE_STATIC_DISPATCH
        switch(tensorTypeIdToBackend(impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(self, scales, zero_points)))) {
            case Backend::CPU:
-               return CPUType::quantize_linear_per_channel(self, scales, zero_points, axis, dtype);
+               return CPUType::quantize_per_channel(self, scales, zero_points, axis, dtype);
                break;
            default:
-               AT_ERROR("quantize_linear_per_channel not implemented for ", at::toString(at::detail::multi_dispatch_tensor_type_set(self, scales, zero_points)));
+               AT_ERROR("quantize_per_channel not implemented for ", at::toString(at::detail::multi_dispatch_tensor_type_set(self, scales, zero_points)));
        }
    #else
-       static auto table = globalATenDispatch().getOpTable("aten::quantize_linear_per_channel(Tensor self, Tensor scales, Tensor zero_points, int[] axis, ScalarType dtype) -> Tensor");
+       static auto table = globalATenDispatch().getOpTable("aten::quantize_per_channel(Tensor self, Tensor scales, Tensor zero_points, int[] axis, ScalarType dtype) -> Tensor");
        return table->getOp<Tensor (const Tensor &, const Tensor &, const Tensor &, IntArrayRef, ScalarType)>(at::detail::multi_dispatch_tensor_type_set(self, scales, zero_points))(self, scales, zero_points, axis, dtype);
    #endif
    }
