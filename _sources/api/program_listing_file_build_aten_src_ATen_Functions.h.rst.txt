@@ -781,7 +781,7 @@ Program Listing for File Functions.h
    static inline Tensor q_per_channel_zero_points(const Tensor & self);
    static inline IntArrayRef q_per_channel_axis(const Tensor & self);
    static inline Tensor int_repr(const Tensor & self);
-   static inline Tensor _per_tensor_affine_qtensor(const Tensor & self, double scale, int64_t zero_point);
+   static inline Tensor _make_per_tensor_quantized_tensor(const Tensor & self, double scale, int64_t zero_point);
    static inline Tensor _per_channel_affine_qtensor(const Tensor & self, const Tensor & scale, const Tensor & zero_point, IntArrayRef axis);
    static inline Tensor fake_quantize_per_tensor_affine(const Tensor & self, double scale, int64_t zero_point, int64_t quant_min, int64_t quant_max);
    static inline Tensor fake_quantize_per_tensor_affine_backward(const Tensor & grad, const Tensor & self, double scale, int64_t zero_point, int64_t quant_min, int64_t quant_max);
@@ -8672,18 +8672,18 @@ Program Listing for File Functions.h
            op, impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(self)), self);
    #endif
    }
-   static inline Tensor _per_tensor_affine_qtensor(const Tensor & self, double scale, int64_t zero_point) {
+   static inline Tensor _make_per_tensor_quantized_tensor(const Tensor & self, double scale, int64_t zero_point) {
    #ifdef USE_STATIC_DISPATCH
        switch(tensorTypeIdToBackend(impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(self)))) {
            case Backend::CPU:
-               return CPUType::_per_tensor_affine_qtensor(self, scale, zero_point);
+               return CPUType::_make_per_tensor_quantized_tensor(self, scale, zero_point);
                break;
            default:
-               AT_ERROR("_per_tensor_affine_qtensor not implemented for ", at::toString(at::detail::multi_dispatch_tensor_type_set(self)));
+               AT_ERROR("_make_per_tensor_quantized_tensor not implemented for ", at::toString(at::detail::multi_dispatch_tensor_type_set(self)));
        }
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
-           .findSchema({"aten::_per_tensor_affine_qtensor", ""}).value();
+           .findSchema({"aten::_make_per_tensor_quantized_tensor", ""}).value();
        return c10::Dispatcher::singleton().callUnboxed<Tensor, const Tensor &, double, int64_t>(
            op, impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(self)), self, scale, zero_point);
    #endif
@@ -11162,7 +11162,16 @@ Program Listing for File Functions.h
    }
    static inline std::tuple<Tensor,Tensor> topk(const Tensor & self, int64_t k, int64_t dim, bool largest, bool sorted) {
    #ifdef USE_STATIC_DISPATCH
-       return TypeDefault::topk(self, k, dim, largest, sorted);
+       switch(tensorTypeIdToBackend(impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(self)))) {
+           case Backend::CPU:
+               return CPUType::topk(self, k, dim, largest, sorted);
+               break;
+           case Backend::QuantizedCPU:
+               return QuantizedCPUType::topk(self, k, dim, largest, sorted);
+               break;
+           default:
+               AT_ERROR("topk not implemented for ", at::toString(at::detail::multi_dispatch_tensor_type_set(self)));
+       }
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchema({"aten::topk", ""}).value();
