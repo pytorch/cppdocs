@@ -774,7 +774,6 @@ Program Listing for File Functions.h
    static inline Tensor quantize_per_tensor(const Tensor & self, double scale, int64_t zero_point, ScalarType dtype);
    static inline Tensor quantize_per_channel(const Tensor & self, const Tensor & scales, const Tensor & zero_points, int64_t axis, ScalarType dtype);
    static inline Tensor dequantize(const Tensor & self);
-   static inline Tensor _dequantize_per_tensor(const Tensor & self, double scale, int64_t zero_point, ScalarType dtype);
    static inline double q_scale(const Tensor & self);
    static inline int64_t q_zero_point(const Tensor & self);
    static inline Tensor q_per_channel_scales(const Tensor & self);
@@ -5012,7 +5011,16 @@ Program Listing for File Functions.h
    }
    static inline Tensor mean(const Tensor & self, c10::optional<ScalarType> dtype) {
    #ifdef USE_STATIC_DISPATCH
-       return TypeDefault::mean(self, dtype);
+       switch(tensorTypeIdToBackend(impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(self)))) {
+           case Backend::CPU:
+               return CPUType::mean(self, dtype);
+               break;
+           case Backend::QuantizedCPU:
+               return QuantizedCPUType::mean(self, dtype);
+               break;
+           default:
+               AT_ERROR("mean not implemented for ", at::toString(at::detail::multi_dispatch_tensor_type_set(self)));
+       }
    #else
        static auto table = globalATenDispatch().getOpTable("aten::mean(Tensor self, *, ScalarType? dtype=None) -> Tensor");
        return table->getOp<Tensor (const Tensor &, c10::optional<ScalarType>)>(at::detail::multi_dispatch_tensor_type_set(self))(self, dtype);
@@ -5020,7 +5028,16 @@ Program Listing for File Functions.h
    }
    static inline Tensor mean(const Tensor & self, IntArrayRef dim, bool keepdim, c10::optional<ScalarType> dtype) {
    #ifdef USE_STATIC_DISPATCH
-       return TypeDefault::mean(self, dim, keepdim, dtype);
+       switch(tensorTypeIdToBackend(impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(self)))) {
+           case Backend::CPU:
+               return CPUType::mean(self, dim, keepdim, dtype);
+               break;
+           case Backend::QuantizedCPU:
+               return QuantizedCPUType::mean(self, dim, keepdim, dtype);
+               break;
+           default:
+               AT_ERROR("mean not implemented for ", at::toString(at::detail::multi_dispatch_tensor_type_set(self)));
+       }
    #else
        static auto table = globalATenDispatch().getOpTable("aten::mean.dim(Tensor self, int[1] dim, bool keepdim=False, *, ScalarType? dtype=None) -> Tensor");
        return table->getOp<Tensor (const Tensor &, IntArrayRef, bool, c10::optional<ScalarType>)>(at::detail::multi_dispatch_tensor_type_set(self))(self, dim, keepdim, dtype);
@@ -5028,7 +5045,16 @@ Program Listing for File Functions.h
    }
    static inline Tensor & mean_out(Tensor & out, const Tensor & self, IntArrayRef dim, bool keepdim, c10::optional<ScalarType> dtype) {
    #ifdef USE_STATIC_DISPATCH
-       return TypeDefault::mean_out(out, self, dim, keepdim, dtype);
+       switch(tensorTypeIdToBackend(impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(out, self)))) {
+           case Backend::CPU:
+               return CPUType::mean_out(out, self, dim, keepdim, dtype);
+               break;
+           case Backend::QuantizedCPU:
+               return QuantizedCPUType::mean_out(out, self, dim, keepdim, dtype);
+               break;
+           default:
+               AT_ERROR("mean_out not implemented for ", at::toString(at::detail::multi_dispatch_tensor_type_set(out, self)));
+       }
    #else
        static auto table = globalATenDispatch().getOpTable("aten::mean.out(Tensor self, int[1] dim, bool keepdim=False, *, ScalarType? dtype=None, Tensor(a!) out) -> Tensor(a!)");
        return table->getOp<Tensor & (Tensor &, const Tensor &, IntArrayRef, bool, c10::optional<ScalarType>)>(at::detail::multi_dispatch_tensor_type_set(out, self))(out, self, dim, keepdim, dtype);
@@ -5037,7 +5063,13 @@ Program Listing for File Functions.h
    #ifdef BUILD_NAMEDTENSOR
    static inline Tensor mean(const Tensor & self, DimnameList dim, bool keepdim, c10::optional<ScalarType> dtype) {
    #ifdef USE_STATIC_DISPATCH
-       return TypeDefault::mean(self, dim, keepdim, dtype);
+       switch(tensorTypeIdToBackend(impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(self)))) {
+           case Backend::CPU:
+               return CPUType::mean(self, dim, keepdim, dtype);
+               break;
+           default:
+               AT_ERROR("mean not implemented for ", at::toString(at::detail::multi_dispatch_tensor_type_set(self)));
+       }
    #else
        static auto table = globalATenDispatch().getOpTable("aten::mean.names_dim(Tensor self, Dimname[1] dim, bool keepdim=False, *, ScalarType? dtype=None) -> Tensor");
        return table->getOp<Tensor (const Tensor &, DimnameList, bool, c10::optional<ScalarType>)>(at::detail::multi_dispatch_tensor_type_set(self))(self, dim, keepdim, dtype);
@@ -5047,7 +5079,13 @@ Program Listing for File Functions.h
    #ifdef BUILD_NAMEDTENSOR
    static inline Tensor & mean_out(Tensor & out, const Tensor & self, DimnameList dim, bool keepdim, c10::optional<ScalarType> dtype) {
    #ifdef USE_STATIC_DISPATCH
-       return TypeDefault::mean_out(out, self, dim, keepdim, dtype);
+       switch(tensorTypeIdToBackend(impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(out, self)))) {
+           case Backend::CPU:
+               return CPUType::mean_out(out, self, dim, keepdim, dtype);
+               break;
+           default:
+               AT_ERROR("mean_out not implemented for ", at::toString(at::detail::multi_dispatch_tensor_type_set(out, self)));
+       }
    #else
        static auto table = globalATenDispatch().getOpTable("aten::mean.names_out(Tensor self, Dimname[1] dim, bool keepdim=False, *, ScalarType? dtype=None, Tensor(a!) out) -> Tensor(a!)");
        return table->getOp<Tensor & (Tensor &, const Tensor &, DimnameList, bool, c10::optional<ScalarType>)>(at::detail::multi_dispatch_tensor_type_set(out, self))(out, self, dim, keepdim, dtype);
@@ -8562,20 +8600,6 @@ Program Listing for File Functions.h
            .findSchema({"aten::dequantize", ""}).value();
        return c10::Dispatcher::singleton().callUnboxed<Tensor, const Tensor &>(
            op, impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(self)), self);
-   #endif
-   }
-   static inline Tensor _dequantize_per_tensor(const Tensor & self, double scale, int64_t zero_point, ScalarType dtype) {
-   #ifdef USE_STATIC_DISPATCH
-       switch(tensorTypeIdToBackend(impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(self)))) {
-           case Backend::CPU:
-               return CPUType::_dequantize_per_tensor(self, scale, zero_point, dtype);
-               break;
-           default:
-               AT_ERROR("_dequantize_per_tensor not implemented for ", at::toString(at::detail::multi_dispatch_tensor_type_set(self)));
-       }
-   #else
-       static auto table = globalATenDispatch().getOpTable("aten::_dequantize_per_tensor(Tensor self, float scale, int zero_point, ScalarType dtype) -> Tensor");
-       return table->getOp<Tensor (const Tensor &, double, int64_t, ScalarType)>(at::detail::multi_dispatch_tensor_type_set(self))(self, scale, zero_point, dtype);
    #endif
    }
    static inline double q_scale(const Tensor & self) {
