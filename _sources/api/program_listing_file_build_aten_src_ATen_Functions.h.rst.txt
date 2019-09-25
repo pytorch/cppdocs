@@ -829,6 +829,10 @@ Program Listing for File Functions.h
    static inline std::vector<Tensor> meshgrid(TensorList tensors);
    static inline Tensor cartesian_prod(TensorList tensors);
    static inline Tensor combinations(const Tensor & self, int64_t r=2, bool with_replacement=false);
+   static inline ScalarType result_type(const Tensor & tensor, const Tensor & other);
+   static inline ScalarType result_type(const Tensor & tensor, Scalar other);
+   static inline ScalarType result_type(Scalar scalar, const Tensor & tensor);
+   static inline ScalarType result_type(Scalar scalar1, Scalar scalar2);
    static inline Scalar _local_scalar_dense(const Tensor & self);
    static inline std::tuple<Tensor,Tensor,Tensor> _thnn_fused_lstm_cell(const Tensor & input_gates, const Tensor & hidden_gates, const Tensor & cx, const Tensor & input_bias={}, const Tensor & hidden_bias={});
    static inline std::tuple<Tensor,Tensor,Tensor,Tensor,Tensor> _thnn_fused_lstm_cell_backward(const Tensor & grad_hy, const Tensor & grad_cy, const Tensor & cx, const Tensor & cy, const Tensor & workspace, bool has_bias);
@@ -9009,6 +9013,38 @@ Program Listing for File Functions.h
            .findSchema({"aten::combinations", ""}).value();
        return c10::Dispatcher::singleton().callUnboxed<Tensor, const Tensor &, int64_t, bool>(
            op, impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(self)), self, r, with_replacement);
+   #endif
+   }
+   static inline ScalarType result_type(const Tensor & tensor, const Tensor & other) {
+   #ifdef USE_STATIC_DISPATCH
+       return TypeDefault::result_type(tensor, other);
+   #else
+       static auto table = globalATenDispatch().getOpTable("aten::result_type.Tensor(Tensor tensor, Tensor other) -> ScalarType");
+       return table->getOp<ScalarType (const Tensor &, const Tensor &)>(at::detail::multi_dispatch_tensor_type_set(tensor, other))(tensor, other);
+   #endif
+   }
+   static inline ScalarType result_type(const Tensor & tensor, Scalar other) {
+   #ifdef USE_STATIC_DISPATCH
+       return TypeDefault::result_type(tensor, other);
+   #else
+       static auto table = globalATenDispatch().getOpTable("aten::result_type.Scalar(Tensor tensor, Scalar other) -> ScalarType");
+       return table->getOp<ScalarType (const Tensor &, Scalar)>(at::detail::multi_dispatch_tensor_type_set(tensor))(tensor, other);
+   #endif
+   }
+   static inline ScalarType result_type(Scalar scalar, const Tensor & tensor) {
+   #ifdef USE_STATIC_DISPATCH
+       return TypeDefault::result_type(scalar, tensor);
+   #else
+       static auto table = globalATenDispatch().getOpTable("aten::result_type.Scalar_Tensor(Scalar scalar, Tensor tensor) -> ScalarType");
+       return table->getOp<ScalarType (Scalar, const Tensor &)>(at::detail::multi_dispatch_tensor_type_set(tensor))(scalar, tensor);
+   #endif
+   }
+   static inline ScalarType result_type(Scalar scalar1, Scalar scalar2) {
+   #ifdef USE_STATIC_DISPATCH
+       return TypeDefault::result_type(scalar1, scalar2);
+   #else
+       static auto table = globalATenDispatch().getOpTable("aten::result_type.Scalar_Scalar(Scalar scalar1, Scalar scalar2) -> ScalarType");
+       return table->getOp<ScalarType (Scalar, Scalar)>(at::detail::multi_dispatch_tensor_type_set())(scalar1, scalar2);
    #endif
    }
    static inline Scalar _local_scalar_dense(const Tensor & self) {
