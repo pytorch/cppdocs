@@ -833,6 +833,7 @@ Program Listing for File Functions.h
    static inline ScalarType result_type(const Tensor & tensor, Scalar other);
    static inline ScalarType result_type(Scalar scalar, const Tensor & tensor);
    static inline ScalarType result_type(Scalar scalar1, Scalar scalar2);
+   static inline bool can_cast(ScalarType from, ScalarType to);
    static inline Scalar _local_scalar_dense(const Tensor & self);
    static inline std::tuple<Tensor,Tensor,Tensor> _thnn_fused_lstm_cell(const Tensor & input_gates, const Tensor & hidden_gates, const Tensor & cx, const Tensor & input_bias={}, const Tensor & hidden_bias={});
    static inline std::tuple<Tensor,Tensor,Tensor,Tensor,Tensor> _thnn_fused_lstm_cell_backward(const Tensor & grad_hy, const Tensor & grad_cy, const Tensor & cx, const Tensor & cy, const Tensor & workspace, bool has_bias);
@@ -9042,6 +9043,14 @@ Program Listing for File Functions.h
    #else
        static auto table = globalATenDispatch().getOpTable("aten::result_type.Scalar_Scalar(Scalar scalar1, Scalar scalar2) -> ScalarType");
        return table->callUnboxed<ScalarType, Scalar, Scalar>(scalar1, scalar2);
+   #endif
+   }
+   static inline bool can_cast(ScalarType from, ScalarType to) {
+   #ifdef USE_STATIC_DISPATCH
+       return TypeDefault::can_cast(from, to);
+   #else
+       static auto table = globalATenDispatch().getOpTable("aten::can_cast(ScalarType from, ScalarType to) -> bool");
+       return table->callUnboxed<bool, ScalarType, ScalarType>(from, to);
    #endif
    }
    static inline Scalar _local_scalar_dense(const Tensor & self) {
