@@ -372,7 +372,6 @@ Program Listing for File Functions.h
    static inline Tensor fbgemm_linear_fp16_weight(const Tensor & input, const Tensor & packed_weight, const Tensor & bias);
    static inline Tensor fbgemm_pack_quantized_matrix(const Tensor & input);
    static inline Tensor fbgemm_pack_quantized_matrix(const Tensor & input, int64_t K, int64_t N);
-   static inline bool fbgemm_is_cpu_supported();
    static inline Tensor linspace(Scalar start, Scalar end, int64_t steps=100, const TensorOptions & options={});
    static inline Tensor & linspace_out(Tensor & out, Scalar start, Scalar end, int64_t steps=100);
    static inline Tensor log(const Tensor & self);
@@ -4699,16 +4698,6 @@ Program Listing for File Functions.h
            .findSchema({"aten::fbgemm_pack_quantized_matrix", "KN"}).value();
        return c10::Dispatcher::singleton().callUnboxed<Tensor, const Tensor &, int64_t, int64_t>(
            op, impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(input)), input, K, N);
-   #endif
-   }
-   static inline bool fbgemm_is_cpu_supported() {
-   #ifdef USE_STATIC_DISPATCH
-       return TypeDefault::fbgemm_is_cpu_supported();
-   #else
-       static c10::OperatorHandle op = c10::Dispatcher::singleton()
-           .findSchema({"aten::fbgemm_is_cpu_supported", ""}).value();
-       return c10::Dispatcher::singleton().callUnboxed<bool>(
-           op, impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set()));
    #endif
    }
    static inline Tensor linspace(Scalar start, Scalar end, int64_t steps, const TensorOptions & options) {
