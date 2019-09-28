@@ -178,5 +178,33 @@ Program Listing for File pooling.h
    
    TORCH_MODULE(AdaptiveMaxPool3d);
    
+   // ============================================================================
+   
+   template <size_t D, typename Derived>
+   class TORCH_API AdaptiveAvgPoolImpl : public torch::nn::Cloneable<Derived> {
+    public:
+     AdaptiveAvgPoolImpl(ExpandingArray<D> output_size)
+         : AdaptiveAvgPoolImpl(AdaptiveAvgPoolOptions<D>(output_size)) {}
+     explicit AdaptiveAvgPoolImpl(const AdaptiveAvgPoolOptions<D>& options_);
+   
+     void reset() override;
+   
+     void pretty_print(std::ostream& stream) const override;
+   
+     AdaptiveAvgPoolOptions<D> options;
+   };
+   
+   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~ AdaptiveAvgPool1d ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   
+   class TORCH_API AdaptiveAvgPool1dImpl :
+     public AdaptiveAvgPoolImpl<1, AdaptiveAvgPool1dImpl> {
+    public:
+     using AdaptiveAvgPoolImpl<1, AdaptiveAvgPool1dImpl>::AdaptiveAvgPoolImpl;
+   
+     Tensor forward(const Tensor& input);
+   };
+   
+   TORCH_MODULE(AdaptiveAvgPool1d);
+   
    } // namespace nn
    } // namespace torch
