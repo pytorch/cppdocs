@@ -825,6 +825,8 @@ Program Listing for File Functions.h
    static inline Tensor _make_per_channel_quantized_tensor(const Tensor & self, const Tensor & scale, const Tensor & zero_point, int64_t axis);
    static inline Tensor fake_quantize_per_tensor_affine(const Tensor & self, double scale, int64_t zero_point, int64_t quant_min, int64_t quant_max);
    static inline Tensor fake_quantize_per_tensor_affine_backward(const Tensor & grad, const Tensor & self, double scale, int64_t zero_point, int64_t quant_min, int64_t quant_max);
+   static inline Tensor fake_quantize_per_channel_affine(const Tensor & self, const Tensor & scale, const Tensor & zero_point, int64_t axis, int64_t quant_min, int64_t quant_max);
+   static inline Tensor fake_quantize_per_channel_affine_backward(const Tensor & grad, const Tensor & self, const Tensor & scale, const Tensor & zero_point, int64_t axis, int64_t quant_min, int64_t quant_max);
    static inline std::vector<Tensor> meshgrid(TensorList tensors);
    static inline Tensor cartesian_prod(TensorList tensors);
    static inline Tensor combinations(const Tensor & self, int64_t r=2, bool with_replacement=false);
@@ -8971,6 +8973,34 @@ Program Listing for File Functions.h
            .findSchema({"aten::fake_quantize_per_tensor_affine_backward", ""}).value();
        return c10::Dispatcher::singleton().callUnboxed<Tensor, const Tensor &, const Tensor &, double, int64_t, int64_t, int64_t>(
            op, impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(grad, self)), grad, self, scale, zero_point, quant_min, quant_max);
+   #endif
+   }
+   static inline Tensor fake_quantize_per_channel_affine(const Tensor & self, const Tensor & scale, const Tensor & zero_point, int64_t axis, int64_t quant_min, int64_t quant_max) {
+   #ifdef USE_STATIC_DISPATCH
+       switch(tensorTypeIdToBackend(impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(self, scale, zero_point)))) {
+           case Backend::CPU:
+               return CPUType::fake_quantize_per_channel_affine(self, scale, zero_point, axis, quant_min, quant_max);
+               break;
+           default:
+               AT_ERROR("fake_quantize_per_channel_affine not implemented for ", at::toString(at::detail::multi_dispatch_tensor_type_set(self, scale, zero_point)));
+       }
+   #else
+       static auto table = globalATenDispatch().getOpTable("aten::fake_quantize_per_channel_affine(Tensor self, Tensor scale, Tensor zero_point, int axis, int quant_min, int quant_max) -> Tensor");
+       return table->callUnboxed<Tensor, const Tensor &, const Tensor &, const Tensor &, int64_t, int64_t, int64_t>(self, scale, zero_point, axis, quant_min, quant_max);
+   #endif
+   }
+   static inline Tensor fake_quantize_per_channel_affine_backward(const Tensor & grad, const Tensor & self, const Tensor & scale, const Tensor & zero_point, int64_t axis, int64_t quant_min, int64_t quant_max) {
+   #ifdef USE_STATIC_DISPATCH
+       switch(tensorTypeIdToBackend(impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(grad, self, scale, zero_point)))) {
+           case Backend::CPU:
+               return CPUType::fake_quantize_per_channel_affine_backward(grad, self, scale, zero_point, axis, quant_min, quant_max);
+               break;
+           default:
+               AT_ERROR("fake_quantize_per_channel_affine_backward not implemented for ", at::toString(at::detail::multi_dispatch_tensor_type_set(grad, self, scale, zero_point)));
+       }
+   #else
+       static auto table = globalATenDispatch().getOpTable("aten::fake_quantize_per_channel_affine_backward(Tensor grad, Tensor self, Tensor scale, Tensor zero_point, int axis, int quant_min, int quant_max) -> Tensor");
+       return table->callUnboxed<Tensor, const Tensor &, const Tensor &, const Tensor &, const Tensor &, int64_t, int64_t, int64_t>(grad, self, scale, zero_point, axis, quant_min, quant_max);
    #endif
    }
    static inline std::vector<Tensor> meshgrid(TensorList tensors) {
