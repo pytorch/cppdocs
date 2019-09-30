@@ -251,6 +251,7 @@
 <span class="cp">#include</span> <span class="cpf">&lt;ATen/cuda/Exceptions.h&gt;</span><span class="cp"></span>
 
 <span class="cp">#include</span> <span class="cpf">&lt;ATen/cudnn/cudnn-wrapper.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;ATen/cudnn/Utils.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;ATen/ATen.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;ATen/TensorUtils.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;ATen/cuda/ATenCUDAGeneral.h&gt;</span><span class="cp"></span>
@@ -437,6 +438,7 @@
     <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">device</span><span class="p">().</span><span class="n">type</span><span class="p">()</span> <span class="o">==</span> <span class="n">kCUDA</span><span class="p">);</span>
     <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">dtype</span><span class="p">()</span> <span class="o">==</span> <span class="n">kByte</span><span class="p">);</span>
     <span class="n">state</span> <span class="o">=</span> <span class="n">at</span><span class="o">::</span><span class="n">empty</span><span class="p">({</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">state_size</span><span class="p">)},</span> <span class="n">options</span><span class="p">);</span>
+    <span class="n">setCuDNNStreamToCurrent</span><span class="p">();</span>
     <span class="n">AT_CUDNN_CHECK</span><span class="p">(</span><span class="n">cudnnSetDropoutDescriptor</span><span class="p">(</span><span class="n">mut_desc</span><span class="p">(),</span> <span class="n">handle</span><span class="p">,</span> <span class="n">dropout</span><span class="p">,</span> <span class="n">state</span><span class="p">.</span><span class="n">data_ptr</span><span class="p">(),</span> <span class="n">state_size</span><span class="p">,</span> <span class="n">seed</span><span class="p">));</span>
   <span class="p">}</span>
 
@@ -447,6 +449,7 @@
     <span class="kt">void</span> <span class="o">*</span><span class="n">state_ptr</span> <span class="o">=</span> <span class="n">state</span><span class="p">.</span><span class="n">data_ptr</span><span class="p">();</span>
     <span class="kt">size_t</span> <span class="n">state_size</span> <span class="o">=</span> <span class="n">state</span><span class="p">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
     <span class="c1">// NB: The seed doesn&#39;t actually matter, so we give a dummy value</span>
+    <span class="n">setCuDNNStreamToCurrent</span><span class="p">();</span>
     <span class="n">AT_CUDNN_CHECK</span><span class="p">(</span><span class="n">cudnnRestoreDropoutDescriptor</span><span class="p">(</span><span class="n">mut_desc</span><span class="p">(),</span> <span class="n">handle</span><span class="p">,</span> <span class="n">dropout</span><span class="p">,</span> <span class="n">state_ptr</span><span class="p">,</span> <span class="n">state_size</span><span class="p">,</span> <span class="mi">0</span> <span class="cm">/* seed */</span><span class="p">));</span>
   <span class="p">}</span>
 
