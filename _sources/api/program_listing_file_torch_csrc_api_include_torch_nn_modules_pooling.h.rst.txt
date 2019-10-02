@@ -230,5 +230,32 @@ Program Listing for File pooling.h
    
    TORCH_MODULE(AdaptiveAvgPool3d);
    
+   // ============================================================================
+   
+   template <size_t D, typename Derived>
+   class TORCH_API MaxUnpoolImpl : public torch::nn::Cloneable<Derived> {
+    public:
+     MaxUnpoolImpl(ExpandingArray<D> kernel_size)
+         : MaxUnpoolImpl(MaxUnpoolOptions<D>(kernel_size)) {}
+     explicit MaxUnpoolImpl(const MaxUnpoolOptions<D>& options_);
+   
+     void reset() override;
+   
+     void pretty_print(std::ostream& stream) const override;
+   
+     MaxUnpoolOptions<D> options;
+   };
+   
+   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ MaxUnpool1d ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   
+   class TORCH_API MaxUnpool1dImpl : public MaxUnpoolImpl<1, MaxUnpool1dImpl> {
+    public:
+     using MaxUnpoolImpl<1, MaxUnpool1dImpl>::MaxUnpoolImpl;
+     Tensor forward(const Tensor& input, const Tensor& indices,
+                    const c10::optional<IntArrayRef>& output_size = c10::nullopt);
+   };
+   
+   TORCH_MODULE(MaxUnpool1d);
+   
    } // namespace nn
    } // namespace torch
