@@ -391,28 +391,27 @@
   <span class="c1">// register_buffer method. With this simplification, we only need to track</span>
   <span class="c1">// whether a slot is a parameter to be able to classify it.</span>
   <span class="kt">void</span> <span class="n">register_buffer</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span> <span class="n">autograd</span><span class="o">::</span><span class="n">Variable</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">set_or_add_slot</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">TensorType</span><span class="o">::</span><span class="n">get</span><span class="p">(),</span> <span class="n">v</span><span class="p">,</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">ATTRIBUTE</span><span class="p">);</span>
+    <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">addOrCheckAttribute</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">TensorType</span><span class="o">::</span><span class="n">get</span><span class="p">());</span>
+    <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">setAttr</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">v</span><span class="p">);</span>
   <span class="p">}</span>
-
   <span class="kt">void</span> <span class="n">register_parameter</span><span class="p">(</span>
       <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span>
       <span class="n">autograd</span><span class="o">::</span><span class="n">Variable</span> <span class="n">v</span><span class="p">,</span>
       <span class="kt">bool</span> <span class="n">is_buffer</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">set_or_add_slot</span><span class="p">(</span>
-        <span class="n">name</span><span class="p">,</span>
-        <span class="n">TensorType</span><span class="o">::</span><span class="n">get</span><span class="p">(),</span>
-        <span class="n">v</span><span class="p">,</span>
-        <span class="n">is_buffer</span> <span class="o">?</span> <span class="n">EntityType</span><span class="o">::</span><span class="nl">ATTRIBUTE</span> <span class="p">:</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">PARAMETER</span><span class="p">);</span>
+    <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">addOrCheckAttribute</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">TensorType</span><span class="o">::</span><span class="n">get</span><span class="p">(),</span> <span class="o">!</span><span class="n">is_buffer</span><span class="p">);</span>
+    <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">setAttr</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">v</span><span class="p">);</span>
   <span class="p">}</span>
   <span class="kt">void</span> <span class="n">register_attribute</span><span class="p">(</span>
       <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span>
-      <span class="k">const</span> <span class="n">TypePtr</span> <span class="n">type</span><span class="p">,</span>
-      <span class="n">IValue</span> <span class="n">ivalue</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">set_or_add_slot</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">type</span><span class="p">,</span> <span class="n">ivalue</span><span class="p">,</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">ATTRIBUTE</span><span class="p">);</span>
+      <span class="k">const</span> <span class="n">TypePtr</span> <span class="n">t</span><span class="p">,</span>
+      <span class="n">IValue</span> <span class="n">v</span><span class="p">,</span>
+      <span class="kt">bool</span> <span class="n">is_param</span> <span class="o">=</span> <span class="nb">false</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">addOrCheckAttribute</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">is_param</span><span class="p">);</span>
+    <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">setAttr</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">v</span><span class="p">);</span>
   <span class="p">}</span>
   <span class="kt">void</span> <span class="n">register_module</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span> <span class="k">const</span> <span class="n">Module</span><span class="o">&amp;</span> <span class="n">module</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">set_or_add_slot</span><span class="p">(</span>
-        <span class="n">name</span><span class="p">,</span> <span class="n">module</span><span class="p">.</span><span class="n">type</span><span class="p">(),</span> <span class="n">module</span><span class="p">.</span><span class="n">module_object</span><span class="p">(),</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">MODULE</span><span class="p">);</span>
+    <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">addOrCheckAttribute</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">module</span><span class="p">.</span><span class="n">type</span><span class="p">());</span>
+    <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">setAttr</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">module</span><span class="p">.</span><span class="n">module_object</span><span class="p">());</span>
   <span class="p">}</span>
 
   <span class="kt">void</span> <span class="n">set_parameter</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
@@ -608,40 +607,20 @@
     <span class="p">}</span>
     <span class="k">return</span> <span class="k">nullptr</span><span class="p">;</span>
   <span class="p">}</span>
-  <span class="kt">void</span> <span class="n">check_entity</span><span class="p">(</span><span class="n">EntityType</span> <span class="n">expected</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">slot</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="n">EntityType</span> <span class="n">actual</span> <span class="o">=</span> <span class="n">get_slot</span><span class="p">(</span><span class="n">slot</span><span class="p">).</span><span class="n">entity_type</span><span class="p">();</span>
-    <span class="n">TORCH_CHECK</span><span class="p">(</span>
-        <span class="n">expected</span> <span class="o">==</span> <span class="n">actual</span><span class="p">,</span>
-        <span class="s">&quot;The field &#39;&quot;</span><span class="p">,</span>
-        <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getAttributeName</span><span class="p">(</span><span class="n">slot</span><span class="p">),</span>
-        <span class="s">&quot;&#39; is a &quot;</span><span class="p">,</span>
-        <span class="n">toString</span><span class="p">(</span><span class="n">actual</span><span class="p">),</span>
-        <span class="s">&quot; but this call is&quot;</span>
-        <span class="s">&quot; trying to use it as a &quot;</span><span class="p">,</span>
-        <span class="n">toString</span><span class="p">(</span><span class="n">expected</span><span class="p">));</span>
-  <span class="p">}</span>
-
-  <span class="kt">void</span> <span class="n">set_or_add_slot</span><span class="p">(</span>
-      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span>
-      <span class="k">const</span> <span class="n">TypePtr</span><span class="o">&amp;</span> <span class="n">slot_type</span><span class="p">,</span>
-      <span class="n">IValue</span> <span class="n">v</span><span class="p">,</span>
-      <span class="n">EntityType</span> <span class="n">etype</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">auto</span> <span class="n">slot</span> <span class="o">=</span> <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">findAttributeSlot</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
-    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">slot</span><span class="p">)</span> <span class="p">{</span>
-      <span class="n">slot</span> <span class="o">=</span>
-          <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">addAttribute</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">slot_type</span><span class="p">,</span> <span class="n">etype</span> <span class="o">==</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">PARAMETER</span><span class="p">);</span>
-    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-      <span class="n">check_entity</span><span class="p">(</span><span class="n">etype</span><span class="p">,</span> <span class="o">*</span><span class="n">slot</span><span class="p">);</span>
-    <span class="p">}</span>
-    <span class="n">TypePtr</span> <span class="n">atype</span> <span class="o">=</span> <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getAttribute</span><span class="p">(</span><span class="o">*</span><span class="n">slot</span><span class="p">);</span>
-    <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">slot_type</span><span class="o">-&gt;</span><span class="n">isSubtypeOf</span><span class="p">(</span><span class="n">atype</span><span class="p">));</span>
-    <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">setSlot</span><span class="p">(</span><span class="o">*</span><span class="n">slot</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">v</span><span class="p">));</span>
-  <span class="p">}</span>
 
   <span class="n">Slot</span> <span class="n">get_slot</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span> <span class="n">EntityType</span> <span class="n">etype</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="kt">size_t</span> <span class="n">slot</span> <span class="o">=</span> <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getAttributeSlot</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
-    <span class="n">check_entity</span><span class="p">(</span><span class="n">etype</span><span class="p">,</span> <span class="n">slot</span><span class="p">);</span>
-    <span class="k">return</span> <span class="nf">get_slot</span><span class="p">(</span><span class="n">slot</span><span class="p">);</span>
+    <span class="kt">size_t</span> <span class="n">slot_idx</span> <span class="o">=</span> <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getAttributeSlot</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
+    <span class="n">Slot</span> <span class="n">slot</span> <span class="o">=</span> <span class="n">get_slot</span><span class="p">(</span><span class="n">slot_idx</span><span class="p">);</span>
+    <span class="n">TORCH_CHECK</span><span class="p">(</span>
+        <span class="n">etype</span> <span class="o">==</span> <span class="n">slot</span><span class="p">.</span><span class="n">entity_type</span><span class="p">(),</span>
+        <span class="s">&quot;The field &#39;&quot;</span><span class="p">,</span>
+        <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getAttributeName</span><span class="p">(</span><span class="n">slot_idx</span><span class="p">),</span>
+        <span class="s">&quot;&#39; is a &quot;</span><span class="p">,</span>
+        <span class="n">toString</span><span class="p">(</span><span class="n">slot</span><span class="p">.</span><span class="n">entity_type</span><span class="p">()),</span>
+        <span class="s">&quot; but this call is&quot;</span>
+        <span class="s">&quot; trying to use it as a &quot;</span><span class="p">,</span>
+        <span class="n">toString</span><span class="p">(</span><span class="n">etype</span><span class="p">));</span>
+    <span class="k">return</span> <span class="n">slot</span><span class="p">;</span>
   <span class="p">}</span>
   <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Slot</span><span class="o">&gt;</span> <span class="n">find_slot</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span> <span class="n">EntityType</span> <span class="n">etype</span><span class="p">)</span>
       <span class="k">const</span> <span class="p">{</span>
