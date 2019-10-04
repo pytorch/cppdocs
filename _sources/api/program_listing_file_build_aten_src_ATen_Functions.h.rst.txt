@@ -44,6 +44,9 @@ Program Listing for File Functions.h
    static inline Tensor _cast_Short(const Tensor & self, bool non_blocking=false);
    static inline Tensor _cast_Half(const Tensor & self, bool non_blocking=false);
    #ifdef BUILD_NAMEDTENSOR
+   static inline Tensor align_to(const Tensor & self, DimnameList names);
+   #endif
+   #ifdef BUILD_NAMEDTENSOR
    static inline std::vector<Tensor> align_tensors(TensorList tensors);
    #endif
    static inline std::tuple<Tensor,Tensor> _cudnn_ctc_loss(const Tensor & log_probs, const Tensor & targets, IntArrayRef input_lengths, IntArrayRef target_lengths, int64_t blank, bool deterministic, bool zero_infinity);
@@ -1446,6 +1449,17 @@ Program Listing for File Functions.h
            op, impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(self)), self, non_blocking);
    #endif
    }
+   #ifdef BUILD_NAMEDTENSOR
+   static inline Tensor align_to(const Tensor & self, DimnameList names) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       return TypeDefault::align_to(self, names);
+   #else
+       static auto table = globalATenDispatch().getOpTable("aten::align_to(Tensor(a) self, DimnameList names) -> Tensor(a)");
+       return table->callUnboxed<Tensor, const Tensor &, DimnameList>(self, names);
+   #endif
+   }
+   #endif
    #ifdef BUILD_NAMEDTENSOR
    static inline std::vector<Tensor> align_tensors(TensorList tensors) {
    #ifdef USE_STATIC_DISPATCH
