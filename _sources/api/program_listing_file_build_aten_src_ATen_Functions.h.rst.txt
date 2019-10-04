@@ -782,7 +782,7 @@ Program Listing for File Functions.h
    static inline Tensor & nuclear_norm_out(Tensor & out, const Tensor & self, bool keepdim=false);
    static inline Tensor nuclear_norm(const Tensor & self, IntArrayRef dim, bool keepdim=false);
    static inline Tensor & nuclear_norm_out(Tensor & out, const Tensor & self, IntArrayRef dim, bool keepdim=false);
-   static inline Tensor clone(const Tensor & self);
+   static inline Tensor clone(const Tensor & self, c10::optional<MemoryFormat> memory_format=c10::nullopt);
    static inline Tensor & resize_as_(Tensor & self, const Tensor & the_template);
    static inline Tensor & pow_out(Tensor & out, const Tensor & self, Scalar exponent);
    static inline Tensor pow(const Tensor & self, Scalar exponent);
@@ -9023,27 +9023,25 @@ Program Listing for File Functions.h
        return table->callUnboxed<Tensor &, Tensor &, const Tensor &, IntArrayRef, bool>(out, self, dim, keepdim);
    #endif
    }
-   static inline Tensor clone(const Tensor & self) {
+   static inline Tensor clone(const Tensor & self, c10::optional<MemoryFormat> memory_format) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
        switch(tensorTypeIdToBackend(impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(self)))) {
            case Backend::CPU:
-               return CPUType::clone(self);
+               return CPUType::clone(self, memory_format);
                break;
            case Backend::QuantizedCPU:
-               return QuantizedCPUType::clone(self);
+               return QuantizedCPUType::clone(self, memory_format);
                break;
            case Backend::SparseCPU:
-               return SparseCPUType::clone(self);
+               return SparseCPUType::clone(self, memory_format);
                break;
            default:
                AT_ERROR("clone not implemented for ", at::toString(at::detail::multi_dispatch_tensor_type_set(self)));
        }
    #else
-       static c10::OperatorHandle op = c10::Dispatcher::singleton()
-           .findSchema({"aten::clone", ""}).value();
-       return c10::Dispatcher::singleton().callUnboxed<Tensor, const Tensor &>(
-           op, impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(self)), self);
+       static auto table = globalATenDispatch().getOpTable("aten::clone(Tensor self, *, MemoryFormat? memory_format=None) -> Tensor");
+       return table->callUnboxed<Tensor, const Tensor &, c10::optional<MemoryFormat>>(self, memory_format);
    #endif
    }
    static inline Tensor & resize_as_(Tensor & self, const Tensor & the_template) {
