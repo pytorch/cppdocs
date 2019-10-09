@@ -802,7 +802,6 @@ Program Listing for File Functions.h
    static inline Tensor & hspmm_out(Tensor & out, const Tensor & mat1, const Tensor & mat2);
    static inline Tensor hspmm(const Tensor & mat1, const Tensor & mat2);
    static inline Tensor & copy_sparse_to_sparse_(Tensor & self, const Tensor & src, bool non_blocking=false);
-   static inline int64_t numel(const Tensor & self);
    static inline std::vector<Tensor> unbind(const Tensor & self, int64_t dim=0);
    #ifdef BUILD_NAMEDTENSOR
    static inline std::vector<Tensor> unbind(const Tensor & self, Dimname dim);
@@ -1353,6 +1352,10 @@ Program Listing for File Functions.h
        IntArrayRef sizes,
        const TensorOptions& options = {}) {
      return from_blob(data, sizes, detail::defaultStrides(sizes), [](void*) {}, options);
+   }
+   
+   inline int64_t numel(const Tensor& tensor) {
+     return tensor.numel();
    }
    
    // function definitions are all static inline because
@@ -8696,16 +8699,6 @@ Program Listing for File Functions.h
            .findSchema({"aten::copy_sparse_to_sparse_", ""}).value();
        return c10::Dispatcher::singleton().callUnboxedOnly<Tensor &, Tensor &, const Tensor &, bool>(
            op, impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(self, src)), self, src, non_blocking);
-   #endif
-   }
-   static inline int64_t numel(const Tensor & self) {
-   #ifdef USE_STATIC_DISPATCH
-       return TypeDefault::numel(self);
-   #else
-       static c10::OperatorHandle op = c10::Dispatcher::singleton()
-           .findSchema({"aten::numel", ""}).value();
-       return c10::Dispatcher::singleton().callUnboxed<int64_t, const Tensor &>(
-           op, impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(self)), self);
    #endif
    }
    static inline std::vector<Tensor> unbind(const Tensor & self, int64_t dim) {
