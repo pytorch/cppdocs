@@ -25,16 +25,36 @@ Program Listing for File embedding.h
    namespace nn {
    
    struct TORCH_API EmbeddingOptions {
-     EmbeddingOptions(int64_t count, int64_t dimension);
-     TORCH_ARG(int64_t, count);
-     TORCH_ARG(int64_t, dimension);
+     EmbeddingOptions(int64_t num_embeddings, int64_t embedding_dim) :
+      num_embeddings_(num_embeddings), embedding_dim_(embedding_dim) {};
+     TORCH_ARG(int64_t, num_embeddings);
+     TORCH_ARG(int64_t, embedding_dim);
+     TORCH_ARG(c10::optional<int64_t>, padding_idx) = c10::nullopt;
+     TORCH_ARG(c10::optional<float>, max_norm) = c10::nullopt;
+     TORCH_ARG(float, norm_type) = 2.;
+     TORCH_ARG(bool, scale_grad_by_freq) = false;
+     TORCH_ARG(bool, sparse) = false;
+     TORCH_ARG(torch::Tensor, _weight) = Tensor();
+   };
+   
+   struct TORCH_API EmbeddingBagOptions {
+     EmbeddingBagOptions(int64_t num_embeddings, int64_t embedding_dim) :
+      num_embeddings_(num_embeddings), embedding_dim_(embedding_dim) {};
+     TORCH_ARG(int64_t, num_embeddings);
+     TORCH_ARG(int64_t, embedding_dim);
+     TORCH_ARG(c10::optional<float>, max_norm) = c10::nullopt;
+     TORCH_ARG(float, norm_type) = 2.;
+     TORCH_ARG(bool, scale_grad_by_freq) = false;
+     TORCH_ARG(string, mode) = "mean";
+     TORCH_ARG(bool, sparse) = false;
+     TORCH_ARG(torch::Tensor, _weight) = Tensor();
    };
    
    class TORCH_API EmbeddingImpl : public torch::nn::Cloneable<EmbeddingImpl> {
     public:
-     EmbeddingImpl(int64_t count, int64_t dimension)
-         : EmbeddingImpl(EmbeddingOptions(count, dimension)) {}
-     explicit EmbeddingImpl(EmbeddingOptions options);
+     EmbeddingImpl(int64_t num_embeddings, int64_t embedding_dim)
+        : EmbeddingImpl(EmbeddingOptions(num_embeddings, embedding_dim)) {}
+     explicit EmbeddingImpl(const EmbeddingOptions& options_);
    
      void reset() override;
    
@@ -47,7 +67,57 @@ Program Listing for File embedding.h
      Tensor weight;
    };
    
-   TORCH_MODULE(Embedding);
+   class Embedding : public torch::nn::ModuleHolder<EmbeddingImpl> {
+    public:
+     using torch::nn::ModuleHolder<EmbeddingImpl>::ModuleHolder;
    
+     static Embedding from_pretrained(const torch::Tensor& embeddings, c10::optional<EmbeddingOptions> options = c10::nullopt, bool freeze = true) {
+       TORCH_CHECK(embeddings.dim() == 2, "Embeddings parameter is expected to be 2-dimensional");
+       if (options != c10::nullopt) {
+         TORCH_CHECK((*options).num_embeddings() == embeddings.size(0), "Expects options.num_embeddings to be ", embeddings.size(0) , "but found ", (*options).num_embeddings());
+         TORCH_CHECK((*options).embedding_dim() == embeddings.size(1), "Expects options.embeddings_dim to be ", embeddings.size(1) , "but found ", (*options).embedding_dim());
+       } else {
+         options = EmbeddingOptions(embeddings.size(0), embeddings.size(1));
+       }
+       Embedding embedding((*options)._weight(embeddings));
+       embedding->weight.set_requires_grad(!freeze);
+       return embedding;
+     }
+   };
+   
+   class TORCH_API EmbeddingBagImpl : public torch::nn::Cloneable<EmbeddingBagImpl> {
+    public:
+     EmbeddingBagImpl(int64_t num_embeddings, int64_t embedding_dim)
+       : EmbeddingBagImpl(EmbeddingBagOptions(num_embeddings, embedding_dim)) {}
+     explicit EmbeddingBagImpl(const EmbeddingBagOptions& options_);
+   
+     void reset() override;
+   
+     void pretty_print(std::ostream& stream) const override;
+   
+     torch::Tensor forward(const Tensor& input, const torch::Tensor& offsets = torch::Tensor(),
+       const torch::Tensor& per_sample_weights = torch::Tensor());
+   
+     EmbeddingBagOptions options;
+     Tensor weight;
+   };
+   
+   class EmbeddingBag : public torch::nn::ModuleHolder<EmbeddingBagImpl> {
+    public:
+     using torch::nn::ModuleHolder<EmbeddingBagImpl>::ModuleHolder;
+   
+     static EmbeddingBag from_pretrained(const torch::Tensor& embeddings, c10::optional<EmbeddingBagOptions> options = c10::nullopt, bool freeze = true) {
+       TORCH_CHECK(embeddings.dim() == 2, "Embeddings parameter is expected to be 2-dimensional");
+       if (options != c10::nullopt) {
+         TORCH_CHECK((*options).num_embeddings() == embeddings.size(0), "Expects options.num_embeddings to be ", embeddings.size(0) , "but found ", (*options).num_embeddings());
+         TORCH_CHECK((*options).embedding_dim() == embeddings.size(1), "Expects options.embeddings_dim to be ", embeddings.size(1) , "but found ", (*options).embedding_dim());
+       } else {
+         options = EmbeddingBagOptions(embeddings.size(0), embeddings.size(1));
+       }
+       EmbeddingBag embeddingbag((*options)._weight(embeddings));
+       embeddingbag->weight.set_requires_grad(!freeze);
+       return embeddingbag;
+     }
+   };
    } // namespace nn
    } // namespace torch
