@@ -292,6 +292,32 @@
       <span class="n">input1</span><span class="p">,</span> <span class="n">input2</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">margin</span><span class="p">(),</span> <span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">());</span>
 <span class="p">}</span>
 
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">multilabel_soft_margin_loss</span><span class="p">(</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">MultiLabelSoftMarginLossOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{})</span> <span class="p">{</span>
+  <span class="k">auto</span> <span class="n">loss</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">target</span> <span class="o">*</span> <span class="n">torch</span><span class="o">::</span><span class="n">log_sigmoid</span><span class="p">(</span><span class="n">input</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">target</span><span class="p">)</span> <span class="o">*</span> <span class="n">torch</span><span class="o">::</span><span class="n">log_sigmoid</span><span class="p">(</span><span class="o">-</span><span class="n">input</span><span class="p">));</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">weight</span><span class="p">().</span><span class="n">defined</span><span class="p">())</span> <span class="p">{</span>
+    <span class="n">loss</span> <span class="o">=</span> <span class="n">loss</span> <span class="o">*</span> <span class="n">options</span><span class="p">.</span><span class="n">weight</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="n">loss</span> <span class="o">=</span> <span class="n">loss</span><span class="p">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">input</span><span class="p">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span> <span class="c1">// only return N loss values</span>
+
+  <span class="n">Tensor</span> <span class="n">ret</span><span class="p">;</span>
+
+  <span class="k">if</span> <span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">()</span> <span class="o">==</span> <span class="n">Reduction</span><span class="o">::</span><span class="n">None</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">ret</span> <span class="o">=</span> <span class="n">loss</span><span class="p">;</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">()</span> <span class="o">==</span> <span class="n">Reduction</span><span class="o">::</span><span class="n">Mean</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">ret</span> <span class="o">=</span> <span class="n">loss</span><span class="p">.</span><span class="n">mean</span><span class="p">();</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">()</span> <span class="o">==</span> <span class="n">Reduction</span><span class="o">::</span><span class="n">Sum</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">ret</span> <span class="o">=</span> <span class="n">loss</span><span class="p">.</span><span class="n">sum</span><span class="p">();</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="n">ret</span> <span class="o">=</span> <span class="n">input</span><span class="p">;</span>
+      <span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span><span class="nb">true</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">(),</span> <span class="s">&quot; is not valid&quot;</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="n">ret</span><span class="p">;</span>
+<span class="p">}</span>
+
 <span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">triplet_margin_loss</span><span class="p">(</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">anchor</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">positive</span><span class="p">,</span>
