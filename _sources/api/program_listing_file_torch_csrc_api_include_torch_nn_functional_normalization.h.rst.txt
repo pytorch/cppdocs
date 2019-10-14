@@ -1,0 +1,39 @@
+:github_url: https://github.com/pytorch/pytorch
+
+
+.. _program_listing_file_torch_csrc_api_include_torch_nn_functional_normalization.h:
+
+Program Listing for File normalization.h
+========================================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_torch_csrc_api_include_torch_nn_functional_normalization.h>` (``torch/csrc/api/include/torch/nn/functional/normalization.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: cpp
+
+   #pragma once
+   
+   #include <torch/nn/options/normalization.h>
+   
+   namespace torch {
+   namespace nn {
+   namespace functional {
+   
+   inline Tensor normalize(
+       const Tensor& input,
+       const NormalizeOptions& options = {},
+       c10::optional<Tensor> out = c10::nullopt) {
+     
+       if (out == c10::nullopt) {
+         auto denom = input.norm(options.p(), options.dim(), true).clamp_min(options.eps()).expand_as(input);
+         return input / denom;
+       } else {
+         auto denom = input.norm(options.p(), options.dim(), true).clamp_min(options.eps()).expand_as(input);
+         return torch::div_out(*out, input, denom);
+       }
+   }
+   
+   } // namespace functional
+   } // namespace nn
+   } // namespace torch
