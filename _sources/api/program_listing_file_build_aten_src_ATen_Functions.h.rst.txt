@@ -46,6 +46,7 @@ Program Listing for File Functions.h
    #ifdef BUILD_NAMEDTENSOR
    static inline std::vector<Tensor> align_tensors(TensorList tensors);
    #endif
+   static inline bool _use_cudnn_ctc_loss(const Tensor & log_probs, const Tensor & targets, IntArrayRef input_lengths, IntArrayRef target_lengths, int64_t blank);
    static inline std::tuple<Tensor,Tensor> _cudnn_ctc_loss(const Tensor & log_probs, const Tensor & targets, IntArrayRef input_lengths, IntArrayRef target_lengths, int64_t blank, bool deterministic, bool zero_infinity);
    static inline Tensor _cudnn_rnn_flatten_weight(TensorList weight_arr, int64_t weight_stride0, int64_t input_size, int64_t mode, int64_t hidden_size, int64_t num_layers, bool batch_first, bool bidirectional);
    static inline std::tuple<Tensor,Tensor,Tensor,Tensor,Tensor> _cudnn_rnn(const Tensor & input, TensorList weight, int64_t weight_stride0, const Tensor & weight_buf, const Tensor & hx, const Tensor & cx, int64_t mode, int64_t hidden_size, int64_t num_layers, bool batch_first, double dropout, bool train, bool bidirectional, IntArrayRef batch_sizes, const Tensor & dropout_state);
@@ -140,8 +141,8 @@ Program Listing for File Functions.h
    static inline Tensor & bernoulli_out(Tensor & out, const Tensor & self, Generator * generator=nullptr);
    static inline Tensor bernoulli(const Tensor & self, double p, Generator * generator=nullptr);
    static inline Tensor bilinear(const Tensor & input1, const Tensor & input2, const Tensor & weight, const Tensor & bias);
-   static inline Tensor binary_cross_entropy_with_logits(const Tensor & self, const Tensor & target, const Tensor & weight={}, const Tensor & pos_weight={}, int64_t reduction=Reduction::Mean);
-   static inline Tensor binary_cross_entropy_with_logits_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, const Tensor & weight={}, const Tensor & pos_weight={}, int64_t reduction=Reduction::Mean);
+   static inline Tensor binary_cross_entropy_with_logits(const Tensor & self, const Tensor & target, const Tensor & weight={}, const Tensor & pos_weight={}, int64_t reduction=at::Reduction::Mean);
+   static inline Tensor binary_cross_entropy_with_logits_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, const Tensor & weight={}, const Tensor & pos_weight={}, int64_t reduction=at::Reduction::Mean);
    static inline Tensor bincount(const Tensor & self, const Tensor & weights={}, int64_t minlength=0);
    static inline Tensor bitwise_not(const Tensor & self);
    static inline Tensor & bitwise_not_out(Tensor & out, const Tensor & self);
@@ -199,7 +200,7 @@ Program Listing for File Functions.h
    static inline Tensor cosh(const Tensor & self);
    static inline Tensor & cosh_(Tensor & self);
    static inline Tensor & cosh_out(Tensor & out, const Tensor & self);
-   static inline Tensor cosine_embedding_loss(const Tensor & input1, const Tensor & input2, const Tensor & target, double margin=0.0, int64_t reduction=Reduction::Mean);
+   static inline Tensor cosine_embedding_loss(const Tensor & input1, const Tensor & input2, const Tensor & target, double margin=0.0, int64_t reduction=at::Reduction::Mean);
    static inline Tensor cudnn_affine_grid_generator(const Tensor & theta, int64_t N, int64_t C, int64_t H, int64_t W);
    static inline Tensor cudnn_affine_grid_generator_backward(const Tensor & grad, int64_t N, int64_t C, int64_t H, int64_t W);
    static inline std::tuple<Tensor,Tensor,Tensor> cudnn_batch_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double exponential_average_factor, double epsilon);
@@ -232,8 +233,8 @@ Program Listing for File Functions.h
    #ifdef BUILD_NAMEDTENSOR
    static inline Tensor & cumprod_out(Tensor & out, const Tensor & self, Dimname dim, c10::optional<ScalarType> dtype=c10::nullopt);
    #endif
-   static inline Tensor ctc_loss(const Tensor & log_probs, const Tensor & targets, IntArrayRef input_lengths, IntArrayRef target_lengths, int64_t blank=0, int64_t reduction=Reduction::Mean, bool zero_infinity=false);
-   static inline Tensor ctc_loss(const Tensor & log_probs, const Tensor & targets, const Tensor & input_lengths, const Tensor & target_lengths, int64_t blank=0, int64_t reduction=Reduction::Mean, bool zero_infinity=false);
+   static inline Tensor ctc_loss(const Tensor & log_probs, const Tensor & targets, IntArrayRef input_lengths, IntArrayRef target_lengths, int64_t blank=0, int64_t reduction=at::Reduction::Mean, bool zero_infinity=false);
+   static inline Tensor ctc_loss(const Tensor & log_probs, const Tensor & targets, const Tensor & input_lengths, const Tensor & target_lengths, int64_t blank=0, int64_t reduction=at::Reduction::Mean, bool zero_infinity=false);
    static inline std::tuple<Tensor,Tensor> _ctc_loss(const Tensor & log_probs, const Tensor & targets, IntArrayRef input_lengths, IntArrayRef target_lengths, int64_t blank=0, bool zero_infinity=false);
    static inline Tensor _ctc_loss_backward(const Tensor & grad, const Tensor & log_probs, const Tensor & targets, IntArrayRef input_lengths, IntArrayRef target_lengths, const Tensor & neg_log_likelihood, const Tensor & log_alpha, int64_t blank, bool zero_infinity=false);
    static inline Tensor det(const Tensor & self);
@@ -320,7 +321,7 @@ Program Listing for File Functions.h
    static inline Tensor hamming_window(int64_t window_length, bool periodic, const TensorOptions & options={});
    static inline Tensor hamming_window(int64_t window_length, bool periodic, double alpha, const TensorOptions & options={});
    static inline Tensor hamming_window(int64_t window_length, bool periodic, double alpha, double beta, const TensorOptions & options={});
-   static inline Tensor hinge_embedding_loss(const Tensor & self, const Tensor & target, double margin=1.0, int64_t reduction=Reduction::Mean);
+   static inline Tensor hinge_embedding_loss(const Tensor & self, const Tensor & target, double margin=1.0, int64_t reduction=at::Reduction::Mean);
    static inline Tensor ger(const Tensor & self, const Tensor & vec2);
    static inline Tensor & ger_out(Tensor & out, const Tensor & self, const Tensor & vec2);
    static inline Tensor group_norm(const Tensor & input, int64_t num_groups, const Tensor & weight={}, const Tensor & bias={}, double eps=1e-05, bool cudnn_enabled=true);
@@ -353,8 +354,8 @@ Program Listing for File Functions.h
    static inline bool is_nonzero(const Tensor & self);
    static inline bool is_same_size(const Tensor & self, const Tensor & other);
    static inline bool is_signed(const Tensor & self);
-   static inline Tensor kl_div(const Tensor & self, const Tensor & target, int64_t reduction=Reduction::Mean);
-   static inline Tensor kl_div_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction=Reduction::Mean);
+   static inline Tensor kl_div(const Tensor & self, const Tensor & target, int64_t reduction=at::Reduction::Mean);
+   static inline Tensor kl_div_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction=at::Reduction::Mean);
    static inline std::tuple<Tensor,Tensor> kthvalue(const Tensor & self, int64_t k, int64_t dim=-1, bool keepdim=false);
    static inline std::tuple<Tensor &,Tensor &> kthvalue_out(Tensor & values, Tensor & indices, const Tensor & self, int64_t k, int64_t dim=-1, bool keepdim=false);
    #ifdef BUILD_NAMEDTENSOR
@@ -407,7 +408,7 @@ Program Listing for File Functions.h
    #ifdef BUILD_NAMEDTENSOR
    static inline Tensor & logsumexp_out(Tensor & out, const Tensor & self, DimnameList dim, bool keepdim=false);
    #endif
-   static inline Tensor margin_ranking_loss(const Tensor & input1, const Tensor & input2, const Tensor & target, double margin=0.0, int64_t reduction=Reduction::Mean);
+   static inline Tensor margin_ranking_loss(const Tensor & input1, const Tensor & input2, const Tensor & target, double margin=0.0, int64_t reduction=at::Reduction::Mean);
    static inline Tensor matmul(const Tensor & self, const Tensor & other);
    static inline Tensor & matmul_out(Tensor & out, const Tensor & self, const Tensor & other);
    static inline Tensor matrix_rank(const Tensor & self, double tol, bool symmetric=false);
@@ -709,7 +710,7 @@ Program Listing for File Functions.h
    static inline Tensor trapz(const Tensor & y, const Tensor & x, int64_t dim=-1);
    static inline Tensor trapz(const Tensor & y, double dx=1, int64_t dim=-1);
    static inline Tensor _trilinear(const Tensor & i1, const Tensor & i2, const Tensor & i3, IntArrayRef expand1, IntArrayRef expand2, IntArrayRef expand3, IntArrayRef sumdim, int64_t unroll_dim=1);
-   static inline Tensor triplet_margin_loss(const Tensor & anchor, const Tensor & positive, const Tensor & negative, double margin=1.0, double p=2, double eps=1e-06, bool swap=false, int64_t reduction=Reduction::Mean);
+   static inline Tensor triplet_margin_loss(const Tensor & anchor, const Tensor & positive, const Tensor & negative, double margin=1.0, double p=2, double eps=1e-06, bool swap=false, int64_t reduction=at::Reduction::Mean);
    static inline Tensor trunc(const Tensor & self);
    static inline Tensor & trunc_(Tensor & self);
    static inline Tensor & trunc_out(Tensor & out, const Tensor & self);
@@ -1095,45 +1096,45 @@ Program Listing for File Functions.h
    static inline std::tuple<Tensor &,Tensor &> _max_out(Tensor & max, Tensor & max_indices, const Tensor & self, int64_t dim, bool keepdim=false);
    static inline std::tuple<Tensor,Tensor> _min(const Tensor & self, int64_t dim, bool keepdim=false);
    static inline std::tuple<Tensor &,Tensor &> _min_out(Tensor & min, Tensor & min_indices, const Tensor & self, int64_t dim, bool keepdim=false);
-   static inline Tensor & binary_cross_entropy_out(Tensor & out, const Tensor & self, const Tensor & target, const Tensor & weight={}, int64_t reduction=Reduction::Mean);
-   static inline Tensor binary_cross_entropy(const Tensor & self, const Tensor & target, const Tensor & weight={}, int64_t reduction=Reduction::Mean);
-   static inline Tensor & binary_cross_entropy_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, const Tensor & weight={}, int64_t reduction=Reduction::Mean);
-   static inline Tensor binary_cross_entropy_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, const Tensor & weight={}, int64_t reduction=Reduction::Mean);
-   static inline Tensor & mse_loss_out(Tensor & out, const Tensor & self, const Tensor & target, int64_t reduction=Reduction::Mean);
-   static inline Tensor mse_loss(const Tensor & self, const Tensor & target, int64_t reduction=Reduction::Mean);
+   static inline Tensor & binary_cross_entropy_out(Tensor & out, const Tensor & self, const Tensor & target, const Tensor & weight={}, int64_t reduction=at::Reduction::Mean);
+   static inline Tensor binary_cross_entropy(const Tensor & self, const Tensor & target, const Tensor & weight={}, int64_t reduction=at::Reduction::Mean);
+   static inline Tensor & binary_cross_entropy_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, const Tensor & weight={}, int64_t reduction=at::Reduction::Mean);
+   static inline Tensor binary_cross_entropy_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, const Tensor & weight={}, int64_t reduction=at::Reduction::Mean);
+   static inline Tensor & mse_loss_out(Tensor & out, const Tensor & self, const Tensor & target, int64_t reduction=at::Reduction::Mean);
+   static inline Tensor mse_loss(const Tensor & self, const Tensor & target, int64_t reduction=at::Reduction::Mean);
    static inline Tensor & mse_loss_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
    static inline Tensor mse_loss_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
-   static inline Tensor & l1_loss_out(Tensor & out, const Tensor & self, const Tensor & target, int64_t reduction=Reduction::Mean);
-   static inline Tensor l1_loss(const Tensor & self, const Tensor & target, int64_t reduction=Reduction::Mean);
+   static inline Tensor & l1_loss_out(Tensor & out, const Tensor & self, const Tensor & target, int64_t reduction=at::Reduction::Mean);
+   static inline Tensor l1_loss(const Tensor & self, const Tensor & target, int64_t reduction=at::Reduction::Mean);
    static inline Tensor & l1_loss_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
    static inline Tensor l1_loss_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
-   static inline Tensor & multi_margin_loss_out(Tensor & out, const Tensor & self, const Tensor & target, Scalar p=1, Scalar margin=1, const Tensor & weight={}, int64_t reduction=Reduction::Mean);
-   static inline Tensor multi_margin_loss(const Tensor & self, const Tensor & target, Scalar p=1, Scalar margin=1, const Tensor & weight={}, int64_t reduction=Reduction::Mean);
-   static inline Tensor & multi_margin_loss_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, Scalar p, Scalar margin, const Tensor & weight={}, int64_t reduction=Reduction::Mean);
-   static inline Tensor multi_margin_loss_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, Scalar p, Scalar margin, const Tensor & weight={}, int64_t reduction=Reduction::Mean);
-   static inline Tensor & multilabel_margin_loss_out(Tensor & out, const Tensor & self, const Tensor & target, int64_t reduction=Reduction::Mean);
-   static inline Tensor multilabel_margin_loss(const Tensor & self, const Tensor & target, int64_t reduction=Reduction::Mean);
+   static inline Tensor & multi_margin_loss_out(Tensor & out, const Tensor & self, const Tensor & target, Scalar p=1, Scalar margin=1, const Tensor & weight={}, int64_t reduction=at::Reduction::Mean);
+   static inline Tensor multi_margin_loss(const Tensor & self, const Tensor & target, Scalar p=1, Scalar margin=1, const Tensor & weight={}, int64_t reduction=at::Reduction::Mean);
+   static inline Tensor & multi_margin_loss_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, Scalar p, Scalar margin, const Tensor & weight={}, int64_t reduction=at::Reduction::Mean);
+   static inline Tensor multi_margin_loss_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, Scalar p, Scalar margin, const Tensor & weight={}, int64_t reduction=at::Reduction::Mean);
+   static inline Tensor & multilabel_margin_loss_out(Tensor & out, const Tensor & self, const Tensor & target, int64_t reduction=at::Reduction::Mean);
+   static inline Tensor multilabel_margin_loss(const Tensor & self, const Tensor & target, int64_t reduction=at::Reduction::Mean);
    static inline std::tuple<Tensor &,Tensor &> multilabel_margin_loss_forward_out(Tensor & output, Tensor & is_target, const Tensor & self, const Tensor & target, int64_t reduction);
    static inline std::tuple<Tensor,Tensor> multilabel_margin_loss_forward(const Tensor & self, const Tensor & target, int64_t reduction);
    static inline Tensor & multilabel_margin_loss_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction, const Tensor & is_target);
    static inline Tensor multilabel_margin_loss_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction, const Tensor & is_target);
-   static inline Tensor & nll_loss_out(Tensor & out, const Tensor & self, const Tensor & target, const Tensor & weight={}, int64_t reduction=Reduction::Mean, int64_t ignore_index=-100);
-   static inline Tensor nll_loss(const Tensor & self, const Tensor & target, const Tensor & weight={}, int64_t reduction=Reduction::Mean, int64_t ignore_index=-100);
+   static inline Tensor & nll_loss_out(Tensor & out, const Tensor & self, const Tensor & target, const Tensor & weight={}, int64_t reduction=at::Reduction::Mean, int64_t ignore_index=-100);
+   static inline Tensor nll_loss(const Tensor & self, const Tensor & target, const Tensor & weight={}, int64_t reduction=at::Reduction::Mean, int64_t ignore_index=-100);
    static inline std::tuple<Tensor &,Tensor &> nll_loss_forward_out(Tensor & output, Tensor & total_weight, const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction, int64_t ignore_index);
    static inline std::tuple<Tensor,Tensor> nll_loss_forward(const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction, int64_t ignore_index);
    static inline Tensor & nll_loss_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction, int64_t ignore_index, const Tensor & total_weight);
    static inline Tensor nll_loss_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction, int64_t ignore_index, const Tensor & total_weight);
-   static inline Tensor & nll_loss2d_out(Tensor & out, const Tensor & self, const Tensor & target, const Tensor & weight={}, int64_t reduction=Reduction::Mean, int64_t ignore_index=-100);
-   static inline Tensor nll_loss2d(const Tensor & self, const Tensor & target, const Tensor & weight={}, int64_t reduction=Reduction::Mean, int64_t ignore_index=-100);
+   static inline Tensor & nll_loss2d_out(Tensor & out, const Tensor & self, const Tensor & target, const Tensor & weight={}, int64_t reduction=at::Reduction::Mean, int64_t ignore_index=-100);
+   static inline Tensor nll_loss2d(const Tensor & self, const Tensor & target, const Tensor & weight={}, int64_t reduction=at::Reduction::Mean, int64_t ignore_index=-100);
    static inline std::tuple<Tensor &,Tensor &> nll_loss2d_forward_out(Tensor & output, Tensor & total_weight, const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction, int64_t ignore_index);
    static inline std::tuple<Tensor,Tensor> nll_loss2d_forward(const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction, int64_t ignore_index);
    static inline Tensor & nll_loss2d_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction, int64_t ignore_index, const Tensor & total_weight);
    static inline Tensor nll_loss2d_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction, int64_t ignore_index, const Tensor & total_weight);
-   static inline Tensor & smooth_l1_loss_out(Tensor & out, const Tensor & self, const Tensor & target, int64_t reduction=Reduction::Mean);
-   static inline Tensor smooth_l1_loss(const Tensor & self, const Tensor & target, int64_t reduction=Reduction::Mean);
+   static inline Tensor & smooth_l1_loss_out(Tensor & out, const Tensor & self, const Tensor & target, int64_t reduction=at::Reduction::Mean);
+   static inline Tensor smooth_l1_loss(const Tensor & self, const Tensor & target, int64_t reduction=at::Reduction::Mean);
    static inline Tensor & smooth_l1_loss_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
    static inline Tensor smooth_l1_loss_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
-   static inline Tensor soft_margin_loss(const Tensor & self, const Tensor & target, int64_t reduction=Reduction::Mean);
+   static inline Tensor soft_margin_loss(const Tensor & self, const Tensor & target, int64_t reduction=at::Reduction::Mean);
    static inline Tensor & elu_out(Tensor & out, const Tensor & self, Scalar alpha=1, Scalar scale=1, Scalar input_scale=1);
    static inline Tensor elu(const Tensor & self, Scalar alpha=1, Scalar scale=1, Scalar input_scale=1);
    static inline Tensor & elu_backward_out(Tensor & grad_input, const Tensor & grad_output, Scalar alpha, Scalar scale, Scalar input_scale, const Tensor & output);
@@ -1457,6 +1458,20 @@ Program Listing for File Functions.h
    #endif
    }
    #endif
+   static inline bool _use_cudnn_ctc_loss(const Tensor & log_probs, const Tensor & targets, IntArrayRef input_lengths, IntArrayRef target_lengths, int64_t blank) {
+   #ifdef USE_STATIC_DISPATCH
+       switch(tensorTypeIdToBackend(impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(log_probs, targets)))) {
+       
+           default:
+               AT_ERROR("_use_cudnn_ctc_loss not implemented for ", at::toString(at::detail::multi_dispatch_tensor_type_set(log_probs, targets)));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchema({"aten::_use_cudnn_ctc_loss", ""}).value();
+       return c10::Dispatcher::singleton().callUnboxedOnly<bool, const Tensor &, const Tensor &, IntArrayRef, IntArrayRef, int64_t>(
+           op, impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(log_probs, targets)), log_probs, targets, input_lengths, target_lengths, blank);
+   #endif
+   }
    static inline std::tuple<Tensor,Tensor> _cudnn_ctc_loss(const Tensor & log_probs, const Tensor & targets, IntArrayRef input_lengths, IntArrayRef target_lengths, int64_t blank, bool deterministic, bool zero_infinity) {
    #ifdef USE_STATIC_DISPATCH
        switch(tensorTypeIdToBackend(impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(log_probs, targets)))) {
