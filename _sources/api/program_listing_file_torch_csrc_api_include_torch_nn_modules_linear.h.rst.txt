@@ -18,6 +18,7 @@ Program Listing for File linear.h
    #include <torch/nn/module.h>
    #include <torch/nn/options/linear.h>
    #include <torch/nn/pimpl.h>
+   #include <torch/nn/functional/linear.h>
    #include <torch/types.h>
    
    #include <cstddef>
@@ -58,6 +59,28 @@ Program Listing for File linear.h
    };
    
    TORCH_MODULE(Linear);
+   
+   // ============================================================================
+   
+   class TORCH_API BilinearImpl : public Cloneable<BilinearImpl> {
+    public:
+     BilinearImpl(int64_t in1_features, int64_t in2_features, int64_t out_features) : BilinearImpl(BilinearOptions(in1_features, in2_features, out_features)) {}
+     explicit BilinearImpl(const BilinearOptions& options_);
+   
+     void reset() override;
+   
+     void pretty_print(std::ostream& stream) const override;
+   
+     Tensor forward(const Tensor& input1, const Tensor& input2);
+   
+     BilinearOptions options;
+   
+     Tensor weight;
+   
+     Tensor bias;
+   };
+   
+   TORCH_MODULE(Bilinear);
    
    } // namespace nn
    } // namespace torch
