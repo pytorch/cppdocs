@@ -4663,7 +4663,13 @@ Program Listing for File Functions.h
    }
    static inline std::tuple<Tensor,Tensor,Tensor> native_layer_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, int64_t M, int64_t N, double eps) {
    #ifdef USE_STATIC_DISPATCH
-       return TypeDefault::native_layer_norm(input, weight, bias, M, N, eps);
+       switch(tensorTypeIdToBackend(impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(input, weight, bias)))) {
+           case Backend::CPU:
+               return CPUType::native_layer_norm(input, weight, bias, M, N, eps);
+               break;
+           default:
+               AT_ERROR("native_layer_norm not implemented for ", at::toString(at::detail::multi_dispatch_tensor_type_set(input, weight, bias)));
+       }
    #else
        static auto table = globalATenDispatch().getOpTable("aten::native_layer_norm(Tensor input, Tensor? weight, Tensor? bias, int M, int N, float eps) -> (Tensor, Tensor, Tensor)");
        return table->callUnboxed<std::tuple<Tensor,Tensor,Tensor>, const Tensor &, const Tensor &, const Tensor &, int64_t, int64_t, double>(input, weight, bias, M, N, eps);
@@ -4671,7 +4677,13 @@ Program Listing for File Functions.h
    }
    static inline std::tuple<Tensor,Tensor,Tensor> native_layer_norm_backward(const Tensor & grad_out, const Tensor & input, const Tensor & mean, const Tensor & rstd, const Tensor & weight, int64_t M, int64_t N, std::array<bool,3> output_mask) {
    #ifdef USE_STATIC_DISPATCH
-       return TypeDefault::native_layer_norm_backward(grad_out, input, mean, rstd, weight, M, N, output_mask);
+       switch(tensorTypeIdToBackend(impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(grad_out, input, mean, rstd, weight)))) {
+           case Backend::CPU:
+               return CPUType::native_layer_norm_backward(grad_out, input, mean, rstd, weight, M, N, output_mask);
+               break;
+           default:
+               AT_ERROR("native_layer_norm_backward not implemented for ", at::toString(at::detail::multi_dispatch_tensor_type_set(grad_out, input, mean, rstd, weight)));
+       }
    #else
        static auto table = globalATenDispatch().getOpTable("aten::native_layer_norm_backward(Tensor grad_out, Tensor input, Tensor mean, Tensor rstd, Tensor? weight, int M, int N, bool[3] output_mask) -> (Tensor, Tensor, Tensor)");
        return table->callUnboxed<std::tuple<Tensor,Tensor,Tensor>, const Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, int64_t, int64_t, std::array<bool,3>>(grad_out, input, mean, rstd, weight, M, N, output_mask);
