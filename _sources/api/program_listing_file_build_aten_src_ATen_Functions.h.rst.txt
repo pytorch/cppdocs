@@ -1134,7 +1134,10 @@ Program Listing for File Functions.h
    static inline Tensor smooth_l1_loss(const Tensor & self, const Tensor & target, int64_t reduction=at::Reduction::Mean);
    static inline Tensor & smooth_l1_loss_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
    static inline Tensor smooth_l1_loss_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
+   static inline Tensor & soft_margin_loss_out(Tensor & out, const Tensor & self, const Tensor & target, int64_t reduction=at::Reduction::Mean);
    static inline Tensor soft_margin_loss(const Tensor & self, const Tensor & target, int64_t reduction=at::Reduction::Mean);
+   static inline Tensor & soft_margin_loss_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
+   static inline Tensor soft_margin_loss_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
    static inline Tensor & elu_out(Tensor & out, const Tensor & self, Scalar alpha=1, Scalar scale=1, Scalar input_scale=1);
    static inline Tensor elu(const Tensor & self, Scalar alpha=1, Scalar scale=1, Scalar input_scale=1);
    static inline Tensor & elu_backward_out(Tensor & grad_input, const Tensor & grad_output, Scalar alpha, Scalar scale, Scalar input_scale, const Tensor & output);
@@ -12737,14 +12740,64 @@ Program Listing for File Functions.h
            op, impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(grad_output, self, target)), grad_output, self, target, reduction);
    #endif
    }
+   static inline Tensor & soft_margin_loss_out(Tensor & out, const Tensor & self, const Tensor & target, int64_t reduction) {
+   #ifdef USE_STATIC_DISPATCH
+       switch(tensorTypeIdToBackend(impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(out, self, target)))) {
+           case Backend::CPU:
+               return CPUType::soft_margin_loss_out(out, self, target, reduction);
+               break;
+           default:
+               AT_ERROR("soft_margin_loss_out not implemented for ", at::toString(at::detail::multi_dispatch_tensor_type_set(out, self, target)));
+       }
+   #else
+       static auto table = globalATenDispatch().getOpTable("aten::soft_margin_loss.out(Tensor self, Tensor target, int reduction=Mean, *, Tensor(a!) out) -> Tensor(a!)");
+       return table->callUnboxed<Tensor &, Tensor &, const Tensor &, const Tensor &, int64_t>(out, self, target, reduction);
+   #endif
+   }
    static inline Tensor soft_margin_loss(const Tensor & self, const Tensor & target, int64_t reduction) {
    #ifdef USE_STATIC_DISPATCH
-       return TypeDefault::soft_margin_loss(self, target, reduction);
+       switch(tensorTypeIdToBackend(impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(self, target)))) {
+           case Backend::CPU:
+               return CPUType::soft_margin_loss(self, target, reduction);
+               break;
+           default:
+               AT_ERROR("soft_margin_loss not implemented for ", at::toString(at::detail::multi_dispatch_tensor_type_set(self, target)));
+       }
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchema({"aten::soft_margin_loss", ""}).value();
        return c10::Dispatcher::singleton().callUnboxed<Tensor, const Tensor &, const Tensor &, int64_t>(
            op, impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(self, target)), self, target, reduction);
+   #endif
+   }
+   static inline Tensor & soft_margin_loss_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction) {
+   #ifdef USE_STATIC_DISPATCH
+       switch(tensorTypeIdToBackend(impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(grad_input, grad_output, self, target)))) {
+           case Backend::CPU:
+               return CPUType::soft_margin_loss_backward_out(grad_input, grad_output, self, target, reduction);
+               break;
+           default:
+               AT_ERROR("soft_margin_loss_backward_out not implemented for ", at::toString(at::detail::multi_dispatch_tensor_type_set(grad_input, grad_output, self, target)));
+       }
+   #else
+       static auto table = globalATenDispatch().getOpTable("aten::soft_margin_loss_backward.grad_input(Tensor grad_output, Tensor self, Tensor target, int reduction, *, Tensor(a!) grad_input) -> Tensor(a!)");
+       return table->callUnboxed<Tensor &, Tensor &, const Tensor &, const Tensor &, const Tensor &, int64_t>(grad_input, grad_output, self, target, reduction);
+   #endif
+   }
+   static inline Tensor soft_margin_loss_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction) {
+   #ifdef USE_STATIC_DISPATCH
+       switch(tensorTypeIdToBackend(impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(grad_output, self, target)))) {
+           case Backend::CPU:
+               return CPUType::soft_margin_loss_backward(grad_output, self, target, reduction);
+               break;
+           default:
+               AT_ERROR("soft_margin_loss_backward not implemented for ", at::toString(at::detail::multi_dispatch_tensor_type_set(grad_output, self, target)));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchema({"aten::soft_margin_loss_backward", ""}).value();
+       return c10::Dispatcher::singleton().callUnboxed<Tensor, const Tensor &, const Tensor &, const Tensor &, int64_t>(
+           op, impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(grad_output, self, target)), grad_output, self, target, reduction);
    #endif
    }
    static inline Tensor & elu_out(Tensor & out, const Tensor & self, Scalar alpha, Scalar scale, Scalar input_scale) {
