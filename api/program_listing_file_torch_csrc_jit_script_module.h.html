@@ -253,7 +253,6 @@
 <span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/jit/ir.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/jit/named_value.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/jit/passes/shape_analysis.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/jit/script/slot.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/jit/source_range.h&gt;</span><span class="cp"></span>
 
 <span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/WindowsTorchApiMacro.h&gt;</span><span class="cp"></span>
@@ -294,9 +293,15 @@
 
 <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
 <span class="k">struct</span> <span class="n">slot_list_impl</span><span class="p">;</span>
-<span class="k">using</span> <span class="n">slot_list</span> <span class="o">=</span> <span class="n">slot_list_impl</span><span class="o">&lt;</span><span class="n">Slot</span><span class="o">&gt;</span><span class="p">;</span>
-<span class="k">using</span> <span class="n">module_list</span> <span class="o">=</span> <span class="n">slot_list_impl</span><span class="o">&lt;</span><span class="n">Module</span><span class="o">&gt;</span><span class="p">;</span>
+
+<span class="k">struct</span> <span class="n">NameModule</span><span class="p">;</span>
+<span class="k">struct</span> <span class="n">NameValue</span><span class="p">;</span>
+
+<span class="k">using</span> <span class="n">module_list</span> <span class="o">=</span> <span class="n">slot_list_impl</span><span class="o">&lt;</span><span class="n">NameModule</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="k">using</span> <span class="n">ivalue_list</span> <span class="o">=</span> <span class="n">slot_list_impl</span><span class="o">&lt;</span><span class="n">NameValue</span><span class="o">&gt;</span><span class="p">;</span>
 <span class="k">using</span> <span class="n">ModuleLookup</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">Module</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;&amp;</span><span class="p">)</span><span class="o">&gt;</span><span class="p">;</span>
+
+<span class="k">enum</span> <span class="k">class</span> <span class="nc">EntityType</span> <span class="p">{</span> <span class="n">MODULE</span><span class="p">,</span> <span class="n">PARAMETER</span><span class="p">,</span> <span class="n">ATTRIBUTE</span><span class="p">,</span> <span class="n">METHOD</span> <span class="p">};</span>
 
 <span class="c1">// A method in a module, e.g. f in:</span>
 <span class="c1">//</span>
@@ -416,16 +421,19 @@
   <span class="p">}</span>
 
   <span class="kt">void</span> <span class="n">set_parameter</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">get_slot</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">PARAMETER</span><span class="p">).</span><span class="n">setValue</span><span class="p">(</span><span class="n">v</span><span class="p">);</span>
+    <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">setAttr</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">v</span><span class="p">);</span>
   <span class="p">}</span>
 
   <span class="n">autograd</span><span class="o">::</span><span class="n">Variable</span> <span class="n">get_parameter</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">autograd</span><span class="o">::</span><span class="n">as_variable_ref</span><span class="p">(</span>
-        <span class="n">get_slot</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">PARAMETER</span><span class="p">).</span><span class="n">value</span><span class="p">().</span><span class="n">toTensor</span><span class="p">());</span>
+    <span class="k">return</span> <span class="n">autograd</span><span class="o">::</span><span class="n">as_variable_ref</span><span class="p">(</span><span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getAttr</span><span class="p">(</span><span class="n">name</span><span class="p">).</span><span class="n">toTensor</span><span class="p">());</span>
   <span class="p">}</span>
 
   <span class="n">IValue</span> <span class="n">get_attribute</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">get_slot</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">ATTRIBUTE</span><span class="p">).</span><span class="n">value</span><span class="p">();</span>
+    <span class="k">return</span> <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getAttr</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="kt">void</span> <span class="n">set_attribute</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span> <span class="n">IValue</span> <span class="n">v</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">setAttr</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">v</span><span class="p">);</span>
   <span class="p">}</span>
 
   <span class="n">autograd</span><span class="o">::</span><span class="n">Variable</span> <span class="n">get_buffer</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
@@ -442,15 +450,17 @@
   <span class="p">}</span>
 
   <span class="n">Module</span> <span class="n">get_module</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">auto</span> <span class="n">obj</span> <span class="o">=</span> <span class="n">get_slot</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">MODULE</span><span class="p">).</span><span class="n">value</span><span class="p">().</span><span class="n">toObject</span><span class="p">();</span>
+    <span class="k">auto</span> <span class="n">obj</span> <span class="o">=</span> <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getAttr</span><span class="p">(</span><span class="n">name</span><span class="p">).</span><span class="n">toObject</span><span class="p">();</span>
     <span class="k">return</span> <span class="nf">Module</span><span class="p">(</span><span class="n">obj</span><span class="p">);</span>
   <span class="p">}</span>
 
-  <span class="n">module_list</span> <span class="n">get_modules</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
-  <span class="n">slot_list</span> <span class="nf">get_slots</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
-  <span class="n">slot_list</span> <span class="nf">get_parameters</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
-  <span class="n">slot_list</span> <span class="nf">get_attributes</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
-  <span class="n">slot_list</span> <span class="nf">get_module_slots</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+  <span class="n">ivalue_list</span> <span class="n">get_slots</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+
+  <span class="n">module_list</span> <span class="nf">get_modules</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+
+  <span class="n">ivalue_list</span> <span class="nf">get_parameters</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+
+  <span class="n">ivalue_list</span> <span class="nf">get_attributes</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
 
   <span class="kt">void</span> <span class="nf">dump</span><span class="p">(</span>
       <span class="kt">bool</span> <span class="n">print_method_bodies</span><span class="p">,</span>
@@ -471,35 +481,14 @@
         <span class="p">});</span>
   <span class="p">}</span>
 
-  <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Slot</span><span class="o">&gt;</span> <span class="n">find_parameter</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">find_slot</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">PARAMETER</span><span class="p">);</span>
-  <span class="p">}</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Slot</span><span class="o">&gt;</span> <span class="n">find_attribute</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">find_slot</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">ATTRIBUTE</span><span class="p">);</span>
-  <span class="p">}</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Slot</span><span class="o">&gt;</span> <span class="n">find_buffer</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">auto</span> <span class="n">iv</span> <span class="o">=</span> <span class="n">find_attribute</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">iv</span> <span class="o">&amp;&amp;</span> <span class="n">iv</span><span class="o">-&gt;</span><span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">isSubtypeOf</span><span class="p">(</span><span class="n">TensorType</span><span class="o">::</span><span class="n">get</span><span class="p">()))</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="n">iv</span><span class="p">;</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span>
-  <span class="p">}</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Module</span><span class="o">&gt;</span> <span class="n">find_module</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="p">(</span><span class="k">auto</span> <span class="n">slot</span> <span class="o">=</span> <span class="n">find_slot</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">MODULE</span><span class="p">))</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="n">Module</span><span class="p">(</span><span class="n">slot</span><span class="o">-&gt;</span><span class="n">value</span><span class="p">().</span><span class="n">toObject</span><span class="p">());</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span>
-  <span class="p">}</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Method</span><span class="o">&gt;</span> <span class="n">find_method</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">basename</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">for</span> <span class="p">(</span><span class="n">Function</span><span class="o">*</span> <span class="nl">fn</span> <span class="p">:</span> <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">methods</span><span class="p">())</span> <span class="p">{</span>
-      <span class="k">if</span> <span class="p">(</span><span class="n">fn</span><span class="o">-&gt;</span><span class="n">name</span><span class="p">()</span> <span class="o">==</span> <span class="n">basename</span><span class="p">)</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="n">Method</span><span class="p">(</span><span class="n">module_object</span><span class="p">(),</span> <span class="n">fn</span><span class="p">);</span>
-      <span class="p">}</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">autograd</span><span class="o">::</span><span class="n">Variable</span><span class="o">&gt;</span> <span class="n">find_parameter</span><span class="p">(</span>
+      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">IValue</span><span class="o">&gt;</span> <span class="n">find_attribute</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">autograd</span><span class="o">::</span><span class="n">Variable</span><span class="o">&gt;</span> <span class="n">find_buffer</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Module</span><span class="o">&gt;</span> <span class="n">find_module</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Method</span><span class="o">&gt;</span> <span class="n">find_method</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">basename</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
 
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span>
-  <span class="p">}</span>
-  <span class="kt">void</span> <span class="n">apply</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">(</span><span class="n">Module</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;&amp;</span> <span class="n">fn</span><span class="p">);</span>
+  <span class="kt">void</span> <span class="nf">apply</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">(</span><span class="n">Module</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;&amp;</span> <span class="n">fn</span><span class="p">);</span>
 
   <span class="kt">void</span> <span class="nf">train</span><span class="p">(</span><span class="kt">bool</span> <span class="n">on</span> <span class="o">=</span> <span class="nb">true</span><span class="p">);</span>
   <span class="kt">void</span> <span class="nf">eval</span><span class="p">()</span> <span class="p">{</span>
@@ -507,7 +496,7 @@
   <span class="p">}</span>
   <span class="kt">bool</span> <span class="nf">is_training</span><span class="p">()</span> <span class="p">{</span>
     <span class="k">if</span> <span class="p">(</span><span class="k">auto</span> <span class="n">p</span> <span class="o">=</span> <span class="n">find_attribute</span><span class="p">(</span><span class="s">&quot;training&quot;</span><span class="p">))</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="n">p</span><span class="o">-&gt;</span><span class="n">value</span><span class="p">().</span><span class="n">toBool</span><span class="p">();</span>
+      <span class="k">return</span> <span class="n">p</span><span class="o">-&gt;</span><span class="n">toBool</span><span class="p">();</span>
     <span class="p">}</span>
 
     <span class="c1">// We are in training mode by default</span>
@@ -546,17 +535,7 @@
 
   <span class="kt">void</span> <span class="nf">clone_method</span><span class="p">(</span><span class="k">const</span> <span class="n">Module</span><span class="o">&amp;</span> <span class="n">orig</span><span class="p">,</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">);</span>
 
-  <span class="n">at</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">EntityType</span><span class="o">&gt;</span> <span class="n">kind_of</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">find_method</span><span class="p">(</span><span class="n">name</span><span class="p">))</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">METHOD</span><span class="p">;</span>
-    <span class="p">}</span>
-    <span class="k">if</span> <span class="p">(</span><span class="k">auto</span> <span class="n">offset</span> <span class="o">=</span> <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">findAttributeSlot</span><span class="p">(</span><span class="n">name</span><span class="p">))</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="n">get_slot</span><span class="p">(</span><span class="o">*</span><span class="n">offset</span><span class="p">).</span><span class="n">entity_type</span><span class="p">();</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span>
-  <span class="p">}</span>
-
-  <span class="n">ModulePtr</span> <span class="n">module_object</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+  <span class="n">ModulePtr</span> <span class="nf">module_object</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
 
   <span class="n">ClassTypePtr</span> <span class="nf">type</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">type</span><span class="p">();</span>
@@ -575,14 +554,27 @@
 
   <span class="n">IValue</span> <span class="n">create_class</span><span class="p">(</span><span class="k">const</span> <span class="n">c10</span><span class="o">::</span><span class="n">QualifiedName</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span> <span class="n">Stack</span> <span class="n">stack</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
 
-  <span class="n">Slot</span> <span class="nf">get_slot</span><span class="p">(</span><span class="kt">size_t</span> <span class="n">slot</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="n">TORCH_CHECK</span><span class="p">(</span>
-        <span class="n">slot</span> <span class="o">&lt;</span> <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">slots</span><span class="p">().</span><span class="n">size</span><span class="p">(),</span> <span class="s">&quot;not a valid slot offset&quot;</span><span class="p">);</span>
-    <span class="k">return</span> <span class="n">Slot</span><span class="p">(</span><span class="n">module_object</span><span class="p">(),</span> <span class="n">slot</span><span class="p">);</span>
-  <span class="p">}</span>
-
   <span class="kt">size_t</span> <span class="nf">num_slots</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">slots</span><span class="p">().</span><span class="n">size</span><span class="p">();</span>
+  <span class="p">}</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">EntityType</span><span class="o">&gt;</span> <span class="n">entity_type</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="k">auto</span> <span class="n">slot_idx</span> <span class="o">=</span> <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">findAttributeSlot</span><span class="p">(</span><span class="n">name</span><span class="p">))</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="n">entity_type</span><span class="p">(</span><span class="o">*</span><span class="n">slot_idx</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="n">EntityType</span> <span class="n">entity_type</span><span class="p">(</span><span class="kt">size_t</span> <span class="n">offset_</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">offset_</span> <span class="o">&lt;</span> <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">numAttributes</span><span class="p">());</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">is_parameter</span><span class="p">(</span><span class="n">offset_</span><span class="p">))</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">PARAMETER</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="n">at</span><span class="o">::</span><span class="n">TypePtr</span> <span class="n">t</span> <span class="o">=</span> <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getAttribute</span><span class="p">(</span><span class="n">offset_</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="k">auto</span> <span class="n">cls</span> <span class="o">=</span> <span class="n">t</span><span class="o">-&gt;</span><span class="n">cast</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">ClassType</span><span class="o">&gt;</span><span class="p">())</span> <span class="p">{</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">cls</span><span class="o">-&gt;</span><span class="n">is_module</span><span class="p">())</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">MODULE</span><span class="p">;</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">ATTRIBUTE</span><span class="p">;</span>
   <span class="p">}</span>
 
  <span class="k">private</span><span class="o">:</span>
@@ -596,46 +588,6 @@
   <span class="n">c10</span><span class="o">::</span><span class="n">QualifiedName</span> <span class="n">getNameForMethod</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">basename</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">QualifiedName</span><span class="p">(</span><span class="n">name</span><span class="p">(),</span> <span class="n">basename</span><span class="p">);</span>
   <span class="p">}</span>
-  <span class="k">static</span> <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">toString</span><span class="p">(</span><span class="n">EntityType</span> <span class="n">t</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">switch</span> <span class="p">(</span><span class="n">t</span><span class="p">)</span> <span class="p">{</span>
-      <span class="k">case</span> <span class="n">EntityType</span><span class="o">::</span><span class="nl">MODULE</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s">&quot;module&quot;</span><span class="p">;</span>
-      <span class="k">case</span> <span class="n">EntityType</span><span class="o">::</span><span class="nl">PARAMETER</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s">&quot;parameter&quot;</span><span class="p">;</span>
-      <span class="k">case</span> <span class="n">EntityType</span><span class="o">::</span><span class="nl">ATTRIBUTE</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s">&quot;attribute&quot;</span><span class="p">;</span>
-      <span class="k">case</span> <span class="n">EntityType</span><span class="o">::</span><span class="nl">METHOD</span><span class="p">:</span>
-        <span class="k">return</span> <span class="s">&quot;method&quot;</span><span class="p">;</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="k">nullptr</span><span class="p">;</span>
-  <span class="p">}</span>
-
-  <span class="n">Slot</span> <span class="n">get_slot</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span> <span class="n">EntityType</span> <span class="n">etype</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="kt">size_t</span> <span class="n">slot_idx</span> <span class="o">=</span> <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getAttributeSlot</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
-    <span class="n">Slot</span> <span class="n">slot</span> <span class="o">=</span> <span class="n">get_slot</span><span class="p">(</span><span class="n">slot_idx</span><span class="p">);</span>
-    <span class="n">TORCH_CHECK</span><span class="p">(</span>
-        <span class="n">etype</span> <span class="o">==</span> <span class="n">slot</span><span class="p">.</span><span class="n">entity_type</span><span class="p">(),</span>
-        <span class="s">&quot;The field &#39;&quot;</span><span class="p">,</span>
-        <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getAttributeName</span><span class="p">(</span><span class="n">slot_idx</span><span class="p">),</span>
-        <span class="s">&quot;&#39; is a &quot;</span><span class="p">,</span>
-        <span class="n">toString</span><span class="p">(</span><span class="n">slot</span><span class="p">.</span><span class="n">entity_type</span><span class="p">()),</span>
-        <span class="s">&quot; but this call is&quot;</span>
-        <span class="s">&quot; trying to use it as a &quot;</span><span class="p">,</span>
-        <span class="n">toString</span><span class="p">(</span><span class="n">etype</span><span class="p">));</span>
-    <span class="k">return</span> <span class="n">slot</span><span class="p">;</span>
-  <span class="p">}</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Slot</span><span class="o">&gt;</span> <span class="n">find_slot</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span> <span class="n">EntityType</span> <span class="n">etype</span><span class="p">)</span>
-      <span class="k">const</span> <span class="p">{</span>
-    <span class="k">auto</span> <span class="n">slot</span> <span class="o">=</span> <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">findAttributeSlot</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
-    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">slot</span><span class="p">)</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span>
-    <span class="p">}</span>
-    <span class="n">Slot</span> <span class="n">r</span> <span class="o">=</span> <span class="n">get_slot</span><span class="p">(</span><span class="o">*</span><span class="n">slot</span><span class="p">);</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">r</span><span class="p">.</span><span class="n">entity_type</span><span class="p">()</span> <span class="o">!=</span> <span class="n">etype</span><span class="p">)</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="n">r</span><span class="p">;</span>
-  <span class="p">}</span>
 
   <span class="kt">void</span> <span class="n">to_impl</span><span class="p">(</span>
       <span class="k">const</span> <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Device</span><span class="o">&gt;&amp;</span> <span class="n">device</span><span class="p">,</span>
@@ -644,6 +596,16 @@
 
   <span class="c1">// mutable be we lazily initialize in module_object.</span>
   <span class="k">mutable</span> <span class="n">ModulePtr</span> <span class="n">module_value_</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="k">struct</span> <span class="n">NameModule</span> <span class="p">{</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">name</span><span class="p">;</span>
+  <span class="n">Module</span> <span class="n">module</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="k">struct</span> <span class="n">NameValue</span> <span class="p">{</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">name</span><span class="p">;</span>
+  <span class="n">IValue</span> <span class="n">value</span><span class="p">;</span>
 <span class="p">};</span>
 
 <span class="c1">// this iterator for the slot list defined below has a position in the list i_</span>
@@ -677,7 +639,7 @@
  <span class="k">private</span><span class="o">:</span>
   <span class="kt">void</span> <span class="n">advance_to_valid</span><span class="p">()</span> <span class="p">{</span>
     <span class="k">while</span> <span class="p">(</span><span class="n">i_</span> <span class="o">&lt;</span> <span class="n">module_</span><span class="p">.</span><span class="n">num_slots</span><span class="p">()</span> <span class="o">&amp;&amp;</span>
-           <span class="p">(</span><span class="n">type_</span> <span class="o">&amp;&amp;</span> <span class="n">module_</span><span class="p">.</span><span class="n">get_slot</span><span class="p">(</span><span class="n">i_</span><span class="p">).</span><span class="n">entity_type</span><span class="p">()</span> <span class="o">!=</span> <span class="o">*</span><span class="n">type_</span><span class="p">))</span> <span class="p">{</span>
+           <span class="p">(</span><span class="n">type_</span> <span class="o">&amp;&amp;</span> <span class="n">module_</span><span class="p">.</span><span class="n">entity_type</span><span class="p">(</span><span class="n">i_</span><span class="p">)</span> <span class="o">!=</span> <span class="o">*</span><span class="n">type_</span><span class="p">))</span> <span class="p">{</span>
       <span class="o">++</span><span class="n">i_</span><span class="p">;</span>
     <span class="p">}</span>
   <span class="p">}</span>
@@ -692,13 +654,15 @@
 <span class="p">};</span>
 
 <span class="k">template</span> <span class="o">&lt;&gt;</span>
-<span class="kr">inline</span> <span class="n">Slot</span> <span class="n">slot_iterator_impl</span><span class="o">&lt;</span><span class="n">Slot</span><span class="o">&gt;::</span><span class="k">operator</span><span class="o">*</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="n">module_</span><span class="p">.</span><span class="n">get_slot</span><span class="p">(</span><span class="n">i_</span><span class="p">);</span>
+<span class="kr">inline</span> <span class="n">NameModule</span> <span class="n">slot_iterator_impl</span><span class="o">&lt;</span><span class="n">NameModule</span><span class="o">&gt;::</span><span class="k">operator</span><span class="o">*</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">{</span><span class="n">module_</span><span class="p">.</span><span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getAttributeName</span><span class="p">(</span><span class="n">i_</span><span class="p">),</span>
+          <span class="n">module_</span><span class="p">.</span><span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getSlot</span><span class="p">(</span><span class="n">i_</span><span class="p">).</span><span class="n">toObject</span><span class="p">()};</span>
 <span class="p">}</span>
 
 <span class="k">template</span> <span class="o">&lt;&gt;</span>
-<span class="kr">inline</span> <span class="n">Module</span> <span class="n">slot_iterator_impl</span><span class="o">&lt;</span><span class="n">Module</span><span class="o">&gt;::</span><span class="k">operator</span><span class="o">*</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="n">Module</span><span class="p">(</span><span class="n">module_</span><span class="p">.</span><span class="n">get_slot</span><span class="p">(</span><span class="n">i_</span><span class="p">).</span><span class="n">to_module</span><span class="p">());</span>
+<span class="kr">inline</span> <span class="n">NameValue</span> <span class="n">slot_iterator_impl</span><span class="o">&lt;</span><span class="n">NameValue</span><span class="o">&gt;::</span><span class="k">operator</span><span class="o">*</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="p">{</span><span class="n">module_</span><span class="p">.</span><span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getAttributeName</span><span class="p">(</span><span class="n">i_</span><span class="p">),</span>
+          <span class="n">module_</span><span class="p">.</span><span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getSlot</span><span class="p">(</span><span class="n">i_</span><span class="p">)};</span>
 <span class="p">}</span>
 
 <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
