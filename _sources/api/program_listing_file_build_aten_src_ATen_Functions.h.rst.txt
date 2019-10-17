@@ -503,6 +503,7 @@ Program Listing for File Functions.h
    static inline std::tuple<Tensor,Tensor,Tensor> native_batch_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps);
    static inline std::tuple<Tensor,Tensor> batch_norm_stats(const Tensor & input, double eps);
    static inline Tensor batch_norm_elemt(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & mean, const Tensor & invstd, double eps);
+   static inline Tensor & batch_norm_elemt_out(Tensor & out, const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & mean, const Tensor & invstd, double eps);
    static inline std::tuple<Tensor,Tensor> batch_norm_gather_stats(const Tensor & input, const Tensor & mean, const Tensor & invstd, const Tensor & running_mean, const Tensor & running_var, double momentum, double eps, int64_t count);
    static inline std::tuple<Tensor,Tensor> batch_norm_gather_stats_with_counts(const Tensor & input, const Tensor & mean, const Tensor & invstd, const Tensor & running_mean, const Tensor & running_var, double momentum, double eps, IntArrayRef counts);
    static inline std::tuple<Tensor,Tensor,Tensor> native_batch_norm_backward(const Tensor & grad_out, const Tensor & input, const Tensor & weight, const Tensor & running_mean, const Tensor & running_var, const Tensor & save_mean, const Tensor & save_invstd, bool train, double eps, std::array<bool,3> output_mask);
@@ -5926,6 +5927,18 @@ Program Listing for File Functions.h
    #else
        static auto table = globalATenDispatch().getOpTable("aten::batch_norm_elemt(Tensor input, Tensor? weight, Tensor? bias, Tensor mean, Tensor invstd, float eps) -> Tensor");
        return table->callUnboxed<Tensor, const Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, double>(input, weight, bias, mean, invstd, eps);
+   #endif
+   }
+   static inline Tensor & batch_norm_elemt_out(Tensor & out, const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & mean, const Tensor & invstd, double eps) {
+   #ifdef USE_STATIC_DISPATCH
+       switch(tensorTypeIdToBackend(impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(out, input, weight, bias, mean, invstd)))) {
+       
+           default:
+               AT_ERROR("batch_norm_elemt_out not implemented for ", at::toString(at::detail::multi_dispatch_tensor_type_set(out, input, weight, bias, mean, invstd)));
+       }
+   #else
+       static auto table = globalATenDispatch().getOpTable("aten::batch_norm_elemt.out(Tensor input, Tensor? weight, Tensor? bias, Tensor mean, Tensor invstd, float eps, *, Tensor(a!) out) -> Tensor(a!)");
+       return table->callUnboxed<Tensor &, Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, double>(out, input, weight, bias, mean, invstd, eps);
    #endif
    }
    static inline std::tuple<Tensor,Tensor> batch_norm_gather_stats(const Tensor & input, const Tensor & mean, const Tensor & invstd, const Tensor & running_mean, const Tensor & running_var, double momentum, double eps, int64_t count) {
