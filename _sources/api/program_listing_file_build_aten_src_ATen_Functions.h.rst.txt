@@ -523,7 +523,7 @@ Program Listing for File Functions.h
    static inline Tensor ones_like(const Tensor & self);
    static inline Tensor ones_like(const Tensor & self, const TensorOptions & options);
    static inline Tensor pairwise_distance(const Tensor & x1, const Tensor & x2, double p=2, double eps=1e-06, bool keepdim=false);
-   static inline Tensor cdist(const Tensor & x1, const Tensor & x2, double p=2);
+   static inline Tensor cdist(const Tensor & x1, const Tensor & x2, double p=2, c10::optional<int64_t> compute_mode=c10::nullopt);
    static inline Tensor _cdist_backward(const Tensor & grad, const Tensor & x1, const Tensor & x2, double p, const Tensor & cdist);
    static inline Tensor pdist(const Tensor & self, double p=2);
    static inline Tensor _pdist_forward(const Tensor & self, double p=2);
@@ -6122,14 +6122,14 @@ Program Listing for File Functions.h
            op, impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(x1, x2)), x1, x2, p, eps, keepdim);
    #endif
    }
-   static inline Tensor cdist(const Tensor & x1, const Tensor & x2, double p) {
+   static inline Tensor cdist(const Tensor & x1, const Tensor & x2, double p, c10::optional<int64_t> compute_mode) {
    #ifdef USE_STATIC_DISPATCH
-       return TypeDefault::cdist(x1, x2, p);
+       return TypeDefault::cdist(x1, x2, p, compute_mode);
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchema({"aten::cdist", ""}).value();
-       return c10::Dispatcher::singleton().callUnboxed<Tensor, const Tensor &, const Tensor &, double>(
-           op, impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(x1, x2)), x1, x2, p);
+       return c10::Dispatcher::singleton().callUnboxed<Tensor, const Tensor &, const Tensor &, double, c10::optional<int64_t>>(
+           op, impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(x1, x2)), x1, x2, p, compute_mode);
    #endif
    }
    static inline Tensor _cdist_backward(const Tensor & grad, const Tensor & x1, const Tensor & x2, double p, const Tensor & cdist) {
