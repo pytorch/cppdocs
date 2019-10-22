@@ -279,5 +279,31 @@ Program Listing for File pooling.h
    
    TORCH_MODULE(MaxUnpool3d);
    
+   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ LPPool1d ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   
+   template <size_t D, typename Derived>
+   class TORCH_API LPPoolImpl : public torch::nn::Cloneable<Derived> {
+    public:
+     LPPoolImpl(float norm_type, ExpandingArray<D> kernel_size)
+         : LPPoolImpl(LPPoolOptions<D>(norm_type, kernel_size)) {}
+     explicit LPPoolImpl(const LPPoolOptions<D>& options_);
+   
+     void reset() override;
+   
+     void pretty_print(std::ostream& stream) const override;
+   
+     LPPoolOptions<D> options;
+   };
+   
+   class TORCH_API LPPool1dImpl : public LPPoolImpl<1, LPPool1dImpl> {
+    public:
+     using LPPoolImpl<1, LPPool1dImpl>::LPPoolImpl;
+   
+     Tensor forward(const Tensor& input);
+   
+   };
+   
+   TORCH_MODULE(LPPool1d);
+   
    } // namespace nn
    } // namespace torch

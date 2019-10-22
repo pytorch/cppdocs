@@ -275,6 +275,7 @@
 <p>↰ <a class="reference internal" href="file_torch_csrc_api_include_torch_nn_functional_pooling.h.html#file-torch-csrc-api-include-torch-nn-functional-pooling-h"><span class="std std-ref">Return to documentation for file</span></a> (<code class="docutils literal notranslate"><span class="pre">torch/csrc/api/include/torch/nn/functional/pooling.h</span></code>)</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#pragma once</span>
 
+<span class="cp">#include</span> <span class="cpf">&lt;torch/nn/functional/activation.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;torch/nn/options/pooling.h&gt;</span><span class="cp"></span>
 
 <span class="k">namespace</span> <span class="n">torch</span> <span class="p">{</span>
@@ -490,6 +491,14 @@
 
   <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">max_unpool3d</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">indices</span><span class="p">,</span> <span class="n">output_size_</span><span class="p">,</span>
                              <span class="n">options</span><span class="p">.</span><span class="n">stride</span><span class="p">(),</span> <span class="n">options</span><span class="p">.</span><span class="n">padding</span><span class="p">());</span>
+<span class="p">}</span>
+
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">lp_pool1d</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="k">const</span> <span class="n">LPPool1dOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">Tensor</span> <span class="n">out</span> <span class="o">=</span> <span class="n">avg_pool1d</span><span class="p">(</span>
+    <span class="n">input</span><span class="p">.</span><span class="n">pow</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">norm_type</span><span class="p">()),</span>
+    <span class="n">AvgPool1dOptions</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">kernel_size</span><span class="p">()).</span><span class="n">stride</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">stride</span><span class="p">()).</span><span class="n">padding</span><span class="p">(</span><span class="mi">0</span><span class="p">).</span><span class="n">ceil_mode</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">ceil_mode</span><span class="p">()));</span>
+
+  <span class="k">return</span> <span class="p">(</span><span class="n">torch</span><span class="o">::</span><span class="n">sign</span><span class="p">(</span><span class="n">out</span><span class="p">)</span> <span class="o">*</span> <span class="n">relu</span><span class="p">(</span><span class="n">torch</span><span class="o">::</span><span class="n">abs</span><span class="p">(</span><span class="n">out</span><span class="p">))).</span><span class="n">mul</span><span class="p">((</span><span class="o">*</span><span class="n">options</span><span class="p">.</span><span class="n">kernel_size</span><span class="p">())[</span><span class="mi">0</span><span class="p">]).</span><span class="n">pow</span><span class="p">(</span><span class="mf">1.</span> <span class="o">/</span> <span class="n">options</span><span class="p">.</span><span class="n">norm_type</span><span class="p">());</span>
 <span class="p">}</span>
 
 <span class="p">}</span> <span class="c1">// namespace functional</span>
