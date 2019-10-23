@@ -4210,7 +4210,7 @@ Program Listing for File Functions.h
        at::AutoNonVariableTypeMode _var_guard(true);
        return TypeDefault::flatten(self, dims, out_dim);
    #else
-       static auto table = globalATenDispatch().getOpTable("aten::flatten.DimnameList(Tensor self, DimnameList dims, Dimname out_dim) -> Tensor");
+       static auto table = globalATenDispatch().getOpTable("aten::flatten.DimnameList(Tensor self, Dimname[] dims, Dimname out_dim) -> Tensor");
        return table->callUnboxed<Tensor, const Tensor &, DimnameList, Dimname>(self, dims, out_dim);
    #endif
    }
@@ -5324,7 +5324,7 @@ Program Listing for File Functions.h
        at::AutoNonVariableTypeMode _var_guard(true);
        return TypeDefault::log_softmax(self, dim, dtype);
    #else
-       static auto table = globalATenDispatch().getOpTable("aten::log_softmax(Tensor self, int dim, ScalarType? dtype=None) -> Tensor");
+       static auto table = globalATenDispatch().getOpTable("aten::log_softmax.int(Tensor self, int dim, ScalarType? dtype=None) -> Tensor");
        return table->callUnboxed<Tensor, const Tensor &, int64_t, c10::optional<ScalarType>>(self, dim, dtype);
    #endif
    }
@@ -5334,7 +5334,7 @@ Program Listing for File Functions.h
        at::AutoNonVariableTypeMode _var_guard(true);
        return TypeDefault::log_softmax(self, dim, dtype);
    #else
-       static auto table = globalATenDispatch().getOpTable("aten::log_softmax(Tensor self, Dimname dim, *, ScalarType? dtype=None) -> Tensor");
+       static auto table = globalATenDispatch().getOpTable("aten::log_softmax.Dimname(Tensor self, Dimname dim, *, ScalarType? dtype=None) -> Tensor");
        return table->callUnboxed<Tensor, const Tensor &, Dimname, c10::optional<ScalarType>>(self, dim, dtype);
    #endif
    }
@@ -7682,7 +7682,7 @@ Program Listing for File Functions.h
        at::AutoNonVariableTypeMode _var_guard(true);
        return TypeDefault::softmax(self, dim, dtype);
    #else
-       static auto table = globalATenDispatch().getOpTable("aten::softmax(Tensor self, int dim, ScalarType? dtype=None) -> Tensor");
+       static auto table = globalATenDispatch().getOpTable("aten::softmax.int(Tensor self, int dim, ScalarType? dtype=None) -> Tensor");
        return table->callUnboxed<Tensor, const Tensor &, int64_t, c10::optional<ScalarType>>(self, dim, dtype);
    #endif
    }
@@ -7692,7 +7692,7 @@ Program Listing for File Functions.h
        at::AutoNonVariableTypeMode _var_guard(true);
        return TypeDefault::softmax(self, dim, dtype);
    #else
-       static auto table = globalATenDispatch().getOpTable("aten::softmax(Tensor self, Dimname dim, *, ScalarType? dtype=None) -> Tensor");
+       static auto table = globalATenDispatch().getOpTable("aten::softmax.Dimname(Tensor self, Dimname dim, *, ScalarType? dtype=None) -> Tensor");
        return table->callUnboxed<Tensor, const Tensor &, Dimname, c10::optional<ScalarType>>(self, dim, dtype);
    #endif
    }
@@ -9388,8 +9388,10 @@ Program Listing for File Functions.h
        }
    #else
        globalLegacyTypeDispatch().initForTensorTypeSet(at::detail::multi_dispatch_tensor_type_set(indices, values, options));
-       static auto table = globalATenDispatch().getOpTable("aten::_sparse_coo_tensor_with_dims_and_tensors(int sparse_dim, int dense_dim, int[] size, Tensor indices, Tensor values, *, ScalarType dtype, Layout layout, Device device, bool pin_memory=False) -> Tensor");
-       return table->callUnboxed<Tensor, int64_t, int64_t, IntArrayRef, const Tensor &, const Tensor &, const TensorOptions &>(sparse_dim, dense_dim, size, indices, values, options);
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchema({"aten::_sparse_coo_tensor_with_dims_and_tensors", ""}).value();
+       return c10::Dispatcher::singleton().callUnboxedOnly<Tensor, int64_t, int64_t, IntArrayRef, const Tensor &, const Tensor &, const TensorOptions &>(
+           op, impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(indices, values, options)), sparse_dim, dense_dim, size, indices, values, options);
    #endif
    }
    static inline Tensor to_dense_backward(const Tensor & grad, const Tensor & input) {
@@ -10214,7 +10216,7 @@ Program Listing for File Functions.h
        return TypeDefault::index_fill(self, dim, index, value);
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
-           .findSchema({"aten::index_fill", "Scalar"}).value();
+           .findSchema({"aten::index_fill", "int_Scalar"}).value();
        return c10::Dispatcher::singleton().callUnboxed<Tensor, const Tensor &, int64_t, const Tensor &, Scalar>(
            op, impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(self, index)), self, dim, index, value);
    #endif
@@ -10225,7 +10227,7 @@ Program Listing for File Functions.h
        return TypeDefault::index_fill(self, dim, index, value);
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
-           .findSchema({"aten::index_fill", "Tensor"}).value();
+           .findSchema({"aten::index_fill", "int_Tensor"}).value();
        return c10::Dispatcher::singleton().callUnboxed<Tensor, const Tensor &, int64_t, const Tensor &, const Tensor &>(
            op, impl::dispatchTypeId(at::detail::multi_dispatch_tensor_type_set(self, index, value)), self, dim, index, value);
    #endif
@@ -10236,7 +10238,7 @@ Program Listing for File Functions.h
        at::AutoNonVariableTypeMode _var_guard(true);
        return TypeDefault::index_fill(self, dim, index, value);
    #else
-       static auto table = globalATenDispatch().getOpTable("aten::index_fill.dimname_Scalar(Tensor self, Dimname dim, Tensor index, Scalar value) -> Tensor");
+       static auto table = globalATenDispatch().getOpTable("aten::index_fill.Dimname_Scalar(Tensor self, Dimname dim, Tensor index, Scalar value) -> Tensor");
        return table->callUnboxed<Tensor, const Tensor &, Dimname, const Tensor &, Scalar>(self, dim, index, value);
    #endif
    }
@@ -10247,7 +10249,7 @@ Program Listing for File Functions.h
        at::AutoNonVariableTypeMode _var_guard(true);
        return TypeDefault::index_fill(self, dim, index, value);
    #else
-       static auto table = globalATenDispatch().getOpTable("aten::index_fill.dimname_Tensor(Tensor self, Dimname dim, Tensor index, Tensor value) -> Tensor");
+       static auto table = globalATenDispatch().getOpTable("aten::index_fill.Dimname_Tensor(Tensor self, Dimname dim, Tensor index, Tensor value) -> Tensor");
        return table->callUnboxed<Tensor, const Tensor &, Dimname, const Tensor &, const Tensor &>(self, dim, index, value);
    #endif
    }
@@ -16031,7 +16033,7 @@ Program Listing for File Functions.h
                AT_ERROR("slow_conv_transpose2d_backward_out not implemented for ", at::toString(at::detail::multi_dispatch_tensor_type_set(grad_input, grad_weight, grad_bias, grad_output, self, weight, columns, ones)));
        }
    #else
-       static auto table = globalATenDispatch().getOpTable("aten::slow_conv_transpose2d_backward.grad_output(Tensor grad_output, Tensor self, Tensor weight, int[2] kernel_size, int[2] stride, int[2] padding, int[2] output_padding, int[2] dilation, Tensor columns, Tensor ones, *, Tensor?(a!) grad_input, Tensor?(b!) grad_weight, Tensor?(c!) grad_bias) -> (Tensor(a!), Tensor(b!), Tensor(c!))");
+       static auto table = globalATenDispatch().getOpTable("aten::slow_conv_transpose2d_backward.grad_output(Tensor grad_output, Tensor self, Tensor weight, int[2] kernel_size, int[2] stride, int[2] padding, int[2] output_padding, int[2] dilation, Tensor columns, Tensor ones, *, Tensor(a!)? grad_input, Tensor(b!)? grad_weight, Tensor(c!)? grad_bias) -> (Tensor(a!), Tensor(b!), Tensor(c!))");
        return table->callUnboxed<std::tuple<Tensor &,Tensor &,Tensor &>, Tensor &, Tensor &, Tensor &, const Tensor &, const Tensor &, const Tensor &, IntArrayRef, IntArrayRef, IntArrayRef, IntArrayRef, IntArrayRef, const Tensor &, const Tensor &>(grad_input, grad_weight, grad_bias, grad_output, self, weight, kernel_size, stride, padding, output_padding, dilation, columns, ones);
    #endif
    }
@@ -16093,7 +16095,7 @@ Program Listing for File Functions.h
                AT_ERROR("slow_conv_transpose3d_backward_out not implemented for ", at::toString(at::detail::multi_dispatch_tensor_type_set(grad_input, grad_weight, grad_bias, grad_output, self, weight, finput, fgrad_input)));
        }
    #else
-       static auto table = globalATenDispatch().getOpTable("aten::slow_conv_transpose3d_backward.grad_output(Tensor grad_output, Tensor self, Tensor weight, int[3] kernel_size, int[3] stride, int[3] padding, int[3] output_padding, int[3] dilation, Tensor finput, Tensor fgrad_input, *, Tensor?(a!) grad_input, Tensor?(b!) grad_weight, Tensor?(c!) grad_bias) -> (Tensor(a!), Tensor(b!), Tensor(c!))");
+       static auto table = globalATenDispatch().getOpTable("aten::slow_conv_transpose3d_backward.grad_output(Tensor grad_output, Tensor self, Tensor weight, int[3] kernel_size, int[3] stride, int[3] padding, int[3] output_padding, int[3] dilation, Tensor finput, Tensor fgrad_input, *, Tensor(a!)? grad_input, Tensor(b!)? grad_weight, Tensor(c!)? grad_bias) -> (Tensor(a!), Tensor(b!), Tensor(c!))");
        return table->callUnboxed<std::tuple<Tensor &,Tensor &,Tensor &>, Tensor &, Tensor &, Tensor &, const Tensor &, const Tensor &, const Tensor &, IntArrayRef, IntArrayRef, IntArrayRef, IntArrayRef, IntArrayRef, const Tensor &, const Tensor &>(grad_input, grad_weight, grad_bias, grad_output, self, weight, kernel_size, stride, padding, output_padding, dilation, finput, fgrad_input);
    #endif
    }
@@ -16173,7 +16175,7 @@ Program Listing for File Functions.h
                AT_ERROR("thnn_conv2d_backward_out not implemented for ", at::toString(at::detail::multi_dispatch_tensor_type_set(grad_input, grad_weight, grad_bias, grad_output, self, weight, finput, fgrad_input)));
        }
    #else
-       static auto table = globalATenDispatch().getOpTable("aten::thnn_conv2d_backward.grad_input(Tensor grad_output, Tensor self, Tensor weight, int[2] kernel_size, int[2] stride, int[2] padding, Tensor finput, Tensor fgrad_input, *, Tensor?(a!) grad_input, Tensor?(b!) grad_weight, Tensor?(c!) grad_bias) -> (Tensor(a!), Tensor(b!), Tensor(c!))");
+       static auto table = globalATenDispatch().getOpTable("aten::thnn_conv2d_backward.grad_input(Tensor grad_output, Tensor self, Tensor weight, int[2] kernel_size, int[2] stride, int[2] padding, Tensor finput, Tensor fgrad_input, *, Tensor(a!)? grad_input, Tensor(b!)? grad_weight, Tensor(c!)? grad_bias) -> (Tensor(a!), Tensor(b!), Tensor(c!))");
        return table->callUnboxed<std::tuple<Tensor &,Tensor &,Tensor &>, Tensor &, Tensor &, Tensor &, const Tensor &, const Tensor &, const Tensor &, IntArrayRef, IntArrayRef, IntArrayRef, const Tensor &, const Tensor &>(grad_input, grad_weight, grad_bias, grad_output, self, weight, kernel_size, stride, padding, finput, fgrad_input);
    #endif
    }
@@ -16247,7 +16249,7 @@ Program Listing for File Functions.h
                AT_ERROR("thnn_conv_depthwise2d_backward_out not implemented for ", at::toString(at::detail::multi_dispatch_tensor_type_set(grad_input, grad_weight, grad_output, self, weight)));
        }
    #else
-       static auto table = globalATenDispatch().getOpTable("aten::thnn_conv_depthwise2d_backward.grad_input(Tensor grad_output, Tensor self, Tensor weight, int[2] kernel_size, int[2] stride, int[2] padding, int[2] dilation, *, Tensor?(a!) grad_input, Tensor?(b!) grad_weight) -> (Tensor(a!), Tensor(b!))");
+       static auto table = globalATenDispatch().getOpTable("aten::thnn_conv_depthwise2d_backward.grad_input(Tensor grad_output, Tensor self, Tensor weight, int[2] kernel_size, int[2] stride, int[2] padding, int[2] dilation, *, Tensor(a!)? grad_input, Tensor(b!)? grad_weight) -> (Tensor(a!), Tensor(b!))");
        return table->callUnboxed<std::tuple<Tensor &,Tensor &>, Tensor &, Tensor &, const Tensor &, const Tensor &, const Tensor &, IntArrayRef, IntArrayRef, IntArrayRef, IntArrayRef>(grad_input, grad_weight, grad_output, self, weight, kernel_size, stride, padding, dilation);
    #endif
    }
@@ -16325,7 +16327,7 @@ Program Listing for File Functions.h
                AT_ERROR("thnn_conv3d_backward_out not implemented for ", at::toString(at::detail::multi_dispatch_tensor_type_set(grad_input, grad_weight, grad_bias, grad_output, self, weight, finput, fgrad_input)));
        }
    #else
-       static auto table = globalATenDispatch().getOpTable("aten::thnn_conv3d_backward.grad_input(Tensor grad_output, Tensor self, Tensor weight, int[3] kernel_size, int[3] stride, int[3] padding, Tensor finput, Tensor fgrad_input, *, Tensor?(a!) grad_input, Tensor?(b!) grad_weight, Tensor?(c!) grad_bias) -> (Tensor(a!), Tensor(b!), Tensor(c!))");
+       static auto table = globalATenDispatch().getOpTable("aten::thnn_conv3d_backward.grad_input(Tensor grad_output, Tensor self, Tensor weight, int[3] kernel_size, int[3] stride, int[3] padding, Tensor finput, Tensor fgrad_input, *, Tensor(a!)? grad_input, Tensor(b!)? grad_weight, Tensor(c!)? grad_bias) -> (Tensor(a!), Tensor(b!), Tensor(c!))");
        return table->callUnboxed<std::tuple<Tensor &,Tensor &,Tensor &>, Tensor &, Tensor &, Tensor &, const Tensor &, const Tensor &, const Tensor &, IntArrayRef, IntArrayRef, IntArrayRef, const Tensor &, const Tensor &>(grad_input, grad_weight, grad_bias, grad_output, self, weight, kernel_size, stride, padding, finput, fgrad_input);
    #endif
    }
