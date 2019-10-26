@@ -552,10 +552,10 @@ Program Listing for File Functions.h
    static inline Tensor & randint_out(Tensor & out, int64_t high, IntArrayRef size, Generator * generator);
    static inline Tensor & randint_out(Tensor & out, int64_t low, int64_t high, IntArrayRef size);
    static inline Tensor & randint_out(Tensor & out, int64_t low, int64_t high, IntArrayRef size, Generator * generator);
-   static inline Tensor randint_like(const Tensor & self, int64_t high, c10::optional<MemoryFormat> memory_format=c10::nullopt);
-   static inline Tensor randint_like(const Tensor & self, int64_t low, int64_t high, c10::optional<MemoryFormat> memory_format=c10::nullopt);
-   static inline Tensor randint_like(const Tensor & self, int64_t high, const TensorOptions & options, c10::optional<MemoryFormat> memory_format=c10::nullopt);
-   static inline Tensor randint_like(const Tensor & self, int64_t low, int64_t high, const TensorOptions & options, c10::optional<MemoryFormat> memory_format=c10::nullopt);
+   static inline Tensor randint_like(const Tensor & self, int64_t high);
+   static inline Tensor randint_like(const Tensor & self, int64_t low, int64_t high);
+   static inline Tensor randint_like(const Tensor & self, int64_t high, const TensorOptions & options);
+   static inline Tensor randint_like(const Tensor & self, int64_t low, int64_t high, const TensorOptions & options);
    static inline Tensor randn(IntArrayRef size, const TensorOptions & options={});
    static inline Tensor randn(IntArrayRef size, Generator * generator, const TensorOptions & options={});
    #ifdef BUILD_NAMEDTENSOR
@@ -566,8 +566,8 @@ Program Listing for File Functions.h
    #endif
    static inline Tensor & randn_out(Tensor & out, IntArrayRef size);
    static inline Tensor & randn_out(Tensor & out, IntArrayRef size, Generator * generator);
-   static inline Tensor randn_like(const Tensor & self, c10::optional<MemoryFormat> memory_format=c10::nullopt);
-   static inline Tensor randn_like(const Tensor & self, const TensorOptions & options, c10::optional<MemoryFormat> memory_format=c10::nullopt);
+   static inline Tensor randn_like(const Tensor & self);
+   static inline Tensor randn_like(const Tensor & self, const TensorOptions & options);
    static inline Tensor randperm(int64_t n, const TensorOptions & options={});
    static inline Tensor randperm(int64_t n, Generator * generator, const TensorOptions & options={});
    static inline Tensor & randperm_out(Tensor & out, int64_t n);
@@ -749,8 +749,8 @@ Program Listing for File Functions.h
    #endif
    static inline Tensor zeros(IntArrayRef size, const TensorOptions & options={});
    static inline Tensor & zeros_out(Tensor & out, IntArrayRef size);
-   static inline Tensor zeros_like(const Tensor & self, c10::optional<MemoryFormat> memory_format=c10::nullopt);
-   static inline Tensor zeros_like(const Tensor & self, const TensorOptions & options, c10::optional<MemoryFormat> memory_format=c10::nullopt);
+   static inline Tensor zeros_like(const Tensor & self);
+   static inline Tensor zeros_like(const Tensor & self, const TensorOptions & options);
    static inline Tensor _standard_gamma_grad(const Tensor & self, const Tensor & output);
    static inline Tensor _standard_gamma(const Tensor & self, Generator * generator=nullptr);
    static inline Tensor _dirichlet_grad(const Tensor & x, const Tensor & alpha, const Tensor & total);
@@ -7229,50 +7229,50 @@ Program Listing for File Functions.h
            op, c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(out)), out, low, high, size, generator);
    #endif
    }
-   static inline Tensor randint_like(const Tensor & self, int64_t high, c10::optional<MemoryFormat> memory_format) {
+   static inline Tensor randint_like(const Tensor & self, int64_t high) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::randint_like(self, high, memory_format);
+       return TypeDefault::randint_like(self, high);
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchema({"aten::randint_like", ""}).value();
-       return c10::Dispatcher::singleton().callUnboxedOnly<Tensor, const Tensor &, int64_t, c10::optional<MemoryFormat>>(
-           op, c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(self)), self, high, memory_format);
+       return c10::Dispatcher::singleton().callUnboxed<Tensor, const Tensor &, int64_t>(
+           op, c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(self)), self, high);
    #endif
    }
-   static inline Tensor randint_like(const Tensor & self, int64_t low, int64_t high, c10::optional<MemoryFormat> memory_format) {
+   static inline Tensor randint_like(const Tensor & self, int64_t low, int64_t high) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::randint_like(self, low, high, memory_format);
+       return TypeDefault::randint_like(self, low, high);
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchema({"aten::randint_like", "low"}).value();
-       return c10::Dispatcher::singleton().callUnboxedOnly<Tensor, const Tensor &, int64_t, int64_t, c10::optional<MemoryFormat>>(
-           op, c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(self)), self, low, high, memory_format);
+       return c10::Dispatcher::singleton().callUnboxed<Tensor, const Tensor &, int64_t, int64_t>(
+           op, c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(self)), self, low, high);
    #endif
    }
-   static inline Tensor randint_like(const Tensor & self, int64_t high, const TensorOptions & options, c10::optional<MemoryFormat> memory_format) {
+   static inline Tensor randint_like(const Tensor & self, int64_t high, const TensorOptions & options) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::randint_like(self, high, options, memory_format);
+       return TypeDefault::randint_like(self, high, options);
    #else
        globalLegacyTypeDispatch().initForTensorTypeSet(c10::detail::multi_dispatch_tensor_type_set(self, options));
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchema({"aten::randint_like", "dtype"}).value();
-       return c10::Dispatcher::singleton().callUnboxedOnly<Tensor, const Tensor &, int64_t, const TensorOptions &, c10::optional<MemoryFormat>>(
-           op, c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(self, options)), self, high, options, memory_format);
+       return c10::Dispatcher::singleton().callUnboxedOnly<Tensor, const Tensor &, int64_t, const TensorOptions &>(
+           op, c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(self, options)), self, high, options);
    #endif
    }
-   static inline Tensor randint_like(const Tensor & self, int64_t low, int64_t high, const TensorOptions & options, c10::optional<MemoryFormat> memory_format) {
+   static inline Tensor randint_like(const Tensor & self, int64_t low, int64_t high, const TensorOptions & options) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::randint_like(self, low, high, options, memory_format);
+       return TypeDefault::randint_like(self, low, high, options);
    #else
        globalLegacyTypeDispatch().initForTensorTypeSet(c10::detail::multi_dispatch_tensor_type_set(self, options));
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchema({"aten::randint_like", "low_dtype"}).value();
-       return c10::Dispatcher::singleton().callUnboxedOnly<Tensor, const Tensor &, int64_t, int64_t, const TensorOptions &, c10::optional<MemoryFormat>>(
-           op, c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(self, options)), self, low, high, options, memory_format);
+       return c10::Dispatcher::singleton().callUnboxedOnly<Tensor, const Tensor &, int64_t, int64_t, const TensorOptions &>(
+           op, c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(self, options)), self, low, high, options);
    #endif
    }
    static inline Tensor randn(IntArrayRef size, const TensorOptions & options) {
@@ -7349,27 +7349,27 @@ Program Listing for File Functions.h
            op, c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(out)), out, size, generator);
    #endif
    }
-   static inline Tensor randn_like(const Tensor & self, c10::optional<MemoryFormat> memory_format) {
+   static inline Tensor randn_like(const Tensor & self) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::randn_like(self, memory_format);
+       return TypeDefault::randn_like(self);
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchema({"aten::randn_like", ""}).value();
-       return c10::Dispatcher::singleton().callUnboxedOnly<Tensor, const Tensor &, c10::optional<MemoryFormat>>(
-           op, c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(self)), self, memory_format);
+       return c10::Dispatcher::singleton().callUnboxed<Tensor, const Tensor &>(
+           op, c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(self)), self);
    #endif
    }
-   static inline Tensor randn_like(const Tensor & self, const TensorOptions & options, c10::optional<MemoryFormat> memory_format) {
+   static inline Tensor randn_like(const Tensor & self, const TensorOptions & options) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::randn_like(self, options, memory_format);
+       return TypeDefault::randn_like(self, options);
    #else
        globalLegacyTypeDispatch().initForTensorTypeSet(c10::detail::multi_dispatch_tensor_type_set(self, options));
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchema({"aten::randn_like", "dtype"}).value();
-       return c10::Dispatcher::singleton().callUnboxedOnly<Tensor, const Tensor &, const TensorOptions &, c10::optional<MemoryFormat>>(
-           op, c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(self, options)), self, options, memory_format);
+       return c10::Dispatcher::singleton().callUnboxedOnly<Tensor, const Tensor &, const TensorOptions &>(
+           op, c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(self, options)), self, options);
    #endif
    }
    static inline Tensor randperm(int64_t n, const TensorOptions & options) {
@@ -9292,27 +9292,27 @@ Program Listing for File Functions.h
            op, c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(out)), out, size);
    #endif
    }
-   static inline Tensor zeros_like(const Tensor & self, c10::optional<MemoryFormat> memory_format) {
+   static inline Tensor zeros_like(const Tensor & self) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::zeros_like(self, memory_format);
+       return TypeDefault::zeros_like(self);
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchema({"aten::zeros_like", ""}).value();
-       return c10::Dispatcher::singleton().callUnboxedOnly<Tensor, const Tensor &, c10::optional<MemoryFormat>>(
-           op, c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(self)), self, memory_format);
+       return c10::Dispatcher::singleton().callUnboxed<Tensor, const Tensor &>(
+           op, c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(self)), self);
    #endif
    }
-   static inline Tensor zeros_like(const Tensor & self, const TensorOptions & options, c10::optional<MemoryFormat> memory_format) {
+   static inline Tensor zeros_like(const Tensor & self, const TensorOptions & options) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::zeros_like(self, options, memory_format);
+       return TypeDefault::zeros_like(self, options);
    #else
        globalLegacyTypeDispatch().initForTensorTypeSet(c10::detail::multi_dispatch_tensor_type_set(self, options));
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchema({"aten::zeros_like", "dtype"}).value();
-       return c10::Dispatcher::singleton().callUnboxedOnly<Tensor, const Tensor &, const TensorOptions &, c10::optional<MemoryFormat>>(
-           op, c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(self, options)), self, options, memory_format);
+       return c10::Dispatcher::singleton().callUnboxedOnly<Tensor, const Tensor &, const TensorOptions &>(
+           op, c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(self, options)), self, options);
    #endif
    }
    static inline Tensor _standard_gamma_grad(const Tensor & self, const Tensor & output) {
