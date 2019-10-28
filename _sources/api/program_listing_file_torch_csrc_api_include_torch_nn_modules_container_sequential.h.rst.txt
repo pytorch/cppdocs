@@ -54,6 +54,13 @@ Program Listing for File sequential.h
        }
      }
    
+     explicit SequentialImpl(std::initializer_list<NamedAnyModule> named_modules) {
+       modules_.reserve(named_modules.size());
+       for (const auto& named_module : named_modules) {
+         push_back(std::move(named_module.name()), std::move(named_module.module()));
+       }
+     }
+   
      std::shared_ptr<Module> clone(
          const optional<Device>& device = nullopt) const override {
        auto clone = std::make_shared<SequentialImpl>();
@@ -220,6 +227,13 @@ Program Listing for File sequential.h
      std::vector<AnyModule> modules_;
    };
    
-   TORCH_MODULE(Sequential);
+   class Sequential : public torch::nn::ModuleHolder<SequentialImpl> {
+    public:
+     using torch::nn::ModuleHolder<SequentialImpl>::ModuleHolder;
+   
+     Sequential() : ModuleHolder() {}
+   
+     Sequential(std::initializer_list<NamedAnyModule> named_modules) : ModuleHolder(std::make_shared<SequentialImpl>(std::move(named_modules))) {}
+   };
    } // namespace nn
    } // namespace torch
