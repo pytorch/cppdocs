@@ -134,8 +134,8 @@ Program Listing for File Functions.h
    static inline Tensor bartlett_window(int64_t window_length, const TensorOptions & options={});
    static inline Tensor bartlett_window(int64_t window_length, bool periodic, const TensorOptions & options={});
    static inline Tensor batch_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps, bool cudnn_enabled);
-   static inline std::tuple<Tensor,Tensor,Tensor,int64_t> _batch_norm_impl_index(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps, bool cudnn_enabled);
-   static inline std::tuple<Tensor,Tensor,Tensor> _batch_norm_impl_index_backward(int64_t impl_index, const Tensor & input, const Tensor & grad_output, const Tensor & weight, const Tensor & running_mean, const Tensor & running_var, const Tensor & save_mean, const Tensor & save_var_transform, bool train, double eps, std::array<bool,3> output_mask);
+   static inline std::tuple<Tensor,Tensor,Tensor,Tensor,int64_t> _batch_norm_impl_index(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps, bool cudnn_enabled);
+   static inline std::tuple<Tensor,Tensor,Tensor> _batch_norm_impl_index_backward(int64_t impl_index, const Tensor & input, const Tensor & grad_output, const Tensor & weight, const Tensor & running_mean, const Tensor & running_var, const Tensor & save_mean, const Tensor & save_var_transform, bool train, double eps, std::array<bool,3> output_mask, const Tensor & reservedSpace);
    static inline Tensor bernoulli(const Tensor & self, Generator * generator=nullptr);
    static inline Tensor & bernoulli_out(Tensor & out, const Tensor & self, Generator * generator=nullptr);
    static inline Tensor bernoulli(const Tensor & self, double p, Generator * generator=nullptr);
@@ -202,8 +202,8 @@ Program Listing for File Functions.h
    static inline Tensor cosine_embedding_loss(const Tensor & input1, const Tensor & input2, const Tensor & target, double margin=0.0, int64_t reduction=at::Reduction::Mean);
    static inline Tensor cudnn_affine_grid_generator(const Tensor & theta, int64_t N, int64_t C, int64_t H, int64_t W);
    static inline Tensor cudnn_affine_grid_generator_backward(const Tensor & grad, int64_t N, int64_t C, int64_t H, int64_t W);
-   static inline std::tuple<Tensor,Tensor,Tensor> cudnn_batch_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double exponential_average_factor, double epsilon);
-   static inline std::tuple<Tensor,Tensor,Tensor> cudnn_batch_norm_backward(const Tensor & input, const Tensor & grad_output, const Tensor & weight, const Tensor & running_mean, const Tensor & running_var, const Tensor & save_mean, const Tensor & save_var, double epsilon);
+   static inline std::tuple<Tensor,Tensor,Tensor,Tensor> cudnn_batch_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double exponential_average_factor, double epsilon);
+   static inline std::tuple<Tensor,Tensor,Tensor> cudnn_batch_norm_backward(const Tensor & input, const Tensor & grad_output, const Tensor & weight, const Tensor & running_mean, const Tensor & running_var, const Tensor & save_mean, const Tensor & save_var, double epsilon, const Tensor & reserveSpace);
    static inline Tensor cudnn_convolution(const Tensor & self, const Tensor & weight, const Tensor & bias, IntArrayRef padding, IntArrayRef stride, IntArrayRef dilation, int64_t groups, bool benchmark, bool deterministic);
    static inline Tensor cudnn_convolution_backward_input(IntArrayRef self_size, const Tensor & grad_output, const Tensor & weight, IntArrayRef padding, IntArrayRef stride, IntArrayRef dilation, int64_t groups, bool benchmark, bool deterministic);
    static inline std::tuple<Tensor,Tensor,Tensor> cudnn_convolution_backward(const Tensor & self, const Tensor & grad_output, const Tensor & weight, IntArrayRef padding, IntArrayRef stride, IntArrayRef dilation, int64_t groups, bool benchmark, bool deterministic, std::array<bool,3> output_mask);
@@ -2530,26 +2530,26 @@ Program Listing for File Functions.h
            op, c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(input, weight, bias, running_mean, running_var)), input, weight, bias, running_mean, running_var, training, momentum, eps, cudnn_enabled);
    #endif
    }
-   static inline std::tuple<Tensor,Tensor,Tensor,int64_t> _batch_norm_impl_index(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps, bool cudnn_enabled) {
+   static inline std::tuple<Tensor,Tensor,Tensor,Tensor,int64_t> _batch_norm_impl_index(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps, bool cudnn_enabled) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
        return TypeDefault::_batch_norm_impl_index(input, weight, bias, running_mean, running_var, training, momentum, eps, cudnn_enabled);
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchema({"aten::_batch_norm_impl_index", ""}).value();
-       return c10::Dispatcher::singleton().callUnboxedOnly<std::tuple<Tensor,Tensor,Tensor,int64_t>, const Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, bool, double, double, bool>(
+       return c10::Dispatcher::singleton().callUnboxedOnly<std::tuple<Tensor,Tensor,Tensor,Tensor,int64_t>, const Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, bool, double, double, bool>(
            op, c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(input, weight, bias, running_mean, running_var)), input, weight, bias, running_mean, running_var, training, momentum, eps, cudnn_enabled);
    #endif
    }
-   static inline std::tuple<Tensor,Tensor,Tensor> _batch_norm_impl_index_backward(int64_t impl_index, const Tensor & input, const Tensor & grad_output, const Tensor & weight, const Tensor & running_mean, const Tensor & running_var, const Tensor & save_mean, const Tensor & save_var_transform, bool train, double eps, std::array<bool,3> output_mask) {
+   static inline std::tuple<Tensor,Tensor,Tensor> _batch_norm_impl_index_backward(int64_t impl_index, const Tensor & input, const Tensor & grad_output, const Tensor & weight, const Tensor & running_mean, const Tensor & running_var, const Tensor & save_mean, const Tensor & save_var_transform, bool train, double eps, std::array<bool,3> output_mask, const Tensor & reservedSpace) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::_batch_norm_impl_index_backward(impl_index, input, grad_output, weight, running_mean, running_var, save_mean, save_var_transform, train, eps, output_mask);
+       return TypeDefault::_batch_norm_impl_index_backward(impl_index, input, grad_output, weight, running_mean, running_var, save_mean, save_var_transform, train, eps, output_mask, reservedSpace);
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchema({"aten::_batch_norm_impl_index_backward", ""}).value();
-       return c10::Dispatcher::singleton().callUnboxedOnly<std::tuple<Tensor,Tensor,Tensor>, int64_t, const Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, bool, double, std::array<bool,3>>(
-           op, c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(input, grad_output, weight, running_mean, running_var, save_mean, save_var_transform)), impl_index, input, grad_output, weight, running_mean, running_var, save_mean, save_var_transform, train, eps, output_mask);
+       return c10::Dispatcher::singleton().callUnboxedOnly<std::tuple<Tensor,Tensor,Tensor>, int64_t, const Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, bool, double, std::array<bool,3>, const Tensor &>(
+           op, c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(input, grad_output, weight, running_mean, running_var, save_mean, save_var_transform, reservedSpace)), impl_index, input, grad_output, weight, running_mean, running_var, save_mean, save_var_transform, train, eps, output_mask, reservedSpace);
    #endif
    }
    static inline Tensor bernoulli(const Tensor & self, Generator * generator) {
@@ -3354,7 +3354,7 @@ Program Listing for File Functions.h
            op, c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(grad)), grad, N, C, H, W);
    #endif
    }
-   static inline std::tuple<Tensor,Tensor,Tensor> cudnn_batch_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double exponential_average_factor, double epsilon) {
+   static inline std::tuple<Tensor,Tensor,Tensor,Tensor> cudnn_batch_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double exponential_average_factor, double epsilon) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
        switch(tensorTypeIdToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(input, weight, bias, running_mean, running_var)))) {
@@ -3365,23 +3365,23 @@ Program Listing for File Functions.h
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchema({"aten::cudnn_batch_norm", ""}).value();
-       return c10::Dispatcher::singleton().callUnboxedOnly<std::tuple<Tensor,Tensor,Tensor>, const Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, bool, double, double>(
+       return c10::Dispatcher::singleton().callUnboxedOnly<std::tuple<Tensor,Tensor,Tensor,Tensor>, const Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, bool, double, double>(
            op, c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(input, weight, bias, running_mean, running_var)), input, weight, bias, running_mean, running_var, training, exponential_average_factor, epsilon);
    #endif
    }
-   static inline std::tuple<Tensor,Tensor,Tensor> cudnn_batch_norm_backward(const Tensor & input, const Tensor & grad_output, const Tensor & weight, const Tensor & running_mean, const Tensor & running_var, const Tensor & save_mean, const Tensor & save_var, double epsilon) {
+   static inline std::tuple<Tensor,Tensor,Tensor> cudnn_batch_norm_backward(const Tensor & input, const Tensor & grad_output, const Tensor & weight, const Tensor & running_mean, const Tensor & running_var, const Tensor & save_mean, const Tensor & save_var, double epsilon, const Tensor & reserveSpace) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       switch(tensorTypeIdToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(input, grad_output, weight, running_mean, running_var, save_mean, save_var)))) {
+       switch(tensorTypeIdToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(input, grad_output, weight, running_mean, running_var, save_mean, save_var, reserveSpace)))) {
        
            default:
-               AT_ERROR("cudnn_batch_norm_backward not implemented for ", at::toString(c10::detail::multi_dispatch_tensor_type_set(input, grad_output, weight, running_mean, running_var, save_mean, save_var)));
+               AT_ERROR("cudnn_batch_norm_backward not implemented for ", at::toString(c10::detail::multi_dispatch_tensor_type_set(input, grad_output, weight, running_mean, running_var, save_mean, save_var, reserveSpace)));
        }
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchema({"aten::cudnn_batch_norm_backward", ""}).value();
-       return c10::Dispatcher::singleton().callUnboxedOnly<std::tuple<Tensor,Tensor,Tensor>, const Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, double>(
-           op, c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(input, grad_output, weight, running_mean, running_var, save_mean, save_var)), input, grad_output, weight, running_mean, running_var, save_mean, save_var, epsilon);
+       return c10::Dispatcher::singleton().callUnboxedOnly<std::tuple<Tensor,Tensor,Tensor>, const Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, double, const Tensor &>(
+           op, c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(input, grad_output, weight, running_mean, running_var, save_mean, save_var, reserveSpace)), input, grad_output, weight, running_mean, running_var, save_mean, save_var, epsilon, reserveSpace);
    #endif
    }
    static inline Tensor cudnn_convolution(const Tensor & self, const Tensor & weight, const Tensor & bias, IntArrayRef padding, IntArrayRef stride, IntArrayRef dilation, int64_t groups, bool benchmark, bool deterministic) {
