@@ -456,7 +456,20 @@
   <span class="p">}</span>
 
   <span class="kt">void</span> <span class="n">set_attribute</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span> <span class="n">IValue</span> <span class="n">v</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">setAttr</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">v</span><span class="p">);</span>
+    <span class="kt">size_t</span> <span class="n">slot</span> <span class="o">=</span> <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getAttributeSlot</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
+    <span class="k">const</span> <span class="n">TypePtr</span><span class="o">&amp;</span> <span class="n">expected</span> <span class="o">=</span> <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getAttribute</span><span class="p">(</span><span class="n">slot</span><span class="p">);</span>
+    <span class="c1">// TODO: give better error message when subtyping check fails, and python_str</span>
+    <span class="c1">// of expected and v.type() are just mangled names of the same nn.module.</span>
+    <span class="n">TORCH_CHECK</span><span class="p">(</span>
+        <span class="n">v</span><span class="p">.</span><span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">isSubtypeOf</span><span class="p">(</span><span class="n">expected</span><span class="p">),</span>
+        <span class="s">&quot;Expected a value of type &#39;&quot;</span><span class="p">,</span>
+        <span class="n">expected</span><span class="o">-&gt;</span><span class="n">python_str</span><span class="p">(),</span>
+        <span class="s">&quot;&#39; for field &#39;&quot;</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">,</span>
+        <span class="s">&quot;&#39;, but found &#39;&quot;</span><span class="p">,</span>
+        <span class="n">v</span><span class="p">.</span><span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">python_str</span><span class="p">(),</span>
+        <span class="s">&quot;&#39;&quot;</span><span class="p">);</span>
+    <span class="k">return</span> <span class="nf">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">setSlot</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">v</span><span class="p">));</span>
   <span class="p">}</span>
 
   <span class="n">autograd</span><span class="o">::</span><span class="n">Variable</span> <span class="n">get_buffer</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
