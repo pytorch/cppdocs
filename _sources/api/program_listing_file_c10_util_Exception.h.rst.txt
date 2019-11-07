@@ -87,20 +87,21 @@ Program Listing for File Exception.h
      }
    };
    
-   class C10_API Warning {
-     using handler_t =
-         void (*)(const SourceLocation& source_location, const char* msg);
-   
-    public:
-     static void warn(SourceLocation source_location, std::string msg);
-     static void set_warning_handler(handler_t handler);
-     static void print_warning(
+   class C10_API WarningHandler {
+     public:
+     virtual ~WarningHandler() noexcept(false) {}
+     virtual void process(
          const SourceLocation& source_location,
-         const char* msg);
-   
-    private:
-     static handler_t warning_handler_;
+         const std::string& msg);
    };
+   
+   namespace Warning {
+   
+   C10_API void warn(SourceLocation source_location, const std::string& msg);
+   C10_API void set_warning_handler(WarningHandler* handler) noexcept(true);
+   C10_API WarningHandler* get_warning_handler() noexcept(true);
+   
+   } // namespace Warning
    
    // Used in ATen for out-of-bound indices that can reasonably only be detected
    // lazily inside a kernel (See: advanced indexing).  These turn into
