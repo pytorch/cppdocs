@@ -322,14 +322,42 @@
 <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
 <span class="k">struct</span> <span class="n">slot_list_impl</span><span class="p">;</span>
 
-<span class="k">struct</span> <span class="n">NameModule</span><span class="p">;</span>
-<span class="k">struct</span> <span class="n">NameValue</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+<span class="k">struct</span> <span class="n">Named</span> <span class="p">{</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">name</span><span class="p">;</span>
+  <span class="n">T</span> <span class="n">value</span><span class="p">;</span>
+<span class="p">};</span>
 
-<span class="k">using</span> <span class="n">module_list</span> <span class="o">=</span> <span class="n">slot_list_impl</span><span class="o">&lt;</span><span class="n">NameModule</span><span class="o">&gt;</span><span class="p">;</span>
-<span class="k">using</span> <span class="n">ivalue_list</span> <span class="o">=</span> <span class="n">slot_list_impl</span><span class="o">&lt;</span><span class="n">NameValue</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="k">using</span> <span class="n">NameModule</span> <span class="o">=</span> <span class="n">Named</span><span class="o">&lt;</span><span class="n">Module</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="k">using</span> <span class="n">NameValue</span> <span class="o">=</span> <span class="n">Named</span><span class="o">&lt;</span><span class="n">IValue</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="k">using</span> <span class="n">NameTensor</span> <span class="o">=</span> <span class="n">Named</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&gt;</span><span class="p">;</span>
+
+<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
+<span class="k">struct</span> <span class="n">TORCH_API</span> <span class="n">ModulePolicy</span><span class="p">;</span>
+<span class="k">struct</span> <span class="n">TORCH_API</span> <span class="n">ParameterPolicy</span><span class="p">;</span>
+<span class="k">struct</span> <span class="n">TORCH_API</span> <span class="n">AttributePolicy</span><span class="p">;</span>
+<span class="k">struct</span> <span class="n">TORCH_API</span> <span class="n">BufferPolicy</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">P</span><span class="o">&gt;</span>
+<span class="k">struct</span> <span class="n">NamedPolicy</span><span class="p">;</span>
+<span class="p">}</span> <span class="c1">// namespace detail</span>
+
+<span class="k">using</span> <span class="n">module_list</span> <span class="o">=</span> <span class="n">slot_list_impl</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">ModulePolicy</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="k">using</span> <span class="n">named_module_list</span> <span class="o">=</span>
+    <span class="n">slot_list_impl</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">NamedPolicy</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">ModulePolicy</span><span class="o">&gt;&gt;</span><span class="p">;</span>
+
+<span class="k">using</span> <span class="n">parameter_list</span> <span class="o">=</span> <span class="n">slot_list_impl</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">ParameterPolicy</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="k">using</span> <span class="n">named_parameter_list</span> <span class="o">=</span>
+    <span class="n">slot_list_impl</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">NamedPolicy</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">ParameterPolicy</span><span class="o">&gt;&gt;</span><span class="p">;</span>
+
+<span class="k">using</span> <span class="n">attribute_list</span> <span class="o">=</span> <span class="n">slot_list_impl</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">AttributePolicy</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="k">using</span> <span class="n">named_attribute_list</span> <span class="o">=</span>
+    <span class="n">slot_list_impl</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">NamedPolicy</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">AttributePolicy</span><span class="o">&gt;&gt;</span><span class="p">;</span>
+
+<span class="k">using</span> <span class="n">buffer_list</span> <span class="o">=</span> <span class="n">slot_list_impl</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">BufferPolicy</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="k">using</span> <span class="n">named_buffer_list</span> <span class="o">=</span>
+    <span class="n">slot_list_impl</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">NamedPolicy</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">BufferPolicy</span><span class="o">&gt;&gt;</span><span class="p">;</span>
+
 <span class="k">using</span> <span class="n">ModuleLookup</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">Module</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;&amp;</span><span class="p">)</span><span class="o">&gt;</span><span class="p">;</span>
-
-<span class="k">enum</span> <span class="k">class</span> <span class="nc">EntityType</span> <span class="p">{</span> <span class="n">MODULE</span><span class="p">,</span> <span class="n">PARAMETER</span><span class="p">,</span> <span class="n">ATTRIBUTE</span><span class="p">,</span> <span class="n">METHOD</span> <span class="p">};</span>
 
 <span class="c1">// A method in a module, e.g. f in:</span>
 <span class="c1">//</span>
@@ -419,16 +447,16 @@
   <span class="c1">// as parameters. This is different than in nn.Module where there is a special</span>
   <span class="c1">// register_buffer method. With this simplification, we only need to track</span>
   <span class="c1">// whether a slot is a parameter to be able to classify it.</span>
-  <span class="kt">void</span> <span class="n">register_buffer</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span> <span class="n">autograd</span><span class="o">::</span><span class="n">Variable</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kt">void</span> <span class="n">register_buffer</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
     <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">addOrCheckAttribute</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">TensorType</span><span class="o">::</span><span class="n">get</span><span class="p">());</span>
-    <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">setAttr</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">v</span><span class="p">);</span>
+    <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">setAttr</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">v</span><span class="p">));</span>
   <span class="p">}</span>
   <span class="kt">void</span> <span class="n">register_parameter</span><span class="p">(</span>
       <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span>
-      <span class="n">autograd</span><span class="o">::</span><span class="n">Variable</span> <span class="n">v</span><span class="p">,</span>
+      <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">v</span><span class="p">,</span>
       <span class="kt">bool</span> <span class="n">is_buffer</span><span class="p">)</span> <span class="p">{</span>
     <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">addOrCheckAttribute</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">TensorType</span><span class="o">::</span><span class="n">get</span><span class="p">(),</span> <span class="o">!</span><span class="n">is_buffer</span><span class="p">);</span>
-    <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">setAttr</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">v</span><span class="p">);</span>
+    <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">setAttr</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">v</span><span class="p">));</span>
   <span class="p">}</span>
   <span class="kt">void</span> <span class="n">register_attribute</span><span class="p">(</span>
       <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span>
@@ -436,30 +464,16 @@
       <span class="n">IValue</span> <span class="n">v</span><span class="p">,</span>
       <span class="kt">bool</span> <span class="n">is_param</span> <span class="o">=</span> <span class="nb">false</span><span class="p">)</span> <span class="p">{</span>
     <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">addOrCheckAttribute</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">t</span><span class="p">,</span> <span class="n">is_param</span><span class="p">);</span>
-    <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">setAttr</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">v</span><span class="p">);</span>
+    <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">setAttr</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">v</span><span class="p">));</span>
   <span class="p">}</span>
   <span class="kt">void</span> <span class="n">register_module</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span> <span class="k">const</span> <span class="n">Module</span><span class="o">&amp;</span> <span class="n">module</span><span class="p">)</span> <span class="p">{</span>
     <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">addOrCheckAttribute</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">module</span><span class="p">.</span><span class="n">type</span><span class="p">());</span>
     <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">setAttr</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">module</span><span class="p">.</span><span class="n">module_object</span><span class="p">());</span>
   <span class="p">}</span>
 
-  <span class="kt">void</span> <span class="n">set_parameter</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">setAttr</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">v</span><span class="p">);</span>
-  <span class="p">}</span>
-
-  <span class="n">autograd</span><span class="o">::</span><span class="n">Variable</span> <span class="n">get_parameter</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">autograd</span><span class="o">::</span><span class="n">as_variable_ref</span><span class="p">(</span><span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getAttr</span><span class="p">(</span><span class="n">name</span><span class="p">).</span><span class="n">toTensor</span><span class="p">());</span>
-  <span class="p">}</span>
-
-  <span class="n">IValue</span> <span class="n">get_attribute</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getAttr</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
-  <span class="p">}</span>
-
-  <span class="kt">void</span> <span class="n">set_attribute</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span> <span class="n">IValue</span> <span class="n">v</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+  <span class="kt">void</span> <span class="n">setattr</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span> <span class="n">IValue</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
     <span class="kt">size_t</span> <span class="n">slot</span> <span class="o">=</span> <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getAttributeSlot</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
     <span class="k">const</span> <span class="n">TypePtr</span><span class="o">&amp;</span> <span class="n">expected</span> <span class="o">=</span> <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getAttribute</span><span class="p">(</span><span class="n">slot</span><span class="p">);</span>
-    <span class="c1">// TODO: give better error message when subtyping check fails, and python_str</span>
-    <span class="c1">// of expected and v.type() are just mangled names of the same nn.module.</span>
     <span class="n">TORCH_CHECK</span><span class="p">(</span>
         <span class="n">v</span><span class="p">.</span><span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">isSubtypeOf</span><span class="p">(</span><span class="n">expected</span><span class="p">),</span>
         <span class="s">&quot;Expected a value of type &#39;&quot;</span><span class="p">,</span>
@@ -469,11 +483,22 @@
         <span class="s">&quot;&#39;, but found &#39;&quot;</span><span class="p">,</span>
         <span class="n">v</span><span class="p">.</span><span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">python_str</span><span class="p">(),</span>
         <span class="s">&quot;&#39;&quot;</span><span class="p">);</span>
-    <span class="k">return</span> <span class="nf">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">setSlot</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">v</span><span class="p">));</span>
+    <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">setSlot</span><span class="p">(</span><span class="n">slot</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">v</span><span class="p">));</span>
   <span class="p">}</span>
 
-  <span class="n">autograd</span><span class="o">::</span><span class="n">Variable</span> <span class="n">get_buffer</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">autograd</span><span class="o">::</span><span class="n">as_variable_ref</span><span class="p">(</span><span class="n">get_attribute</span><span class="p">(</span><span class="n">name</span><span class="p">).</span><span class="n">toTensor</span><span class="p">());</span>
+  <span class="n">IValue</span> <span class="n">attr</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getAttr</span><span class="p">(</span><span class="n">name</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="n">IValue</span> <span class="n">attr</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span> <span class="n">IValue</span> <span class="n">or_else</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="k">auto</span> <span class="n">r</span> <span class="o">=</span> <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">findAttributeSlot</span><span class="p">(</span><span class="n">name</span><span class="p">))</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getSlot</span><span class="p">(</span><span class="o">*</span><span class="n">r</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">or_else</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="kt">bool</span> <span class="n">hasattr</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">findAttributeSlot</span><span class="p">(</span><span class="n">name</span><span class="p">).</span><span class="n">has_value</span><span class="p">();</span>
   <span class="p">}</span>
 
   <span class="c1">// each module owns its method. The reference returned here</span>
@@ -485,18 +510,23 @@
     <span class="n">AT_ERROR</span><span class="p">(</span><span class="s">&quot;Method &#39;&quot;</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="s">&quot;&#39; is not defined.&quot;</span><span class="p">);</span>
   <span class="p">}</span>
 
-  <span class="n">Module</span> <span class="n">get_module</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">auto</span> <span class="n">obj</span> <span class="o">=</span> <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getAttr</span><span class="p">(</span><span class="n">name</span><span class="p">).</span><span class="n">toObject</span><span class="p">();</span>
-    <span class="k">return</span> <span class="nf">Module</span><span class="p">(</span><span class="n">obj</span><span class="p">);</span>
-  <span class="p">}</span>
+  <span class="kt">void</span> <span class="n">apply</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">(</span><span class="n">Module</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;&amp;</span> <span class="n">fn</span><span class="p">);</span>
 
-  <span class="n">ivalue_list</span> <span class="n">get_slots</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+  <span class="n">buffer_list</span> <span class="nf">buffers</span><span class="p">(</span><span class="kt">bool</span> <span class="n">recurse</span> <span class="o">=</span> <span class="nb">true</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
+  <span class="n">named_buffer_list</span> <span class="nf">named_buffers</span><span class="p">(</span><span class="kt">bool</span> <span class="n">recurse</span> <span class="o">=</span> <span class="nb">true</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
 
-  <span class="n">module_list</span> <span class="nf">get_modules</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+  <span class="n">module_list</span> <span class="nf">children</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span> <span class="c1">// direct modules</span>
+  <span class="n">named_module_list</span> <span class="nf">named_children</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+  <span class="n">module_list</span> <span class="nf">modules</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span> <span class="c1">// all modules, including this one, recursively</span>
+  <span class="n">named_module_list</span> <span class="nf">named_modules</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
 
-  <span class="n">ivalue_list</span> <span class="nf">get_parameters</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+  <span class="c1">// all tensors involved in gradient optimization</span>
+  <span class="n">parameter_list</span> <span class="nf">parameters</span><span class="p">(</span><span class="kt">bool</span> <span class="n">recurse</span> <span class="o">=</span> <span class="nb">true</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
+  <span class="n">named_parameter_list</span> <span class="nf">named_parameters</span><span class="p">(</span><span class="kt">bool</span> <span class="n">recurse</span> <span class="o">=</span> <span class="nb">true</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
 
-  <span class="n">ivalue_list</span> <span class="nf">get_attributes</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+  <span class="c1">// all members of the object, similar to iterating over dir(obj) in python</span>
+  <span class="n">attribute_list</span> <span class="nf">attributes</span><span class="p">(</span><span class="kt">bool</span> <span class="n">recurse</span> <span class="o">=</span> <span class="nb">true</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
+  <span class="n">named_attribute_list</span> <span class="nf">named_attributes</span><span class="p">(</span><span class="kt">bool</span> <span class="n">recurse</span> <span class="o">=</span> <span class="nb">true</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
 
   <span class="kt">void</span> <span class="nf">dump</span><span class="p">(</span>
       <span class="kt">bool</span> <span class="n">print_method_bodies</span><span class="p">,</span>
@@ -517,26 +547,14 @@
         <span class="p">});</span>
   <span class="p">}</span>
 
-  <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">autograd</span><span class="o">::</span><span class="n">Variable</span><span class="o">&gt;</span> <span class="n">find_parameter</span><span class="p">(</span>
-      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">IValue</span><span class="o">&gt;</span> <span class="n">find_attribute</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">autograd</span><span class="o">::</span><span class="n">Variable</span><span class="o">&gt;</span> <span class="n">find_buffer</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Module</span><span class="o">&gt;</span> <span class="n">find_module</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
   <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Method</span><span class="o">&gt;</span> <span class="n">find_method</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">basename</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
-
-  <span class="kt">void</span> <span class="nf">apply</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">(</span><span class="n">Module</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;&amp;</span> <span class="n">fn</span><span class="p">);</span>
 
   <span class="kt">void</span> <span class="nf">train</span><span class="p">(</span><span class="kt">bool</span> <span class="n">on</span> <span class="o">=</span> <span class="nb">true</span><span class="p">);</span>
   <span class="kt">void</span> <span class="nf">eval</span><span class="p">()</span> <span class="p">{</span>
     <span class="n">train</span><span class="p">(</span><span class="cm">/*on=*/</span><span class="nb">false</span><span class="p">);</span>
   <span class="p">}</span>
   <span class="kt">bool</span> <span class="nf">is_training</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="p">(</span><span class="k">auto</span> <span class="n">p</span> <span class="o">=</span> <span class="n">find_attribute</span><span class="p">(</span><span class="s">&quot;training&quot;</span><span class="p">))</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="n">p</span><span class="o">-&gt;</span><span class="n">toBool</span><span class="p">();</span>
-    <span class="p">}</span>
-
-    <span class="c1">// We are in training mode by default</span>
-    <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+    <span class="k">return</span> <span class="n">attr</span><span class="p">(</span><span class="s">&quot;training&quot;</span><span class="p">,</span> <span class="nb">true</span><span class="p">).</span><span class="n">toBool</span><span class="p">();</span>
   <span class="p">}</span>
 
   <span class="kt">void</span> <span class="nf">to</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">Device</span> <span class="n">device</span><span class="p">,</span> <span class="n">at</span><span class="o">::</span><span class="n">ScalarType</span> <span class="n">dtype</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">non_blocking</span> <span class="o">=</span> <span class="nb">false</span><span class="p">);</span>
@@ -593,23 +611,6 @@
   <span class="kt">size_t</span> <span class="nf">num_slots</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">slots</span><span class="p">().</span><span class="n">size</span><span class="p">();</span>
   <span class="p">}</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">EntityType</span><span class="o">&gt;</span> <span class="n">entity_type</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="p">(</span><span class="k">auto</span> <span class="n">slot_idx</span> <span class="o">=</span> <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">findAttributeSlot</span><span class="p">(</span><span class="n">name</span><span class="p">))</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="n">entity_type</span><span class="p">(</span><span class="o">*</span><span class="n">slot_idx</span><span class="p">);</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span>
-  <span class="p">}</span>
-  <span class="n">EntityType</span> <span class="n">entity_type</span><span class="p">(</span><span class="kt">size_t</span> <span class="n">offset_</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">offset_</span> <span class="o">&lt;</span> <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">numAttributes</span><span class="p">());</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">is_parameter</span><span class="p">(</span><span class="n">offset_</span><span class="p">))</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">PARAMETER</span><span class="p">;</span>
-    <span class="p">}</span>
-    <span class="n">at</span><span class="o">::</span><span class="n">TypePtr</span> <span class="n">t</span> <span class="o">=</span> <span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getAttribute</span><span class="p">(</span><span class="n">offset_</span><span class="p">);</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">t</span><span class="o">-&gt;</span><span class="n">is_module</span><span class="p">())</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">MODULE</span><span class="p">;</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="n">EntityType</span><span class="o">::</span><span class="n">ATTRIBUTE</span><span class="p">;</span>
-  <span class="p">}</span>
 
  <span class="k">private</span><span class="o">:</span>
   <span class="n">Module</span> <span class="n">clone_impl</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">unordered_map</span><span class="o">&lt;</span><span class="n">TypePtr</span><span class="p">,</span> <span class="n">TypePtr</span><span class="o">&gt;&amp;</span> <span class="n">type_remap</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
@@ -632,119 +633,294 @@
   <span class="k">mutable</span> <span class="n">ModulePtr</span> <span class="n">module_value_</span><span class="p">;</span>
 <span class="p">};</span>
 
-<span class="k">struct</span> <span class="n">NameModule</span> <span class="p">{</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">name</span><span class="p">;</span>
-  <span class="n">Module</span> <span class="n">module</span><span class="p">;</span>
+<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
+
+<span class="k">struct</span> <span class="n">TORCH_API</span> <span class="n">SlotCursor</span> <span class="p">{</span>
+  <span class="n">Module</span> <span class="n">module_</span><span class="p">;</span>
+  <span class="kt">int64_t</span> <span class="n">i_</span><span class="p">;</span> <span class="c1">// slot offset, -1 indicates the module itself</span>
 <span class="p">};</span>
 
-<span class="k">struct</span> <span class="n">NameValue</span> <span class="p">{</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">name</span><span class="p">;</span>
-  <span class="n">IValue</span> <span class="n">value</span><span class="p">;</span>
-<span class="p">};</span>
+<span class="p">}</span> <span class="c1">// namespace detail</span>
 
-<span class="c1">// this iterator for the slot list defined below has a position in the list i_</span>
-<span class="c1">// and an optional field type_ that if present</span>
-<span class="c1">// restricts iteration to only the slots of module_ that</span>
-<span class="c1">// have EntityType *type_. This allows it to return, e.g.</span>
-<span class="c1">// only the parameter slots.</span>
-<span class="c1">// The template parameter allows us to use the same implementation for a list</span>
-<span class="c1">// that returns Module via template specialization of the operator* method.</span>
-<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
-<span class="k">struct</span> <span class="n">TORCH_API</span> <span class="n">slot_iterator_impl</span> <span class="p">{</span>
-  <span class="n">slot_iterator_impl</span><span class="p">(</span><span class="n">Module</span> <span class="n">module</span><span class="p">,</span> <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">EntityType</span><span class="o">&gt;</span> <span class="n">type</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">i</span><span class="p">)</span>
-      <span class="o">:</span> <span class="n">module_</span><span class="p">(</span><span class="n">module</span><span class="p">),</span> <span class="n">type_</span><span class="p">(</span><span class="n">type</span><span class="p">),</span> <span class="n">i_</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">advance_to_valid</span><span class="p">();</span>
+<span class="c1">// This iterator allows the (optionally recursive) enumeration of</span>
+<span class="c1">// the  members of a Module. It performs a depth-first pre-order</span>
+<span class="c1">// traversal of the module. The Policy template parameter determines</span>
+<span class="c1">// which slots of the object should be included. For instance,</span>
+<span class="c1">// when iterating parameters, we return the parameter tensors,</span>
+<span class="c1">// but skip modules, buffers, and other attributes.</span>
+<span class="c1">// See ModulePolicy for comments about Policy object&#39;s API.</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Policy</span><span class="o">&gt;</span>
+<span class="k">struct</span> <span class="n">slot_iterator_impl</span> <span class="p">{</span>
+  <span class="k">using</span> <span class="n">SlotCursor</span> <span class="o">=</span> <span class="n">detail</span><span class="o">::</span><span class="n">SlotCursor</span><span class="p">;</span>
+  <span class="k">using</span> <span class="n">value_type</span> <span class="o">=</span> <span class="k">typename</span> <span class="n">Policy</span><span class="o">::</span><span class="n">value_type</span><span class="p">;</span>
+  <span class="n">slot_iterator_impl</span><span class="p">(</span>
+      <span class="n">Module</span> <span class="n">root</span><span class="p">,</span>
+      <span class="kt">bool</span> <span class="n">recurse</span><span class="p">,</span> <span class="c1">// if true, do a depth-first search, otherwise, just look at</span>
+                    <span class="c1">// slots of root</span>
+      <span class="kt">bool</span> <span class="n">return_module</span><span class="p">)</span> <span class="c1">// if true include root itself as the first thing</span>
+                          <span class="c1">// visited (used in modules())</span>
+      <span class="o">:</span> <span class="n">cursors_</span><span class="p">({</span><span class="n">SlotCursor</span><span class="p">{</span><span class="n">root</span><span class="p">,</span> <span class="n">return_module</span> <span class="o">?</span> <span class="o">-</span><span class="mi">1</span> <span class="o">:</span> <span class="mi">0</span><span class="p">}}),</span>
+        <span class="n">recurse_</span><span class="p">(</span><span class="n">recurse</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// advance iterator to first valid element (or the end, if empty)</span>
+    <span class="n">while_not_valid_next</span><span class="p">();</span>
   <span class="p">}</span>
-  <span class="n">T</span> <span class="k">operator</span><span class="o">*</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
-  <span class="n">T</span> <span class="k">operator</span><span class="o">-&gt;</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+  <span class="c1">// empty cursors_, represents end of iteration</span>
+  <span class="n">slot_iterator_impl</span><span class="p">()</span> <span class="o">:</span> <span class="n">recurse_</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span> <span class="p">{}</span>
+  <span class="n">value_type</span> <span class="k">operator</span><span class="o">*</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">Policy</span><span class="o">::</span><span class="n">create</span><span class="p">(</span><span class="n">cursors_</span><span class="p">,</span> <span class="n">cur</span><span class="p">());</span>
+  <span class="p">}</span>
+  <span class="n">value_type</span> <span class="k">operator</span><span class="o">-&gt;</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">return</span> <span class="o">**</span><span class="k">this</span><span class="p">;</span>
   <span class="p">}</span>
   <span class="n">slot_iterator_impl</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">++</span><span class="p">()</span> <span class="p">{</span>
-    <span class="o">++</span><span class="n">i_</span><span class="p">;</span>
-    <span class="n">advance_to_valid</span><span class="p">();</span>
+    <span class="n">next_valid</span><span class="p">();</span>
     <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
   <span class="p">}</span>
   <span class="n">slot_iterator_impl</span> <span class="k">operator</span><span class="o">++</span><span class="p">(</span><span class="kt">int</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// this is really expensive, should we delete it so people don&#39;t use it</span>
+    <span class="c1">// instead of prefix?</span>
     <span class="n">slot_iterator_impl</span> <span class="n">old</span> <span class="o">=</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
     <span class="o">++</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">);</span>
     <span class="k">return</span> <span class="n">old</span><span class="p">;</span>
   <span class="p">}</span>
 
  <span class="k">private</span><span class="o">:</span>
-  <span class="kt">void</span> <span class="n">advance_to_valid</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">while</span> <span class="p">(</span><span class="n">i_</span> <span class="o">&lt;</span> <span class="n">module_</span><span class="p">.</span><span class="n">num_slots</span><span class="p">()</span> <span class="o">&amp;&amp;</span>
-           <span class="p">(</span><span class="n">type_</span> <span class="o">&amp;&amp;</span> <span class="n">module_</span><span class="p">.</span><span class="n">entity_type</span><span class="p">(</span><span class="n">i_</span><span class="p">)</span> <span class="o">!=</span> <span class="o">*</span><span class="n">type_</span><span class="p">))</span> <span class="p">{</span>
-      <span class="o">++</span><span class="n">i_</span><span class="p">;</span>
+  <span class="c1">// return_module() is a corner case where instead of returning a submodule</span>
+  <span class="c1">// of root, we are returning root itself, because we are iterating modules(),</span>
+  <span class="c1">// which contains the root module itself.</span>
+  <span class="c1">// It is represented with a single SlotCursor whose index is -1.</span>
+  <span class="kt">bool</span> <span class="n">return_module</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">top</span><span class="p">().</span><span class="n">i_</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="k">const</span> <span class="n">SlotCursor</span><span class="o">&amp;</span> <span class="n">top</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">cursors_</span><span class="p">.</span><span class="n">back</span><span class="p">();</span>
+  <span class="p">}</span>
+  <span class="n">SlotCursor</span><span class="o">&amp;</span> <span class="n">top</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">cursors_</span><span class="p">.</span><span class="n">back</span><span class="p">();</span>
+  <span class="p">}</span>
+  <span class="n">IValue</span> <span class="n">cur</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">return_module</span><span class="p">()</span> <span class="o">?</span> <span class="n">top</span><span class="p">().</span><span class="n">module_</span><span class="p">.</span><span class="n">module_object</span><span class="p">()</span>
+                           <span class="o">:</span> <span class="n">top</span><span class="p">().</span><span class="n">module_</span><span class="p">.</span><span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getSlot</span><span class="p">(</span><span class="n">top</span><span class="p">().</span><span class="n">i_</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="c1">// advance to the next slot in a depth first pre-order traversal of the</span>
+  <span class="c1">// modules slots. This function does not guarentee the next slot is a</span>
+  <span class="c1">// valid element of the iteration. That is done by valid().</span>
+  <span class="c1">// invariant: !cursors_.empty()</span>
+  <span class="kt">void</span> <span class="n">next</span><span class="p">()</span> <span class="p">{</span>
+    <span class="c1">// we just returned the module itself, advance i_ to 0 so we are now</span>
+    <span class="c1">// at the first slot of the module.</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">return_module</span><span class="p">())</span> <span class="p">{</span>
+      <span class="o">++</span><span class="n">top</span><span class="p">().</span><span class="n">i_</span><span class="p">;</span>
+      <span class="k">return</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="c1">// the last traversal action advanced beyond the number of slots in the</span>
+    <span class="c1">// module so continue the iteration in the parent.</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">top</span><span class="p">().</span><span class="n">i_</span> <span class="o">&gt;=</span> <span class="kt">int64_t</span><span class="p">(</span><span class="n">top</span><span class="p">().</span><span class="n">module_</span><span class="p">.</span><span class="n">num_slots</span><span class="p">()))</span> <span class="p">{</span>
+      <span class="n">cursors_</span><span class="p">.</span><span class="n">pop_back</span><span class="p">();</span>
+      <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">cursors_</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span> <span class="p">{</span>
+        <span class="o">++</span><span class="n">top</span><span class="p">().</span><span class="n">i_</span><span class="p">;</span>
+      <span class="p">}</span>
+      <span class="k">return</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="c1">// if the current thing is a module, we have to scan it for recursive</span>
+    <span class="c1">// traversals. We do this by adding a new SlotCursor to track the traversal.</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">recurse_</span> <span class="o">&amp;&amp;</span>
+        <span class="n">top</span><span class="p">()</span>
+            <span class="p">.</span><span class="n">module_</span><span class="p">.</span><span class="n">module_object</span><span class="p">()</span>
+            <span class="o">-&gt;</span><span class="n">type</span><span class="p">()</span>
+            <span class="o">-&gt;</span><span class="n">getAttribute</span><span class="p">(</span><span class="n">top</span><span class="p">().</span><span class="n">i_</span><span class="p">)</span>
+            <span class="o">-&gt;</span><span class="n">is_module</span><span class="p">())</span> <span class="p">{</span>
+      <span class="n">cursors_</span><span class="p">.</span><span class="n">emplace_back</span><span class="p">(</span><span class="n">SlotCursor</span><span class="p">{</span><span class="n">cur</span><span class="p">().</span><span class="n">toModule</span><span class="p">(),</span> <span class="mi">0</span><span class="p">});</span>
+      <span class="k">return</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="c1">// common case: advance to the next slot.</span>
+    <span class="o">++</span><span class="n">top</span><span class="p">().</span><span class="n">i_</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="c1">// is the current position of the iterator a valid one?</span>
+  <span class="c1">// otherwise, we have to continue advancing.</span>
+  <span class="kt">bool</span> <span class="n">valid</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">top</span><span class="p">().</span><span class="n">i_</span> <span class="o">&lt;</span> <span class="kt">int64_t</span><span class="p">(</span><span class="n">top</span><span class="p">().</span><span class="n">module_</span><span class="p">.</span><span class="n">num_slots</span><span class="p">())</span> <span class="o">&amp;&amp;</span>
+        <span class="n">Policy</span><span class="o">::</span><span class="n">valid</span><span class="p">(</span><span class="n">top</span><span class="p">().</span><span class="n">module_</span><span class="p">.</span><span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">type</span><span class="p">(),</span> <span class="n">top</span><span class="p">().</span><span class="n">i_</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="kt">void</span> <span class="n">while_not_valid_next</span><span class="p">()</span> <span class="p">{</span>
+    <span class="c1">// advance iteration until we are either at the end (cursors_.empty())</span>
+    <span class="c1">// or in a valid state. return_module() is a special case,</span>
+    <span class="c1">// and is always considered valid, regardless of Policy, because it is</span>
+    <span class="c1">// it is only true when we are iterating modules.</span>
+    <span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="n">cursors_</span><span class="p">.</span><span class="n">empty</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">return_module</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">valid</span><span class="p">())</span> <span class="p">{</span>
+      <span class="n">next</span><span class="p">();</span>
     <span class="p">}</span>
   <span class="p">}</span>
-  <span class="n">Module</span> <span class="n">module_</span><span class="p">;</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">EntityType</span><span class="o">&gt;</span> <span class="n">type_</span><span class="p">;</span>
-  <span class="kt">size_t</span> <span class="n">i_</span><span class="p">;</span>
+  <span class="kt">void</span> <span class="n">next_valid</span><span class="p">()</span> <span class="p">{</span>
+    <span class="c1">// avoid crashing if this is empty</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">cursors_</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span> <span class="p">{</span>
+      <span class="k">return</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="c1">// advance to next element, which is maybe not valid</span>
+    <span class="n">next</span><span class="p">();</span>
+    <span class="n">while_not_valid_next</span><span class="p">();</span>
+  <span class="p">}</span>
 
-  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">TT</span><span class="o">&gt;</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">SlotCursor</span><span class="o">&gt;</span> <span class="n">cursors_</span><span class="p">;</span>
+  <span class="kt">bool</span> <span class="n">recurse_</span><span class="p">;</span>
+
   <span class="k">friend</span> <span class="kr">inline</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">!=</span><span class="p">(</span>
-      <span class="k">const</span> <span class="n">slot_iterator_impl</span><span class="o">&lt;</span><span class="n">TT</span><span class="o">&gt;&amp;</span> <span class="n">a</span><span class="p">,</span>
-      <span class="k">const</span> <span class="n">slot_iterator_impl</span><span class="o">&lt;</span><span class="n">TT</span><span class="o">&gt;&amp;</span> <span class="n">b</span><span class="p">);</span>
+      <span class="k">const</span> <span class="n">slot_iterator_impl</span><span class="o">&lt;</span><span class="n">Policy</span><span class="o">&gt;&amp;</span> <span class="n">a</span><span class="p">,</span>
+      <span class="k">const</span> <span class="n">slot_iterator_impl</span><span class="o">&lt;</span><span class="n">Policy</span><span class="o">&gt;&amp;</span> <span class="n">b</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// we are finished iteration when we have no more iteration SlotCursors.</span>
+    <span class="c1">// end is always an empty iterator with no cursors.</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">a</span><span class="p">.</span><span class="n">cursors_</span><span class="p">.</span><span class="n">empty</span><span class="p">()</span> <span class="o">!=</span> <span class="n">b</span><span class="p">.</span><span class="n">cursors_</span><span class="p">.</span><span class="n">empty</span><span class="p">());</span>
+  <span class="p">}</span>
 <span class="p">};</span>
-
-<span class="k">template</span> <span class="o">&lt;&gt;</span>
-<span class="kr">inline</span> <span class="n">NameModule</span> <span class="n">slot_iterator_impl</span><span class="o">&lt;</span><span class="n">NameModule</span><span class="o">&gt;::</span><span class="k">operator</span><span class="o">*</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="p">{</span><span class="n">module_</span><span class="p">.</span><span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getAttributeName</span><span class="p">(</span><span class="n">i_</span><span class="p">),</span>
-          <span class="n">module_</span><span class="p">.</span><span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getSlot</span><span class="p">(</span><span class="n">i_</span><span class="p">).</span><span class="n">toObject</span><span class="p">()};</span>
-<span class="p">}</span>
-
-<span class="k">template</span> <span class="o">&lt;&gt;</span>
-<span class="kr">inline</span> <span class="n">NameValue</span> <span class="n">slot_iterator_impl</span><span class="o">&lt;</span><span class="n">NameValue</span><span class="o">&gt;::</span><span class="k">operator</span><span class="o">*</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="p">{</span><span class="n">module_</span><span class="p">.</span><span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getAttributeName</span><span class="p">(</span><span class="n">i_</span><span class="p">),</span>
-          <span class="n">module_</span><span class="p">.</span><span class="n">module_object</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getSlot</span><span class="p">(</span><span class="n">i_</span><span class="p">)};</span>
-<span class="p">}</span>
-
-<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
-<span class="kr">inline</span> <span class="kt">bool</span> <span class="k">operator</span><span class="o">!=</span><span class="p">(</span>
-    <span class="k">const</span> <span class="n">slot_iterator_impl</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">a</span><span class="p">,</span>
-    <span class="k">const</span> <span class="n">slot_iterator_impl</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">b</span><span class="p">)</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="n">a</span><span class="p">.</span><span class="n">i_</span> <span class="o">!=</span> <span class="n">b</span><span class="p">.</span><span class="n">i_</span><span class="p">;</span>
-<span class="p">}</span>
 
 <span class="c1">// This type represents lists of parameters, attributes, and</span>
 <span class="c1">// submodules contained in the module. It is abstract because</span>
 <span class="c1">// they are not stored directly in std::vectors but inside the</span>
 <span class="c1">// module&#39;s IValue object itself.</span>
-<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
-<span class="k">struct</span> <span class="n">TORCH_API</span> <span class="n">slot_list_impl</span> <span class="p">{</span>
-  <span class="k">using</span> <span class="n">iterator</span> <span class="o">=</span> <span class="n">slot_iterator_impl</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">;</span>
-  <span class="k">using</span> <span class="n">const_iterator</span> <span class="o">=</span> <span class="n">slot_iterator_impl</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">;</span>
-  <span class="n">slot_iterator_impl</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">begin</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">slot_iterator_impl</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">module_</span><span class="p">,</span> <span class="n">type_</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Policy</span><span class="o">&gt;</span>
+<span class="k">struct</span> <span class="n">slot_list_impl</span> <span class="p">{</span>
+  <span class="k">using</span> <span class="n">iterator</span> <span class="o">=</span> <span class="n">slot_iterator_impl</span><span class="o">&lt;</span><span class="n">Policy</span><span class="o">&gt;</span><span class="p">;</span>
+  <span class="k">using</span> <span class="n">const_iterator</span> <span class="o">=</span> <span class="n">slot_iterator_impl</span><span class="o">&lt;</span><span class="n">Policy</span><span class="o">&gt;</span><span class="p">;</span>
+  <span class="k">using</span> <span class="n">value_type</span> <span class="o">=</span> <span class="k">typename</span> <span class="n">iterator</span><span class="o">::</span><span class="n">value_type</span><span class="p">;</span>
+  <span class="n">slot_iterator_impl</span><span class="o">&lt;</span><span class="n">Policy</span><span class="o">&gt;</span> <span class="n">begin</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">slot_iterator_impl</span><span class="o">&lt;</span><span class="n">Policy</span><span class="o">&gt;</span><span class="p">(</span><span class="n">module_</span><span class="p">,</span> <span class="n">recurse_</span><span class="p">,</span> <span class="n">return_module_</span><span class="p">);</span>
   <span class="p">}</span>
-  <span class="n">slot_iterator_impl</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">end</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">slot_iterator_impl</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">module_</span><span class="p">,</span> <span class="n">type_</span><span class="p">,</span> <span class="n">module_</span><span class="p">.</span><span class="n">num_slots</span><span class="p">());</span>
+  <span class="n">slot_iterator_impl</span><span class="o">&lt;</span><span class="n">Policy</span><span class="o">&gt;</span> <span class="n">end</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">slot_iterator_impl</span><span class="o">&lt;</span><span class="n">Policy</span><span class="o">&gt;</span><span class="p">();</span>
   <span class="p">}</span>
   <span class="kt">size_t</span> <span class="n">size</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">size_</span><span class="p">)</span> <span class="p">{</span>
       <span class="n">size_</span> <span class="o">=</span> <span class="kt">size_t</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
-      <span class="k">for</span> <span class="p">(</span><span class="n">T</span> <span class="nl">s</span> <span class="p">:</span> <span class="o">*</span><span class="p">(</span><span class="k">this</span><span class="p">))</span> <span class="p">{</span>
+      <span class="k">for</span> <span class="p">(</span><span class="k">const</span> <span class="n">value_type</span><span class="o">&amp;</span> <span class="nl">s</span> <span class="p">:</span> <span class="o">*</span><span class="p">(</span><span class="k">this</span><span class="p">))</span> <span class="p">{</span>
         <span class="o">++*</span><span class="n">size_</span><span class="p">;</span>
       <span class="p">}</span>
     <span class="p">}</span>
     <span class="k">return</span> <span class="o">*</span><span class="n">size_</span><span class="p">;</span>
   <span class="p">}</span>
 
- <span class="k">private</span><span class="o">:</span>
-  <span class="n">slot_list_impl</span><span class="p">(</span><span class="n">Module</span> <span class="n">module</span><span class="p">,</span> <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">EntityType</span><span class="o">&gt;</span> <span class="n">type</span><span class="p">)</span>
-      <span class="o">:</span> <span class="n">module_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">module</span><span class="p">)),</span> <span class="n">type_</span><span class="p">(</span><span class="n">type</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">type_</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">slot_list_impl</span><span class="p">(</span><span class="n">Module</span> <span class="n">module</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">recurse</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">return_module</span><span class="p">)</span>
+      <span class="o">:</span> <span class="n">module_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">module</span><span class="p">)),</span>
+        <span class="n">recurse_</span><span class="p">(</span><span class="n">recurse</span><span class="p">),</span>
+        <span class="n">return_module_</span><span class="p">(</span><span class="n">return_module</span><span class="p">),</span>
+        <span class="n">size_</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">recurse</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">return_module</span> <span class="o">&amp;&amp;</span> <span class="n">Policy</span><span class="o">::</span><span class="n">all_slots</span><span class="p">)</span> <span class="p">{</span>
       <span class="n">size_</span> <span class="o">=</span> <span class="n">module_</span><span class="p">.</span><span class="n">num_slots</span><span class="p">();</span>
     <span class="p">}</span>
   <span class="p">}</span>
+
+ <span class="k">private</span><span class="o">:</span>
   <span class="n">Module</span> <span class="n">module_</span><span class="p">;</span>
-  <span class="c1">// only include Slots of the following type</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">EntityType</span><span class="o">&gt;</span> <span class="n">type_</span><span class="p">;</span>
+  <span class="kt">bool</span> <span class="n">recurse_</span><span class="p">;</span>
+  <span class="kt">bool</span> <span class="n">return_module_</span><span class="p">;</span>
   <span class="c1">// size of this list, cached on first request</span>
   <span class="c1">// when we need to filter the slot list</span>
   <span class="k">mutable</span> <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="o">&gt;</span> <span class="n">size_</span><span class="p">;</span>
   <span class="k">friend</span> <span class="k">struct</span> <span class="n">Module</span><span class="p">;</span>
 <span class="p">};</span>
+
+<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
+
+<span class="c1">// slot_iterator_impl always iterate over all the slots in a module,</span>
+<span class="c1">// the Policy template argument determines slots should be returned and their</span>
+<span class="c1">// types</span>
+<span class="k">struct</span> <span class="n">TORCH_API</span> <span class="n">ModulePolicy</span> <span class="p">{</span>
+  <span class="c1">// the type of the value being returned</span>
+  <span class="k">using</span> <span class="n">value_type</span> <span class="o">=</span> <span class="n">Module</span><span class="p">;</span>
+
+  <span class="c1">// the logic for creating the type being returned, given the raw IValue</span>
+  <span class="c1">// of that object.</span>
+  <span class="k">static</span> <span class="n">value_type</span> <span class="nf">create</span><span class="p">(</span>
+      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">SlotCursor</span><span class="o">&gt;&amp;</span> <span class="n">cursors</span><span class="p">,</span>
+      <span class="n">IValue</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">Module</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">v</span><span class="p">).</span><span class="n">toObject</span><span class="p">());</span>
+  <span class="p">}</span>
+  <span class="c1">// is slot i in typ something that this iterator should return, otherwise,</span>
+  <span class="c1">// we skip it.</span>
+  <span class="k">static</span> <span class="kt">bool</span> <span class="nf">valid</span><span class="p">(</span><span class="k">const</span> <span class="n">ClassTypePtr</span><span class="o">&amp;</span> <span class="n">typ</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">typ</span><span class="o">-&gt;</span><span class="n">getAttribute</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">is_module</span><span class="p">();</span>
+  <span class="p">}</span>
+  <span class="c1">// are we going to return everything? If so, we can optimize the calculate</span>
+  <span class="c1">// of the size of the list.</span>
+  <span class="k">static</span> <span class="k">constexpr</span> <span class="kt">bool</span> <span class="n">all_slots</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="k">struct</span> <span class="n">TORCH_API</span> <span class="n">ParameterPolicy</span> <span class="p">{</span>
+  <span class="k">using</span> <span class="n">value_type</span> <span class="o">=</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="p">;</span>
+  <span class="k">static</span> <span class="n">value_type</span> <span class="nf">create</span><span class="p">(</span>
+      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">SlotCursor</span><span class="o">&gt;&amp;</span> <span class="n">cursors</span><span class="p">,</span>
+      <span class="n">IValue</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">v</span><span class="p">).</span><span class="n">toTensor</span><span class="p">();</span>
+  <span class="p">}</span>
+  <span class="k">static</span> <span class="kt">bool</span> <span class="nf">valid</span><span class="p">(</span><span class="k">const</span> <span class="n">ClassTypePtr</span><span class="o">&amp;</span> <span class="n">typ</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">typ</span><span class="o">-&gt;</span><span class="n">is_parameter</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="k">static</span> <span class="k">constexpr</span> <span class="kt">bool</span> <span class="n">all_slots</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="k">struct</span> <span class="n">TORCH_API</span> <span class="n">BufferPolicy</span> <span class="p">{</span>
+  <span class="k">using</span> <span class="n">value_type</span> <span class="o">=</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="p">;</span>
+  <span class="k">static</span> <span class="n">value_type</span> <span class="nf">create</span><span class="p">(</span>
+      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">SlotCursor</span><span class="o">&gt;&amp;</span> <span class="n">cursors</span><span class="p">,</span>
+      <span class="n">IValue</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">v</span><span class="p">).</span><span class="n">toTensor</span><span class="p">();</span>
+  <span class="p">}</span>
+  <span class="k">static</span> <span class="kt">bool</span> <span class="nf">valid</span><span class="p">(</span><span class="k">const</span> <span class="n">ClassTypePtr</span><span class="o">&amp;</span> <span class="n">typ</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">typ</span><span class="o">-&gt;</span><span class="n">getAttribute</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">isSubtypeOf</span><span class="p">(</span><span class="n">TensorType</span><span class="o">::</span><span class="n">get</span><span class="p">())</span> <span class="o">&amp;&amp;</span>
+        <span class="o">!</span><span class="n">typ</span><span class="o">-&gt;</span><span class="n">is_parameter</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="k">static</span> <span class="k">constexpr</span> <span class="kt">bool</span> <span class="n">all_slots</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="k">struct</span> <span class="n">TORCH_API</span> <span class="n">AttributePolicy</span> <span class="p">{</span>
+  <span class="k">using</span> <span class="n">value_type</span> <span class="o">=</span> <span class="n">IValue</span><span class="p">;</span>
+  <span class="k">static</span> <span class="n">value_type</span> <span class="nf">create</span><span class="p">(</span>
+      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">SlotCursor</span><span class="o">&gt;&amp;</span> <span class="n">cursors</span><span class="p">,</span>
+      <span class="n">IValue</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">v</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="k">static</span> <span class="kt">bool</span> <span class="nf">valid</span><span class="p">(</span><span class="k">const</span> <span class="n">ClassTypePtr</span><span class="o">&amp;</span> <span class="n">typ</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="k">static</span> <span class="k">constexpr</span> <span class="kt">bool</span> <span class="n">all_slots</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="c1">// take a Policy object, and make a version of it that returns the slot.</span>
+<span class="c1">// along with the fully qualified name of that slot. This is used for the named_</span>
+<span class="c1">// variants like named_parameters().</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Policy</span><span class="o">&gt;</span>
+<span class="k">struct</span> <span class="n">NamedPolicy</span> <span class="p">{</span>
+  <span class="k">using</span> <span class="n">value_type</span> <span class="o">=</span> <span class="n">Named</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">Policy</span><span class="o">::</span><span class="n">value_type</span><span class="o">&gt;</span><span class="p">;</span>
+  <span class="k">static</span> <span class="n">value_type</span> <span class="nf">create</span><span class="p">(</span>
+      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">SlotCursor</span><span class="o">&gt;&amp;</span> <span class="n">cursors</span><span class="p">,</span>
+      <span class="n">IValue</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">name</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">cursors</span><span class="p">.</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">name</span> <span class="o">=</span> <span class="p">(</span><span class="n">cursors</span><span class="p">.</span><span class="n">back</span><span class="p">().</span><span class="n">i_</span> <span class="o">==</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">?</span> <span class="s">&quot;&quot;</span> <span class="o">:</span> <span class="n">nameFragment</span><span class="p">(</span><span class="n">cursors</span><span class="p">.</span><span class="n">back</span><span class="p">());</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">ostringstream</span> <span class="n">ss</span><span class="p">;</span>
+      <span class="k">for</span> <span class="p">(</span><span class="kt">size_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">cursors</span><span class="p">.</span><span class="n">size</span><span class="p">();</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">i</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+          <span class="n">ss</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;.&quot;</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="n">ss</span> <span class="o">&lt;&lt;</span> <span class="n">nameFragment</span><span class="p">(</span><span class="n">cursors</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+      <span class="p">}</span>
+      <span class="n">name</span> <span class="o">=</span> <span class="n">ss</span><span class="p">.</span><span class="n">str</span><span class="p">();</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">value_type</span><span class="p">{</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="n">Policy</span><span class="o">::</span><span class="n">create</span><span class="p">(</span><span class="n">cursors</span><span class="p">,</span> <span class="n">v</span><span class="p">)};</span>
+  <span class="p">}</span>
+  <span class="k">static</span> <span class="kt">bool</span> <span class="nf">valid</span><span class="p">(</span><span class="k">const</span> <span class="n">ClassTypePtr</span><span class="o">&amp;</span> <span class="n">t</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">Policy</span><span class="o">::</span><span class="n">valid</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">i</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="k">static</span> <span class="k">constexpr</span> <span class="kt">bool</span> <span class="n">all_slots</span> <span class="o">=</span> <span class="n">Policy</span><span class="o">::</span><span class="n">all_slots</span><span class="p">;</span>
+
+ <span class="k">private</span><span class="o">:</span>
+  <span class="k">static</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">nameFragment</span><span class="p">(</span><span class="k">const</span> <span class="n">detail</span><span class="o">::</span><span class="n">SlotCursor</span><span class="o">&amp;</span> <span class="n">f</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">f</span><span class="p">.</span><span class="n">module_</span><span class="p">.</span><span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getAttributeName</span><span class="p">(</span><span class="n">f</span><span class="p">.</span><span class="n">i_</span><span class="p">);</span>
+  <span class="p">}</span>
+<span class="p">};</span>
+
+<span class="p">}</span> <span class="c1">// namespace detail</span>
 
 <span class="n">TORCH_API</span> <span class="kt">bool</span><span class="o">&amp;</span> <span class="n">getInlineEverythingMode</span><span class="p">();</span>
 
