@@ -282,8 +282,15 @@
 <span class="k">namespace</span> <span class="n">nn</span> <span class="p">{</span>
 <span class="k">namespace</span> <span class="n">functional</span> <span class="p">{</span>
 
-<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">batch_norm</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">running_mean</span><span class="p">,</span>
-                         <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">running_var</span><span class="p">,</span> <span class="k">const</span> <span class="n">BatchNormOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{},</span> <span class="kt">bool</span> <span class="n">training</span> <span class="o">=</span> <span class="nb">false</span><span class="p">)</span> <span class="p">{</span>
+<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">batch_norm</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
+                         <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">running_mean</span><span class="p">,</span>
+                         <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">running_var</span><span class="p">,</span>
+                         <span class="n">Tensor</span> <span class="n">weight</span> <span class="o">=</span> <span class="p">{},</span>
+                         <span class="n">Tensor</span> <span class="n">bias</span> <span class="o">=</span> <span class="p">{},</span>
+                         <span class="kt">bool</span> <span class="n">training</span> <span class="o">=</span> <span class="nb">false</span><span class="p">,</span>
+                         <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span> <span class="n">momentum</span> <span class="o">=</span> <span class="mf">0.1</span><span class="p">,</span>
+                         <span class="kt">double</span> <span class="n">eps</span> <span class="o">=</span> <span class="mf">1e-5</span><span class="p">)</span> <span class="p">{</span>
   <span class="k">if</span> <span class="p">(</span><span class="n">training</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">auto</span> <span class="n">size</span> <span class="o">=</span> <span class="n">input</span><span class="p">.</span><span class="n">sizes</span><span class="p">();</span>
     <span class="kt">int64_t</span> <span class="n">size_prods</span> <span class="o">=</span> <span class="n">size</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
@@ -296,14 +303,28 @@
 
   <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">batch_norm</span><span class="p">(</span>
     <span class="n">input</span><span class="p">,</span>
-    <span class="n">options</span><span class="p">.</span><span class="n">weight</span><span class="p">(),</span>
-    <span class="n">options</span><span class="p">.</span><span class="n">bias</span><span class="p">(),</span>
+    <span class="n">weight</span><span class="p">,</span>
+    <span class="n">bias</span><span class="p">,</span>
     <span class="n">running_mean</span><span class="p">,</span>
     <span class="n">running_var</span><span class="p">,</span>
     <span class="n">training</span><span class="p">,</span>
-    <span class="n">options</span><span class="p">.</span><span class="n">momentum</span><span class="p">().</span><span class="n">value</span><span class="p">(),</span>
-    <span class="n">options</span><span class="p">.</span><span class="n">eps</span><span class="p">(),</span>
+    <span class="n">momentum</span><span class="p">.</span><span class="n">value</span><span class="p">(),</span>
+    <span class="n">eps</span><span class="p">,</span>
     <span class="n">at</span><span class="o">::</span><span class="n">globalContext</span><span class="p">().</span><span class="n">userEnabledCuDNN</span><span class="p">());</span>
+<span class="p">}</span>
+<span class="p">}</span> <span class="c1">// namespace detail</span>
+
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">batch_norm</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">running_mean</span><span class="p">,</span>
+                         <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">running_var</span><span class="p">,</span> <span class="k">const</span> <span class="n">BatchNormOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{},</span> <span class="kt">bool</span> <span class="n">training</span> <span class="o">=</span> <span class="nb">false</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">batch_norm</span><span class="p">(</span>
+    <span class="n">input</span><span class="p">,</span>
+    <span class="n">running_mean</span><span class="p">,</span>
+    <span class="n">running_var</span><span class="p">,</span>
+    <span class="n">options</span><span class="p">.</span><span class="n">weight</span><span class="p">(),</span>
+    <span class="n">options</span><span class="p">.</span><span class="n">bias</span><span class="p">(),</span>
+    <span class="n">training</span><span class="p">,</span>
+    <span class="n">options</span><span class="p">.</span><span class="n">momentum</span><span class="p">(),</span>
+    <span class="n">options</span><span class="p">.</span><span class="n">eps</span><span class="p">());</span>
 <span class="p">}</span>
 
 <span class="p">}</span> <span class="c1">// namespace functional</span>
