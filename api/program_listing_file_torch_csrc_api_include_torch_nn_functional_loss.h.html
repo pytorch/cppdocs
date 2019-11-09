@@ -282,48 +282,71 @@
 <span class="k">namespace</span> <span class="n">nn</span> <span class="p">{</span>
 <span class="k">namespace</span> <span class="n">functional</span> <span class="p">{</span>
 
+<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">l1_loss</span><span class="p">(</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target</span><span class="p">,</span>
+    <span class="n">L1LossOptions</span><span class="o">::</span><span class="n">reduction_t</span> <span class="n">reduction</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">l1_loss</span><span class="p">(</span>
+    <span class="n">input</span><span class="p">,</span>
+    <span class="n">target</span><span class="p">,</span>
+    <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">reduction</span><span class="p">));</span>
+<span class="p">}</span>
+<span class="p">}</span> <span class="c1">// namespace detail</span>
+
 <span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">l1_loss</span><span class="p">(</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">L1LossOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{})</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">l1_loss</span><span class="p">(</span>
-    <span class="n">input</span><span class="p">,</span>
-    <span class="n">target</span><span class="p">,</span>
-    <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">()));</span>
+  <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">l1_loss</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">());</span>
 <span class="p">}</span>
 
+<span class="c1">// ============================================================================</span>
+
+<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
 <span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">kl_div</span><span class="p">(</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target</span><span class="p">,</span>
-    <span class="k">const</span> <span class="n">KLDivLossOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{})</span> <span class="p">{</span>
+    <span class="n">KLDivLossOptions</span><span class="o">::</span><span class="n">reduction_t</span> <span class="n">reduction</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">torch</span><span class="o">::</span><span class="n">Reduction</span><span class="o">::</span><span class="n">Reduction</span> <span class="n">reduction_enum</span><span class="p">;</span>
 
-  <span class="k">if</span> <span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">get_if</span><span class="o">&lt;</span><span class="n">enumtype</span><span class="o">::</span><span class="n">kMean</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">()))</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">get_if</span><span class="o">&lt;</span><span class="n">enumtype</span><span class="o">::</span><span class="n">kMean</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">reduction</span><span class="p">))</span> <span class="p">{</span>
     <span class="n">TORCH_WARN</span><span class="p">(</span><span class="s">&quot;reduction: &#39;mean&#39; divides the total loss by both the batch size and the support size.&quot;</span>
                <span class="s">&quot;&#39;batchmean&#39; divides only by the batch size, and aligns with the KL div math definition.&quot;</span>
                <span class="s">&quot;&#39;mean&#39; will be changed to behave the same as &#39;batchmean&#39; in the next major release.&quot;</span><span class="p">);</span>
   <span class="p">}</span>
 
   <span class="c1">// special case for batchmean</span>
-  <span class="k">if</span> <span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">get_if</span><span class="o">&lt;</span><span class="n">enumtype</span><span class="o">::</span><span class="n">kBatchMean</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">()))</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">get_if</span><span class="o">&lt;</span><span class="n">enumtype</span><span class="o">::</span><span class="n">kBatchMean</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">reduction</span><span class="p">))</span> <span class="p">{</span>
     <span class="n">reduction_enum</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">Reduction</span><span class="o">::</span><span class="n">Sum</span><span class="p">;</span>
   <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-    <span class="n">reduction_enum</span> <span class="o">=</span> <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">());</span>
+    <span class="n">reduction_enum</span> <span class="o">=</span> <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">reduction</span><span class="p">);</span>
   <span class="p">}</span>
 
   <span class="k">auto</span> <span class="n">reduced</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">kl_div</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">reduction_enum</span><span class="p">);</span>
 
-  <span class="k">if</span> <span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">get_if</span><span class="o">&lt;</span><span class="n">enumtype</span><span class="o">::</span><span class="n">kBatchMean</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">())</span> <span class="o">&amp;&amp;</span> <span class="n">input</span><span class="p">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">get_if</span><span class="o">&lt;</span><span class="n">enumtype</span><span class="o">::</span><span class="n">kBatchMean</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">reduction</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="n">input</span><span class="p">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
     <span class="n">reduced</span> <span class="o">=</span> <span class="n">reduced</span> <span class="o">/</span> <span class="n">input</span><span class="p">.</span><span class="n">sizes</span><span class="p">()[</span><span class="mi">0</span><span class="p">];</span>
   <span class="p">}</span>
 
   <span class="k">return</span> <span class="n">reduced</span><span class="p">;</span>
 <span class="p">}</span>
+<span class="p">}</span> <span class="c1">// namespace detail</span>
 
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">kl_div</span><span class="p">(</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">KLDivLossOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{})</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">kl_div</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">());</span>
+<span class="p">}</span>
+
+<span class="c1">// ============================================================================</span>
+
+<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
 <span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">mse_loss</span><span class="p">(</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target</span><span class="p">,</span>
-    <span class="k">const</span> <span class="n">MSELossOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{})</span> <span class="p">{</span>
+    <span class="n">MSELossOptions</span><span class="o">::</span><span class="n">reduction_t</span> <span class="n">reduction</span><span class="p">)</span> <span class="p">{</span>
   <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="p">(</span><span class="n">target</span><span class="p">.</span><span class="n">sizes</span><span class="p">()</span> <span class="o">==</span> <span class="n">input</span><span class="p">.</span><span class="n">sizes</span><span class="p">()))</span> <span class="p">{</span>
     <span class="n">TORCH_WARN</span><span class="p">(</span><span class="s">&quot;Using a target size (&quot;</span><span class="p">,</span> <span class="n">target</span><span class="p">.</span><span class="n">sizes</span><span class="p">(),</span>
                <span class="s">&quot;) that is different to the input size (&quot;</span><span class="p">,</span> <span class="n">input</span><span class="p">.</span><span class="n">sizes</span><span class="p">(),</span> <span class="s">&quot;). &quot;</span><span class="p">,</span>
@@ -333,8 +356,8 @@
   <span class="n">torch</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">ret</span><span class="p">;</span>
   <span class="k">if</span> <span class="p">(</span><span class="n">target</span><span class="p">.</span><span class="n">requires_grad</span><span class="p">())</span> <span class="p">{</span>
     <span class="n">ret</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">pow</span><span class="p">(</span><span class="n">input</span> <span class="o">-</span> <span class="n">target</span><span class="p">,</span> <span class="mi">2</span><span class="p">);</span>
-    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">c10</span><span class="o">::</span><span class="n">get_if</span><span class="o">&lt;</span><span class="n">enumtype</span><span class="o">::</span><span class="n">kNone</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">()))</span> <span class="p">{</span>
-      <span class="n">ret</span> <span class="o">=</span> <span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">get_if</span><span class="o">&lt;</span><span class="n">enumtype</span><span class="o">::</span><span class="n">kMean</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">()))</span> <span class="o">?</span> <span class="n">torch</span><span class="o">::</span><span class="n">mean</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span> <span class="o">:</span> <span class="n">torch</span><span class="o">::</span><span class="n">sum</span><span class="p">(</span><span class="n">ret</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">c10</span><span class="o">::</span><span class="n">get_if</span><span class="o">&lt;</span><span class="n">enumtype</span><span class="o">::</span><span class="n">kNone</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">reduction</span><span class="p">))</span> <span class="p">{</span>
+      <span class="n">ret</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">get_if</span><span class="o">&lt;</span><span class="n">enumtype</span><span class="o">::</span><span class="n">kMean</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">reduction</span><span class="p">)</span> <span class="o">?</span> <span class="n">torch</span><span class="o">::</span><span class="n">mean</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span> <span class="o">:</span> <span class="n">torch</span><span class="o">::</span><span class="n">sum</span><span class="p">(</span><span class="n">ret</span><span class="p">);</span>
     <span class="p">}</span>
   <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
     <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">torch</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">broadcast_tensors</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">broadcast_tensors</span><span class="p">({</span><span class="n">input</span><span class="p">,</span> <span class="n">target</span><span class="p">});</span>
@@ -343,16 +366,28 @@
     <span class="n">ret</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">mse_loss</span><span class="p">(</span>
       <span class="n">expanded_input</span><span class="p">,</span>
       <span class="n">expanded_target</span><span class="p">,</span>
-      <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">()));</span>
+      <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">reduction</span><span class="p">));</span>
   <span class="p">}</span>
   <span class="k">return</span> <span class="n">ret</span><span class="p">;</span>
 <span class="p">}</span>
+<span class="p">}</span> <span class="c1">// namespace detail</span>
 
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">mse_loss</span><span class="p">(</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">MSELossOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{})</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">mse_loss</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">());</span>
+<span class="p">}</span>
+
+<span class="c1">// ============================================================================</span>
+
+<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
 <span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">binary_cross_entropy</span><span class="p">(</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target</span><span class="p">,</span>
-    <span class="k">const</span> <span class="n">BCELossOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{})</span> <span class="p">{</span>
-  <span class="k">auto</span> <span class="n">reduction_enum</span> <span class="o">=</span> <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">());</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">weight</span><span class="p">,</span>
+    <span class="n">BCELossOptions</span><span class="o">::</span><span class="n">reduction_t</span> <span class="n">reduction</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">auto</span> <span class="n">reduction_enum</span> <span class="o">=</span> <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">reduction</span><span class="p">);</span>
 
   <span class="k">if</span> <span class="p">(</span><span class="n">target</span><span class="p">.</span><span class="n">sizes</span><span class="p">()</span> <span class="o">!=</span> <span class="n">input</span><span class="p">.</span><span class="n">sizes</span><span class="p">())</span> <span class="p">{</span>
     <span class="n">TORCH_WARN</span><span class="p">(</span><span class="s">&quot;Using a target size (&quot;</span><span class="p">,</span> <span class="n">target</span><span class="p">.</span><span class="n">sizes</span><span class="p">(),</span> <span class="s">&quot;) &quot;</span><span class="p">,</span>
@@ -366,67 +401,117 @@
       <span class="s">&quot;!= input nelement (&quot;</span><span class="p">,</span> <span class="n">input</span><span class="p">.</span><span class="n">numel</span><span class="p">(),</span> <span class="s">&quot;)&quot;</span><span class="p">);</span>
   <span class="p">}</span>
 
-  <span class="k">auto</span> <span class="n">weight</span> <span class="o">=</span> <span class="n">options</span><span class="p">.</span><span class="n">weight</span><span class="p">();</span>
-  <span class="k">if</span> <span class="p">(</span><span class="n">weight</span><span class="p">.</span><span class="n">defined</span><span class="p">())</span> <span class="p">{</span>
-    <span class="k">auto</span> <span class="n">new_size</span> <span class="o">=</span> <span class="n">at</span><span class="o">::</span><span class="n">infer_size</span><span class="p">(</span><span class="n">target</span><span class="p">.</span><span class="n">sizes</span><span class="p">(),</span> <span class="n">weight</span><span class="p">.</span><span class="n">sizes</span><span class="p">());</span>
-    <span class="n">weight</span> <span class="o">=</span> <span class="n">weight</span><span class="p">.</span><span class="n">expand</span><span class="p">(</span><span class="n">new_size</span><span class="p">);</span>
+  <span class="k">auto</span> <span class="n">weight_</span> <span class="o">=</span> <span class="n">weight</span><span class="p">;</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">weight_</span><span class="p">.</span><span class="n">defined</span><span class="p">())</span> <span class="p">{</span>
+    <span class="k">auto</span> <span class="n">new_size</span> <span class="o">=</span> <span class="n">at</span><span class="o">::</span><span class="n">infer_size</span><span class="p">(</span><span class="n">target</span><span class="p">.</span><span class="n">sizes</span><span class="p">(),</span> <span class="n">weight_</span><span class="p">.</span><span class="n">sizes</span><span class="p">());</span>
+    <span class="n">weight_</span> <span class="o">=</span> <span class="n">weight_</span><span class="p">.</span><span class="n">expand</span><span class="p">(</span><span class="n">new_size</span><span class="p">);</span>
   <span class="p">}</span>
 
-  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">binary_cross_entropy</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">weight</span><span class="p">,</span> <span class="n">reduction_enum</span><span class="p">);</span>
+  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">binary_cross_entropy</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">weight_</span><span class="p">,</span> <span class="n">reduction_enum</span><span class="p">);</span>
 <span class="p">}</span>
+<span class="p">}</span> <span class="c1">// namespace detail</span>
+
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">binary_cross_entropy</span><span class="p">(</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">BCELossOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{})</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">binary_cross_entropy</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">weight</span><span class="p">(),</span> <span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">());</span>
+<span class="p">}</span>
+
+<span class="c1">// ============================================================================</span>
+
+<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">hinge_embedding_loss</span><span class="p">(</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target</span><span class="p">,</span>
+    <span class="kt">double</span> <span class="n">margin</span><span class="p">,</span>
+    <span class="n">HingeEmbeddingLossOptions</span><span class="o">::</span><span class="n">reduction_t</span> <span class="n">reduction</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">hinge_embedding_loss</span><span class="p">(</span>
+      <span class="n">input</span><span class="p">,</span>
+      <span class="n">target</span><span class="p">,</span>
+      <span class="n">margin</span><span class="p">,</span>
+      <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">reduction</span><span class="p">));</span>
+<span class="p">}</span>
+<span class="p">}</span> <span class="c1">// namespace detail</span>
 
 <span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">hinge_embedding_loss</span><span class="p">(</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">HingeEmbeddingLossOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{})</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">hinge_embedding_loss</span><span class="p">(</span>
-      <span class="n">input</span><span class="p">,</span>
-      <span class="n">target</span><span class="p">,</span>
-      <span class="n">options</span><span class="p">.</span><span class="n">margin</span><span class="p">(),</span>
-      <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">()));</span>
+  <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">hinge_embedding_loss</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">margin</span><span class="p">(),</span> <span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">());</span>
 <span class="p">}</span>
 
+<span class="c1">// ============================================================================</span>
+
+<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
 <span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">multi_margin_loss</span><span class="p">(</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target</span><span class="p">,</span>
-    <span class="k">const</span> <span class="n">MultiMarginLossOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{})</span> <span class="p">{</span>
-  <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">p</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span> <span class="o">||</span> <span class="n">options</span><span class="p">.</span><span class="n">p</span><span class="p">()</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="s">&quot;only p == 1 and p == 2 supported&quot;</span><span class="p">);</span>
-  <span class="k">if</span> <span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">weight</span><span class="p">().</span><span class="n">defined</span><span class="p">())</span> <span class="p">{</span>
-    <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">weight</span><span class="p">().</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&quot;weight must be one-dimensional&quot;</span><span class="p">);</span>
+    <span class="kt">int64_t</span> <span class="n">p</span><span class="p">,</span>
+    <span class="kt">double</span> <span class="n">margin</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">weight</span><span class="p">,</span>
+    <span class="n">MultiMarginLossOptions</span><span class="o">::</span><span class="n">reduction_t</span> <span class="n">reduction</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">p</span> <span class="o">==</span> <span class="mi">1</span> <span class="o">||</span> <span class="n">p</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="s">&quot;only p == 1 and p == 2 supported&quot;</span><span class="p">);</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">weight</span><span class="p">.</span><span class="n">defined</span><span class="p">())</span> <span class="p">{</span>
+    <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">weight</span><span class="p">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&quot;weight must be one-dimensional&quot;</span><span class="p">);</span>
   <span class="p">}</span>
 
   <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">multi_margin_loss</span><span class="p">(</span>
     <span class="n">input</span><span class="p">,</span>
     <span class="n">target</span><span class="p">,</span>
-    <span class="n">options</span><span class="p">.</span><span class="n">p</span><span class="p">(),</span>
-    <span class="n">options</span><span class="p">.</span><span class="n">margin</span><span class="p">(),</span>
-    <span class="n">options</span><span class="p">.</span><span class="n">weight</span><span class="p">(),</span>
-    <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">())</span>
+    <span class="n">p</span><span class="p">,</span>
+    <span class="n">margin</span><span class="p">,</span>
+    <span class="n">weight</span><span class="p">,</span>
+    <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">reduction</span><span class="p">)</span>
   <span class="p">);</span>
 <span class="p">}</span>
+<span class="p">}</span> <span class="c1">// namespace detail</span>
+
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">multi_margin_loss</span><span class="p">(</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">MultiMarginLossOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{})</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">multi_margin_loss</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">p</span><span class="p">(),</span> <span class="n">options</span><span class="p">.</span><span class="n">margin</span><span class="p">(),</span> <span class="n">options</span><span class="p">.</span><span class="n">weight</span><span class="p">(),</span> <span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">());</span>
+<span class="p">}</span>
+
+<span class="c1">// ============================================================================</span>
+
+<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">cosine_embedding_loss</span><span class="p">(</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input1</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input2</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target</span><span class="p">,</span>
+    <span class="kt">double</span> <span class="n">margin</span><span class="p">,</span>
+    <span class="n">CosineEmbeddingLossOptions</span><span class="o">::</span><span class="n">reduction_t</span> <span class="n">reduction</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">cosine_embedding_loss</span><span class="p">(</span>
+    <span class="n">input1</span><span class="p">,</span>
+    <span class="n">input2</span><span class="p">,</span>
+    <span class="n">target</span><span class="p">,</span>
+    <span class="n">margin</span><span class="p">,</span>
+    <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">reduction</span><span class="p">));</span>
+<span class="p">}</span>
+<span class="p">}</span> <span class="c1">// namespace detail</span>
 
 <span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">cosine_embedding_loss</span><span class="p">(</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input1</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input2</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target</span><span class="p">,</span>
-    <span class="k">const</span> <span class="n">CosineEmbeddingLossOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">)</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">cosine_embedding_loss</span><span class="p">(</span>
-    <span class="n">input1</span><span class="p">,</span>
-    <span class="n">input2</span><span class="p">,</span>
-    <span class="n">target</span><span class="p">,</span>
-    <span class="n">options</span><span class="p">.</span><span class="n">margin</span><span class="p">(),</span>
-    <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">()));</span>
+    <span class="k">const</span> <span class="n">CosineEmbeddingLossOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{})</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">cosine_embedding_loss</span><span class="p">(</span><span class="n">input1</span><span class="p">,</span> <span class="n">input2</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">margin</span><span class="p">(),</span> <span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">());</span>
 <span class="p">}</span>
+
+<span class="c1">// ============================================================================</span>
 
 <span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">_smooth_l1_loss</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">auto</span> <span class="n">t</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">abs</span><span class="p">(</span><span class="n">input</span> <span class="o">-</span> <span class="n">target</span><span class="p">);</span>
     <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">where</span><span class="p">(</span><span class="n">t</span> <span class="o">&lt;</span> <span class="mi">1</span><span class="p">,</span> <span class="mf">0.5</span> <span class="o">*</span> <span class="n">torch</span><span class="o">::</span><span class="n">pow</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="mi">2</span><span class="p">),</span> <span class="n">t</span> <span class="o">-</span> <span class="mf">0.5</span><span class="p">);</span>
 <span class="p">}</span>
 
+<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
 <span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">smooth_l1_loss</span><span class="p">(</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target</span><span class="p">,</span>
-    <span class="k">const</span> <span class="n">SmoothL1LossOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{})</span> <span class="p">{</span>
+    <span class="n">torch</span><span class="o">::</span><span class="n">Reduction</span><span class="o">::</span><span class="n">Reduction</span> <span class="n">reduction</span><span class="p">)</span> <span class="p">{</span>
   <span class="k">if</span> <span class="p">(</span><span class="n">target</span><span class="p">.</span><span class="n">sizes</span><span class="p">()</span> <span class="o">!=</span> <span class="n">input</span><span class="p">.</span><span class="n">sizes</span><span class="p">())</span> <span class="p">{</span>
     <span class="n">TORCH_WARN</span><span class="p">(</span><span class="s">&quot;Using a target size (&quot;</span><span class="p">,</span> <span class="n">target</span><span class="p">.</span><span class="n">sizes</span><span class="p">(),</span> <span class="s">&quot;) that is different to the input size (&quot;</span><span class="p">,</span> <span class="n">input</span><span class="p">.</span><span class="n">sizes</span><span class="p">(),</span> <span class="s">&quot;). &quot;</span><span class="p">,</span>
                   <span class="s">&quot;This will likely lead to incorrect results due to broadcasting. &quot;</span><span class="p">,</span>
@@ -437,105 +522,226 @@
 
   <span class="k">if</span> <span class="p">(</span><span class="n">target</span><span class="p">.</span><span class="n">requires_grad</span><span class="p">())</span> <span class="p">{</span>
     <span class="n">ret</span> <span class="o">=</span> <span class="n">_smooth_l1_loss</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">target</span><span class="p">);</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">()</span> <span class="o">!=</span> <span class="n">torch</span><span class="o">::</span><span class="n">Reduction</span><span class="o">::</span><span class="n">None</span><span class="p">)</span> <span class="p">{</span>
-      <span class="n">ret</span> <span class="o">=</span> <span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">()</span> <span class="o">==</span> <span class="n">torch</span><span class="o">::</span><span class="n">Reduction</span><span class="o">::</span><span class="n">Mean</span> <span class="o">?</span> <span class="n">torch</span><span class="o">::</span><span class="n">mean</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span> <span class="o">:</span> <span class="n">torch</span><span class="o">::</span><span class="n">sum</span><span class="p">(</span><span class="n">ret</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">reduction</span> <span class="o">!=</span> <span class="n">torch</span><span class="o">::</span><span class="n">Reduction</span><span class="o">::</span><span class="n">None</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">ret</span> <span class="o">=</span> <span class="n">reduction</span> <span class="o">==</span> <span class="n">torch</span><span class="o">::</span><span class="n">Reduction</span><span class="o">::</span><span class="n">Mean</span> <span class="o">?</span> <span class="n">torch</span><span class="o">::</span><span class="n">mean</span><span class="p">(</span><span class="n">ret</span><span class="p">)</span> <span class="o">:</span> <span class="n">torch</span><span class="o">::</span><span class="n">sum</span><span class="p">(</span><span class="n">ret</span><span class="p">);</span>
     <span class="p">}</span>
   <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
     <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">expanded_tensors</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">broadcast_tensors</span><span class="p">({</span><span class="n">input</span><span class="p">,</span> <span class="n">target</span><span class="p">});</span>
-    <span class="n">ret</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">smooth_l1_loss</span><span class="p">(</span><span class="n">expanded_tensors</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">expanded_tensors</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">());</span>
+    <span class="n">ret</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">smooth_l1_loss</span><span class="p">(</span><span class="n">expanded_tensors</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">expanded_tensors</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">reduction</span><span class="p">);</span>
   <span class="p">}</span>
   <span class="k">return</span> <span class="n">ret</span><span class="p">;</span>
 <span class="p">}</span>
+<span class="p">}</span> <span class="c1">// namespace detail</span>
+
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">smooth_l1_loss</span><span class="p">(</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">SmoothL1LossOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{})</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">smooth_l1_loss</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">());</span>
+<span class="p">}</span>
+
+<span class="c1">// ============================================================================</span>
+
+<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">multilabel_margin_loss</span><span class="p">(</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target</span><span class="p">,</span>
+    <span class="n">MultiLabelMarginLossOptions</span><span class="o">::</span><span class="n">reduction_t</span> <span class="n">reduction</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">multilabel_margin_loss</span><span class="p">(</span>
+    <span class="n">input</span><span class="p">,</span>
+    <span class="n">target</span><span class="p">,</span>
+    <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">reduction</span><span class="p">));</span>
+<span class="p">}</span>
+<span class="p">}</span> <span class="c1">// namespace detail</span>
 
 <span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">multilabel_margin_loss</span><span class="p">(</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">MultiLabelMarginLossOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{})</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">multilabel_margin_loss</span><span class="p">(</span>
+  <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">multilabel_margin_loss</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">());</span>
+<span class="p">}</span>
+
+<span class="c1">// ============================================================================</span>
+
+<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">soft_margin_loss</span><span class="p">(</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target</span><span class="p">,</span>
+    <span class="n">SoftMarginLossOptions</span><span class="o">::</span><span class="n">reduction_t</span> <span class="n">reduction</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">soft_margin_loss</span><span class="p">(</span>
     <span class="n">input</span><span class="p">,</span>
     <span class="n">target</span><span class="p">,</span>
-    <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">()));</span>
+    <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">reduction</span><span class="p">));</span>
 <span class="p">}</span>
+<span class="p">}</span> <span class="c1">// namespace detail</span>
 
 <span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">soft_margin_loss</span><span class="p">(</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">SoftMarginLossOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{})</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">soft_margin_loss</span><span class="p">(</span>
-    <span class="n">input</span><span class="p">,</span>
-    <span class="n">target</span><span class="p">,</span>
-    <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">()));</span>
+  <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">soft_margin_loss</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">());</span>
 <span class="p">}</span>
 
+<span class="c1">// ============================================================================</span>
+
+<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
 <span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">multilabel_soft_margin_loss</span><span class="p">(</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target</span><span class="p">,</span>
-    <span class="k">const</span> <span class="n">MultiLabelSoftMarginLossOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{})</span> <span class="p">{</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">weight</span><span class="p">,</span>
+    <span class="n">MultiLabelSoftMarginLossOptions</span><span class="o">::</span><span class="n">reduction_t</span> <span class="n">reduction</span><span class="p">)</span> <span class="p">{</span>
   <span class="k">auto</span> <span class="n">loss</span> <span class="o">=</span> <span class="o">-</span><span class="p">(</span><span class="n">target</span> <span class="o">*</span> <span class="n">torch</span><span class="o">::</span><span class="n">log_sigmoid</span><span class="p">(</span><span class="n">input</span><span class="p">)</span> <span class="o">+</span> <span class="p">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">target</span><span class="p">)</span> <span class="o">*</span> <span class="n">torch</span><span class="o">::</span><span class="n">log_sigmoid</span><span class="p">(</span><span class="o">-</span><span class="n">input</span><span class="p">));</span>
-  <span class="k">if</span> <span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">weight</span><span class="p">().</span><span class="n">defined</span><span class="p">())</span> <span class="p">{</span>
-    <span class="n">loss</span> <span class="o">=</span> <span class="n">loss</span> <span class="o">*</span> <span class="n">options</span><span class="p">.</span><span class="n">weight</span><span class="p">();</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">weight</span><span class="p">.</span><span class="n">defined</span><span class="p">())</span> <span class="p">{</span>
+    <span class="n">loss</span> <span class="o">=</span> <span class="n">loss</span> <span class="o">*</span> <span class="n">weight</span><span class="p">;</span>
   <span class="p">}</span>
 
   <span class="n">loss</span> <span class="o">=</span> <span class="n">loss</span><span class="p">.</span><span class="n">sum</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">/</span> <span class="n">input</span><span class="p">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span> <span class="c1">// only return N loss values</span>
 
   <span class="n">Tensor</span> <span class="n">ret</span><span class="p">;</span>
 
-  <span class="k">if</span> <span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">get_if</span><span class="o">&lt;</span><span class="n">enumtype</span><span class="o">::</span><span class="n">kNone</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">()))</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">get_if</span><span class="o">&lt;</span><span class="n">enumtype</span><span class="o">::</span><span class="n">kNone</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">reduction</span><span class="p">))</span> <span class="p">{</span>
     <span class="n">ret</span> <span class="o">=</span> <span class="n">loss</span><span class="p">;</span>
-  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">get_if</span><span class="o">&lt;</span><span class="n">enumtype</span><span class="o">::</span><span class="n">kMean</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">()))</span> <span class="p">{</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">get_if</span><span class="o">&lt;</span><span class="n">enumtype</span><span class="o">::</span><span class="n">kMean</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">reduction</span><span class="p">))</span> <span class="p">{</span>
     <span class="n">ret</span> <span class="o">=</span> <span class="n">loss</span><span class="p">.</span><span class="n">mean</span><span class="p">();</span>
-  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">get_if</span><span class="o">&lt;</span><span class="n">enumtype</span><span class="o">::</span><span class="n">kSum</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">()))</span> <span class="p">{</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">get_if</span><span class="o">&lt;</span><span class="n">enumtype</span><span class="o">::</span><span class="n">kSum</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">reduction</span><span class="p">))</span> <span class="p">{</span>
     <span class="n">ret</span> <span class="o">=</span> <span class="n">loss</span><span class="p">.</span><span class="n">sum</span><span class="p">();</span>
   <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
     <span class="n">ret</span> <span class="o">=</span> <span class="n">input</span><span class="p">;</span>
     <span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span>
       <span class="nb">false</span><span class="p">,</span>
-      <span class="n">enumtype</span><span class="o">::</span><span class="n">get_enum_name</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">()),</span>
+      <span class="n">enumtype</span><span class="o">::</span><span class="n">get_enum_name</span><span class="p">(</span><span class="n">reduction</span><span class="p">),</span>
       <span class="s">&quot; is not valid&quot;</span><span class="p">);</span>
   <span class="p">}</span>
   <span class="k">return</span> <span class="n">ret</span><span class="p">;</span>
 <span class="p">}</span>
+<span class="p">}</span> <span class="c1">// namespace detail</span>
+
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">multilabel_soft_margin_loss</span><span class="p">(</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">MultiLabelSoftMarginLossOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{})</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">multilabel_soft_margin_loss</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">weight</span><span class="p">(),</span> <span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">());</span>
+<span class="p">}</span>
+
+<span class="c1">// ============================================================================</span>
+
+<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">triplet_margin_loss</span><span class="p">(</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">anchor</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">positive</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">negative</span><span class="p">,</span>
+    <span class="kt">double</span> <span class="n">margin</span><span class="p">,</span>
+    <span class="kt">double</span> <span class="n">p</span><span class="p">,</span>
+    <span class="kt">double</span> <span class="n">eps</span><span class="p">,</span>
+    <span class="kt">bool</span> <span class="n">swap</span><span class="p">,</span>
+    <span class="n">TripletMarginLossOptions</span><span class="o">::</span><span class="n">reduction_t</span> <span class="n">reduction</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">triplet_margin_loss</span><span class="p">(</span>
+      <span class="n">anchor</span><span class="p">,</span>
+      <span class="n">positive</span><span class="p">,</span>
+      <span class="n">negative</span><span class="p">,</span>
+      <span class="n">margin</span><span class="p">,</span>
+      <span class="n">p</span><span class="p">,</span>
+      <span class="n">eps</span><span class="p">,</span>
+      <span class="n">swap</span><span class="p">,</span>
+      <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">reduction</span><span class="p">));</span>
+<span class="p">}</span>
+<span class="p">}</span> <span class="c1">// namespace detail</span>
 
 <span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">triplet_margin_loss</span><span class="p">(</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">anchor</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">positive</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">negative</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">TripletMarginLossOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{})</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">triplet_margin_loss</span><span class="p">(</span>
-      <span class="n">anchor</span><span class="p">,</span>
-      <span class="n">positive</span><span class="p">,</span>
-      <span class="n">negative</span><span class="p">,</span>
-      <span class="n">options</span><span class="p">.</span><span class="n">margin</span><span class="p">(),</span>
-      <span class="n">options</span><span class="p">.</span><span class="n">p</span><span class="p">(),</span>
-      <span class="n">options</span><span class="p">.</span><span class="n">eps</span><span class="p">(),</span>
-      <span class="n">options</span><span class="p">.</span><span class="n">swap</span><span class="p">(),</span>
-      <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">()));</span>
+  <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">triplet_margin_loss</span><span class="p">(</span>
+    <span class="n">anchor</span><span class="p">,</span>
+    <span class="n">positive</span><span class="p">,</span>
+    <span class="n">negative</span><span class="p">,</span>
+    <span class="n">options</span><span class="p">.</span><span class="n">margin</span><span class="p">(),</span>
+    <span class="n">options</span><span class="p">.</span><span class="n">p</span><span class="p">(),</span>
+    <span class="n">options</span><span class="p">.</span><span class="n">eps</span><span class="p">(),</span>
+    <span class="n">options</span><span class="p">.</span><span class="n">swap</span><span class="p">(),</span>
+    <span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">());</span>
 <span class="p">}</span>
 
-<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">ctc_loss</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">log_probs</span><span class="p">,</span> <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">targets</span><span class="p">,</span>
-  <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input_lengths</span><span class="p">,</span> <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target_lengths</span><span class="p">,</span>
-  <span class="k">const</span> <span class="n">CTCLossOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{})</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">ctc_loss</span><span class="p">(</span><span class="n">log_probs</span><span class="p">,</span> <span class="n">targets</span><span class="p">,</span> <span class="n">input_lengths</span><span class="p">,</span> <span class="n">target_lengths</span><span class="p">,</span>
-    <span class="n">options</span><span class="p">.</span><span class="n">blank</span><span class="p">(),</span> <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">()),</span>
+<span class="c1">// ============================================================================</span>
+
+<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">ctc_loss</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">log_probs</span><span class="p">,</span>
+                       <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">targets</span><span class="p">,</span>
+                       <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input_lengths</span><span class="p">,</span>
+                       <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target_lengths</span><span class="p">,</span>
+                       <span class="kt">int64_t</span> <span class="n">blank</span><span class="p">,</span>
+                       <span class="n">CTCLossOptions</span><span class="o">::</span><span class="n">reduction_t</span> <span class="n">reduction</span><span class="p">,</span>
+                       <span class="kt">bool</span> <span class="n">zero_infinity</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">ctc_loss</span><span class="p">(</span>
+    <span class="n">log_probs</span><span class="p">,</span>
+    <span class="n">targets</span><span class="p">,</span>
+    <span class="n">input_lengths</span><span class="p">,</span>
+    <span class="n">target_lengths</span><span class="p">,</span>
+    <span class="n">blank</span><span class="p">,</span>
+    <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">reduction</span><span class="p">),</span>
+    <span class="n">zero_infinity</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="p">}</span> <span class="c1">// namespace detail</span>
+
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">ctc_loss</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">log_probs</span><span class="p">,</span>
+                       <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">targets</span><span class="p">,</span>
+                       <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input_lengths</span><span class="p">,</span>
+                       <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target_lengths</span><span class="p">,</span>
+                       <span class="k">const</span> <span class="n">CTCLossOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{})</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">ctc_loss</span><span class="p">(</span>
+    <span class="n">log_probs</span><span class="p">,</span>
+    <span class="n">targets</span><span class="p">,</span>
+    <span class="n">input_lengths</span><span class="p">,</span>
+    <span class="n">target_lengths</span><span class="p">,</span>
+    <span class="n">options</span><span class="p">.</span><span class="n">blank</span><span class="p">(),</span>
+    <span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">(),</span>
     <span class="n">options</span><span class="p">.</span><span class="n">zero_infinity</span><span class="p">());</span>
 <span class="p">}</span>
 
+<span class="c1">// ============================================================================</span>
+
+<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">poisson_nll_loss</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
+                               <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target</span><span class="p">,</span>
+                               <span class="kt">bool</span> <span class="n">log_input</span><span class="p">,</span>
+                               <span class="kt">bool</span> <span class="n">full</span><span class="p">,</span>
+                               <span class="kt">double</span> <span class="n">eps</span><span class="p">,</span>
+                               <span class="n">PoissonNLLLossOptions</span><span class="o">::</span><span class="n">reduction_t</span> <span class="n">reduction</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">poisson_nll_loss</span><span class="p">(</span>
+    <span class="n">input</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span>
+    <span class="n">log_input</span><span class="p">,</span> <span class="n">full</span><span class="p">,</span> <span class="n">eps</span><span class="p">,</span> <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">reduction</span><span class="p">));</span>
+<span class="p">}</span>
+<span class="p">}</span> <span class="c1">// namespace detail</span>
+
 <span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">poisson_nll_loss</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target</span><span class="p">,</span>
                                <span class="k">const</span> <span class="n">PoissonNLLLossOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{})</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">poisson_nll_loss</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">log_input</span><span class="p">(),</span>
-    <span class="n">options</span><span class="p">.</span><span class="n">full</span><span class="p">(),</span> <span class="n">options</span><span class="p">.</span><span class="n">eps</span><span class="p">(),</span>
-    <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">()));</span>
+  <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">poisson_nll_loss</span><span class="p">(</span>
+    <span class="n">input</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span>
+    <span class="n">options</span><span class="p">.</span><span class="n">log_input</span><span class="p">(),</span> <span class="n">options</span><span class="p">.</span><span class="n">full</span><span class="p">(),</span> <span class="n">options</span><span class="p">.</span><span class="n">eps</span><span class="p">(),</span> <span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">());</span>
 <span class="p">}</span>
 
-<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">margin_ranking_loss</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input1</span><span class="p">,</span> <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input2</span><span class="p">,</span>
-  <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target</span><span class="p">,</span> <span class="k">const</span> <span class="n">MarginRankingLossOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{})</span> <span class="p">{</span>
+<span class="c1">// ============================================================================</span>
+
+<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">margin_ranking_loss</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input1</span><span class="p">,</span>
+                                  <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input2</span><span class="p">,</span>
+                                  <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target</span><span class="p">,</span>
+                                  <span class="kt">double</span> <span class="n">margin</span><span class="p">,</span>
+                                  <span class="n">MarginRankingLossOptions</span><span class="o">::</span><span class="n">reduction_t</span> <span class="n">reduction</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">TORCH_CHECK</span><span class="p">(</span>
     <span class="n">input1</span><span class="p">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="n">input2</span><span class="p">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="n">target</span><span class="p">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">,</span>
     <span class="s">&quot;margin_ranking_loss does not support scalars, got sizes: &quot;</span>
     <span class="s">&quot;input1: &quot;</span><span class="p">,</span> <span class="n">input1</span><span class="p">.</span><span class="n">sizes</span><span class="p">(),</span> <span class="s">&quot;, input2: &quot;</span><span class="p">,</span> <span class="n">input2</span><span class="p">.</span><span class="n">sizes</span><span class="p">(),</span>
     <span class="s">&quot;, target: &quot;</span><span class="p">,</span> <span class="n">target</span><span class="p">.</span><span class="n">sizes</span><span class="p">());</span>
-  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">margin_ranking_loss</span><span class="p">(</span><span class="n">input1</span><span class="p">,</span> <span class="n">input2</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">margin</span><span class="p">(),</span>
-    <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">()));</span>
+  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">margin_ranking_loss</span><span class="p">(</span><span class="n">input1</span><span class="p">,</span> <span class="n">input2</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">margin</span><span class="p">,</span>
+    <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">reduction</span><span class="p">));</span>
+<span class="p">}</span>
+<span class="p">}</span> <span class="c1">// namespace detail</span>
+
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">margin_ranking_loss</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input1</span><span class="p">,</span> <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input2</span><span class="p">,</span>
+  <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">target</span><span class="p">,</span> <span class="k">const</span> <span class="n">MarginRankingLossOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{})</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">margin_ranking_loss</span><span class="p">(</span><span class="n">input1</span><span class="p">,</span> <span class="n">input2</span><span class="p">,</span> <span class="n">target</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">margin</span><span class="p">(),</span> <span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">());</span>
 <span class="p">}</span>
 
 <span class="p">}</span> <span class="c1">// namespace functional</span>
