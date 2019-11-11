@@ -14,43 +14,16 @@ Program Listing for File embedding.h
 
    #pragma once
    
-   #include <torch/enum.h>
    #include <torch/nn/cloneable.h>
+   #include <torch/nn/options/embedding.h>
+   #include <torch/nn/functional/embedding.h>
    #include <torch/nn/pimpl.h>
    #include <torch/types.h>
    
    #include <cstddef>
-   #include <vector>
    
    namespace torch {
    namespace nn {
-   
-   struct TORCH_API EmbeddingOptions {
-     EmbeddingOptions(int64_t num_embeddings, int64_t embedding_dim) :
-      num_embeddings_(num_embeddings), embedding_dim_(embedding_dim) {};
-     TORCH_ARG(int64_t, num_embeddings);
-     TORCH_ARG(int64_t, embedding_dim);
-     TORCH_ARG(c10::optional<int64_t>, padding_idx) = c10::nullopt;
-     TORCH_ARG(c10::optional<float>, max_norm) = c10::nullopt;
-     TORCH_ARG(float, norm_type) = 2.;
-     TORCH_ARG(bool, scale_grad_by_freq) = false;
-     TORCH_ARG(bool, sparse) = false;
-     TORCH_ARG(torch::Tensor, _weight) = Tensor();
-   };
-   
-   struct TORCH_API EmbeddingBagOptions {
-     EmbeddingBagOptions(int64_t num_embeddings, int64_t embedding_dim) :
-      num_embeddings_(num_embeddings), embedding_dim_(embedding_dim) {};
-     TORCH_ARG(int64_t, num_embeddings);
-     TORCH_ARG(int64_t, embedding_dim);
-     TORCH_ARG(c10::optional<float>, max_norm) = c10::nullopt;
-     TORCH_ARG(float, norm_type) = 2.;
-     TORCH_ARG(bool, scale_grad_by_freq) = false;
-     typedef c10::variant<enumtype::kSum, enumtype::kMean, enumtype::kMax> mode_t;
-     TORCH_ARG(mode_t, mode) = torch::kMean;
-     TORCH_ARG(bool, sparse) = false;
-     TORCH_ARG(torch::Tensor, _weight) = Tensor();
-   };
    
    class TORCH_API EmbeddingImpl : public torch::nn::Cloneable<EmbeddingImpl> {
     public:
@@ -73,15 +46,16 @@ Program Listing for File embedding.h
     public:
      using torch::nn::ModuleHolder<EmbeddingImpl>::ModuleHolder;
    
-     static Embedding from_pretrained(const torch::Tensor& embeddings, c10::optional<EmbeddingOptions> options = c10::nullopt, bool freeze = true) {
+     static Embedding from_pretrained(const torch::Tensor& embeddings, EmbeddingOptions options = {}, bool freeze = true) {
        TORCH_CHECK(embeddings.dim() == 2, "Embeddings parameter is expected to be 2-dimensional");
-       if (options != c10::nullopt) {
-         TORCH_CHECK((*options).num_embeddings() == embeddings.size(0), "Expects options.num_embeddings to be ", embeddings.size(0) , "but found ", (*options).num_embeddings());
-         TORCH_CHECK((*options).embedding_dim() == embeddings.size(1), "Expects options.embeddings_dim to be ", embeddings.size(1) , "but found ", (*options).embedding_dim());
-       } else {
-         options = EmbeddingOptions(embeddings.size(0), embeddings.size(1));
+       if (options.num_embeddings()) {
+         TORCH_WARN("`num_embeddings` options parameter is ignored in `torch::nn::Embedding::from_pretrained`.");
        }
-       Embedding embedding((*options)._weight(embeddings));
+       if (options.embedding_dim()) {
+         TORCH_WARN("`embedding_dim` options parameter is ignored in `torch::nn::Embedding::from_pretrained`.");
+       }
+   
+       Embedding embedding(options.num_embeddings(embeddings.size(0)).embedding_dim(embeddings.size(1))._weight(embeddings));
        embedding->weight.set_requires_grad(!freeze);
        return embedding;
      }
@@ -97,8 +71,7 @@ Program Listing for File embedding.h
    
      void pretty_print(std::ostream& stream) const override;
    
-     torch::Tensor forward(const Tensor& input, const torch::Tensor& offsets = torch::Tensor(),
-       const torch::Tensor& per_sample_weights = torch::Tensor());
+     Tensor forward(const Tensor& input, const Tensor& offsets = {}, const Tensor& per_sample_weights = {});
    
      EmbeddingBagOptions options;
      Tensor weight;
@@ -108,15 +81,15 @@ Program Listing for File embedding.h
     public:
      using torch::nn::ModuleHolder<EmbeddingBagImpl>::ModuleHolder;
    
-     static EmbeddingBag from_pretrained(const torch::Tensor& embeddings, c10::optional<EmbeddingBagOptions> options = c10::nullopt, bool freeze = true) {
+     static EmbeddingBag from_pretrained(const torch::Tensor& embeddings, EmbeddingBagOptions options = {}, bool freeze = true) {
        TORCH_CHECK(embeddings.dim() == 2, "Embeddings parameter is expected to be 2-dimensional");
-       if (options != c10::nullopt) {
-         TORCH_CHECK((*options).num_embeddings() == embeddings.size(0), "Expects options.num_embeddings to be ", embeddings.size(0) , "but found ", (*options).num_embeddings());
-         TORCH_CHECK((*options).embedding_dim() == embeddings.size(1), "Expects options.embeddings_dim to be ", embeddings.size(1) , "but found ", (*options).embedding_dim());
-       } else {
-         options = EmbeddingBagOptions(embeddings.size(0), embeddings.size(1));
+       if (options.num_embeddings()) {
+         TORCH_WARN("`num_embeddings` options parameter is ignored in `torch::nn::EmbeddingBag::from_pretrained`.");
        }
-       EmbeddingBag embeddingbag((*options)._weight(embeddings));
+       if (options.embedding_dim()) {
+         TORCH_WARN("`embedding_dim` options parameter is ignored in `torch::nn::EmbeddingBag::from_pretrained`.");
+       }
+       EmbeddingBag embeddingbag(options.num_embeddings(embeddings.size(0)).embedding_dim(embeddings.size(1))._weight(embeddings));
        embeddingbag->weight.set_requires_grad(!freeze);
        return embeddingbag;
      }
