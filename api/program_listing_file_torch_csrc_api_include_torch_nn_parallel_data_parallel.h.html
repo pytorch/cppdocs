@@ -282,9 +282,6 @@
 
 <span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/autograd/functions/comm.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/autograd/functions/utils.h&gt;</span><span class="cp"></span>
-<span class="cp">#ifdef USE_CUDA</span>
-<span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/cuda/comm.h&gt;</span><span class="cp"></span>
-<span class="cp">#endif</span>
 <span class="cp">#include</span> <span class="cpf">&lt;ATen/core/functional.h&gt;</span><span class="cp"></span>
 
 <span class="cp">#include</span> <span class="cpf">&lt;ATen/Device.h&gt;</span><span class="cp"></span>
@@ -514,7 +511,6 @@
     <span class="k">return</span> <span class="n">module</span><span class="o">-&gt;</span><span class="n">forward</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">input</span><span class="p">)).</span><span class="n">to</span><span class="p">(</span><span class="o">*</span><span class="n">output_device</span><span class="p">);</span>
   <span class="p">}</span>
 
-<span class="cp">#ifdef USE_CUDA</span>
   <span class="n">autograd</span><span class="o">::</span><span class="n">Scatter</span> <span class="n">scatter</span><span class="p">(</span><span class="o">*</span><span class="n">devices</span><span class="p">,</span> <span class="cm">/*chunk_sizes=*/</span><span class="n">nullopt</span><span class="p">,</span> <span class="n">dim</span><span class="p">);</span>
   <span class="k">auto</span> <span class="n">scattered_inputs</span> <span class="o">=</span> <span class="n">fmap</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span><span class="p">(</span><span class="n">scatter</span><span class="p">.</span><span class="n">apply</span><span class="p">({</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">input</span><span class="p">)}));</span>
 
@@ -523,10 +519,6 @@
   <span class="k">return</span> <span class="n">autograd</span><span class="o">::</span><span class="n">Gather</span><span class="p">(</span><span class="o">*</span><span class="n">output_device</span><span class="p">,</span> <span class="n">dim</span><span class="p">)</span>
       <span class="p">.</span><span class="n">apply</span><span class="p">(</span><span class="n">fmap</span><span class="o">&lt;</span><span class="n">autograd</span><span class="o">::</span><span class="n">Variable</span><span class="o">&gt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">outputs</span><span class="p">)))</span>
       <span class="p">.</span><span class="n">front</span><span class="p">();</span>
-<span class="cp">#else</span>
-  <span class="n">AT_ERROR</span><span class="p">(</span><span class="s">&quot;data_parallel not supported without CUDA&quot;</span><span class="p">);</span>
-  <span class="k">return</span> <span class="nf">Tensor</span><span class="p">();</span>
-<span class="cp">#endif</span>
 <span class="p">}</span>
 
 <span class="p">}</span> <span class="c1">// namespace parallel</span>
