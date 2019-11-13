@@ -860,6 +860,7 @@ Program Listing for File Functions.h
    static inline Tensor rnn_tanh_cell(const Tensor & input, const Tensor & hx, const Tensor & w_ih, const Tensor & w_hh, const Tensor & b_ih={}, const Tensor & b_hh={});
    static inline Tensor rnn_relu_cell(const Tensor & input, const Tensor & hx, const Tensor & w_ih, const Tensor & w_hh, const Tensor & b_ih={}, const Tensor & b_hh={});
    static inline std::tuple<Tensor,Tensor,Tensor> quantized_lstm(const Tensor & input, TensorList hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, bool batch_first, c10::optional<ScalarType> dtype=c10::nullopt, bool use_dynamic=false);
+   static inline std::tuple<Tensor,Tensor,Tensor> quantized_lstm(const Tensor & data, const Tensor & batch_sizes, TensorList hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, c10::optional<ScalarType> dtype=c10::nullopt, bool use_dynamic=false);
    static inline std::tuple<Tensor,Tensor> quantized_gru(const Tensor & input, const Tensor & hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, bool batch_first);
    static inline std::tuple<Tensor,Tensor> quantized_gru(const Tensor & data, const Tensor & batch_sizes, const Tensor & hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional);
    static inline std::tuple<Tensor,Tensor> quantized_lstm_cell(const Tensor & input, TensorList hx, const Tensor & w_ih, const Tensor & w_hh, const Tensor & b_ih, const Tensor & b_hh, const Tensor & packed_ih, const Tensor & packed_hh, const Tensor & col_offsets_ih, const Tensor & col_offsets_hh, Scalar scale_ih, Scalar scale_hh, Scalar zero_point_ih, Scalar zero_point_hh);
@@ -10602,6 +10603,17 @@ Program Listing for File Functions.h
            .findSchema({"aten::quantized_lstm", ""}).value();
        return c10::Dispatcher::singleton().callUnboxedOnly<std::tuple<Tensor,Tensor,Tensor>, const Tensor &, TensorList, TensorList, bool, int64_t, double, bool, bool, bool, c10::optional<ScalarType>, bool>(
            op, input, hx, params, has_biases, num_layers, dropout, train, bidirectional, batch_first, dtype, use_dynamic);
+   #endif
+   }
+   static inline std::tuple<Tensor,Tensor,Tensor> quantized_lstm(const Tensor & data, const Tensor & batch_sizes, TensorList hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, c10::optional<ScalarType> dtype, bool use_dynamic) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       return TypeDefault::quantized_lstm(data, batch_sizes, hx, params, has_biases, num_layers, dropout, train, bidirectional, dtype, use_dynamic);
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchema({"aten::quantized_lstm", "data"}).value();
+       return c10::Dispatcher::singleton().callUnboxedOnly<std::tuple<Tensor,Tensor,Tensor>, const Tensor &, const Tensor &, TensorList, TensorList, bool, int64_t, double, bool, bool, c10::optional<ScalarType>, bool>(
+           op, data, batch_sizes, hx, params, has_biases, num_layers, dropout, train, bidirectional, dtype, use_dynamic);
    #endif
    }
    static inline std::tuple<Tensor,Tensor> quantized_gru(const Tensor & input, const Tensor & hx, TensorList params, bool has_biases, int64_t num_layers, double dropout, bool train, bool bidirectional, bool batch_first) {
