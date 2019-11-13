@@ -285,10 +285,10 @@
 <span class="c1">// See</span>
 <span class="c1">// https://pytorch.org/docs/stable/nn.html?highlight=clip_grad_norm#torch.nn.utils.clip_grad_norm_</span>
 <span class="c1">// for more details about this module.</span>
-<span class="kr">inline</span> <span class="kt">float</span> <span class="n">clip_grad_norm_</span><span class="p">(</span>
+<span class="kr">inline</span> <span class="kt">double</span> <span class="n">clip_grad_norm_</span><span class="p">(</span>
     <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;&amp;</span> <span class="n">parameters</span><span class="p">,</span>
-    <span class="kt">float</span> <span class="n">max_norm</span><span class="p">,</span>
-    <span class="kt">float</span> <span class="n">norm_type</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kt">double</span> <span class="n">max_norm</span><span class="p">,</span>
+    <span class="kt">double</span> <span class="n">norm_type</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">params_with_grad</span><span class="p">;</span>
 
   <span class="k">for</span> <span class="p">(</span><span class="k">const</span> <span class="k">auto</span><span class="o">&amp;</span> <span class="nl">param</span> <span class="p">:</span> <span class="n">parameters</span><span class="p">)</span> <span class="p">{</span>
@@ -297,10 +297,10 @@
       <span class="n">params_with_grad</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">param</span><span class="p">);</span>
     <span class="p">}</span>
   <span class="p">}</span>
-  <span class="kt">float</span> <span class="n">total_norm</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
-  <span class="k">if</span> <span class="p">(</span><span class="n">norm_type</span> <span class="o">==</span> <span class="n">std</span><span class="o">::</span><span class="n">numeric_limits</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;::</span><span class="n">infinity</span><span class="p">())</span> <span class="p">{</span>
+  <span class="kt">double</span> <span class="n">total_norm</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">norm_type</span> <span class="o">==</span> <span class="n">std</span><span class="o">::</span><span class="n">numeric_limits</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;::</span><span class="n">infinity</span><span class="p">())</span> <span class="p">{</span>
     <span class="k">for</span> <span class="p">(</span><span class="k">const</span> <span class="k">auto</span><span class="o">&amp;</span> <span class="nl">param</span> <span class="p">:</span> <span class="n">params_with_grad</span><span class="p">)</span> <span class="p">{</span>
-      <span class="k">auto</span> <span class="n">param_max</span> <span class="o">=</span> <span class="n">param</span><span class="p">.</span><span class="n">grad</span><span class="p">().</span><span class="n">data</span><span class="p">().</span><span class="n">abs</span><span class="p">().</span><span class="n">max</span><span class="p">().</span><span class="n">item</span><span class="p">().</span><span class="n">toFloat</span><span class="p">();</span>
+      <span class="k">auto</span> <span class="n">param_max</span> <span class="o">=</span> <span class="n">param</span><span class="p">.</span><span class="n">grad</span><span class="p">().</span><span class="n">data</span><span class="p">().</span><span class="n">abs</span><span class="p">().</span><span class="n">max</span><span class="p">().</span><span class="n">item</span><span class="p">().</span><span class="n">toDouble</span><span class="p">();</span>
       <span class="k">if</span> <span class="p">(</span><span class="n">param_max</span> <span class="o">&gt;</span> <span class="n">total_norm</span><span class="p">)</span> <span class="p">{</span>
         <span class="n">total_norm</span> <span class="o">=</span> <span class="n">param_max</span><span class="p">;</span>
       <span class="p">}</span>
@@ -308,7 +308,7 @@
   <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
     <span class="k">for</span> <span class="p">(</span><span class="k">const</span> <span class="k">auto</span><span class="o">&amp;</span> <span class="nl">param</span> <span class="p">:</span> <span class="n">params_with_grad</span><span class="p">)</span> <span class="p">{</span>
       <span class="k">auto</span> <span class="n">param_norm</span> <span class="o">=</span> <span class="n">param</span><span class="p">.</span><span class="n">grad</span><span class="p">().</span><span class="n">data</span><span class="p">().</span><span class="n">norm</span><span class="p">(</span><span class="n">norm_type</span><span class="p">);</span>
-      <span class="n">total_norm</span> <span class="o">+=</span> <span class="n">std</span><span class="o">::</span><span class="n">pow</span><span class="p">(</span><span class="n">param_norm</span><span class="p">.</span><span class="n">item</span><span class="p">().</span><span class="n">toFloat</span><span class="p">(),</span> <span class="n">norm_type</span><span class="p">);</span>
+      <span class="n">total_norm</span> <span class="o">+=</span> <span class="n">std</span><span class="o">::</span><span class="n">pow</span><span class="p">(</span><span class="n">param_norm</span><span class="p">.</span><span class="n">item</span><span class="p">().</span><span class="n">toDouble</span><span class="p">(),</span> <span class="n">norm_type</span><span class="p">);</span>
     <span class="p">}</span>
     <span class="n">total_norm</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">pow</span><span class="p">(</span><span class="n">total_norm</span><span class="p">,</span> <span class="mf">1.0</span> <span class="o">/</span> <span class="n">norm_type</span><span class="p">);</span>
   <span class="p">}</span>
@@ -324,10 +324,10 @@
 
 <span class="c1">// A wrapper around clip_grad_norm_ that allows us to call the function with a</span>
 <span class="c1">// single Tensor.</span>
-<span class="kr">inline</span> <span class="kt">float</span> <span class="n">clip_grad_norm_</span><span class="p">(</span>
+<span class="kr">inline</span> <span class="kt">double</span> <span class="n">clip_grad_norm_</span><span class="p">(</span>
     <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">parameters</span><span class="p">,</span>
-    <span class="kt">float</span> <span class="n">max_norm</span><span class="p">,</span>
-    <span class="kt">float</span> <span class="n">norm_type</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kt">double</span> <span class="n">max_norm</span><span class="p">,</span>
+    <span class="kt">double</span> <span class="n">norm_type</span> <span class="o">=</span> <span class="mf">2.0</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="n">parameters</span><span class="p">};</span>
   <span class="k">return</span> <span class="nf">clip_grad_norm_</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">max_norm</span><span class="p">,</span> <span class="n">norm_type</span><span class="p">);</span>
 <span class="p">}</span>
@@ -338,7 +338,7 @@
 <span class="c1">// for more details about this module.</span>
 <span class="kr">inline</span> <span class="kt">void</span> <span class="n">clip_grad_value_</span><span class="p">(</span>
     <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;&amp;</span> <span class="n">parameters</span><span class="p">,</span>
-    <span class="kt">float</span> <span class="n">clip_value</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kt">double</span> <span class="n">clip_value</span><span class="p">)</span> <span class="p">{</span>
 
   <span class="k">for</span> <span class="p">(</span><span class="k">const</span> <span class="k">auto</span><span class="o">&amp;</span> <span class="nl">param</span> <span class="p">:</span> <span class="n">parameters</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">param</span><span class="p">.</span><span class="n">grad</span><span class="p">().</span><span class="n">defined</span><span class="p">())</span> <span class="p">{</span>
@@ -349,7 +349,7 @@
 
 <span class="c1">// A wrapper around clip_grad_value_ that allows us to call the function with a</span>
 <span class="c1">// single Tensor.</span>
-<span class="kr">inline</span> <span class="kt">void</span> <span class="n">clip_grad_value_</span><span class="p">(</span><span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">parameters</span><span class="p">,</span> <span class="kt">float</span> <span class="n">clip_value</span><span class="p">)</span> <span class="p">{</span>
+<span class="kr">inline</span> <span class="kt">void</span> <span class="n">clip_grad_value_</span><span class="p">(</span><span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">parameters</span><span class="p">,</span> <span class="kt">double</span> <span class="n">clip_value</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">params</span> <span class="o">=</span> <span class="p">{</span><span class="n">parameters</span><span class="p">};</span>
   <span class="n">clip_grad_value_</span><span class="p">(</span><span class="n">params</span><span class="p">,</span> <span class="n">clip_value</span><span class="p">);</span>
 <span class="p">}</span>

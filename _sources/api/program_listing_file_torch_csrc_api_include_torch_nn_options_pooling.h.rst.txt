@@ -139,18 +139,40 @@ Program Listing for File pooling.h
    
    using MaxUnpool3dOptions = MaxUnpoolOptions<3>;
    
-   TORCH_NN_FUNCTIONAL_USE_MODULE_OPTIONS(MaxUnpool1d, MaxUnpool1dFuncOptions)
-   TORCH_NN_FUNCTIONAL_USE_MODULE_OPTIONS(MaxUnpool2d, MaxUnpool2dFuncOptions)
-   TORCH_NN_FUNCTIONAL_USE_MODULE_OPTIONS(MaxUnpool3d, MaxUnpool3dFuncOptions)
+   // ============================================================================
+   
+   namespace functional {
+   
+   template <size_t D>
+   struct MaxUnpoolFuncOptions {
+     MaxUnpoolFuncOptions(ExpandingArray<D> kernel_size)
+         : kernel_size_(kernel_size), stride_(kernel_size) {}
+   
+     TORCH_ARG(ExpandingArray<D>, kernel_size);
+   
+     TORCH_ARG(ExpandingArray<D>, stride);
+   
+     TORCH_ARG(ExpandingArray<D>, padding) = 0;
+   
+     TORCH_ARG(c10::optional<std::vector<int64_t>>, output_size) = c10::nullopt;
+   };
+   
+   using MaxUnpool1dFuncOptions = MaxUnpoolFuncOptions<1>;
+   
+   using MaxUnpool2dFuncOptions = MaxUnpoolFuncOptions<2>;
+   
+   using MaxUnpool3dFuncOptions = MaxUnpoolFuncOptions<3>;
+   
+   } // namespace functional
    
    // ============================================================================
    
    template <size_t D>
    struct LPPoolOptions {
-     LPPoolOptions(float norm_type, ExpandingArray<D> kernel_size)
+     LPPoolOptions(double norm_type, ExpandingArray<D> kernel_size)
          : norm_type_(norm_type), kernel_size_(kernel_size), stride_(kernel_size) {}
    
-     TORCH_ARG(float, norm_type);
+     TORCH_ARG(double, norm_type);
    
      // the size of the window to take an average over
      TORCH_ARG(ExpandingArray<D>, kernel_size);

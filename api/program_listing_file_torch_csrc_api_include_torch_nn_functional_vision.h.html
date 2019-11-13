@@ -328,39 +328,22 @@
 <span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">grid_sample</span><span class="p">(</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">grid</span><span class="p">,</span>
-    <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">mode</span><span class="p">,</span>
-    <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">padding_mode</span><span class="p">,</span>
+    <span class="n">GridSampleFuncOptions</span><span class="o">::</span><span class="kt">mode_t</span> <span class="n">mode</span><span class="p">,</span>
+    <span class="n">GridSampleFuncOptions</span><span class="o">::</span><span class="n">padding_mode_t</span> <span class="n">padding_mode</span><span class="p">,</span>
     <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;</span> <span class="n">align_corners</span><span class="p">)</span> <span class="p">{</span>
-
-  <span class="k">if</span> <span class="p">((</span><span class="n">mode</span><span class="p">.</span><span class="n">compare</span><span class="p">(</span><span class="s">&quot;bilinear&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="n">mode</span><span class="p">.</span><span class="n">compare</span><span class="p">(</span><span class="s">&quot;nearest&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">))</span> <span class="p">{</span>
-    <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="nb">false</span><span class="p">,</span> <span class="s">&quot;nn::functional::grid_sample(): expected mode to be &quot;</span><span class="p">,</span>
-                         <span class="s">&quot;&#39;bilinear&#39; or &#39;nearest&#39;, but got: &#39;&quot;</span><span class="p">,</span> <span class="n">mode</span><span class="p">,</span> <span class="s">&quot;&#39;&quot;</span><span class="p">);</span>
-  <span class="p">}</span>
-
-  <span class="k">if</span> <span class="p">((</span><span class="n">padding_mode</span><span class="p">.</span><span class="n">compare</span><span class="p">(</span><span class="s">&quot;zeros&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;&amp;</span>
-      <span class="p">(</span><span class="n">padding_mode</span><span class="p">.</span><span class="n">compare</span><span class="p">(</span><span class="s">&quot;border&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">&amp;&amp;</span>
-      <span class="p">(</span><span class="n">padding_mode</span><span class="p">.</span><span class="n">compare</span><span class="p">(</span><span class="s">&quot;reflection&quot;</span><span class="p">)</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">))</span> <span class="p">{</span>
-    <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="nb">false</span><span class="p">,</span> <span class="s">&quot;nn::functional::grid_sample(): expected padding_mode &quot;</span><span class="p">,</span>
-                         <span class="s">&quot;to be &#39;zeros&#39;, &#39;border&#39;, or &#39;reflection&#39;, &quot;</span><span class="p">,</span>
-                         <span class="s">&quot;but got: &#39;&quot;</span><span class="p">,</span> <span class="n">padding_mode</span><span class="p">,</span> <span class="s">&quot;&#39;&quot;</span><span class="p">);</span>
-  <span class="p">}</span>
-
   <span class="kt">int64_t</span> <span class="n">mode_enum</span><span class="p">,</span> <span class="n">padding_mode_enum</span><span class="p">;</span>
 
-  <span class="k">if</span> <span class="p">(</span><span class="n">mode</span><span class="p">.</span><span class="n">compare</span><span class="p">(</span><span class="s">&quot;bilinear&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">get_if</span><span class="o">&lt;</span><span class="n">enumtype</span><span class="o">::</span><span class="n">kBilinear</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">mode</span><span class="p">))</span> <span class="p">{</span>
     <span class="n">mode_enum</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-  <span class="p">}</span>
-  <span class="k">else</span> <span class="p">{</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
     <span class="n">mode_enum</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
   <span class="p">}</span>
 
-  <span class="k">if</span> <span class="p">(</span><span class="n">padding_mode</span><span class="p">.</span><span class="n">compare</span><span class="p">(</span><span class="s">&quot;zeros&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">get_if</span><span class="o">&lt;</span><span class="n">enumtype</span><span class="o">::</span><span class="n">kZeros</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">padding_mode</span><span class="p">))</span> <span class="p">{</span>
     <span class="n">padding_mode_enum</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-  <span class="p">}</span>
-  <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">padding_mode</span><span class="p">.</span><span class="n">compare</span><span class="p">(</span><span class="s">&quot;border&quot;</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">get_if</span><span class="o">&lt;</span><span class="n">enumtype</span><span class="o">::</span><span class="n">kBorder</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">padding_mode</span><span class="p">))</span> <span class="p">{</span>
     <span class="n">padding_mode_enum</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-  <span class="p">}</span>
-  <span class="k">else</span> <span class="p">{</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
     <span class="n">padding_mode_enum</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
   <span class="p">}</span>
 
@@ -379,7 +362,7 @@
 <span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">grid_sample</span><span class="p">(</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">grid</span><span class="p">,</span>
-    <span class="n">GridSampleFuncOptions</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{})</span> <span class="p">{</span>
+    <span class="k">const</span> <span class="n">GridSampleFuncOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{})</span> <span class="p">{</span>
   <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">grid_sample</span><span class="p">(</span>
     <span class="n">input</span><span class="p">,</span>
     <span class="n">grid</span><span class="p">,</span>
