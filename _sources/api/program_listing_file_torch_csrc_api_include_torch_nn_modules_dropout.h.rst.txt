@@ -28,38 +28,83 @@ Program Listing for File dropout.h
    namespace nn {
    
    namespace detail {
-   template <typename Derived>
-   class DropoutImplBase : public torch::nn::Cloneable<Derived> {
-    public:
-     explicit DropoutImplBase(const DropoutOptions& options_ = DropoutOptions());
    
-     void reset() override;
+   template <typename Derived>
+   class _DropoutNd : public torch::nn::Cloneable<Derived> {
+    public:
+     _DropoutNd(double p) : _DropoutNd(DropoutOptions().p(p)) {};
+   
+     explicit _DropoutNd(const DropoutOptions& options_ = {})
+       : options(options_) {
+       reset();
+     }
+   
+     void reset() override {
+       TORCH_CHECK(
+           options.p() >= 0. && options.p() <= 1.,
+           "dropout probability has to be between 0 and 1, but got ",
+           options.p());
+     }
    
      DropoutOptions options;
    };
-   } // namespace detail
    
-   class TORCH_API DropoutImpl : public detail::DropoutImplBase<DropoutImpl> {
-    public:
-     explicit DropoutImpl(const DropoutOptions& options_ = DropoutOptions());
+   }
    
-     Tensor forward(const Tensor& input);
+   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Dropout ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    
-     void pretty_print(std::ostream& stream) const override;
-   };
+   class TORCH_API DropoutImpl : public detail::_DropoutNd<DropoutImpl> {
+   public:
+     using detail::_DropoutNd<DropoutImpl>::_DropoutNd;
    
-   class TORCH_API FeatureDropoutImpl
-       : public detail::DropoutImplBase<FeatureDropoutImpl> {
-    public:
-     explicit FeatureDropoutImpl(const DropoutOptions& options_ = DropoutOptions());
-   
-     Tensor forward(const Tensor& input);
+     Tensor forward(Tensor input);
    
      void pretty_print(std::ostream& stream) const override;
    };
    
    TORCH_MODULE(Dropout);
    
+   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Dropout2d ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   
+   class TORCH_API Dropout2dImpl : public detail::_DropoutNd<Dropout2dImpl> {
+   public:
+     using detail::_DropoutNd<Dropout2dImpl>::_DropoutNd;
+   
+     Tensor forward(Tensor input);
+   
+     void pretty_print(std::ostream& stream) const override;
+   };
+   
+   TORCH_MODULE(Dropout2d);
+   
+   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Dropout3d ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   
+   class TORCH_API Dropout3dImpl : public detail::_DropoutNd<Dropout3dImpl> {
+   public:
+     using detail::_DropoutNd<Dropout3dImpl>::_DropoutNd;
+   
+     Tensor forward(Tensor input);
+   
+     void pretty_print(std::ostream& stream) const override;
+   };
+   
+   TORCH_MODULE(Dropout3d);
+   
+   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ FeatureDropout ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   
+   class TORCH_API FeatureDropoutImpl
+       : public detail::_DropoutNd<FeatureDropoutImpl> {
+    public:
+     FeatureDropoutImpl(double p);
+   
+     explicit FeatureDropoutImpl(const FeatureDropoutOptions& options_ = {});
+   
+     Tensor forward(const Tensor& input);
+   
+     void pretty_print(std::ostream& stream) const override;
+   };
+   
    TORCH_MODULE(FeatureDropout);
+   
    } // namespace nn
    } // namespace torch

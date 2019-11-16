@@ -289,39 +289,84 @@
 <span class="k">namespace</span> <span class="n">nn</span> <span class="p">{</span>
 
 <span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
-<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Derived</span><span class="o">&gt;</span>
-<span class="k">class</span> <span class="nc">DropoutImplBase</span> <span class="o">:</span> <span class="k">public</span> <span class="n">torch</span><span class="o">::</span><span class="n">nn</span><span class="o">::</span><span class="n">Cloneable</span><span class="o">&lt;</span><span class="n">Derived</span><span class="o">&gt;</span> <span class="p">{</span>
- <span class="k">public</span><span class="o">:</span>
-  <span class="k">explicit</span> <span class="n">DropoutImplBase</span><span class="p">(</span><span class="k">const</span> <span class="n">DropoutOptions</span><span class="o">&amp;</span> <span class="n">options_</span> <span class="o">=</span> <span class="n">DropoutOptions</span><span class="p">());</span>
 
-  <span class="kt">void</span> <span class="nf">reset</span><span class="p">()</span> <span class="k">override</span><span class="p">;</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Derived</span><span class="o">&gt;</span>
+<span class="k">class</span> <span class="nc">_DropoutNd</span> <span class="o">:</span> <span class="k">public</span> <span class="n">torch</span><span class="o">::</span><span class="n">nn</span><span class="o">::</span><span class="n">Cloneable</span><span class="o">&lt;</span><span class="n">Derived</span><span class="o">&gt;</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="n">_DropoutNd</span><span class="p">(</span><span class="kt">double</span> <span class="n">p</span><span class="p">)</span> <span class="o">:</span> <span class="n">_DropoutNd</span><span class="p">(</span><span class="n">DropoutOptions</span><span class="p">().</span><span class="n">p</span><span class="p">(</span><span class="n">p</span><span class="p">))</span> <span class="p">{};</span>
+
+  <span class="k">explicit</span> <span class="nf">_DropoutNd</span><span class="p">(</span><span class="k">const</span> <span class="n">DropoutOptions</span><span class="o">&amp;</span> <span class="n">options_</span> <span class="o">=</span> <span class="p">{})</span>
+    <span class="o">:</span> <span class="n">options</span><span class="p">(</span><span class="n">options_</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">reset</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="kt">void</span> <span class="nf">reset</span><span class="p">()</span> <span class="k">override</span> <span class="p">{</span>
+    <span class="n">TORCH_CHECK</span><span class="p">(</span>
+        <span class="n">options</span><span class="p">.</span><span class="n">p</span><span class="p">()</span> <span class="o">&gt;=</span> <span class="mf">0.</span> <span class="o">&amp;&amp;</span> <span class="n">options</span><span class="p">.</span><span class="n">p</span><span class="p">()</span> <span class="o">&lt;=</span> <span class="mf">1.</span><span class="p">,</span>
+        <span class="s">&quot;dropout probability has to be between 0 and 1, but got &quot;</span><span class="p">,</span>
+        <span class="n">options</span><span class="p">.</span><span class="n">p</span><span class="p">());</span>
+  <span class="p">}</span>
 
   <span class="n">DropoutOptions</span> <span class="n">options</span><span class="p">;</span>
 <span class="p">};</span>
-<span class="p">}</span> <span class="c1">// namespace detail</span>
 
-<span class="k">class</span> <span class="nc">TORCH_API</span> <span class="nl">DropoutImpl</span> <span class="p">:</span> <span class="k">public</span> <span class="n">detail</span><span class="o">::</span><span class="n">DropoutImplBase</span><span class="o">&lt;</span><span class="n">DropoutImpl</span><span class="o">&gt;</span> <span class="p">{</span>
- <span class="k">public</span><span class="o">:</span>
-  <span class="k">explicit</span> <span class="n">DropoutImpl</span><span class="p">(</span><span class="k">const</span> <span class="n">DropoutOptions</span><span class="o">&amp;</span> <span class="n">options_</span> <span class="o">=</span> <span class="n">DropoutOptions</span><span class="p">());</span>
+<span class="p">}</span>
 
-  <span class="n">Tensor</span> <span class="nf">forward</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">);</span>
+<span class="c1">// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Dropout ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
 
-  <span class="kt">void</span> <span class="nf">pretty_print</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">ostream</span><span class="o">&amp;</span> <span class="n">stream</span><span class="p">)</span> <span class="k">const</span> <span class="k">override</span><span class="p">;</span>
-<span class="p">};</span>
+<span class="k">class</span> <span class="nc">TORCH_API</span> <span class="nl">DropoutImpl</span> <span class="p">:</span> <span class="k">public</span> <span class="n">detail</span><span class="o">::</span><span class="n">_DropoutNd</span><span class="o">&lt;</span><span class="n">DropoutImpl</span><span class="o">&gt;</span> <span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+  <span class="k">using</span> <span class="n">detail</span><span class="o">::</span><span class="n">_DropoutNd</span><span class="o">&lt;</span><span class="n">DropoutImpl</span><span class="o">&gt;::</span><span class="n">_DropoutNd</span><span class="p">;</span>
 
-<span class="k">class</span> <span class="nc">TORCH_API</span> <span class="nl">FeatureDropoutImpl</span>
-    <span class="p">:</span> <span class="k">public</span> <span class="n">detail</span><span class="o">::</span><span class="n">DropoutImplBase</span><span class="o">&lt;</span><span class="n">FeatureDropoutImpl</span><span class="o">&gt;</span> <span class="p">{</span>
- <span class="k">public</span><span class="o">:</span>
-  <span class="k">explicit</span> <span class="n">FeatureDropoutImpl</span><span class="p">(</span><span class="k">const</span> <span class="n">DropoutOptions</span><span class="o">&amp;</span> <span class="n">options_</span> <span class="o">=</span> <span class="n">DropoutOptions</span><span class="p">());</span>
-
-  <span class="n">Tensor</span> <span class="nf">forward</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">);</span>
+  <span class="n">Tensor</span> <span class="nf">forward</span><span class="p">(</span><span class="n">Tensor</span> <span class="n">input</span><span class="p">);</span>
 
   <span class="kt">void</span> <span class="nf">pretty_print</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">ostream</span><span class="o">&amp;</span> <span class="n">stream</span><span class="p">)</span> <span class="k">const</span> <span class="k">override</span><span class="p">;</span>
 <span class="p">};</span>
 
 <span class="n">TORCH_MODULE</span><span class="p">(</span><span class="n">Dropout</span><span class="p">);</span>
 
+<span class="c1">// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Dropout2d ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
+
+<span class="k">class</span> <span class="nc">TORCH_API</span> <span class="nl">Dropout2dImpl</span> <span class="p">:</span> <span class="k">public</span> <span class="n">detail</span><span class="o">::</span><span class="n">_DropoutNd</span><span class="o">&lt;</span><span class="n">Dropout2dImpl</span><span class="o">&gt;</span> <span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+  <span class="k">using</span> <span class="n">detail</span><span class="o">::</span><span class="n">_DropoutNd</span><span class="o">&lt;</span><span class="n">Dropout2dImpl</span><span class="o">&gt;::</span><span class="n">_DropoutNd</span><span class="p">;</span>
+
+  <span class="n">Tensor</span> <span class="nf">forward</span><span class="p">(</span><span class="n">Tensor</span> <span class="n">input</span><span class="p">);</span>
+
+  <span class="kt">void</span> <span class="nf">pretty_print</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">ostream</span><span class="o">&amp;</span> <span class="n">stream</span><span class="p">)</span> <span class="k">const</span> <span class="k">override</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="n">TORCH_MODULE</span><span class="p">(</span><span class="n">Dropout2d</span><span class="p">);</span>
+
+<span class="c1">// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Dropout3d ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
+
+<span class="k">class</span> <span class="nc">TORCH_API</span> <span class="nl">Dropout3dImpl</span> <span class="p">:</span> <span class="k">public</span> <span class="n">detail</span><span class="o">::</span><span class="n">_DropoutNd</span><span class="o">&lt;</span><span class="n">Dropout3dImpl</span><span class="o">&gt;</span> <span class="p">{</span>
+<span class="k">public</span><span class="o">:</span>
+  <span class="k">using</span> <span class="n">detail</span><span class="o">::</span><span class="n">_DropoutNd</span><span class="o">&lt;</span><span class="n">Dropout3dImpl</span><span class="o">&gt;::</span><span class="n">_DropoutNd</span><span class="p">;</span>
+
+  <span class="n">Tensor</span> <span class="nf">forward</span><span class="p">(</span><span class="n">Tensor</span> <span class="n">input</span><span class="p">);</span>
+
+  <span class="kt">void</span> <span class="nf">pretty_print</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">ostream</span><span class="o">&amp;</span> <span class="n">stream</span><span class="p">)</span> <span class="k">const</span> <span class="k">override</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="n">TORCH_MODULE</span><span class="p">(</span><span class="n">Dropout3d</span><span class="p">);</span>
+
+<span class="c1">// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ FeatureDropout ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
+
+<span class="k">class</span> <span class="nc">TORCH_API</span> <span class="nl">FeatureDropoutImpl</span>
+    <span class="p">:</span> <span class="k">public</span> <span class="n">detail</span><span class="o">::</span><span class="n">_DropoutNd</span><span class="o">&lt;</span><span class="n">FeatureDropoutImpl</span><span class="o">&gt;</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="n">FeatureDropoutImpl</span><span class="p">(</span><span class="kt">double</span> <span class="n">p</span><span class="p">);</span>
+
+  <span class="k">explicit</span> <span class="nf">FeatureDropoutImpl</span><span class="p">(</span><span class="k">const</span> <span class="n">FeatureDropoutOptions</span><span class="o">&amp;</span> <span class="n">options_</span> <span class="o">=</span> <span class="p">{});</span>
+
+  <span class="n">Tensor</span> <span class="nf">forward</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">);</span>
+
+  <span class="kt">void</span> <span class="nf">pretty_print</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">ostream</span><span class="o">&amp;</span> <span class="n">stream</span><span class="p">)</span> <span class="k">const</span> <span class="k">override</span><span class="p">;</span>
+<span class="p">};</span>
+
 <span class="n">TORCH_MODULE</span><span class="p">(</span><span class="n">FeatureDropout</span><span class="p">);</span>
+
 <span class="p">}</span> <span class="c1">// namespace nn</span>
 <span class="p">}</span> <span class="c1">// namespace torch</span>
 </pre></div>
