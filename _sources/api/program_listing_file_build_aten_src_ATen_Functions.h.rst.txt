@@ -788,7 +788,7 @@ Program Listing for File Functions.h
    static inline Tensor nuclear_norm(const Tensor & self, IntArrayRef dim, bool keepdim=false);
    static inline Tensor & nuclear_norm_out(Tensor & out, const Tensor & self, IntArrayRef dim, bool keepdim=false);
    static inline Tensor clone(const Tensor & self, c10::optional<MemoryFormat> memory_format=c10::nullopt);
-   static inline Tensor & resize_as_(Tensor & self, const Tensor & the_template);
+   static inline Tensor & resize_as_(Tensor & self, const Tensor & the_template, c10::optional<MemoryFormat> memory_format=c10::nullopt);
    static inline Tensor & pow_out(Tensor & out, const Tensor & self, Scalar exponent);
    static inline Tensor pow(const Tensor & self, Scalar exponent);
    static inline Tensor & zero_(Tensor & self);
@@ -9618,15 +9618,15 @@ Program Listing for File Functions.h
            op, self, memory_format);
    #endif
    }
-   static inline Tensor & resize_as_(Tensor & self, const Tensor & the_template) {
+   static inline Tensor & resize_as_(Tensor & self, const Tensor & the_template, c10::optional<MemoryFormat> memory_format) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::resize_as_(self, the_template);
+       return TypeDefault::resize_as_(self, the_template, memory_format);
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchema({"aten::resize_as_", ""}).value();
-       return c10::Dispatcher::singleton().callUnboxedOnly<Tensor &, Tensor &, const Tensor &>(
-           op, self, the_template);
+       return c10::Dispatcher::singleton().callUnboxedOnly<Tensor &, Tensor &, const Tensor &, c10::optional<MemoryFormat>>(
+           op, self, the_template, memory_format);
    #endif
    }
    static inline Tensor & pow_out(Tensor & out, const Tensor & self, Scalar exponent) {
