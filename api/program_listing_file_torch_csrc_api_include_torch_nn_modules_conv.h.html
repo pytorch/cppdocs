@@ -277,6 +277,7 @@
 
 <span class="cp">#include</span> <span class="cpf">&lt;torch/expanding_array.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;torch/nn/cloneable.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/nn/init.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;torch/nn/options/conv.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;torch/nn/pimpl.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;torch/types.h&gt;</span><span class="cp"></span>
@@ -290,15 +291,84 @@
 <span class="k">namespace</span> <span class="n">nn</span> <span class="p">{</span>
 
 <span class="k">template</span> <span class="o">&lt;</span><span class="kt">size_t</span> <span class="n">D</span><span class="p">,</span> <span class="k">typename</span> <span class="n">Derived</span><span class="o">&gt;</span>
-<span class="k">class</span> <span class="nc">TORCH_API</span> <span class="nl">ConvImpl</span> <span class="p">:</span> <span class="k">public</span> <span class="n">torch</span><span class="o">::</span><span class="n">nn</span><span class="o">::</span><span class="n">Cloneable</span><span class="o">&lt;</span><span class="n">Derived</span><span class="o">&gt;</span> <span class="p">{</span>
+<span class="k">class</span> <span class="nc">ConvImpl</span> <span class="o">:</span> <span class="k">public</span> <span class="n">torch</span><span class="o">::</span><span class="n">nn</span><span class="o">::</span><span class="n">Cloneable</span><span class="o">&lt;</span><span class="n">Derived</span><span class="o">&gt;</span> <span class="p">{</span>
  <span class="k">public</span><span class="o">:</span>
-  <span class="k">explicit</span> <span class="n">ConvImpl</span><span class="p">(</span><span class="n">ConvOptions</span><span class="o">&lt;</span><span class="n">D</span><span class="o">&gt;</span> <span class="n">options_</span><span class="p">);</span>
+  <span class="k">explicit</span> <span class="n">ConvImpl</span><span class="p">(</span><span class="n">ConvOptions</span><span class="o">&lt;</span><span class="n">D</span><span class="o">&gt;</span> <span class="n">options_</span><span class="p">)</span> <span class="o">:</span> <span class="n">options</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">options_</span><span class="p">))</span> <span class="p">{</span>
+    <span class="n">reset</span><span class="p">();</span>
+  <span class="p">}</span>
 
-  <span class="kt">void</span> <span class="nf">reset</span><span class="p">()</span> <span class="k">override</span><span class="p">;</span>
+  <span class="kt">void</span> <span class="n">reset</span><span class="p">()</span> <span class="k">override</span> <span class="p">{</span>
+    <span class="n">TORCH_CHECK</span><span class="p">(</span>
+      <span class="n">options</span><span class="p">.</span><span class="n">in_channels</span><span class="p">()</span> <span class="o">%</span> <span class="n">options</span><span class="p">.</span><span class="n">groups</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span>
+      <span class="s">&quot;in_channels must be divisible by groups&quot;</span><span class="p">);</span>
+    <span class="n">TORCH_CHECK</span><span class="p">(</span>
+      <span class="n">options</span><span class="p">.</span><span class="n">out_channels</span><span class="p">()</span> <span class="o">%</span> <span class="n">options</span><span class="p">.</span><span class="n">groups</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span>
+      <span class="s">&quot;out_channels must be divisible by groups&quot;</span><span class="p">);</span>
 
-  <span class="kt">void</span> <span class="nf">reset_parameters</span><span class="p">();</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">transposed</span><span class="p">())</span> <span class="p">{</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span> <span class="n">weight_sizes</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">options</span><span class="p">.</span><span class="n">in_channels</span><span class="p">(),</span>
+        <span class="n">options</span><span class="p">.</span><span class="n">out_channels</span><span class="p">()</span> <span class="o">/</span> <span class="n">options</span><span class="p">.</span><span class="n">groups</span><span class="p">()};</span>
+      <span class="n">weight_sizes</span><span class="p">.</span><span class="n">insert</span><span class="p">(</span><span class="n">weight_sizes</span><span class="p">.</span><span class="n">end</span><span class="p">(),</span> <span class="p">(</span><span class="o">*</span><span class="n">options</span><span class="p">.</span><span class="n">kernel_size</span><span class="p">()).</span><span class="n">begin</span><span class="p">(),</span> <span class="p">(</span><span class="o">*</span><span class="n">options</span><span class="p">.</span><span class="n">kernel_size</span><span class="p">()).</span><span class="n">end</span><span class="p">());</span>
+      <span class="n">weight</span> <span class="o">=</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">register_parameter</span><span class="p">(</span>
+        <span class="s">&quot;weight&quot;</span><span class="p">,</span>
+        <span class="n">torch</span><span class="o">::</span><span class="n">empty</span><span class="p">(</span><span class="n">weight_sizes</span><span class="p">));</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span> <span class="n">weight_sizes</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">options</span><span class="p">.</span><span class="n">out_channels</span><span class="p">(),</span>
+        <span class="n">options</span><span class="p">.</span><span class="n">in_channels</span><span class="p">()</span> <span class="o">/</span> <span class="n">options</span><span class="p">.</span><span class="n">groups</span><span class="p">()};</span>
+      <span class="n">weight_sizes</span><span class="p">.</span><span class="n">insert</span><span class="p">(</span><span class="n">weight_sizes</span><span class="p">.</span><span class="n">end</span><span class="p">(),</span> <span class="p">(</span><span class="o">*</span><span class="n">options</span><span class="p">.</span><span class="n">kernel_size</span><span class="p">()).</span><span class="n">begin</span><span class="p">(),</span> <span class="p">(</span><span class="o">*</span><span class="n">options</span><span class="p">.</span><span class="n">kernel_size</span><span class="p">()).</span><span class="n">end</span><span class="p">());</span>
+      <span class="n">weight</span> <span class="o">=</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">register_parameter</span><span class="p">(</span>
+        <span class="s">&quot;weight&quot;</span><span class="p">,</span>
+        <span class="n">torch</span><span class="o">::</span><span class="n">empty</span><span class="p">(</span><span class="n">weight_sizes</span><span class="p">));</span>
+    <span class="p">}</span>
 
-  <span class="kt">void</span> <span class="nf">pretty_print</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">ostream</span><span class="o">&amp;</span> <span class="n">stream</span><span class="p">)</span> <span class="k">const</span> <span class="k">override</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">bias</span><span class="p">())</span> <span class="p">{</span>
+      <span class="n">bias</span> <span class="o">=</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">register_parameter</span><span class="p">(</span><span class="s">&quot;bias&quot;</span><span class="p">,</span> <span class="n">torch</span><span class="o">::</span><span class="n">empty</span><span class="p">({</span><span class="n">options</span><span class="p">.</span><span class="n">out_channels</span><span class="p">()}));</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="k">this</span><span class="o">-&gt;</span><span class="n">register_parameter</span><span class="p">(</span><span class="s">&quot;bias&quot;</span><span class="p">,</span> <span class="n">Tensor</span><span class="p">(),</span> <span class="cm">/*requires_grad=*/</span><span class="nb">false</span><span class="p">);</span>
+    <span class="p">}</span>
+
+    <span class="n">reset_parameters</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="kt">void</span> <span class="n">reset_parameters</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">init</span><span class="o">::</span><span class="n">kaiming_uniform_</span><span class="p">(</span><span class="n">weight</span><span class="p">,</span> <span class="cm">/*a=*/</span><span class="n">std</span><span class="o">::</span><span class="n">sqrt</span><span class="p">(</span><span class="mi">5</span><span class="p">));</span>  <span class="c1">// NOLINT(cppcoreguidelines-avoid-magic-numbers)</span>
+
+    <span class="k">if</span> <span class="p">(</span><span class="n">bias</span><span class="p">.</span><span class="n">defined</span><span class="p">())</span> <span class="p">{</span>
+      <span class="kt">int64_t</span> <span class="n">fan_in</span><span class="p">,</span> <span class="n">fan_out</span><span class="p">;</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">tie</span><span class="p">(</span><span class="n">fan_in</span><span class="p">,</span> <span class="n">fan_out</span><span class="p">)</span> <span class="o">=</span> <span class="n">init</span><span class="o">::</span><span class="n">_calculate_fan_in_and_fan_out</span><span class="p">(</span><span class="n">weight</span><span class="p">);</span>
+      <span class="k">auto</span> <span class="n">bound</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">/</span> <span class="n">std</span><span class="o">::</span><span class="n">sqrt</span><span class="p">(</span><span class="n">fan_in</span><span class="p">);</span>
+      <span class="n">init</span><span class="o">::</span><span class="n">uniform_</span><span class="p">(</span><span class="n">bias</span><span class="p">,</span> <span class="o">-</span><span class="n">bound</span><span class="p">,</span> <span class="n">bound</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="kt">void</span> <span class="n">pretty_print</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">ostream</span><span class="o">&amp;</span> <span class="n">stream</span><span class="p">)</span> <span class="k">const</span> <span class="k">override</span> <span class="p">{</span>
+    <span class="n">stream</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;torch::nn::Conv&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">D</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;d&quot;</span>
+           <span class="o">&lt;&lt;</span> <span class="s">&quot;(&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">options</span><span class="p">.</span><span class="n">in_channels</span><span class="p">()</span>
+           <span class="o">&lt;&lt;</span> <span class="s">&quot;, &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">options</span><span class="p">.</span><span class="n">out_channels</span><span class="p">()</span>
+           <span class="o">&lt;&lt;</span> <span class="s">&quot;, kernel_size=&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">options</span><span class="p">.</span><span class="n">kernel_size</span><span class="p">()</span>
+           <span class="o">&lt;&lt;</span> <span class="s">&quot;, stride=&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">options</span><span class="p">.</span><span class="n">stride</span><span class="p">();</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">*</span><span class="n">options</span><span class="p">.</span><span class="n">padding</span><span class="p">()</span> <span class="o">!=</span> <span class="o">*</span><span class="n">ExpandingArray</span><span class="o">&lt;</span><span class="n">D</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span> <span class="p">{</span>
+      <span class="n">stream</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;, padding=&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">options</span><span class="p">.</span><span class="n">padding</span><span class="p">();</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">*</span><span class="n">options</span><span class="p">.</span><span class="n">dilation</span><span class="p">()</span> <span class="o">!=</span> <span class="o">*</span><span class="n">ExpandingArray</span><span class="o">&lt;</span><span class="n">D</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="p">{</span>
+      <span class="n">stream</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;, dilation=&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">options</span><span class="p">.</span><span class="n">dilation</span><span class="p">();</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">*</span><span class="n">options</span><span class="p">.</span><span class="n">output_padding</span><span class="p">()</span> <span class="o">!=</span> <span class="o">*</span><span class="n">ExpandingArray</span><span class="o">&lt;</span><span class="n">D</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span> <span class="p">{</span>
+      <span class="n">stream</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;, output_padding=&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">options</span><span class="p">.</span><span class="n">output_padding</span><span class="p">();</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">groups</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">stream</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;, groups=&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">options</span><span class="p">.</span><span class="n">groups</span><span class="p">();</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">options</span><span class="p">.</span><span class="n">bias</span><span class="p">())</span> <span class="p">{</span>
+      <span class="n">stream</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;, bias=&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">boolalpha</span> <span class="o">&lt;&lt;</span> <span class="nb">false</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">c10</span><span class="o">::</span><span class="n">get_if</span><span class="o">&lt;</span><span class="n">enumtype</span><span class="o">::</span><span class="n">kZeros</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">options</span><span class="p">.</span><span class="n">padding_mode</span><span class="p">()))</span> <span class="p">{</span>
+      <span class="n">stream</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;, padding_mode=&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">enumtype</span><span class="o">::</span><span class="n">get_enum_name</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">padding_mode</span><span class="p">());</span>
+    <span class="p">}</span>
+    <span class="n">stream</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;)&quot;</span><span class="p">;</span>
+  <span class="p">}</span>
 
   <span class="n">ConvOptions</span><span class="o">&lt;</span><span class="n">D</span><span class="o">&gt;</span> <span class="n">options</span><span class="p">;</span>
 
@@ -354,6 +424,98 @@
 <span class="p">};</span>
 
 <span class="n">TORCH_MODULE</span><span class="p">(</span><span class="n">Conv3d</span><span class="p">);</span>
+
+<span class="c1">// ~~~~~~~~~~~~~~~~~~~~~~~~~ ConvTranspose ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="kt">size_t</span> <span class="n">D</span><span class="p">,</span> <span class="k">typename</span> <span class="n">Derived</span><span class="o">&gt;</span>
+<span class="k">class</span> <span class="nc">ConvTransposeImpl</span> <span class="o">:</span> <span class="k">public</span> <span class="n">ConvImpl</span><span class="o">&lt;</span><span class="n">D</span><span class="p">,</span> <span class="n">Derived</span><span class="o">&gt;</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="k">using</span> <span class="n">torch</span><span class="o">::</span><span class="n">nn</span><span class="o">::</span><span class="n">ConvImpl</span><span class="o">&lt;</span><span class="n">D</span><span class="p">,</span> <span class="n">Derived</span><span class="o">&gt;::</span><span class="n">ConvImpl</span><span class="p">;</span>
+
+  <span class="kt">void</span> <span class="nf">pretty_print</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">ostream</span><span class="o">&amp;</span> <span class="n">stream</span><span class="p">)</span> <span class="k">const</span> <span class="k">override</span> <span class="p">{</span>
+    <span class="n">stream</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;torch::nn::ConvTranspose&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">D</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;d&quot;</span>
+           <span class="o">&lt;&lt;</span> <span class="s">&quot;(&quot;</span> <span class="o">&lt;&lt;</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">options</span><span class="p">.</span><span class="n">in_channels</span><span class="p">()</span>
+           <span class="o">&lt;&lt;</span> <span class="s">&quot;, &quot;</span> <span class="o">&lt;&lt;</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">options</span><span class="p">.</span><span class="n">out_channels</span><span class="p">()</span>
+           <span class="o">&lt;&lt;</span> <span class="s">&quot;, kernel_size=&quot;</span> <span class="o">&lt;&lt;</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">options</span><span class="p">.</span><span class="n">kernel_size</span><span class="p">()</span>
+           <span class="o">&lt;&lt;</span> <span class="s">&quot;, stride=&quot;</span> <span class="o">&lt;&lt;</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">options</span><span class="p">.</span><span class="n">stride</span><span class="p">();</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">options</span><span class="p">.</span><span class="n">padding</span><span class="p">()</span> <span class="o">!=</span> <span class="o">*</span><span class="n">ExpandingArray</span><span class="o">&lt;</span><span class="n">D</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span> <span class="p">{</span>
+      <span class="n">stream</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;, padding=&quot;</span> <span class="o">&lt;&lt;</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">options</span><span class="p">.</span><span class="n">padding</span><span class="p">();</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">options</span><span class="p">.</span><span class="n">dilation</span><span class="p">()</span> <span class="o">!=</span> <span class="o">*</span><span class="n">ExpandingArray</span><span class="o">&lt;</span><span class="n">D</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">1</span><span class="p">))</span> <span class="p">{</span>
+      <span class="n">stream</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;, dilation=&quot;</span> <span class="o">&lt;&lt;</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">options</span><span class="p">.</span><span class="n">dilation</span><span class="p">();</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">options</span><span class="p">.</span><span class="n">output_padding</span><span class="p">()</span> <span class="o">!=</span> <span class="o">*</span><span class="n">ExpandingArray</span><span class="o">&lt;</span><span class="n">D</span><span class="o">&gt;</span><span class="p">(</span><span class="mi">0</span><span class="p">))</span> <span class="p">{</span>
+      <span class="n">stream</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;, output_padding=&quot;</span> <span class="o">&lt;&lt;</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">options</span><span class="p">.</span><span class="n">output_padding</span><span class="p">();</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">options</span><span class="p">.</span><span class="n">groups</span><span class="p">()</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">stream</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;, groups=&quot;</span> <span class="o">&lt;&lt;</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">options</span><span class="p">.</span><span class="n">groups</span><span class="p">();</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">options</span><span class="p">.</span><span class="n">bias</span><span class="p">())</span> <span class="p">{</span>
+      <span class="n">stream</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;, bias=&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">boolalpha</span> <span class="o">&lt;&lt;</span> <span class="nb">false</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">c10</span><span class="o">::</span><span class="n">get_if</span><span class="o">&lt;</span><span class="n">enumtype</span><span class="o">::</span><span class="n">kZeros</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">options</span><span class="p">.</span><span class="n">padding_mode</span><span class="p">()))</span> <span class="p">{</span>
+      <span class="n">stream</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;, padding_mode=&quot;</span> <span class="o">&lt;&lt;</span> <span class="n">enumtype</span><span class="o">::</span><span class="n">get_enum_name</span><span class="p">(</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">options</span><span class="p">.</span><span class="n">padding_mode</span><span class="p">());</span>
+    <span class="p">}</span>
+    <span class="n">stream</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;)&quot;</span><span class="p">;</span>
+  <span class="p">}</span>
+
+ <span class="k">protected</span><span class="o">:</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span> <span class="n">_output_padding</span><span class="p">(</span>
+      <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="k">const</span> <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">IntArrayRef</span><span class="o">&gt;&amp;</span> <span class="n">output_size</span><span class="p">,</span>
+      <span class="k">const</span> <span class="n">ExpandingArray</span><span class="o">&lt;</span><span class="n">D</span><span class="o">&gt;&amp;</span> <span class="n">stride</span><span class="p">,</span> <span class="k">const</span> <span class="n">ExpandingArray</span><span class="o">&lt;</span><span class="n">D</span><span class="o">&gt;&amp;</span> <span class="n">padding</span><span class="p">,</span>
+      <span class="k">const</span> <span class="n">ExpandingArray</span><span class="o">&lt;</span><span class="n">D</span><span class="o">&gt;&amp;</span> <span class="n">kernel_size</span><span class="p">);</span>
+<span class="p">};</span>
+
+<span class="c1">// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ConvTranspose1d ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
+
+<span class="k">class</span> <span class="nc">TORCH_API</span> <span class="nl">ConvTranspose1dImpl</span> <span class="p">:</span> <span class="k">public</span> <span class="n">ConvTransposeImpl</span><span class="o">&lt;</span><span class="mi">1</span><span class="p">,</span> <span class="n">ConvTranspose1dImpl</span><span class="o">&gt;</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="n">ConvTranspose1dImpl</span><span class="p">(</span>
+      <span class="kt">int64_t</span> <span class="n">input_channels</span><span class="p">,</span>
+      <span class="kt">int64_t</span> <span class="n">output_channels</span><span class="p">,</span>
+      <span class="n">ExpandingArray</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span> <span class="n">kernel_size</span><span class="p">)</span>
+      <span class="o">:</span> <span class="n">ConvTranspose1dImpl</span><span class="p">(</span><span class="n">ConvTransposeOptions</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span><span class="p">(</span><span class="n">input_channels</span><span class="p">,</span> <span class="n">output_channels</span><span class="p">,</span> <span class="n">kernel_size</span><span class="p">))</span> <span class="p">{</span>
+  <span class="p">}</span>
+  <span class="k">explicit</span> <span class="n">ConvTranspose1dImpl</span><span class="p">(</span><span class="n">ConvTransposeOptions</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span> <span class="n">options_</span><span class="p">);</span>
+  <span class="n">Tensor</span> <span class="nf">forward</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
+                 <span class="k">const</span> <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">IntArrayRef</span><span class="o">&gt;&amp;</span> <span class="n">output_size</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">);</span>
+<span class="p">};</span>
+
+<span class="n">TORCH_MODULE</span><span class="p">(</span><span class="n">ConvTranspose1d</span><span class="p">);</span>
+
+<span class="c1">// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ConvTranspose2d ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
+
+<span class="k">class</span> <span class="nc">TORCH_API</span> <span class="nl">ConvTranspose2dImpl</span> <span class="p">:</span> <span class="k">public</span> <span class="n">ConvTransposeImpl</span><span class="o">&lt;</span><span class="mi">2</span><span class="p">,</span> <span class="n">ConvTranspose2dImpl</span><span class="o">&gt;</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="n">ConvTranspose2dImpl</span><span class="p">(</span>
+      <span class="kt">int64_t</span> <span class="n">input_channels</span><span class="p">,</span>
+      <span class="kt">int64_t</span> <span class="n">output_channels</span><span class="p">,</span>
+      <span class="n">ExpandingArray</span><span class="o">&lt;</span><span class="mi">2</span><span class="o">&gt;</span> <span class="n">kernel_size</span><span class="p">)</span>
+      <span class="o">:</span> <span class="n">ConvTranspose2dImpl</span><span class="p">(</span><span class="n">ConvTransposeOptions</span><span class="o">&lt;</span><span class="mi">2</span><span class="o">&gt;</span><span class="p">(</span><span class="n">input_channels</span><span class="p">,</span> <span class="n">output_channels</span><span class="p">,</span> <span class="n">kernel_size</span><span class="p">))</span> <span class="p">{</span>
+  <span class="p">}</span>
+  <span class="k">explicit</span> <span class="n">ConvTranspose2dImpl</span><span class="p">(</span><span class="n">ConvTransposeOptions</span><span class="o">&lt;</span><span class="mi">2</span><span class="o">&gt;</span> <span class="n">options_</span><span class="p">);</span>
+  <span class="n">Tensor</span> <span class="nf">forward</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
+                 <span class="k">const</span> <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">IntArrayRef</span><span class="o">&gt;&amp;</span> <span class="n">output_size</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">);</span>
+<span class="p">};</span>
+
+<span class="n">TORCH_MODULE</span><span class="p">(</span><span class="n">ConvTranspose2d</span><span class="p">);</span>
+
+<span class="c1">// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ ConvTranspose3d ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
+
+<span class="k">class</span> <span class="nc">TORCH_API</span> <span class="nl">ConvTranspose3dImpl</span> <span class="p">:</span> <span class="k">public</span> <span class="n">ConvTransposeImpl</span><span class="o">&lt;</span><span class="mi">3</span><span class="p">,</span> <span class="n">ConvTranspose3dImpl</span><span class="o">&gt;</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="n">ConvTranspose3dImpl</span><span class="p">(</span>
+      <span class="kt">int64_t</span> <span class="n">input_channels</span><span class="p">,</span>
+      <span class="kt">int64_t</span> <span class="n">output_channels</span><span class="p">,</span>
+      <span class="n">ExpandingArray</span><span class="o">&lt;</span><span class="mi">3</span><span class="o">&gt;</span> <span class="n">kernel_size</span><span class="p">)</span>
+      <span class="o">:</span> <span class="n">ConvTranspose3dImpl</span><span class="p">(</span><span class="n">ConvTransposeOptions</span><span class="o">&lt;</span><span class="mi">3</span><span class="o">&gt;</span><span class="p">(</span><span class="n">input_channels</span><span class="p">,</span> <span class="n">output_channels</span><span class="p">,</span> <span class="n">kernel_size</span><span class="p">))</span> <span class="p">{</span>
+  <span class="p">}</span>
+  <span class="k">explicit</span> <span class="n">ConvTranspose3dImpl</span><span class="p">(</span><span class="n">ConvTransposeOptions</span><span class="o">&lt;</span><span class="mi">3</span><span class="o">&gt;</span> <span class="n">options_</span><span class="p">);</span>
+  <span class="n">Tensor</span> <span class="nf">forward</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
+                 <span class="k">const</span> <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">IntArrayRef</span><span class="o">&gt;&amp;</span> <span class="n">output_size</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">);</span>
+<span class="p">};</span>
+
+<span class="n">TORCH_MODULE</span><span class="p">(</span><span class="n">ConvTranspose3d</span><span class="p">);</span>
 
 <span class="p">}</span> <span class="c1">// namespace nn</span>
 <span class="p">}</span> <span class="c1">// namespace torch</span>
