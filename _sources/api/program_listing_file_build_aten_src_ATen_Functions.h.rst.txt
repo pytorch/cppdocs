@@ -240,6 +240,9 @@ Program Listing for File Functions.h
    static inline Tensor diag_embed(const Tensor & self, int64_t offset=0, int64_t dim1=-2, int64_t dim2=-1);
    static inline Tensor diagflat(const Tensor & self, int64_t offset=0);
    static inline Tensor diagonal(const Tensor & self, int64_t offset=0, int64_t dim1=0, int64_t dim2=1);
+   #ifdef BUILD_NAMEDTENSOR
+   static inline Tensor diagonal(const Tensor & self, Dimname outdim, Dimname dim1, Dimname dim2, int64_t offset=0);
+   #endif
    static inline Tensor div(const Tensor & self, const Tensor & other);
    static inline Tensor & div_out(Tensor & out, const Tensor & self, const Tensor & other);
    static inline Tensor div(const Tensor & self, Scalar other);
@@ -3743,6 +3746,19 @@ Program Listing for File Functions.h
            op, self, offset, dim1, dim2);
    #endif
    }
+   #ifdef BUILD_NAMEDTENSOR
+   static inline Tensor diagonal(const Tensor & self, Dimname outdim, Dimname dim1, Dimname dim2, int64_t offset) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       return TypeDefault::diagonal(self, outdim, dim1, dim2, offset);
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchema({"aten::diagonal", "Dimname"}).value();
+       return c10::Dispatcher::singleton().callUnboxedOnly<Tensor, const Tensor &, Dimname, Dimname, Dimname, int64_t>(
+           op, self, outdim, dim1, dim2, offset);
+   #endif
+   }
+   #endif
    static inline Tensor div(const Tensor & self, const Tensor & other) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
