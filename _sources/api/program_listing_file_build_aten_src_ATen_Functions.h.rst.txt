@@ -149,6 +149,10 @@ Program Listing for File Functions.h
    static inline Tensor & logical_not_out(Tensor & out, const Tensor & self);
    static inline Tensor logical_xor(const Tensor & self, const Tensor & other);
    static inline Tensor & logical_xor_out(Tensor & out, const Tensor & self, const Tensor & other);
+   static inline Tensor logical_and(const Tensor & self, const Tensor & other);
+   static inline Tensor & logical_and_out(Tensor & out, const Tensor & self, const Tensor & other);
+   static inline Tensor logical_or(const Tensor & self, const Tensor & other);
+   static inline Tensor & logical_or_out(Tensor & out, const Tensor & self, const Tensor & other);
    static inline Tensor blackman_window(int64_t window_length, const TensorOptions & options={});
    static inline Tensor blackman_window(int64_t window_length, bool periodic, const TensorOptions & options={});
    static inline Tensor bmm(const Tensor & self, const Tensor & mat2);
@@ -2597,6 +2601,58 @@ Program Listing for File Functions.h
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchema({"aten::logical_xor", "out"}).value();
+       return op.callUnboxed<Tensor &, Tensor &, const Tensor &, const Tensor &>(out, self, other);
+   #endif
+   }
+   static inline Tensor logical_and(const Tensor & self, const Tensor & other) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       return TypeDefault::logical_and(self, other);
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchema({"aten::logical_and", ""}).value();
+       return op.callUnboxed<Tensor, const Tensor &, const Tensor &>(self, other);
+   #endif
+   }
+   static inline Tensor & logical_and_out(Tensor & out, const Tensor & self, const Tensor & other) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       switch(tensorTypeIdToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(out, self, other)))) {
+           case Backend::CPU:
+               return CPUType::logical_and_out(out, self, other);
+               break;
+           default:
+               AT_ERROR("logical_and_out not implemented for ", at::toString(c10::detail::multi_dispatch_tensor_type_set(out, self, other)));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchema({"aten::logical_and", "out"}).value();
+       return op.callUnboxed<Tensor &, Tensor &, const Tensor &, const Tensor &>(out, self, other);
+   #endif
+   }
+   static inline Tensor logical_or(const Tensor & self, const Tensor & other) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       return TypeDefault::logical_or(self, other);
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchema({"aten::logical_or", ""}).value();
+       return op.callUnboxed<Tensor, const Tensor &, const Tensor &>(self, other);
+   #endif
+   }
+   static inline Tensor & logical_or_out(Tensor & out, const Tensor & self, const Tensor & other) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       switch(tensorTypeIdToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(out, self, other)))) {
+           case Backend::CPU:
+               return CPUType::logical_or_out(out, self, other);
+               break;
+           default:
+               AT_ERROR("logical_or_out not implemented for ", at::toString(c10::detail::multi_dispatch_tensor_type_set(out, self, other)));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchema({"aten::logical_or", "out"}).value();
        return op.callUnboxed<Tensor &, Tensor &, const Tensor &, const Tensor &>(out, self, other);
    #endif
    }
