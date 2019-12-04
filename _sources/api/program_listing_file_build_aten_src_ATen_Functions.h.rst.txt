@@ -4748,7 +4748,16 @@ Program Listing for File Functions.h
    static inline Tensor isnan(const Tensor & self) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::isnan(self);
+       switch(tensorTypeIdToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(self)))) {
+           case Backend::CPU:
+               return CPUType::isnan(self);
+               break;
+           case Backend::SparseCPU:
+               return SparseCPUType::isnan(self);
+               break;
+           default:
+               AT_ERROR("isnan not implemented for ", at::toString(c10::detail::multi_dispatch_tensor_type_set(self)));
+       }
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchema({"aten::isnan", ""}).value();
@@ -12513,7 +12522,16 @@ Program Listing for File Functions.h
    static inline Tensor any(const Tensor & self) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::any(self);
+       switch(tensorTypeIdToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(self)))) {
+           case Backend::CPU:
+               return CPUType::any(self);
+               break;
+           case Backend::SparseCPU:
+               return SparseCPUType::any(self);
+               break;
+           default:
+               AT_ERROR("any not implemented for ", at::toString(c10::detail::multi_dispatch_tensor_type_set(self)));
+       }
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchema({"aten::any", ""}).value();
