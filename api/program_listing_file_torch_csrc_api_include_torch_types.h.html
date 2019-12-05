@@ -283,6 +283,26 @@
 <span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/autograd/variable.h&gt;</span><span class="cp"></span>
 
 <span class="k">namespace</span> <span class="n">torch</span> <span class="p">{</span>
+
+<span class="c1">// NOTE [ Exposing declarations in `at::` to `torch::` ]</span>
+<span class="c1">//</span>
+<span class="c1">// The following line `using namespace at;` is responsible for exposing all declarations in</span>
+<span class="c1">// `at::` namespace to `torch::` namespace.</span>
+<span class="c1">//</span>
+<span class="c1">// According to the rules laid out in</span>
+<span class="c1">// https://en.cppreference.com/w/cpp/language/qualified_lookup, section &quot;Namespace members&quot;:</span>
+<span class="c1">// ```</span>
+<span class="c1">// Qualified lookup within the scope of a namespace N first considers all declarations that are</span>
+<span class="c1">// located in N and all declarations that are located in the inline namespace members of N</span>
+<span class="c1">// (and, transitively, in their inline namespace members). If there are no declarations in that set</span>
+<span class="c1">// then it considers declarations in all namespaces named by using-directives found in N and</span>
+<span class="c1">// in all transitive inline namespace members of N.</span>
+<span class="c1">// ```</span>
+<span class="c1">//</span>
+<span class="c1">// This means that if both `at::` and `torch::` namespaces have a function with the same signature</span>
+<span class="c1">// (e.g. both `at::func()` and `torch::func()` exist), after `namespace torch { using namespace at; }`,</span>
+<span class="c1">// when we call `torch::func()`, the `func()` function defined in `torch::` namespace will always</span>
+<span class="c1">// be called, and the `func()` function defined in `at::` namespace is always hidden.</span>
 <span class="k">using</span> <span class="k">namespace</span> <span class="n">at</span><span class="p">;</span> <span class="c1">// NOLINT</span>
 
 <span class="k">using</span> <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="p">;</span>
