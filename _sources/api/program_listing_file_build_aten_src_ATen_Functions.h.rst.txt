@@ -305,6 +305,8 @@ Program Listing for File Functions.h
    static inline Tensor floor(const Tensor & self);
    static inline Tensor & floor_(Tensor & self);
    static inline Tensor & floor_out(Tensor & out, const Tensor & self);
+   static inline Tensor floor_divide(const Tensor & input, const Tensor & other);
+   static inline Tensor floor_divide(const Tensor & input, Scalar other);
    static inline Tensor frac(const Tensor & self);
    static inline Tensor & frac_(Tensor & self);
    static inline Tensor & frac_out(Tensor & out, const Tensor & self);
@@ -4267,6 +4269,26 @@ Program Listing for File Functions.h
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchema({"aten::floor", "out"}).value();
        return op.callUnboxed<Tensor &, Tensor &, const Tensor &>(out, self);
+   #endif
+   }
+   static inline Tensor floor_divide(const Tensor & input, const Tensor & other) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       return TypeDefault::floor_divide(input, other);
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchema({"aten::floor_divide", ""}).value();
+       return op.callUnboxed<Tensor, const Tensor &, const Tensor &>(input, other);
+   #endif
+   }
+   static inline Tensor floor_divide(const Tensor & input, Scalar other) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       return TypeDefault::floor_divide(input, other);
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchema({"aten::floor_divide", "Scalar"}).value();
+       return op.callUnboxed<Tensor, const Tensor &, Scalar>(input, other);
    #endif
    }
    static inline Tensor frac(const Tensor & self) {
