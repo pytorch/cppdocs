@@ -671,6 +671,7 @@ Program Listing for File Functions.h
    static inline Tensor sqrt(const Tensor & self);
    static inline Tensor & sqrt_(Tensor & self);
    static inline Tensor & sqrt_out(Tensor & out, const Tensor & self);
+   static inline Tensor square(const Tensor & self);
    static inline Tensor std(const Tensor & self, bool unbiased=true);
    static inline Tensor std(const Tensor & self, IntArrayRef dim, bool unbiased=true, bool keepdim=false);
    static inline std::tuple<Tensor,Tensor> std_mean(const Tensor & self, bool unbiased=true);
@@ -7878,6 +7879,16 @@ Program Listing for File Functions.h
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchema({"aten::sqrt", "out"}).value();
        return op.callUnboxed<Tensor &, Tensor &, const Tensor &>(out, self);
+   #endif
+   }
+   static inline Tensor square(const Tensor & self) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       return TypeDefault::square(self);
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchema({"aten::square", ""}).value();
+       return op.callUnboxed<Tensor, const Tensor &>(self);
    #endif
    }
    static inline Tensor std(const Tensor & self, bool unbiased) {
