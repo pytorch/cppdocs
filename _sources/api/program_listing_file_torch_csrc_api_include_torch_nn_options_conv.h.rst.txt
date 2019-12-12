@@ -23,11 +23,13 @@ Program Listing for File conv.h
    namespace torch {
    namespace nn {
    
-   template <size_t D>
-   struct ConvOptions {
-     typedef c10::variant<enumtype::kZeros, enumtype::kCircular> padding_mode_t;
+   namespace detail {
    
-     ConvOptions(
+   typedef c10::variant<enumtype::kZeros, enumtype::kCircular> conv_padding_mode_t;
+   
+   template <size_t D>
+   struct ConvNdOptions {
+     ConvNdOptions(
          int64_t in_channels,
          int64_t out_channels,
          ExpandingArray<D> kernel_size) :
@@ -50,6 +52,41 @@ Program Listing for File conv.h
      TORCH_ARG(bool, transposed) = false;
    
      TORCH_ARG(ExpandingArray<D>, output_padding) = 0;
+   
+     TORCH_ARG(int64_t, groups) = 1;
+   
+     TORCH_ARG(bool, bias) = true;
+   
+     TORCH_ARG(conv_padding_mode_t, padding_mode) = torch::kZeros;
+   };
+   
+   } // namespace detail
+   
+   // ============================================================================
+   
+   template <size_t D>
+   struct ConvOptions {
+     using padding_mode_t = detail::conv_padding_mode_t;
+   
+     ConvOptions(
+         int64_t in_channels,
+         int64_t out_channels,
+         ExpandingArray<D> kernel_size) :
+                   in_channels_(in_channels),
+                   out_channels_(out_channels),
+                   kernel_size_(std::move(kernel_size)) {}
+   
+     TORCH_ARG(int64_t, in_channels);
+   
+     TORCH_ARG(int64_t, out_channels);
+   
+     TORCH_ARG(ExpandingArray<D>, kernel_size);
+   
+     TORCH_ARG(ExpandingArray<D>, stride) = 1;
+   
+     TORCH_ARG(ExpandingArray<D>, padding) = 0;
+   
+     TORCH_ARG(ExpandingArray<D>, dilation) = 1;
    
      TORCH_ARG(int64_t, groups) = 1;
    
@@ -91,8 +128,38 @@ Program Listing for File conv.h
    
    // ============================================================================
    
-   template<size_t D>
-   using ConvTransposeOptions = ConvOptions<D>;
+   template <size_t D>
+   struct ConvTransposeOptions {
+     using padding_mode_t = detail::conv_padding_mode_t;
+   
+     ConvTransposeOptions(
+         int64_t in_channels,
+         int64_t out_channels,
+         ExpandingArray<D> kernel_size) :
+                   in_channels_(in_channels),
+                   out_channels_(out_channels),
+                   kernel_size_(std::move(kernel_size)) {}
+   
+     TORCH_ARG(int64_t, in_channels);
+   
+     TORCH_ARG(int64_t, out_channels);
+   
+     TORCH_ARG(ExpandingArray<D>, kernel_size);
+   
+     TORCH_ARG(ExpandingArray<D>, stride) = 1;
+   
+     TORCH_ARG(ExpandingArray<D>, padding) = 0;
+   
+     TORCH_ARG(ExpandingArray<D>, output_padding) = 0;
+   
+     TORCH_ARG(int64_t, groups) = 1;
+   
+     TORCH_ARG(bool, bias) = true;
+   
+     TORCH_ARG(ExpandingArray<D>, dilation) = 1;
+   
+     TORCH_ARG(padding_mode_t, padding_mode) = torch::kZeros;
+   };
    
    using ConvTranspose1dOptions = ConvTransposeOptions<1>;
    
