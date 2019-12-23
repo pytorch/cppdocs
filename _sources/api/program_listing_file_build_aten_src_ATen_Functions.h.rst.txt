@@ -1109,6 +1109,7 @@ Program Listing for File Functions.h
    static inline Tensor replication_pad3d(const Tensor & self, IntArrayRef padding);
    static inline Tensor & replication_pad3d_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, IntArrayRef padding);
    static inline Tensor replication_pad3d_backward(const Tensor & grad_output, const Tensor & self, IntArrayRef padding);
+   static inline Tensor _test_optional_float(const Tensor & self, c10::optional<double> scale=c10::nullopt);
    static inline Tensor & upsample_linear1d_out(Tensor & out, const Tensor & self, IntArrayRef output_size, bool align_corners, double scales_1=-1.0);
    static inline Tensor upsample_linear1d(const Tensor & self, IntArrayRef output_size, bool align_corners, double scales_1=-1.0);
    static inline Tensor & upsample_linear1d_backward_out(Tensor & grad_input, const Tensor & grad_output, IntArrayRef output_size, IntArrayRef input_size, bool align_corners, double scales_1=-1.0);
@@ -15003,6 +15004,16 @@ Program Listing for File Functions.h
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchema({"aten::replication_pad3d_backward", ""}).value();
        return op.callUnboxed<Tensor, const Tensor &, const Tensor &, IntArrayRef>(grad_output, self, padding);
+   #endif
+   }
+   static inline Tensor _test_optional_float(const Tensor & self, c10::optional<double> scale) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       return TypeDefault::_test_optional_float(self, scale);
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchema({"aten::_test_optional_float", ""}).value();
+       return op.callUnboxed<Tensor, const Tensor &, c10::optional<double>>(self, scale);
    #endif
    }
    static inline Tensor & upsample_linear1d_out(Tensor & out, const Tensor & self, IntArrayRef output_size, bool align_corners, double scales_1) {
