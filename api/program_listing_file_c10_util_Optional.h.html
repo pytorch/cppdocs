@@ -295,6 +295,7 @@
 <span class="c1">// handled by the template&lt;U=T&gt; case with default template argument.</span>
 <span class="c1">// - `constexpr struct in_place_t {} in_place{}` is moved to `c10/util/in_place.h`,</span>
 <span class="c1">// so that it can also be used in `c10/util/variant.h`.</span>
+<span class="c1">// - Remove special cases for pre-c++14 compilers to make code simpler</span>
 
 <span class="cp">#ifndef C10_UTIL_OPTIONAL_H_</span>
 <span class="cp">#define C10_UTIL_OPTIONAL_H_</span>
@@ -311,84 +312,6 @@
 
 <span class="cp">#define TR2_OPTIONAL_REQUIRES(...) \</span>
 <span class="cp">  typename std::enable_if&lt;__VA_ARGS__::value, bool&gt;::type = false</span>
-
-<span class="cp">#if defined __GNUC__ </span><span class="c1">// NOTE: GNUC is also defined for Clang</span>
-<span class="cp">#if (__GNUC__ == 4) &amp;&amp; (__GNUC_MINOR__ &gt;= 8)</span>
-<span class="cp">#define TR2_OPTIONAL_GCC_4_8_AND_HIGHER___</span>
-<span class="cp">#elif (__GNUC__ &gt; 4)</span>
-<span class="cp">#define TR2_OPTIONAL_GCC_4_8_AND_HIGHER___</span>
-<span class="cp">#endif</span>
-<span class="cp">#</span>
-<span class="cp">#if (__GNUC__ == 4) &amp;&amp; (__GNUC_MINOR__ &gt;= 7)</span>
-<span class="cp">#define TR2_OPTIONAL_GCC_4_7_AND_HIGHER___</span>
-<span class="cp">#elif (__GNUC__ &gt; 4)</span>
-<span class="cp">#define TR2_OPTIONAL_GCC_4_7_AND_HIGHER___</span>
-<span class="cp">#endif</span>
-<span class="cp">#</span>
-<span class="cp">#if (__GNUC__ == 4) &amp;&amp; (__GNUC_MINOR__ == 8) &amp;&amp; (__GNUC_PATCHLEVEL__ &gt;= 1)</span>
-<span class="cp">#define TR2_OPTIONAL_GCC_4_8_1_AND_HIGHER___</span>
-<span class="cp">#elif (__GNUC__ == 4) &amp;&amp; (__GNUC_MINOR__ &gt;= 9)</span>
-<span class="cp">#define TR2_OPTIONAL_GCC_4_8_1_AND_HIGHER___</span>
-<span class="cp">#elif (__GNUC__ &gt; 4)</span>
-<span class="cp">#define TR2_OPTIONAL_GCC_4_8_1_AND_HIGHER___</span>
-<span class="cp">#endif</span>
-<span class="cp">#endif</span>
-<span class="cp">#</span>
-<span class="cp">#if defined __clang_major__</span>
-<span class="cp">#if (__clang_major__ == 3 &amp;&amp; __clang_minor__ &gt;= 5)</span>
-<span class="cp">#define TR2_OPTIONAL_CLANG_3_5_AND_HIGHTER_</span>
-<span class="cp">#elif (__clang_major__ &gt; 3)</span>
-<span class="cp">#define TR2_OPTIONAL_CLANG_3_5_AND_HIGHTER_</span>
-<span class="cp">#endif</span>
-<span class="cp">#if defined TR2_OPTIONAL_CLANG_3_5_AND_HIGHTER_</span>
-<span class="cp">#define TR2_OPTIONAL_CLANG_3_4_2_AND_HIGHER_</span>
-<span class="cp">#elif ( \</span>
-<span class="cp">    __clang_major__ == 3 &amp;&amp; __clang_minor__ == 4 &amp;&amp; __clang_patchlevel__ &gt;= 2)</span>
-<span class="cp">#define TR2_OPTIONAL_CLANG_3_4_2_AND_HIGHER_</span>
-<span class="cp">#endif</span>
-<span class="cp">#endif</span>
-<span class="cp">#</span>
-<span class="cp">#if defined _MSC_VER</span>
-<span class="cp">#if (_MSC_VER &gt;= 1900)</span>
-<span class="cp">#define TR2_OPTIONAL_MSVC_2015_AND_HIGHER___</span>
-<span class="cp">#endif</span>
-<span class="cp">#endif</span>
-
-<span class="cp">#if defined __clang__</span>
-<span class="cp">#if (__clang_major__ &gt; 2) || (__clang_major__ == 2) &amp;&amp; (__clang_minor__ &gt;= 9)</span>
-<span class="cp">#define OPTIONAL_HAS_THIS_RVALUE_REFS 1</span>
-<span class="cp">#else</span>
-<span class="cp">#define OPTIONAL_HAS_THIS_RVALUE_REFS 0</span>
-<span class="cp">#endif</span>
-<span class="cp">#elif defined TR2_OPTIONAL_GCC_4_8_1_AND_HIGHER___</span>
-<span class="cp">#define OPTIONAL_HAS_THIS_RVALUE_REFS 1</span>
-<span class="cp">#elif defined TR2_OPTIONAL_MSVC_2015_AND_HIGHER___</span>
-<span class="cp">#define OPTIONAL_HAS_THIS_RVALUE_REFS 1</span>
-<span class="cp">#else</span>
-<span class="cp">#define OPTIONAL_HAS_THIS_RVALUE_REFS 0</span>
-<span class="cp">#endif</span>
-
-<span class="cp">#if defined TR2_OPTIONAL_GCC_4_8_1_AND_HIGHER___</span>
-<span class="cp">#define OPTIONAL_HAS_CONSTEXPR_INIT_LIST 1</span>
-<span class="cp">#define OPTIONAL_CONSTEXPR_INIT_LIST constexpr</span>
-<span class="cp">#else</span>
-<span class="cp">#define OPTIONAL_HAS_CONSTEXPR_INIT_LIST 0</span>
-<span class="cp">#define OPTIONAL_CONSTEXPR_INIT_LIST</span>
-<span class="cp">#endif</span>
-
-<span class="cp">#if defined TR2_OPTIONAL_CLANG_3_5_AND_HIGHTER_ &amp;&amp; (defined __cplusplus) &amp;&amp; \</span>
-<span class="cp">    (__cplusplus != 201103L)</span>
-<span class="cp">#define OPTIONAL_HAS_MOVE_ACCESSORS 1</span>
-<span class="cp">#else</span>
-<span class="cp">#define OPTIONAL_HAS_MOVE_ACCESSORS 0</span>
-<span class="cp">#endif</span>
-
-<span class="cp">#</span><span class="c1">// In C++11 constexpr implies const, so we need to make non-const members also non-constexpr</span>
-<span class="cp">#if (defined __cplusplus) &amp;&amp; (__cplusplus == 201103L)</span>
-<span class="cp">#define OPTIONAL_MUTABLE_CONSTEXPR</span>
-<span class="cp">#else</span>
-<span class="cp">#define OPTIONAL_MUTABLE_CONSTEXPR constexpr</span>
-<span class="cp">#endif</span>
 
 <span class="k">namespace</span> <span class="n">c10</span> <span class="p">{</span>
 
@@ -425,6 +348,12 @@
 <span class="cp">#else</span>
 <span class="cp">#define TR2_OPTIONAL_ASSERTED_EXPRESSION(CHECK, EXPR) \</span>
 <span class="cp">  ((CHECK) ? (EXPR) : ([] { assert(!#CHECK); }(), (EXPR)))</span>
+<span class="cp">#endif</span>
+
+<span class="cp">#if defined(__CUDA_ARCH__)</span>
+<span class="cp">#define TR2_OPTIONAL_HOST_CONSTEXPR</span>
+<span class="cp">#else</span>
+<span class="cp">#define TR2_OPTIONAL_HOST_CONSTEXPR constexpr</span>
 <span class="cp">#endif</span>
 
 <span class="k">namespace</span> <span class="n">detail_</span> <span class="p">{</span>
@@ -572,7 +501,7 @@
       <span class="k">class</span> <span class="nc">U</span><span class="p">,</span>
       <span class="n">class</span><span class="p">...</span> <span class="n">Args</span><span class="p">,</span>
       <span class="n">TR2_OPTIONAL_REQUIRES</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">is_constructible</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">initializer_list</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;&gt;</span><span class="p">)</span><span class="o">&gt;</span>
-  <span class="n">OPTIONAL_CONSTEXPR_INIT_LIST</span> <span class="k">explicit</span> <span class="n">constexpr_optional_base</span><span class="p">(</span>
+  <span class="k">constexpr</span> <span class="k">explicit</span> <span class="n">constexpr_optional_base</span><span class="p">(</span>
       <span class="n">in_place_t</span><span class="p">,</span>
       <span class="n">std</span><span class="o">::</span><span class="n">initializer_list</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;</span> <span class="n">il</span><span class="p">,</span>
       <span class="n">Args</span><span class="o">&amp;&amp;</span><span class="p">...</span> <span class="n">args</span><span class="p">)</span>
@@ -614,33 +543,15 @@
     <span class="k">return</span> <span class="n">detail_</span><span class="o">::</span><span class="n">static_addressof</span><span class="p">(</span><span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">storage_</span><span class="p">.</span><span class="n">value_</span><span class="p">);</span>
   <span class="p">}</span>
 
-<span class="cp">#if OPTIONAL_HAS_THIS_RVALUE_REFS == 1</span>
   <span class="k">constexpr</span> <span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">contained_val</span><span class="p">()</span> <span class="k">const</span><span class="o">&amp;</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">storage_</span><span class="p">.</span><span class="n">value_</span><span class="p">;</span>
   <span class="p">}</span>
-<span class="cp">#if OPTIONAL_HAS_MOVE_ACCESSORS == 1</span>
-  <span class="n">OPTIONAL_MUTABLE_CONSTEXPR</span> <span class="n">T</span><span class="o">&amp;&amp;</span> <span class="n">contained_val</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
+  <span class="k">constexpr</span> <span class="n">T</span><span class="o">&amp;&amp;</span> <span class="n">contained_val</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">storage_</span><span class="p">.</span><span class="n">value_</span><span class="p">);</span>
   <span class="p">}</span>
-  <span class="n">OPTIONAL_MUTABLE_CONSTEXPR</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">contained_val</span><span class="p">()</span> <span class="o">&amp;</span> <span class="p">{</span>
+  <span class="k">constexpr</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">contained_val</span><span class="p">()</span> <span class="o">&amp;</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">storage_</span><span class="p">.</span><span class="n">value_</span><span class="p">;</span>
   <span class="p">}</span>
-<span class="cp">#else</span>
-  <span class="n">T</span><span class="o">&amp;</span> <span class="n">contained_val</span><span class="p">()</span> <span class="o">&amp;</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">storage_</span><span class="p">.</span><span class="n">value_</span><span class="p">;</span>
-  <span class="p">}</span>
-  <span class="n">T</span><span class="o">&amp;&amp;</span> <span class="n">contained_val</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">storage_</span><span class="p">.</span><span class="n">value_</span><span class="p">);</span>
-  <span class="p">}</span>
-<span class="cp">#endif</span>
-<span class="cp">#else</span>
-  <span class="k">constexpr</span> <span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">contained_val</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">storage_</span><span class="p">.</span><span class="n">value_</span><span class="p">;</span>
-  <span class="p">}</span>
-  <span class="n">T</span><span class="o">&amp;</span> <span class="n">contained_val</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">storage_</span><span class="p">.</span><span class="n">value_</span><span class="p">;</span>
-  <span class="p">}</span>
-<span class="cp">#endif</span>
 
   <span class="kt">void</span> <span class="n">clear</span><span class="p">()</span> <span class="k">noexcept</span> <span class="p">{</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">initialized</span><span class="p">())</span>
@@ -724,7 +635,7 @@
       <span class="k">class</span> <span class="nc">U</span><span class="p">,</span>
       <span class="n">class</span><span class="p">...</span> <span class="n">Args</span><span class="p">,</span>
       <span class="n">TR2_OPTIONAL_REQUIRES</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">is_constructible</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">initializer_list</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;&gt;</span><span class="p">)</span><span class="o">&gt;</span>
-  <span class="n">OPTIONAL_CONSTEXPR_INIT_LIST</span> <span class="k">explicit</span> <span class="n">optional</span><span class="p">(</span>
+  <span class="k">constexpr</span> <span class="k">explicit</span> <span class="n">optional</span><span class="p">(</span>
       <span class="n">in_place_t</span><span class="p">,</span>
       <span class="n">std</span><span class="o">::</span><span class="n">initializer_list</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;</span> <span class="n">il</span><span class="p">,</span>
       <span class="n">Args</span><span class="o">&amp;&amp;</span><span class="p">...</span> <span class="n">args</span><span class="p">)</span>
@@ -813,116 +724,58 @@
     <span class="k">return</span> <span class="n">initialized</span><span class="p">();</span>
   <span class="p">}</span>
 
-  <span class="k">constexpr</span> <span class="n">T</span> <span class="k">const</span><span class="o">*</span> <span class="k">operator</span><span class="o">-&gt;</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+  <span class="n">TR2_OPTIONAL_HOST_CONSTEXPR</span> <span class="n">T</span> <span class="k">const</span><span class="o">*</span> <span class="k">operator</span><span class="o">-&gt;</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">TR2_OPTIONAL_ASSERTED_EXPRESSION</span><span class="p">(</span><span class="n">initialized</span><span class="p">(),</span> <span class="n">dataptr</span><span class="p">());</span>
   <span class="p">}</span>
 
-<span class="cp">#if OPTIONAL_HAS_MOVE_ACCESSORS == 1</span>
-
-  <span class="n">OPTIONAL_MUTABLE_CONSTEXPR</span> <span class="n">T</span><span class="o">*</span> <span class="k">operator</span><span class="o">-&gt;</span><span class="p">()</span> <span class="p">{</span>
+  <span class="n">TR2_OPTIONAL_HOST_CONSTEXPR</span> <span class="n">T</span><span class="o">*</span> <span class="k">operator</span><span class="o">-&gt;</span><span class="p">()</span> <span class="p">{</span>
     <span class="n">assert</span><span class="p">(</span><span class="n">initialized</span><span class="p">());</span>
     <span class="k">return</span> <span class="nf">dataptr</span><span class="p">();</span>
   <span class="p">}</span>
 
-  <span class="k">constexpr</span> <span class="n">T</span> <span class="k">const</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">*</span><span class="p">()</span> <span class="k">const</span><span class="o">&amp;</span> <span class="p">{</span>
+  <span class="n">TR2_OPTIONAL_HOST_CONSTEXPR</span> <span class="n">T</span> <span class="k">const</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">*</span><span class="p">()</span> <span class="k">const</span><span class="o">&amp;</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">TR2_OPTIONAL_ASSERTED_EXPRESSION</span><span class="p">(</span><span class="n">initialized</span><span class="p">(),</span> <span class="n">contained_val</span><span class="p">());</span>
   <span class="p">}</span>
 
-  <span class="n">OPTIONAL_MUTABLE_CONSTEXPR</span> <span class="n">T</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">*</span><span class="p">()</span> <span class="o">&amp;</span> <span class="p">{</span>
+  <span class="n">TR2_OPTIONAL_HOST_CONSTEXPR</span> <span class="n">T</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">*</span><span class="p">()</span> <span class="o">&amp;</span> <span class="p">{</span>
     <span class="n">assert</span><span class="p">(</span><span class="n">initialized</span><span class="p">());</span>
     <span class="k">return</span> <span class="nf">contained_val</span><span class="p">();</span>
   <span class="p">}</span>
 
-  <span class="n">OPTIONAL_MUTABLE_CONSTEXPR</span> <span class="n">T</span><span class="o">&amp;&amp;</span> <span class="k">operator</span><span class="o">*</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
+  <span class="n">TR2_OPTIONAL_HOST_CONSTEXPR</span> <span class="n">T</span><span class="o">&amp;&amp;</span> <span class="k">operator</span><span class="o">*</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
     <span class="n">assert</span><span class="p">(</span><span class="n">initialized</span><span class="p">());</span>
     <span class="k">return</span> <span class="nf">constexpr_move</span><span class="p">(</span><span class="n">contained_val</span><span class="p">());</span>
   <span class="p">}</span>
 
-  <span class="k">constexpr</span> <span class="n">T</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">()</span> <span class="k">const</span><span class="o">&amp;</span> <span class="p">{</span>
+  <span class="n">TR2_OPTIONAL_HOST_CONSTEXPR</span> <span class="n">T</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">()</span> <span class="k">const</span><span class="o">&amp;</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">initialized</span><span class="p">()</span>
         <span class="o">?</span> <span class="n">contained_val</span><span class="p">()</span>
         <span class="o">:</span> <span class="p">(</span><span class="k">throw</span> <span class="n">bad_optional_access</span><span class="p">(</span><span class="s">&quot;bad optional access&quot;</span><span class="p">),</span> <span class="n">contained_val</span><span class="p">());</span>
   <span class="p">}</span>
 
-  <span class="n">OPTIONAL_MUTABLE_CONSTEXPR</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">()</span> <span class="o">&amp;</span> <span class="p">{</span>
+  <span class="n">TR2_OPTIONAL_HOST_CONSTEXPR</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">()</span> <span class="o">&amp;</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">initialized</span><span class="p">()</span>
         <span class="o">?</span> <span class="n">contained_val</span><span class="p">()</span>
         <span class="o">:</span> <span class="p">(</span><span class="k">throw</span> <span class="n">bad_optional_access</span><span class="p">(</span><span class="s">&quot;bad optional access&quot;</span><span class="p">),</span> <span class="n">contained_val</span><span class="p">());</span>
   <span class="p">}</span>
 
-  <span class="n">OPTIONAL_MUTABLE_CONSTEXPR</span> <span class="n">T</span><span class="o">&amp;&amp;</span> <span class="n">value</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
+  <span class="n">TR2_OPTIONAL_HOST_CONSTEXPR</span> <span class="n">T</span><span class="o">&amp;&amp;</span> <span class="n">value</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
     <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">initialized</span><span class="p">())</span>
       <span class="k">throw</span> <span class="n">bad_optional_access</span><span class="p">(</span><span class="s">&quot;bad optional access&quot;</span><span class="p">);</span>
     <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">contained_val</span><span class="p">());</span>
   <span class="p">}</span>
-
-<span class="cp">#else</span>
-
-  <span class="n">T</span><span class="o">*</span> <span class="k">operator</span><span class="o">-&gt;</span><span class="p">()</span> <span class="p">{</span>
-    <span class="n">assert</span><span class="p">(</span><span class="n">initialized</span><span class="p">());</span>
-    <span class="k">return</span> <span class="nf">dataptr</span><span class="p">();</span>
-  <span class="p">}</span>
-
-  <span class="k">constexpr</span> <span class="n">T</span> <span class="k">const</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">*</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">contained_val</span><span class="p">();</span>
-  <span class="p">}</span>
-
-  <span class="n">T</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">*</span><span class="p">()</span> <span class="p">{</span>
-    <span class="n">assert</span><span class="p">(</span><span class="n">initialized</span><span class="p">());</span>
-    <span class="k">return</span> <span class="nf">contained_val</span><span class="p">();</span>
-  <span class="p">}</span>
-
-  <span class="c1">// This might be constexpr, but MSVC+cuda don&#39;t like combination of constexpr</span>
-  <span class="c1">// and throw.</span>
-  <span class="n">T</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">initialized</span><span class="p">()</span>
-        <span class="o">?</span> <span class="n">contained_val</span><span class="p">()</span>
-        <span class="o">:</span> <span class="p">(</span><span class="k">throw</span> <span class="n">bad_optional_access</span><span class="p">(</span><span class="s">&quot;bad optional access&quot;</span><span class="p">),</span> <span class="n">contained_val</span><span class="p">());</span>
-  <span class="p">}</span>
-
-  <span class="n">T</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">initialized</span><span class="p">()</span>
-        <span class="o">?</span> <span class="n">contained_val</span><span class="p">()</span>
-        <span class="o">:</span> <span class="p">(</span><span class="k">throw</span> <span class="n">bad_optional_access</span><span class="p">(</span><span class="s">&quot;bad optional access&quot;</span><span class="p">),</span> <span class="n">contained_val</span><span class="p">());</span>
-  <span class="p">}</span>
-
-<span class="cp">#endif</span>
-
-<span class="cp">#if OPTIONAL_HAS_THIS_RVALUE_REFS == 1</span>
 
   <span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">V</span><span class="o">&gt;</span>
   <span class="k">constexpr</span> <span class="n">T</span> <span class="n">value_or</span><span class="p">(</span><span class="n">V</span><span class="o">&amp;&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="k">const</span><span class="o">&amp;</span> <span class="p">{</span>
     <span class="k">return</span> <span class="o">*</span><span class="k">this</span> <span class="o">?</span> <span class="o">**</span><span class="k">this</span> <span class="o">:</span> <span class="n">detail_</span><span class="o">::</span><span class="n">convert</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">constexpr_forward</span><span class="o">&lt;</span><span class="n">V</span><span class="o">&gt;</span><span class="p">(</span><span class="n">v</span><span class="p">));</span>
   <span class="p">}</span>
 
-<span class="cp">#if OPTIONAL_HAS_MOVE_ACCESSORS == 1</span>
-
   <span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">V</span><span class="o">&gt;</span>
-  <span class="n">OPTIONAL_MUTABLE_CONSTEXPR</span> <span class="n">T</span> <span class="n">value_or</span><span class="p">(</span><span class="n">V</span><span class="o">&amp;&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
+  <span class="k">constexpr</span> <span class="n">T</span> <span class="n">value_or</span><span class="p">(</span><span class="n">V</span><span class="o">&amp;&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
     <span class="k">return</span> <span class="o">*</span><span class="k">this</span>
         <span class="o">?</span> <span class="n">constexpr_move</span><span class="p">(</span><span class="k">const_cast</span><span class="o">&lt;</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;&gt;</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">).</span><span class="n">contained_val</span><span class="p">())</span>
         <span class="o">:</span> <span class="n">detail_</span><span class="o">::</span><span class="n">convert</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">constexpr_forward</span><span class="o">&lt;</span><span class="n">V</span><span class="o">&gt;</span><span class="p">(</span><span class="n">v</span><span class="p">));</span>
   <span class="p">}</span>
-
-<span class="cp">#else</span>
-
-  <span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">V</span><span class="o">&gt;</span>
-  <span class="n">T</span> <span class="n">value_or</span><span class="p">(</span><span class="n">V</span><span class="o">&amp;&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="o">*</span><span class="k">this</span>
-        <span class="o">?</span> <span class="n">constexpr_move</span><span class="p">(</span><span class="k">const_cast</span><span class="o">&lt;</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;&gt;</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">).</span><span class="n">contained_val</span><span class="p">())</span>
-        <span class="o">:</span> <span class="n">detail_</span><span class="o">::</span><span class="n">convert</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">constexpr_forward</span><span class="o">&lt;</span><span class="n">V</span><span class="o">&gt;</span><span class="p">(</span><span class="n">v</span><span class="p">));</span>
-  <span class="p">}</span>
-
-<span class="cp">#endif</span>
-
-<span class="cp">#else</span>
-
-  <span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">V</span><span class="o">&gt;</span>
-  <span class="k">constexpr</span> <span class="n">T</span> <span class="n">value_or</span><span class="p">(</span><span class="n">V</span><span class="o">&amp;&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="o">*</span><span class="k">this</span> <span class="o">?</span> <span class="o">**</span><span class="k">this</span> <span class="o">:</span> <span class="n">detail_</span><span class="o">::</span><span class="n">convert</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">constexpr_forward</span><span class="o">&lt;</span><span class="n">V</span><span class="o">&gt;</span><span class="p">(</span><span class="n">v</span><span class="p">));</span>
-  <span class="p">}</span>
-
-<span class="cp">#endif</span>
 
   <span class="c1">// 20.6.3.6, modifiers</span>
   <span class="kt">void</span> <span class="n">reset</span><span class="p">()</span> <span class="k">noexcept</span> <span class="p">{</span>
@@ -1010,11 +863,11 @@
   <span class="p">}</span>
 
   <span class="c1">// 20.5.5.3, observers</span>
-  <span class="k">constexpr</span> <span class="n">T</span><span class="o">*</span> <span class="k">operator</span><span class="o">-&gt;</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+  <span class="n">TR2_OPTIONAL_HOST_CONSTEXPR</span> <span class="n">T</span><span class="o">*</span> <span class="k">operator</span><span class="o">-&gt;</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">TR2_OPTIONAL_ASSERTED_EXPRESSION</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="n">ref</span><span class="p">);</span>
   <span class="p">}</span>
 
-  <span class="k">constexpr</span> <span class="n">T</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">*</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+  <span class="n">TR2_OPTIONAL_HOST_CONSTEXPR</span> <span class="n">T</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">*</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">TR2_OPTIONAL_ASSERTED_EXPRESSION</span><span class="p">(</span><span class="n">ref</span><span class="p">,</span> <span class="o">*</span><span class="n">ref</span><span class="p">);</span>
   <span class="p">}</span>
 
@@ -1366,6 +1219,7 @@
 
 <span class="cp">#undef TR2_OPTIONAL_REQUIRES</span>
 <span class="cp">#undef TR2_OPTIONAL_ASSERTED_EXPRESSION</span>
+<span class="cp">#undef TR2_OPTIONAL_HOST_CONSTEXPR</span>
 
 <span class="cp">#endif </span><span class="c1">// C10_UTIL_OPTIONAL_H_</span>
 </pre></div>
