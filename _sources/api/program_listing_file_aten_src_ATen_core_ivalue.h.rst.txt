@@ -73,8 +73,13 @@ Program Listing for File ivalue.h
      _(Uninitialized) \
      _(Capsule)
    
+   // [doxygen private]
+   // These methods are not actually private but we don't want to document them, so
+   // they are marked `@private`, which hides them on the doxygen documentation for
+   // this page.
+   
+   
    struct CAFFE2_API IValue final {
-     IValue() : payload{0}, tag(Tag::None), is_intrusive_ptr(false) {}
      IValue(const IValue& rhs)
          : IValue(rhs.payload, rhs.tag, rhs.is_intrusive_ptr) {
        if (is_intrusive_ptr) {
@@ -89,15 +94,14 @@ Program Listing for File ivalue.h
          c10::raw::intrusive_ptr::decref(payload.as_intrusive_ptr);
        }
      }
-     IValue & operator=(IValue && rhs) & noexcept {
+     IValue& operator=(IValue&& rhs) & noexcept {
        IValue(std::move(rhs)).swap(*this); // this also sets rhs to None
        return *this;
      }
-     IValue & operator=(IValue const & rhs) & {
+     IValue& operator=(IValue const& rhs) & {
        IValue(rhs).swap(*this);
        return *this;
      }
-   
      void dump() const;
    
      bool isAliasOf(const IValue& rhs) const {
@@ -142,7 +146,6 @@ Program Listing for File ivalue.h
      // While some of these accessors could be generated through templates,
      // we prefer to write them manually for clarity
    
-     // Tensor
      IValue(at::Tensor t)
      : tag(Tag::Tensor), is_intrusive_ptr(t.defined())  {
        // Note: the undefined tensor is not refcounted, so while it
@@ -172,10 +175,13 @@ Program Listing for File ivalue.h
        // and store it as a Tensor instead.
        payload.as_intrusive_ptr = blob.release();
      }
+   
      bool isBlob() const {
        return Tag::Blob == tag;
      }
+   
      c10::intrusive_ptr<caffe2::Blob> toBlob() &&;
+   
      c10::intrusive_ptr<caffe2::Blob> toBlob() const &;
    
      // Capsule
@@ -333,6 +339,7 @@ Program Listing for File ivalue.h
      bool isModule() const;
    
      // None
+     IValue() : payload{0}, tag(Tag::None), is_intrusive_ptr(false) {}
      bool isNone() const {
        return Tag::None == tag;
      }
@@ -439,7 +446,6 @@ Program Listing for File ivalue.h
      template<typename T>
      optional<T> toOptional();
    
-     // this is a shallow comparison of two IValues to test the object identity
      bool isSameIdentity(const IValue& rhs) const;
    
      CAFFE2_API friend std::ostream& operator<<(
