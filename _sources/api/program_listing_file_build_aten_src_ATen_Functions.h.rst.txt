@@ -777,6 +777,10 @@ Program Listing for File Functions.h
    static inline Tensor bitwise_and(const Tensor & self, const Tensor & other);
    static inline Tensor __and__(const Tensor & self, Scalar other);
    static inline Tensor __and__(const Tensor & self, const Tensor & other);
+   static inline Tensor & bitwise_or_out(Tensor & out, const Tensor & self, const Tensor & other);
+   static inline Tensor & bitwise_or_out(Tensor & out, const Tensor & self, Scalar other);
+   static inline Tensor bitwise_or(const Tensor & self, Scalar other);
+   static inline Tensor bitwise_or(const Tensor & self, const Tensor & other);
    static inline Tensor __or__(const Tensor & self, Scalar other);
    static inline Tensor __or__(const Tensor & self, const Tensor & other);
    static inline Tensor & bitwise_xor_out(Tensor & out, const Tensor & self, const Tensor & other);
@@ -10085,16 +10089,62 @@ Program Listing for File Functions.h
        return op.callUnboxed<Tensor, const Tensor &, const Tensor &>(self, other);
    #endif
    }
+   static inline Tensor & bitwise_or_out(Tensor & out, const Tensor & self, const Tensor & other) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       switch(tensorTypeIdToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(out, self, other)))) {
+           case Backend::CPU:
+               return CPUType::bitwise_or_out(out, self, other);
+               break;
+           default:
+               AT_ERROR("bitwise_or_out not implemented for ", at::toString(c10::detail::multi_dispatch_tensor_type_set(out, self, other)));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchema({"aten::bitwise_or", "Tensor_out"}).value();
+       return op.callUnboxed<Tensor &, Tensor &, const Tensor &, const Tensor &>(out, self, other);
+   #endif
+   }
+   static inline Tensor & bitwise_or_out(Tensor & out, const Tensor & self, Scalar other) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       switch(tensorTypeIdToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(out, self)))) {
+           case Backend::CPU:
+               return CPUType::bitwise_or_out(out, self, other);
+               break;
+           default:
+               AT_ERROR("bitwise_or_out not implemented for ", at::toString(c10::detail::multi_dispatch_tensor_type_set(out, self)));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchema({"aten::bitwise_or", "Scalar_out"}).value();
+       return op.callUnboxed<Tensor &, Tensor &, const Tensor &, Scalar>(out, self, other);
+   #endif
+   }
+   static inline Tensor bitwise_or(const Tensor & self, Scalar other) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       return TypeDefault::bitwise_or(self, other);
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchema({"aten::bitwise_or", "Scalar"}).value();
+       return op.callUnboxed<Tensor, const Tensor &, Scalar>(self, other);
+   #endif
+   }
+   static inline Tensor bitwise_or(const Tensor & self, const Tensor & other) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       return TypeDefault::bitwise_or(self, other);
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchema({"aten::bitwise_or", "Tensor"}).value();
+       return op.callUnboxed<Tensor, const Tensor &, const Tensor &>(self, other);
+   #endif
+   }
    static inline Tensor __or__(const Tensor & self, Scalar other) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       switch(tensorTypeIdToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(self)))) {
-           case Backend::CPU:
-               return CPUType::__or__(self, other);
-               break;
-           default:
-               AT_ERROR("__or__ not implemented for ", at::toString(c10::detail::multi_dispatch_tensor_type_set(self)));
-       }
+       return TypeDefault::__or__(self, other);
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchema({"aten::__or__", "Scalar"}).value();
@@ -10104,13 +10154,7 @@ Program Listing for File Functions.h
    static inline Tensor __or__(const Tensor & self, const Tensor & other) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       switch(tensorTypeIdToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(self, other)))) {
-           case Backend::CPU:
-               return CPUType::__or__(self, other);
-               break;
-           default:
-               AT_ERROR("__or__ not implemented for ", at::toString(c10::detail::multi_dispatch_tensor_type_set(self, other)));
-       }
+       return TypeDefault::__or__(self, other);
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchema({"aten::__or__", "Tensor"}).value();
