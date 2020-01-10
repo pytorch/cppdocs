@@ -7874,7 +7874,16 @@ Program Listing for File Functions.h
    static inline Tensor tanh(const Tensor & self) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::tanh(self);
+       switch(tensorTypeIdToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_tensor_type_set(self)))) {
+           case Backend::CPU:
+               return CPUType::tanh(self);
+               break;
+           case Backend::QuantizedCPU:
+               return QuantizedCPUType::tanh(self);
+               break;
+           default:
+               AT_ERROR("tanh not implemented for ", at::toString(c10::detail::multi_dispatch_tensor_type_set(self)));
+       }
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchema({"aten::tanh", ""}).value();
