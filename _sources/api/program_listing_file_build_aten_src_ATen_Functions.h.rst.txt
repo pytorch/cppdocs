@@ -442,6 +442,7 @@ Program Listing for File Functions.h
    static inline Tensor mvlgamma(const Tensor & self, int64_t p);
    static inline Tensor narrow(const Tensor & self, int64_t dim, int64_t start, int64_t length);
    static inline std::tuple<Tensor,Tensor,Tensor> native_batch_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps);
+   static inline std::tuple<Tensor &,Tensor &,Tensor &> native_batch_norm_out(Tensor & out, Tensor & save_mean, Tensor & save_invstd, const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps);
    static inline std::tuple<Tensor,Tensor> batch_norm_stats(const Tensor & input, double eps);
    static inline Tensor batch_norm_elemt(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & mean, const Tensor & invstd, double eps);
    static inline Tensor & batch_norm_elemt_out(Tensor & out, const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & mean, const Tensor & invstd, double eps);
@@ -6146,6 +6147,20 @@ Program Listing for File Functions.h
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchema({"aten::native_batch_norm", ""}).value();
        return op.callUnboxed<std::tuple<Tensor,Tensor,Tensor>, const Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, bool, double, double>(input, weight, bias, running_mean, running_var, training, momentum, eps);
+   #endif
+   }
+   static inline std::tuple<Tensor &,Tensor &,Tensor &> native_batch_norm_out(Tensor & out, Tensor & save_mean, Tensor & save_invstd, const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(out, save_mean, save_invstd, input, weight, bias, running_mean, running_var)))) {
+       
+           default:
+               AT_ERROR("native_batch_norm_out not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(out, save_mean, save_invstd, input, weight, bias, running_mean, running_var)));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchema({"aten::native_batch_norm", "out"}).value();
+       return op.callUnboxed<std::tuple<Tensor &,Tensor &,Tensor &>, Tensor &, Tensor &, Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, bool, double, double>(out, save_mean, save_invstd, input, weight, bias, running_mean, running_var, training, momentum, eps);
    #endif
    }
    static inline std::tuple<Tensor,Tensor> batch_norm_stats(const Tensor & input, double eps) {
