@@ -205,18 +205,22 @@ Program Listing for File Functions.h
    static inline Tensor cudnn_convolution_transpose_backward_weight(IntArrayRef weight_size, const Tensor & grad_output, const Tensor & self, IntArrayRef padding, IntArrayRef stride, IntArrayRef dilation, int64_t groups, bool benchmark, bool deterministic);
    static inline Tensor cudnn_grid_sampler(const Tensor & self, const Tensor & grid);
    static inline std::tuple<Tensor,Tensor> cudnn_grid_sampler_backward(const Tensor & self, const Tensor & grid, const Tensor & grad_output);
-   static inline Tensor cumsum(const Tensor & self, int64_t dim, c10::optional<ScalarType> dtype=c10::nullopt);
-   static inline Tensor & cumsum_out(Tensor & out, const Tensor & self, int64_t dim, c10::optional<ScalarType> dtype=c10::nullopt);
-   static inline Tensor cumsum(const Tensor & self, Dimname dim, c10::optional<ScalarType> dtype=c10::nullopt);
-   static inline Tensor & cumsum_out(Tensor & out, const Tensor & self, Dimname dim, c10::optional<ScalarType> dtype=c10::nullopt);
-   static inline Tensor cumprod(const Tensor & self, int64_t dim, c10::optional<ScalarType> dtype=c10::nullopt);
-   static inline Tensor & cumprod_out(Tensor & out, const Tensor & self, int64_t dim, c10::optional<ScalarType> dtype=c10::nullopt);
-   static inline Tensor cumprod(const Tensor & self, Dimname dim, c10::optional<ScalarType> dtype=c10::nullopt);
-   static inline Tensor & cumprod_out(Tensor & out, const Tensor & self, Dimname dim, c10::optional<ScalarType> dtype=c10::nullopt);
    static inline std::tuple<Tensor,Tensor> cummax(const Tensor & self, int64_t dim);
    static inline std::tuple<Tensor &,Tensor &> cummax_out(Tensor & values, Tensor & indices, const Tensor & self, int64_t dim);
    static inline std::tuple<Tensor,Tensor> cummax(const Tensor & self, Dimname dim);
    static inline std::tuple<Tensor &,Tensor &> cummax_out(Tensor & values, Tensor & indices, const Tensor & self, Dimname dim);
+   static inline std::tuple<Tensor,Tensor> cummin(const Tensor & self, int64_t dim);
+   static inline std::tuple<Tensor &,Tensor &> cummin_out(Tensor & values, Tensor & indices, const Tensor & self, int64_t dim);
+   static inline std::tuple<Tensor,Tensor> cummin(const Tensor & self, Dimname dim);
+   static inline std::tuple<Tensor &,Tensor &> cummin_out(Tensor & values, Tensor & indices, const Tensor & self, Dimname dim);
+   static inline Tensor cumprod(const Tensor & self, int64_t dim, c10::optional<ScalarType> dtype=c10::nullopt);
+   static inline Tensor & cumprod_out(Tensor & out, const Tensor & self, int64_t dim, c10::optional<ScalarType> dtype=c10::nullopt);
+   static inline Tensor cumprod(const Tensor & self, Dimname dim, c10::optional<ScalarType> dtype=c10::nullopt);
+   static inline Tensor & cumprod_out(Tensor & out, const Tensor & self, Dimname dim, c10::optional<ScalarType> dtype=c10::nullopt);
+   static inline Tensor cumsum(const Tensor & self, int64_t dim, c10::optional<ScalarType> dtype=c10::nullopt);
+   static inline Tensor & cumsum_out(Tensor & out, const Tensor & self, int64_t dim, c10::optional<ScalarType> dtype=c10::nullopt);
+   static inline Tensor cumsum(const Tensor & self, Dimname dim, c10::optional<ScalarType> dtype=c10::nullopt);
+   static inline Tensor & cumsum_out(Tensor & out, const Tensor & self, Dimname dim, c10::optional<ScalarType> dtype=c10::nullopt);
    static inline Tensor ctc_loss(const Tensor & log_probs, const Tensor & targets, IntArrayRef input_lengths, IntArrayRef target_lengths, int64_t blank=0, int64_t reduction=at::Reduction::Mean, bool zero_infinity=false);
    static inline Tensor ctc_loss(const Tensor & log_probs, const Tensor & targets, const Tensor & input_lengths, const Tensor & target_lengths, int64_t blank=0, int64_t reduction=at::Reduction::Mean, bool zero_infinity=false);
    static inline std::tuple<Tensor,Tensor> _ctc_loss(const Tensor & log_probs, const Tensor & targets, IntArrayRef input_lengths, IntArrayRef target_lengths, int64_t blank=0, bool zero_infinity=false);
@@ -3290,44 +3294,84 @@ Program Listing for File Functions.h
        return op.callUnboxed<std::tuple<Tensor,Tensor>, const Tensor &, const Tensor &, const Tensor &>(self, grid, grad_output);
    #endif
    }
-   static inline Tensor cumsum(const Tensor & self, int64_t dim, c10::optional<ScalarType> dtype) {
+   static inline std::tuple<Tensor,Tensor> cummax(const Tensor & self, int64_t dim) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::cumsum(self, dim, dtype);
+       return TypeDefault::cummax(self, dim);
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
-           .findSchemaOrThrow("aten::cumsum", "");
-       return op.callUnboxed<Tensor, const Tensor &, int64_t, c10::optional<ScalarType>>(self, dim, dtype);
+           .findSchemaOrThrow("aten::cummax", "");
+       return op.callUnboxed<std::tuple<Tensor,Tensor>, const Tensor &, int64_t>(self, dim);
    #endif
    }
-   static inline Tensor & cumsum_out(Tensor & out, const Tensor & self, int64_t dim, c10::optional<ScalarType> dtype) {
+   static inline std::tuple<Tensor &,Tensor &> cummax_out(Tensor & values, Tensor & indices, const Tensor & self, int64_t dim) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::cumsum_out(out, self, dim, dtype);
+       return TypeDefault::cummax_out(values, indices, self, dim);
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
-           .findSchemaOrThrow("aten::cumsum", "out");
-       return op.callUnboxed<Tensor &, Tensor &, const Tensor &, int64_t, c10::optional<ScalarType>>(out, self, dim, dtype);
+           .findSchemaOrThrow("aten::cummax", "out");
+       return op.callUnboxed<std::tuple<Tensor &,Tensor &>, Tensor &, Tensor &, const Tensor &, int64_t>(values, indices, self, dim);
    #endif
    }
-   static inline Tensor cumsum(const Tensor & self, Dimname dim, c10::optional<ScalarType> dtype) {
+   static inline std::tuple<Tensor,Tensor> cummax(const Tensor & self, Dimname dim) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::cumsum(self, dim, dtype);
+       return TypeDefault::cummax(self, dim);
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
-           .findSchemaOrThrow("aten::cumsum", "dimname");
-       return op.callUnboxed<Tensor, const Tensor &, Dimname, c10::optional<ScalarType>>(self, dim, dtype);
+           .findSchemaOrThrow("aten::cummax", "dimname");
+       return op.callUnboxed<std::tuple<Tensor,Tensor>, const Tensor &, Dimname>(self, dim);
    #endif
    }
-   static inline Tensor & cumsum_out(Tensor & out, const Tensor & self, Dimname dim, c10::optional<ScalarType> dtype) {
+   static inline std::tuple<Tensor &,Tensor &> cummax_out(Tensor & values, Tensor & indices, const Tensor & self, Dimname dim) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::cumsum_out(out, self, dim, dtype);
+       return TypeDefault::cummax_out(values, indices, self, dim);
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
-           .findSchemaOrThrow("aten::cumsum", "dimname_out");
-       return op.callUnboxed<Tensor &, Tensor &, const Tensor &, Dimname, c10::optional<ScalarType>>(out, self, dim, dtype);
+           .findSchemaOrThrow("aten::cummax", "dimname_out");
+       return op.callUnboxed<std::tuple<Tensor &,Tensor &>, Tensor &, Tensor &, const Tensor &, Dimname>(values, indices, self, dim);
+   #endif
+   }
+   static inline std::tuple<Tensor,Tensor> cummin(const Tensor & self, int64_t dim) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       return TypeDefault::cummin(self, dim);
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::cummin", "");
+       return op.callUnboxed<std::tuple<Tensor,Tensor>, const Tensor &, int64_t>(self, dim);
+   #endif
+   }
+   static inline std::tuple<Tensor &,Tensor &> cummin_out(Tensor & values, Tensor & indices, const Tensor & self, int64_t dim) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       return TypeDefault::cummin_out(values, indices, self, dim);
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::cummin", "out");
+       return op.callUnboxed<std::tuple<Tensor &,Tensor &>, Tensor &, Tensor &, const Tensor &, int64_t>(values, indices, self, dim);
+   #endif
+   }
+   static inline std::tuple<Tensor,Tensor> cummin(const Tensor & self, Dimname dim) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       return TypeDefault::cummin(self, dim);
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::cummin", "dimname");
+       return op.callUnboxed<std::tuple<Tensor,Tensor>, const Tensor &, Dimname>(self, dim);
+   #endif
+   }
+   static inline std::tuple<Tensor &,Tensor &> cummin_out(Tensor & values, Tensor & indices, const Tensor & self, Dimname dim) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       return TypeDefault::cummin_out(values, indices, self, dim);
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::cummin", "dimname_out");
+       return op.callUnboxed<std::tuple<Tensor &,Tensor &>, Tensor &, Tensor &, const Tensor &, Dimname>(values, indices, self, dim);
    #endif
    }
    static inline Tensor cumprod(const Tensor & self, int64_t dim, c10::optional<ScalarType> dtype) {
@@ -3370,44 +3414,44 @@ Program Listing for File Functions.h
        return op.callUnboxed<Tensor &, Tensor &, const Tensor &, Dimname, c10::optional<ScalarType>>(out, self, dim, dtype);
    #endif
    }
-   static inline std::tuple<Tensor,Tensor> cummax(const Tensor & self, int64_t dim) {
+   static inline Tensor cumsum(const Tensor & self, int64_t dim, c10::optional<ScalarType> dtype) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::cummax(self, dim);
+       return TypeDefault::cumsum(self, dim, dtype);
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
-           .findSchemaOrThrow("aten::cummax", "");
-       return op.callUnboxed<std::tuple<Tensor,Tensor>, const Tensor &, int64_t>(self, dim);
+           .findSchemaOrThrow("aten::cumsum", "");
+       return op.callUnboxed<Tensor, const Tensor &, int64_t, c10::optional<ScalarType>>(self, dim, dtype);
    #endif
    }
-   static inline std::tuple<Tensor &,Tensor &> cummax_out(Tensor & values, Tensor & indices, const Tensor & self, int64_t dim) {
+   static inline Tensor & cumsum_out(Tensor & out, const Tensor & self, int64_t dim, c10::optional<ScalarType> dtype) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::cummax_out(values, indices, self, dim);
+       return TypeDefault::cumsum_out(out, self, dim, dtype);
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
-           .findSchemaOrThrow("aten::cummax", "out");
-       return op.callUnboxed<std::tuple<Tensor &,Tensor &>, Tensor &, Tensor &, const Tensor &, int64_t>(values, indices, self, dim);
+           .findSchemaOrThrow("aten::cumsum", "out");
+       return op.callUnboxed<Tensor &, Tensor &, const Tensor &, int64_t, c10::optional<ScalarType>>(out, self, dim, dtype);
    #endif
    }
-   static inline std::tuple<Tensor,Tensor> cummax(const Tensor & self, Dimname dim) {
+   static inline Tensor cumsum(const Tensor & self, Dimname dim, c10::optional<ScalarType> dtype) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::cummax(self, dim);
+       return TypeDefault::cumsum(self, dim, dtype);
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
-           .findSchemaOrThrow("aten::cummax", "dimname");
-       return op.callUnboxed<std::tuple<Tensor,Tensor>, const Tensor &, Dimname>(self, dim);
+           .findSchemaOrThrow("aten::cumsum", "dimname");
+       return op.callUnboxed<Tensor, const Tensor &, Dimname, c10::optional<ScalarType>>(self, dim, dtype);
    #endif
    }
-   static inline std::tuple<Tensor &,Tensor &> cummax_out(Tensor & values, Tensor & indices, const Tensor & self, Dimname dim) {
+   static inline Tensor & cumsum_out(Tensor & out, const Tensor & self, Dimname dim, c10::optional<ScalarType> dtype) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::cummax_out(values, indices, self, dim);
+       return TypeDefault::cumsum_out(out, self, dim, dtype);
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
-           .findSchemaOrThrow("aten::cummax", "dimname_out");
-       return op.callUnboxed<std::tuple<Tensor &,Tensor &>, Tensor &, Tensor &, const Tensor &, Dimname>(values, indices, self, dim);
+           .findSchemaOrThrow("aten::cumsum", "dimname_out");
+       return op.callUnboxed<Tensor &, Tensor &, const Tensor &, Dimname, c10::optional<ScalarType>>(out, self, dim, dtype);
    #endif
    }
    static inline Tensor ctc_loss(const Tensor & log_probs, const Tensor & targets, IntArrayRef input_lengths, IntArrayRef target_lengths, int64_t blank, int64_t reduction, bool zero_infinity) {
