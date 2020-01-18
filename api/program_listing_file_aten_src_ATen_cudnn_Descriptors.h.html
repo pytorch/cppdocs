@@ -308,10 +308,22 @@
 <span class="c1">// that the stride for dim i is the product of the sizes of dims</span>
 <span class="c1">// i+1 to the end.  This stride is indeed uniquely determined.  This</span>
 <span class="c1">// function modifies &#39;stride&#39; in place so this invariant holds.</span>
-<span class="k">static</span> <span class="kr">inline</span> <span class="kt">void</span> <span class="n">fixSizeOneDimStride</span><span class="p">(</span><span class="kt">int</span> <span class="n">dim</span><span class="p">,</span> <span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">size</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">stride</span><span class="p">)</span> <span class="p">{</span>
+<span class="k">static</span> <span class="kr">inline</span> <span class="kt">void</span> <span class="n">fixSizeOneDimStride</span><span class="p">(</span><span class="kt">int</span> <span class="n">dim</span><span class="p">,</span> <span class="k">const</span> <span class="kt">int</span> <span class="o">*</span><span class="n">size</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span><span class="n">stride</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">nhwc</span><span class="p">)</span> <span class="p">{</span>
   <span class="kt">int64_t</span> <span class="n">z</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-  <span class="k">for</span><span class="p">(</span><span class="kt">int</span> <span class="n">d</span> <span class="o">=</span> <span class="n">dim</span><span class="o">-</span><span class="mi">1</span><span class="p">;</span> <span class="n">d</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">d</span><span class="o">--</span><span class="p">)</span>
-  <span class="p">{</span>
+  <span class="kt">int</span> <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">int</span><span class="o">&gt;</span> <span class="n">permutation</span><span class="p">(</span><span class="n">dim</span><span class="p">);</span>
+
+  <span class="k">if</span> <span class="p">(</span><span class="n">nhwc</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">permutation</span><span class="p">[</span><span class="n">index</span><span class="o">++</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">d</span> <span class="o">=</span> <span class="n">dim</span><span class="o">-</span><span class="mi">1</span><span class="p">;</span> <span class="n">d</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">;</span> <span class="n">d</span><span class="o">--</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">permutation</span><span class="p">[</span><span class="n">index</span><span class="o">++</span><span class="p">]</span> <span class="o">=</span> <span class="n">d</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">nhwc</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">permutation</span><span class="p">[</span><span class="n">index</span><span class="o">++</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="n">permutation</span><span class="p">[</span><span class="n">index</span><span class="o">++</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="nl">d</span> <span class="p">:</span> <span class="n">permutation</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">size</span><span class="p">[</span><span class="n">d</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
       <span class="n">stride</span><span class="p">[</span><span class="n">d</span><span class="p">]</span> <span class="o">=</span> <span class="n">z</span><span class="p">;</span>
     <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
@@ -398,8 +410,10 @@
   <span class="kt">void</span> <span class="nf">print</span><span class="p">();</span>
 
 <span class="k">private</span><span class="o">:</span>
-  <span class="kt">void</span> <span class="n">set</span><span class="p">(</span><span class="n">cudnnDataType_t</span> <span class="n">dataType</span><span class="p">,</span> <span class="kt">int</span> <span class="n">dim</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">size</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">stride</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">fixSizeOneDimStride</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">stride</span><span class="p">);</span>
+  <span class="kt">void</span> <span class="n">set</span><span class="p">(</span><span class="n">cudnnDataType_t</span> <span class="n">dataType</span><span class="p">,</span> <span class="n">IntArrayRef</span> <span class="n">sizes</span><span class="p">,</span> <span class="n">IntArrayRef</span> <span class="n">strides</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">pad</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">nhwc</span><span class="p">);</span>
+
+  <span class="kt">void</span> <span class="nf">set</span><span class="p">(</span><span class="n">cudnnDataType_t</span> <span class="n">dataType</span><span class="p">,</span> <span class="kt">int</span> <span class="n">dim</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">size</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">stride</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">nhwc</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">fixSizeOneDimStride</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">stride</span><span class="p">,</span> <span class="n">nhwc</span><span class="p">);</span>
     <span class="n">AT_CUDNN_CHECK</span><span class="p">(</span><span class="n">cudnnSetTensorNdDescriptor</span><span class="p">(</span><span class="n">mut_desc</span><span class="p">(),</span> <span class="n">dataType</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">size</span><span class="p">,</span> <span class="n">stride</span><span class="p">));</span>
   <span class="p">}</span>
 <span class="p">};</span>
@@ -412,7 +426,7 @@
                       <span class="o">&amp;</span><span class="n">cudnnDestroyFilterDescriptor</span><span class="o">&gt;</span>
 <span class="p">{</span>
 <span class="k">public</span><span class="o">:</span>
-  <span class="kt">void</span> <span class="n">set</span><span class="p">(</span><span class="k">const</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="o">&amp;</span><span class="n">t</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">pad</span> <span class="o">=</span> <span class="mi">0</span><span class="p">);</span>
+  <span class="kt">void</span> <span class="n">set</span><span class="p">(</span><span class="k">const</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="o">&amp;</span><span class="n">t</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">pad</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">force_nhwc</span> <span class="o">=</span> <span class="nb">false</span><span class="p">);</span>
 
 <span class="k">private</span><span class="o">:</span>
   <span class="kt">void</span> <span class="n">set</span><span class="p">(</span><span class="n">cudnnDataType_t</span> <span class="n">dataType</span><span class="p">,</span> <span class="kt">int</span> <span class="n">dim</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">size</span><span class="p">,</span> <span class="n">cudnnTensorFormat_t</span> <span class="n">filter_format</span><span class="p">)</span> <span class="p">{</span>
