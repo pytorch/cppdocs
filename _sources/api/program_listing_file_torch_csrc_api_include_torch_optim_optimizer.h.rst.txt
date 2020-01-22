@@ -14,6 +14,10 @@ Program Listing for File optimizer.h
 
    #pragma once
    
+   #include <ATen/Tensor.h>
+   #include <c10/util/flat_hash_map.h>
+   #include <c10/util/Exception.h>
+   
    #include <torch/csrc/WindowsTorchApiMacro.h>
    
    #include <algorithm>
@@ -40,29 +44,111 @@ Program Listing for File optimizer.h
    
    namespace torch {
    namespace optim {
+   
+   class TORCH_API OptimizerParamState {
+    public:
+     virtual std::unique_ptr<OptimizerParamState> clone() const;
+     virtual void serialize(torch::serialize::InputArchive& archive);
+     virtual void serialize(torch::serialize::OutputArchive& archive) const;
+     virtual ~OptimizerParamState() = default;
+   };
+   
+   template <typename Derived>
+   class TORCH_API OptimizerCloneableParamState : public OptimizerParamState {
+     std::unique_ptr<OptimizerParamState> clone() const override {
+       return std::make_unique<Derived>(static_cast<const Derived&>(*this));
+     }
+   };
+   
+   class TORCH_API OptimizerOptions {
+    public:
+     virtual std::unique_ptr<OptimizerOptions> clone() const;
+     virtual void serialize(torch::serialize::InputArchive& archive);
+     virtual void serialize(torch::serialize::OutputArchive& archive) const;
+     virtual ~OptimizerOptions() = default;
+   };
+   
+   template <typename Derived>
+   class TORCH_API OptimizerCloneableOptions : public OptimizerOptions {
+     std::unique_ptr<OptimizerOptions> clone() const override {
+       return std::make_unique<Derived>(static_cast<const Derived&>(*this));
+     }
+   };
+   
+   class TORCH_API OptimizerParamGroup {
+    public:
+     // NOTE: In order to store `OptimizerParamGroup` in a `std::vector`, it has to be copy-constructible.
+     OptimizerParamGroup(const OptimizerParamGroup& param_group) : params_(param_group.params()), options_(param_group.has_options() ? param_group.options().clone() : nullptr) {}
+     OptimizerParamGroup(std::vector<Tensor> params) : params_(std::move(params)) {}
+     OptimizerParamGroup(std::vector<Tensor> params, std::unique_ptr<OptimizerOptions> options) : params_(std::move(params)), options_(std::move(options)) {}
+   
+     bool has_options() const;
+     OptimizerOptions& options();
+     const OptimizerOptions& options() const;
+     void set_options(std::unique_ptr<OptimizerOptions> options);
+     std::vector<Tensor>& params();
+     const std::vector<Tensor>& params() const;
+   
+    protected:
+     std::vector<Tensor> params_;
+     std::unique_ptr<OptimizerOptions> options_;
+   };
+   
    namespace detail {
+   
    class TORCH_API OptimizerBase {
     public:
+     // The copy constructor is deleted, because the user should use the
+     // `state_dict` / `load_state_dict` API to copy an optimizer instead.
+     OptimizerBase(const OptimizerBase& optimizer_base) = delete;
+     OptimizerBase(OptimizerBase&& optimizer_base) = default;
+   
      explicit OptimizerBase(std::vector<Tensor> parameters);
+   
+     explicit OptimizerBase(std::vector<OptimizerParamGroup> param_groups, std::unique_ptr<OptimizerOptions> defaults) : defaults_(std::move(defaults)) {
+       for (const auto& param_group : param_groups) {
+         add_param_group(param_group);
+       }
+     }
+   
+     void add_param_group(const OptimizerParamGroup& param_group);
    
      virtual ~OptimizerBase() = default;
    
-     void add_parameters(const std::vector<Tensor>& parameters);
+     // TODO: when all optimizers use the new design, we can devirtualize some of the following methods
+     // such as add_parameters() / parameters() / size()
+   
+     virtual void add_parameters(const std::vector<Tensor>& parameters);
    
      virtual void zero_grad();
    
-     const std::vector<Tensor>& parameters() const noexcept;
+     virtual const std::vector<Tensor>& parameters() const noexcept;
    
-     std::vector<Tensor>& parameters() noexcept;
+     virtual std::vector<Tensor>& parameters() noexcept;
    
-     size_t size() const noexcept;
+     virtual size_t size() const noexcept;
+   
+     OptimizerOptions& defaults() noexcept;
+   
+     const OptimizerOptions& defaults() const noexcept;
+   
+     std::vector<OptimizerParamGroup>& param_groups() noexcept;
+   
+     const std::vector<OptimizerParamGroup>& param_groups() const noexcept;
+   
+     ska::flat_hash_map<std::string, std::unique_ptr<OptimizerParamState>>& state() noexcept;
+   
+     const ska::flat_hash_map<std::string, std::unique_ptr<OptimizerParamState>>& state() const noexcept;
    
      virtual void save(serialize::OutputArchive& archive) const;
    
      virtual void load(serialize::InputArchive& archive);
    
     protected:
-     OptimizerBase() = default;
+      std::vector<OptimizerParamGroup> param_groups_;
+      ska::flat_hash_map<std::string, std::unique_ptr<OptimizerParamState>> state_;
+      std::unique_ptr<OptimizerOptions> defaults_;
+      OptimizerBase() = default;
    
      template <typename T>
      T& buffer_at(std::vector<T>& buffers, size_t index) {
