@@ -656,34 +656,6 @@
   <span class="k">using</span> <span class="n">type</span> <span class="o">=</span> <span class="n">Half</span><span class="p">;</span>
 <span class="p">};</span>
 
-<span class="c1">// The old implementation of Converter as a function made nvcc&#39;s head explode</span>
-<span class="c1">// when we added std::complex on top of the specializations for CUDA-only types</span>
-<span class="c1">// like __half, so I rewrote it as a templated class (so, no more overloads,</span>
-<span class="c1">// just (partial) specialization).</span>
-
-<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">To</span><span class="p">,</span> <span class="k">typename</span> <span class="n">From</span><span class="p">,</span> <span class="k">typename</span> <span class="n">Enable</span> <span class="o">=</span> <span class="kt">void</span><span class="o">&gt;</span>
-<span class="k">struct</span> <span class="n">Converter</span> <span class="p">{</span>
-  <span class="n">To</span> <span class="k">operator</span><span class="p">()(</span><span class="n">From</span> <span class="n">f</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="n">To</span><span class="o">&gt;</span><span class="p">(</span><span class="n">f</span><span class="p">);</span>
-  <span class="p">}</span>
-<span class="p">};</span>
-
-<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">To</span><span class="p">,</span> <span class="k">typename</span> <span class="n">From</span><span class="o">&gt;</span>
-<span class="n">To</span> <span class="n">convert</span><span class="p">(</span><span class="n">From</span> <span class="n">from</span><span class="p">)</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="n">Converter</span><span class="o">&lt;</span><span class="n">To</span><span class="p">,</span> <span class="n">From</span><span class="o">&gt;</span><span class="p">()(</span><span class="n">from</span><span class="p">);</span>
-<span class="p">}</span>
-
-<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">To</span><span class="p">,</span> <span class="k">typename</span> <span class="n">FromV</span><span class="o">&gt;</span>
-<span class="k">struct</span> <span class="n">Converter</span><span class="o">&lt;</span>
-    <span class="n">To</span><span class="p">,</span>
-    <span class="n">std</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="n">FromV</span><span class="o">&gt;</span><span class="p">,</span>
-    <span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">enable_if</span><span class="o">&lt;</span>
-        <span class="n">guts</span><span class="o">::</span><span class="n">negation</span><span class="o">&lt;</span><span class="n">is_complex_t</span><span class="o">&lt;</span><span class="n">To</span><span class="o">&gt;&gt;::</span><span class="n">value</span><span class="o">&gt;::</span><span class="n">type</span><span class="o">&gt;</span> <span class="p">{</span>
-  <span class="n">To</span> <span class="k">operator</span><span class="p">()(</span><span class="n">std</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="n">FromV</span><span class="o">&gt;</span> <span class="n">f</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="n">To</span><span class="o">&gt;</span><span class="p">(</span><span class="n">f</span><span class="p">.</span><span class="n">real</span><span class="p">());</span>
-  <span class="p">}</span>
-<span class="p">};</span>
-
 <span class="c1">// In some versions of MSVC, there will be a compiler error when building.</span>
 <span class="c1">// C4146: unary minus operator applied to unsigned type, result still unsigned</span>
 <span class="c1">// C4804: unsafe use of type &#39;bool&#39; in operation</span>
@@ -768,18 +740,6 @@
       <span class="n">overflows</span><span class="o">&lt;</span>
              <span class="k">typename</span> <span class="n">scalar_value_type</span><span class="o">&lt;</span><span class="n">To</span><span class="o">&gt;::</span><span class="n">type</span><span class="p">,</span>
              <span class="k">typename</span> <span class="n">From</span><span class="o">::</span><span class="n">value_type</span><span class="o">&gt;</span><span class="p">(</span><span class="n">f</span><span class="p">.</span><span class="n">imag</span><span class="p">());</span>
-<span class="p">}</span>
-
-<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">To</span><span class="p">,</span> <span class="k">typename</span> <span class="n">From</span><span class="o">&gt;</span>
-<span class="n">To</span> <span class="n">checked_convert</span><span class="p">(</span><span class="n">From</span> <span class="n">f</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">name</span><span class="p">)</span> <span class="p">{</span>
-  <span class="c1">// Converting to bool can&#39;t overflow so we exclude this case from checking.</span>
-  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">std</span><span class="o">::</span><span class="n">is_same</span><span class="o">&lt;</span><span class="n">To</span><span class="p">,</span> <span class="kt">bool</span><span class="o">&gt;::</span><span class="n">value</span> <span class="o">&amp;&amp;</span> <span class="n">overflows</span><span class="o">&lt;</span><span class="n">To</span><span class="p">,</span> <span class="n">From</span><span class="o">&gt;</span><span class="p">(</span><span class="n">f</span><span class="p">))</span> <span class="p">{</span>
-    <span class="n">std</span><span class="o">::</span><span class="n">ostringstream</span> <span class="n">oss</span><span class="p">;</span>
-    <span class="n">oss</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;value cannot be converted to type &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">name</span>
-        <span class="o">&lt;&lt;</span> <span class="s">&quot; without overflow: &quot;</span> <span class="o">&lt;&lt;</span> <span class="n">f</span><span class="p">;</span>
-    <span class="k">throw</span> <span class="n">std</span><span class="o">::</span><span class="n">domain_error</span><span class="p">(</span><span class="n">oss</span><span class="p">.</span><span class="n">str</span><span class="p">());</span>
-  <span class="p">}</span>
-  <span class="k">return</span> <span class="n">convert</span><span class="o">&lt;</span><span class="n">To</span><span class="p">,</span> <span class="n">From</span><span class="o">&gt;</span><span class="p">(</span><span class="n">f</span><span class="p">);</span>
 <span class="p">}</span>
 
 <span class="n">C10_API</span> <span class="n">std</span><span class="o">::</span><span class="n">ostream</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">&lt;&lt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">ostream</span><span class="o">&amp;</span> <span class="n">out</span><span class="p">,</span> <span class="k">const</span> <span class="n">Half</span><span class="o">&amp;</span> <span class="n">value</span><span class="p">);</span>
