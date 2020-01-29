@@ -129,6 +129,10 @@ Program Listing for File Functions.h
    static inline Tensor & bernoulli_out(Tensor & out, const Tensor & self, Generator * generator=nullptr);
    static inline Tensor bernoulli(const Tensor & self, double p, Generator * generator=nullptr);
    static inline Tensor bilinear(const Tensor & input1, const Tensor & input2, const Tensor & weight, const Tensor & bias);
+   static inline Tensor binary_cross_entropy(const Tensor & self, const Tensor & target, const Tensor & weight={}, int64_t reduction=at::Reduction::Mean);
+   static inline Tensor & binary_cross_entropy_out(Tensor & out, const Tensor & self, const Tensor & target, const Tensor & weight={}, int64_t reduction=at::Reduction::Mean);
+   static inline Tensor binary_cross_entropy_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, const Tensor & weight={}, int64_t reduction=at::Reduction::Mean);
+   static inline Tensor & binary_cross_entropy_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, const Tensor & weight={}, int64_t reduction=at::Reduction::Mean);
    static inline Tensor binary_cross_entropy_with_logits(const Tensor & self, const Tensor & target, const Tensor & weight={}, const Tensor & pos_weight={}, int64_t reduction=at::Reduction::Mean);
    static inline Tensor binary_cross_entropy_with_logits_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, const Tensor & weight={}, const Tensor & pos_weight={}, int64_t reduction=at::Reduction::Mean);
    static inline Tensor bincount(const Tensor & self, const Tensor & weights={}, int64_t minlength=0);
@@ -978,10 +982,6 @@ Program Listing for File Functions.h
    static inline std::tuple<Tensor &,Tensor &> _max_out(Tensor & max, Tensor & max_indices, const Tensor & self, int64_t dim, bool keepdim=false);
    static inline std::tuple<Tensor,Tensor> _min(const Tensor & self, int64_t dim, bool keepdim=false);
    static inline std::tuple<Tensor &,Tensor &> _min_out(Tensor & min, Tensor & min_indices, const Tensor & self, int64_t dim, bool keepdim=false);
-   static inline Tensor & binary_cross_entropy_out(Tensor & out, const Tensor & self, const Tensor & target, const Tensor & weight={}, int64_t reduction=at::Reduction::Mean);
-   static inline Tensor binary_cross_entropy(const Tensor & self, const Tensor & target, const Tensor & weight={}, int64_t reduction=at::Reduction::Mean);
-   static inline Tensor & binary_cross_entropy_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, const Tensor & weight={}, int64_t reduction=at::Reduction::Mean);
-   static inline Tensor binary_cross_entropy_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, const Tensor & weight={}, int64_t reduction=at::Reduction::Mean);
    static inline Tensor & mse_loss_out(Tensor & out, const Tensor & self, const Tensor & target, int64_t reduction=at::Reduction::Mean);
    static inline Tensor mse_loss(const Tensor & self, const Tensor & target, int64_t reduction=at::Reduction::Mean);
    static inline Tensor & mse_loss_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
@@ -2339,6 +2339,70 @@ Program Listing for File Functions.h
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::bilinear", "");
        return op.callUnboxed<Tensor, const Tensor &, const Tensor &, const Tensor &, const Tensor &>(input1, input2, weight, bias);
+   #endif
+   }
+   static inline Tensor binary_cross_entropy(const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(self, target, weight), c10::DispatchKeySet(c10::DispatchKeySet::FULL)))) {
+           case Backend::CPU:
+               return CPUType::binary_cross_entropy(self, target, weight, reduction);
+               break;
+           default:
+               AT_ERROR("binary_cross_entropy not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(self, target, weight)));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::binary_cross_entropy", "");
+       return op.callUnboxed<Tensor, const Tensor &, const Tensor &, const Tensor &, int64_t>(self, target, weight, reduction);
+   #endif
+   }
+   static inline Tensor & binary_cross_entropy_out(Tensor & out, const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(out, self, target, weight), c10::DispatchKeySet(c10::DispatchKeySet::FULL)))) {
+           case Backend::CPU:
+               return CPUType::binary_cross_entropy_out(out, self, target, weight, reduction);
+               break;
+           default:
+               AT_ERROR("binary_cross_entropy_out not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(out, self, target, weight)));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::binary_cross_entropy", "out");
+       return op.callUnboxed<Tensor &, Tensor &, const Tensor &, const Tensor &, const Tensor &, int64_t>(out, self, target, weight, reduction);
+   #endif
+   }
+   static inline Tensor binary_cross_entropy_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(grad_output, self, target, weight), c10::DispatchKeySet(c10::DispatchKeySet::FULL)))) {
+           case Backend::CPU:
+               return CPUType::binary_cross_entropy_backward(grad_output, self, target, weight, reduction);
+               break;
+           default:
+               AT_ERROR("binary_cross_entropy_backward not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(grad_output, self, target, weight)));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::binary_cross_entropy_backward", "");
+       return op.callUnboxed<Tensor, const Tensor &, const Tensor &, const Tensor &, const Tensor &, int64_t>(grad_output, self, target, weight, reduction);
+   #endif
+   }
+   static inline Tensor & binary_cross_entropy_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(grad_input, grad_output, self, target, weight), c10::DispatchKeySet(c10::DispatchKeySet::FULL)))) {
+           case Backend::CPU:
+               return CPUType::binary_cross_entropy_backward_out(grad_input, grad_output, self, target, weight, reduction);
+               break;
+           default:
+               AT_ERROR("binary_cross_entropy_backward_out not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(grad_input, grad_output, self, target, weight)));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::binary_cross_entropy_backward", "grad_input");
+       return op.callUnboxed<Tensor &, Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, int64_t>(grad_input, grad_output, self, target, weight, reduction);
    #endif
    }
    static inline Tensor binary_cross_entropy_with_logits(const Tensor & self, const Tensor & target, const Tensor & weight, const Tensor & pos_weight, int64_t reduction) {
@@ -13023,70 +13087,6 @@ Program Listing for File Functions.h
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::_min", "min");
        return op.callUnboxed<std::tuple<Tensor &,Tensor &>, Tensor &, Tensor &, const Tensor &, int64_t, bool>(min, min_indices, self, dim, keepdim);
-   #endif
-   }
-   static inline Tensor & binary_cross_entropy_out(Tensor & out, const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction) {
-   #ifdef USE_STATIC_DISPATCH
-       at::AutoNonVariableTypeMode _var_guard(true);
-       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(out, self, target, weight), c10::DispatchKeySet(c10::DispatchKeySet::FULL)))) {
-           case Backend::CPU:
-               return CPUType::binary_cross_entropy_out(out, self, target, weight, reduction);
-               break;
-           default:
-               AT_ERROR("binary_cross_entropy_out not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(out, self, target, weight)));
-       }
-   #else
-       static c10::OperatorHandle op = c10::Dispatcher::singleton()
-           .findSchemaOrThrow("aten::binary_cross_entropy", "out");
-       return op.callUnboxed<Tensor &, Tensor &, const Tensor &, const Tensor &, const Tensor &, int64_t>(out, self, target, weight, reduction);
-   #endif
-   }
-   static inline Tensor binary_cross_entropy(const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction) {
-   #ifdef USE_STATIC_DISPATCH
-       at::AutoNonVariableTypeMode _var_guard(true);
-       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(self, target, weight), c10::DispatchKeySet(c10::DispatchKeySet::FULL)))) {
-           case Backend::CPU:
-               return CPUType::binary_cross_entropy(self, target, weight, reduction);
-               break;
-           default:
-               AT_ERROR("binary_cross_entropy not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(self, target, weight)));
-       }
-   #else
-       static c10::OperatorHandle op = c10::Dispatcher::singleton()
-           .findSchemaOrThrow("aten::binary_cross_entropy", "");
-       return op.callUnboxed<Tensor, const Tensor &, const Tensor &, const Tensor &, int64_t>(self, target, weight, reduction);
-   #endif
-   }
-   static inline Tensor & binary_cross_entropy_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction) {
-   #ifdef USE_STATIC_DISPATCH
-       at::AutoNonVariableTypeMode _var_guard(true);
-       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(grad_input, grad_output, self, target, weight), c10::DispatchKeySet(c10::DispatchKeySet::FULL)))) {
-           case Backend::CPU:
-               return CPUType::binary_cross_entropy_backward_out(grad_input, grad_output, self, target, weight, reduction);
-               break;
-           default:
-               AT_ERROR("binary_cross_entropy_backward_out not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(grad_input, grad_output, self, target, weight)));
-       }
-   #else
-       static c10::OperatorHandle op = c10::Dispatcher::singleton()
-           .findSchemaOrThrow("aten::binary_cross_entropy_backward", "grad_input");
-       return op.callUnboxed<Tensor &, Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, int64_t>(grad_input, grad_output, self, target, weight, reduction);
-   #endif
-   }
-   static inline Tensor binary_cross_entropy_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, const Tensor & weight, int64_t reduction) {
-   #ifdef USE_STATIC_DISPATCH
-       at::AutoNonVariableTypeMode _var_guard(true);
-       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(grad_output, self, target, weight), c10::DispatchKeySet(c10::DispatchKeySet::FULL)))) {
-           case Backend::CPU:
-               return CPUType::binary_cross_entropy_backward(grad_output, self, target, weight, reduction);
-               break;
-           default:
-               AT_ERROR("binary_cross_entropy_backward not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(grad_output, self, target, weight)));
-       }
-   #else
-       static c10::OperatorHandle op = c10::Dispatcher::singleton()
-           .findSchemaOrThrow("aten::binary_cross_entropy_backward", "");
-       return op.callUnboxed<Tensor, const Tensor &, const Tensor &, const Tensor &, const Tensor &, int64_t>(grad_output, self, target, weight, reduction);
    #endif
    }
    static inline Tensor & mse_loss_out(Tensor & out, const Tensor & self, const Tensor & target, int64_t reduction) {
