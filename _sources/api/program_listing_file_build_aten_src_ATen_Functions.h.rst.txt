@@ -2089,7 +2089,13 @@ Program Listing for File Functions.h
    static inline Tensor argmax(const Tensor & self, c10::optional<int64_t> dim, bool keepdim) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::argmax(self, dim, keepdim);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(self), c10::DispatchKeySet(c10::DispatchKeySet::FULL)))) {
+           case Backend::CPU:
+               return CPUType::argmax(self, dim, keepdim);
+               break;
+           default:
+               AT_ERROR("argmax not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(self)));
+       }
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::argmax", "");
@@ -2099,7 +2105,13 @@ Program Listing for File Functions.h
    static inline Tensor argmin(const Tensor & self, c10::optional<int64_t> dim, bool keepdim) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::argmin(self, dim, keepdim);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(self), c10::DispatchKeySet(c10::DispatchKeySet::FULL)))) {
+           case Backend::CPU:
+               return CPUType::argmin(self, dim, keepdim);
+               break;
+           default:
+               AT_ERROR("argmin not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(self)));
+       }
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::argmin", "");
