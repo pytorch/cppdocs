@@ -8754,7 +8754,14 @@ Program Listing for File Functions.h
    static inline Tensor _s_where(const Tensor & condition, const Tensor & self, const Tensor & other) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::_s_where(condition, self, other);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(condition, self, other),
+                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
+           case Backend::CPU:
+               return CPUType::_s_where(condition, self, other);
+               break;
+           default:
+               AT_ERROR("_s_where not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(condition, self, other)));
+       }
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::_s_where", "");
@@ -14177,7 +14184,17 @@ Program Listing for File Functions.h
    static inline Tensor & leaky_relu_out(Tensor & out, const Tensor & self, Scalar negative_slope) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::leaky_relu_out(out, self, negative_slope);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(out, self),
+                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
+           case Backend::CPU:
+               return CPUType::leaky_relu_out(out, self, negative_slope);
+               break;
+           case Backend::QuantizedCPU:
+               return QuantizedCPUType::leaky_relu_out(out, self, negative_slope);
+               break;
+           default:
+               AT_ERROR("leaky_relu_out not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(out, self)));
+       }
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::leaky_relu", "out");
@@ -14187,7 +14204,17 @@ Program Listing for File Functions.h
    static inline Tensor leaky_relu(const Tensor & self, Scalar negative_slope) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::leaky_relu(self, negative_slope);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(self),
+                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
+           case Backend::CPU:
+               return CPUType::leaky_relu(self, negative_slope);
+               break;
+           case Backend::QuantizedCPU:
+               return QuantizedCPUType::leaky_relu(self, negative_slope);
+               break;
+           default:
+               AT_ERROR("leaky_relu not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(self)));
+       }
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::leaky_relu", "");
@@ -14224,7 +14251,17 @@ Program Listing for File Functions.h
    static inline Tensor & leaky_relu_(Tensor & self, Scalar negative_slope) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::leaky_relu_(self, negative_slope);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(self),
+                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
+           case Backend::CPU:
+               return CPUType::leaky_relu_(self, negative_slope);
+               break;
+           case Backend::QuantizedCPU:
+               return QuantizedCPUType::leaky_relu_(self, negative_slope);
+               break;
+           default:
+               AT_ERROR("leaky_relu_ not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(self)));
+       }
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::leaky_relu_", "");
