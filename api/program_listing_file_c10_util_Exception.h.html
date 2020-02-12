@@ -502,17 +502,17 @@
 <span class="c1">// (unlike CHECK() from glog.)</span>
 <span class="c1">//</span>
 <span class="cp">#ifdef STRIP_ERROR_MESSAGES</span>
-<span class="cp">#define TORCH_CHECK(cond, ...)                \</span>
+<span class="cp">#define TORCH_CHECK_WITH(error_t, cond, ...)  \</span>
 <span class="cp">  if (C10_UNLIKELY_OR_CONST(!(cond))) {       \</span>
-<span class="cp">    C10_THROW_ERROR(Error,                    \</span>
+<span class="cp">    C10_THROW_ERROR(error_t,                  \</span>
 <span class="cp">        #cond &quot; CHECK FAILED at &quot;             \</span>
 <span class="cp">        __FILE__                              \</span>
 <span class="cp">    );                                        \</span>
 <span class="cp">  }</span>
 <span class="cp">#else</span>
-<span class="cp">#define TORCH_CHECK(cond, ...)                              \</span>
+<span class="cp">#define TORCH_CHECK_WITH(error_t, cond, ...)                \</span>
 <span class="cp">  if (C10_UNLIKELY_OR_CONST(!(cond))) {                     \</span>
-<span class="cp">    C10_THROW_ERROR(Error,                                  \</span>
+<span class="cp">    C10_THROW_ERROR(error_t,                                \</span>
 <span class="cp">      ::c10::detail::if_empty_then(                         \</span>
 <span class="cp">        ::c10::str(__VA_ARGS__),                            \</span>
 <span class="cp">        &quot;Expected &quot; #cond &quot; to be true, but got false.  &quot;   \</span>
@@ -522,6 +522,7 @@
 <span class="cp">    );                                                      \</span>
 <span class="cp">  }</span>
 <span class="cp">#endif</span>
+<span class="cp">#define TORCH_CHECK(cond, ...) TORCH_CHECK_WITH(Error, cond, __VA_ARGS__)</span>
 
 <span class="c1">// Debug only version of TORCH_INTERNAL_ASSERT. This macro only checks in debug</span>
 <span class="c1">// build, and does nothing in release build.  It is appropriate to use</span>
