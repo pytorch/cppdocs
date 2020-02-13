@@ -123,6 +123,7 @@ Program Listing for File Functions.h
    static inline Tensor bartlett_window(int64_t window_length, const TensorOptions & options={});
    static inline Tensor bartlett_window(int64_t window_length, bool periodic, const TensorOptions & options={});
    static inline Tensor batch_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps, bool cudnn_enabled);
+   static inline Tensor quantized_batch_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & mean, const Tensor & var, double eps, double output_scale, int64_t output_zero_point);
    static inline std::tuple<Tensor,Tensor,Tensor,Tensor,int64_t> _batch_norm_impl_index(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps, bool cudnn_enabled);
    static inline std::tuple<Tensor,Tensor,Tensor> _batch_norm_impl_index_backward(int64_t impl_index, const Tensor & input, const Tensor & grad_output, const Tensor & weight, const Tensor & running_mean, const Tensor & running_var, const Tensor & save_mean, const Tensor & save_var_transform, bool train, double eps, std::array<bool,3> output_mask, const Tensor & reservedSpace);
    static inline Tensor bernoulli(const Tensor & self, Generator * generator=nullptr);
@@ -2314,6 +2315,23 @@ Program Listing for File Functions.h
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::batch_norm", "");
        return op.callUnboxed<Tensor, const Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, bool, double, double, bool>(input, weight, bias, running_mean, running_var, training, momentum, eps, cudnn_enabled);
+   #endif
+   }
+   static inline Tensor quantized_batch_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & mean, const Tensor & var, double eps, double output_scale, int64_t output_zero_point) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(input, weight, bias, mean, var),
+                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
+           case Backend::QuantizedCPU:
+               return QuantizedCPUType::quantized_batch_norm(input, weight, bias, mean, var, eps, output_scale, output_zero_point);
+               break;
+           default:
+               AT_ERROR("quantized_batch_norm not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(input, weight, bias, mean, var)));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::quantized_batch_norm", "");
+       return op.callUnboxed<Tensor, const Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, double, double, int64_t>(input, weight, bias, mean, var, eps, output_scale, output_zero_point);
    #endif
    }
    static inline std::tuple<Tensor,Tensor,Tensor,Tensor,int64_t> _batch_norm_impl_index(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps, bool cudnn_enabled) {
