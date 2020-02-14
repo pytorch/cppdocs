@@ -975,8 +975,6 @@ Program Listing for File Functions.h
    static inline Tensor & _cumprod_out(Tensor & out, const Tensor & self, int64_t dim);
    static inline Tensor _var(const Tensor & self, bool unbiased=true);
    static inline Tensor _std(const Tensor & self, bool unbiased=true);
-   static inline void _amp_non_finite_check_and_unscale_(Tensor & self, Tensor & found_inf, const Tensor & inv_scale);
-   static inline Tensor _amp_update_scale(const Tensor & current_scale, const Tensor & found_inf, double scale_growth_factor, double scale_backoff_factor);
    static inline Tensor _cat(TensorList tensors, int64_t dim=0);
    static inline Tensor & _cat_out(Tensor & out, TensorList tensors, int64_t dim=0);
    static inline std::tuple<Tensor,Tensor> _mode(const Tensor & self, int64_t dim=-1, bool keepdim=false);
@@ -12405,14 +12403,7 @@ Program Listing for File Functions.h
    static inline Tensor dist(const Tensor & self, const Tensor & other, Scalar p) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(self, other),
-                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
-           case Backend::CPU:
-               return CPUType::dist(self, other, p);
-               break;
-           default:
-               AT_ERROR("dist not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(self, other)));
-       }
+       return TypeDefault::dist(self, other, p);
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::dist", "");
@@ -13341,36 +13332,6 @@ Program Listing for File Functions.h
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::_std", "");
        return op.callUnboxed<Tensor, const Tensor &, bool>(self, unbiased);
-   #endif
-   }
-   static inline void _amp_non_finite_check_and_unscale_(Tensor & self, Tensor & found_inf, const Tensor & inv_scale) {
-   #ifdef USE_STATIC_DISPATCH
-       at::AutoNonVariableTypeMode _var_guard(true);
-       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(self, found_inf, inv_scale),
-                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
-       
-           default:
-               AT_ERROR("_amp_non_finite_check_and_unscale_ not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(self, found_inf, inv_scale)));
-       }
-   #else
-       static c10::OperatorHandle op = c10::Dispatcher::singleton()
-           .findSchemaOrThrow("aten::_amp_non_finite_check_and_unscale_", "");
-       return op.callUnboxed<void, Tensor &, Tensor &, const Tensor &>(self, found_inf, inv_scale);
-   #endif
-   }
-   static inline Tensor _amp_update_scale(const Tensor & current_scale, const Tensor & found_inf, double scale_growth_factor, double scale_backoff_factor) {
-   #ifdef USE_STATIC_DISPATCH
-       at::AutoNonVariableTypeMode _var_guard(true);
-       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(current_scale, found_inf),
-                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
-       
-           default:
-               AT_ERROR("_amp_update_scale not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(current_scale, found_inf)));
-       }
-   #else
-       static c10::OperatorHandle op = c10::Dispatcher::singleton()
-           .findSchemaOrThrow("aten::_amp_update_scale", "");
-       return op.callUnboxed<Tensor, const Tensor &, const Tensor &, double, double>(current_scale, found_inf, scale_growth_factor, scale_backoff_factor);
    #endif
    }
    static inline Tensor _cat(TensorList tensors, int64_t dim) {
