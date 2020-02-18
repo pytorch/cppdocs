@@ -277,6 +277,8 @@
 
 <span class="cp">#include</span> <span class="cpf">&lt;torch/detail/static.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;torch/nn/module.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/nn/modules/container/any_module_holder.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/nn/modules/container/any_value.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;torch/nn/pimpl.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;torch/types.h&gt;</span><span class="cp"></span>
 
@@ -297,8 +299,6 @@
 
 <span class="k">class</span> <span class="nc">AnyModule</span> <span class="p">{</span>
  <span class="k">public</span><span class="o">:</span>
-  <span class="k">class</span> <span class="nc">Value</span><span class="p">;</span>
-
   <span class="n">AnyModule</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
 
   <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">ModuleType</span><span class="o">&gt;</span>
@@ -324,7 +324,7 @@
   <span class="n">AnyModule</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;</span> <span class="n">module</span><span class="p">);</span>
 
   <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span><span class="p">...</span> <span class="n">ArgumentTypes</span><span class="o">&gt;</span>
-  <span class="n">Value</span> <span class="n">any_forward</span><span class="p">(</span><span class="n">ArgumentTypes</span><span class="o">&amp;&amp;</span><span class="p">...</span> <span class="n">arguments</span><span class="p">);</span>
+  <span class="n">AnyValue</span> <span class="n">any_forward</span><span class="p">(</span><span class="n">ArgumentTypes</span><span class="o">&amp;&amp;</span><span class="p">...</span> <span class="n">arguments</span><span class="p">);</span>
 
   <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">ReturnType</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">Tensor</span><span class="p">,</span> <span class="k">typename</span><span class="p">...</span> <span class="n">ArgumentTypes</span><span class="o">&gt;</span>
   <span class="n">ReturnType</span> <span class="n">forward</span><span class="p">(</span><span class="n">ArgumentTypes</span><span class="o">&amp;&amp;</span><span class="p">...</span> <span class="n">arguments</span><span class="p">);</span>
@@ -348,17 +348,12 @@
   <span class="kt">bool</span> <span class="nf">is_empty</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span><span class="p">;</span>
 
  <span class="k">private</span><span class="o">:</span>
-  <span class="k">struct</span> <span class="n">Placeholder</span><span class="p">;</span>
-
-  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">ModuleType</span><span class="p">,</span> <span class="k">typename</span><span class="p">...</span> <span class="n">ArgumentTypes</span><span class="o">&gt;</span>
-  <span class="k">struct</span> <span class="n">Holder</span><span class="p">;</span>
-
   <span class="k">template</span> <span class="o">&lt;</span>
       <span class="k">typename</span> <span class="n">ModuleType</span><span class="p">,</span>
       <span class="k">typename</span> <span class="n">Class</span><span class="p">,</span>
       <span class="k">typename</span> <span class="n">ReturnType</span><span class="p">,</span>
       <span class="k">typename</span><span class="p">...</span> <span class="n">ArgumentTypes</span><span class="o">&gt;</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Placeholder</span><span class="o">&gt;</span> <span class="n">make_holder</span><span class="p">(</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">AnyModulePlaceholder</span><span class="o">&gt;</span> <span class="n">make_holder</span><span class="p">(</span>
       <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;&amp;&amp;</span> <span class="n">module</span><span class="p">,</span>
       <span class="n">ReturnType</span> <span class="p">(</span><span class="n">Class</span><span class="o">::*</span><span class="p">)(</span><span class="n">ArgumentTypes</span><span class="p">...));</span>
 
@@ -368,152 +363,7 @@
   <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">ModuleType</span><span class="o">&gt;</span>
   <span class="n">ModuleType</span><span class="o">&amp;</span> <span class="n">get_</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
 
-  <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Placeholder</span><span class="o">&gt;</span> <span class="n">content_</span><span class="p">;</span>
-<span class="p">};</span>
-
-<span class="c1">// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ AnyModule::Value ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
-
-<span class="k">class</span> <span class="nc">AnyModule</span><span class="o">::</span><span class="n">Value</span> <span class="p">{</span>
- <span class="k">public</span><span class="o">:</span>
-  <span class="n">Value</span><span class="p">(</span><span class="n">Value</span><span class="o">&amp;&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
-  <span class="n">Value</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">Value</span><span class="o">&amp;&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
-
-  <span class="n">Value</span><span class="p">(</span><span class="k">const</span> <span class="n">Value</span><span class="o">&amp;</span> <span class="n">other</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
-  <span class="n">Value</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span> <span class="n">Value</span><span class="o">&amp;</span> <span class="n">other</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
-
-  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
-  <span class="n">T</span><span class="o">*</span> <span class="n">try_get</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">static_assert</span><span class="p">(</span>
-        <span class="o">!</span><span class="n">std</span><span class="o">::</span><span class="n">is_reference</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span>
-        <span class="s">&quot;Value stores decayed types, you cannot cast it to a reference type&quot;</span><span class="p">);</span>
-    <span class="k">static_assert</span><span class="p">(</span>
-        <span class="o">!</span><span class="n">std</span><span class="o">::</span><span class="n">is_array</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span>
-        <span class="s">&quot;Value stores decayed types, you must cast it to T* instead of T[]&quot;</span><span class="p">);</span>
-    <span class="k">if</span> <span class="p">(</span><span class="k">typeid</span><span class="p">(</span><span class="n">T</span><span class="p">).</span><span class="n">hash_code</span><span class="p">()</span> <span class="o">==</span> <span class="n">type_info</span><span class="p">().</span><span class="n">hash_code</span><span class="p">())</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="o">&amp;</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="n">Holder</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;&gt;</span><span class="p">(</span><span class="o">*</span><span class="n">content_</span><span class="p">).</span><span class="n">value</span><span class="p">;</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="k">nullptr</span><span class="p">;</span>
-  <span class="p">}</span>
-
-  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
-  <span class="n">T</span> <span class="n">get</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="p">(</span><span class="k">auto</span><span class="o">*</span> <span class="n">maybe_value</span> <span class="o">=</span> <span class="n">try_get</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">())</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="o">*</span><span class="n">maybe_value</span><span class="p">;</span>
-    <span class="p">}</span>
-    <span class="n">AT_ERROR</span><span class="p">(</span>
-        <span class="s">&quot;Attempted to cast Value to &quot;</span><span class="p">,</span>
-        <span class="n">c10</span><span class="o">::</span><span class="n">demangle</span><span class="p">(</span><span class="k">typeid</span><span class="p">(</span><span class="n">T</span><span class="p">).</span><span class="n">name</span><span class="p">()),</span>
-        <span class="s">&quot;, but its actual type is &quot;</span><span class="p">,</span>
-        <span class="n">c10</span><span class="o">::</span><span class="n">demangle</span><span class="p">(</span><span class="n">type_info</span><span class="p">().</span><span class="n">name</span><span class="p">()));</span>
-  <span class="p">}</span>
-
-  <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">type_info</span><span class="o">&amp;</span> <span class="n">type_info</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">content_</span><span class="o">-&gt;</span><span class="n">type_info</span><span class="p">;</span>
-  <span class="p">}</span>
-
- <span class="k">private</span><span class="o">:</span>
-  <span class="k">friend</span> <span class="k">class</span> <span class="nc">AnyModule</span><span class="p">;</span>
-  <span class="k">friend</span> <span class="k">struct</span> <span class="n">TestValue</span><span class="p">;</span>
-
-  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
-  <span class="k">explicit</span> <span class="n">Value</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;&amp;</span> <span class="n">value</span><span class="p">)</span>
-      <span class="o">:</span> <span class="n">content_</span><span class="p">(</span>
-            <span class="n">torch</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">Holder</span><span class="o">&lt;</span><span class="n">decay_t</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;&gt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">value</span><span class="p">)))</span> <span class="p">{}</span>
-
-  <span class="k">struct</span> <span class="n">Placeholder</span> <span class="p">{</span>
-    <span class="k">explicit</span> <span class="n">Placeholder</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">type_info</span><span class="o">&amp;</span> <span class="n">type_info_</span><span class="p">)</span> <span class="k">noexcept</span>
-        <span class="o">:</span> <span class="n">type_info</span><span class="p">(</span><span class="n">type_info_</span><span class="p">)</span> <span class="p">{}</span>
-    <span class="k">virtual</span> <span class="o">~</span><span class="n">Placeholder</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
-    <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">type_info</span><span class="o">&amp;</span> <span class="n">type_info</span><span class="p">;</span>
-  <span class="p">};</span>
-
-  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
-  <span class="k">struct</span> <span class="nl">Holder</span> <span class="p">:</span> <span class="k">public</span> <span class="n">Placeholder</span> <span class="p">{</span>
-    <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">U</span><span class="o">&gt;</span>
-    <span class="k">explicit</span> <span class="n">Holder</span><span class="p">(</span><span class="n">U</span><span class="o">&amp;&amp;</span> <span class="n">value_</span><span class="p">)</span> <span class="k">noexcept</span>
-        <span class="o">:</span> <span class="n">Placeholder</span><span class="p">(</span><span class="k">typeid</span><span class="p">(</span><span class="n">T</span><span class="p">)),</span> <span class="n">value</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;</span><span class="p">(</span><span class="n">value_</span><span class="p">))</span> <span class="p">{}</span>
-    <span class="n">T</span> <span class="n">value</span><span class="p">;</span>
-  <span class="p">};</span>
-
-  <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Placeholder</span><span class="o">&gt;</span> <span class="n">content_</span><span class="p">;</span>
-<span class="p">};</span>
-
-<span class="c1">// ~~~~~~~~~~~~~~~~~~~~~~~~~~ AnyModule::Placeholder ~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
-
-<span class="k">struct</span> <span class="n">AnyModule</span><span class="o">::</span><span class="nl">Placeholder</span> <span class="p">:</span> <span class="k">public</span> <span class="n">AnyModule</span><span class="o">::</span><span class="n">Value</span><span class="o">::</span><span class="n">Placeholder</span> <span class="p">{</span>
-  <span class="k">using</span> <span class="n">AnyModule</span><span class="o">::</span><span class="n">Value</span><span class="o">::</span><span class="n">Placeholder</span><span class="o">::</span><span class="n">Placeholder</span><span class="p">;</span>
-
-  <span class="k">virtual</span> <span class="n">Value</span> <span class="nf">forward</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Value</span><span class="o">&gt;&amp;&amp;</span> <span class="n">arguments</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-
-  <span class="k">virtual</span> <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Module</span><span class="o">&gt;</span> <span class="n">ptr</span><span class="p">()</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-
-  <span class="k">virtual</span> <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Placeholder</span><span class="o">&gt;</span> <span class="n">copy</span><span class="p">()</span> <span class="k">const</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-
-  <span class="k">virtual</span> <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Placeholder</span><span class="o">&gt;</span> <span class="n">clone</span><span class="p">(</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Device</span><span class="o">&gt;</span> <span class="n">device</span><span class="p">)</span> <span class="k">const</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-<span class="p">};</span>
-
-<span class="c1">// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~ AnyModule::Holder ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
-
-<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">ModuleType</span><span class="p">,</span> <span class="k">typename</span><span class="p">...</span> <span class="n">ArgumentTypes</span><span class="o">&gt;</span>
-<span class="k">struct</span> <span class="n">AnyModule</span><span class="o">::</span><span class="nl">Holder</span> <span class="p">:</span> <span class="k">public</span> <span class="n">AnyModule</span><span class="o">::</span><span class="n">Placeholder</span> <span class="p">{</span>
-  <span class="k">struct</span> <span class="n">CheckedGetter</span> <span class="p">{</span>
-    <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
-    <span class="n">decay_t</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;&amp;</span> <span class="k">operator</span><span class="p">()(</span><span class="kt">size_t</span> <span class="n">index</span><span class="p">)</span> <span class="p">{</span>
-      <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">index</span> <span class="o">&lt;</span> <span class="n">arguments_</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
-      <span class="k">auto</span><span class="o">&amp;</span> <span class="n">value</span> <span class="o">=</span> <span class="n">arguments_</span><span class="p">[</span><span class="n">index</span><span class="p">];</span>
-      <span class="k">if</span> <span class="p">(</span><span class="k">auto</span><span class="o">*</span> <span class="n">maybe_value</span> <span class="o">=</span> <span class="n">value</span><span class="p">.</span><span class="k">template</span> <span class="n">try_get</span><span class="o">&lt;</span><span class="n">decay_t</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;</span><span class="p">())</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="o">*</span><span class="n">maybe_value</span><span class="p">);</span>
-      <span class="p">}</span>
-      <span class="n">AT_ERROR</span><span class="p">(</span>
-          <span class="s">&quot;Expected argument #&quot;</span><span class="p">,</span>
-          <span class="n">index</span><span class="p">,</span>
-          <span class="s">&quot; to be of type &quot;</span><span class="p">,</span>
-          <span class="n">c10</span><span class="o">::</span><span class="n">demangle</span><span class="p">(</span><span class="k">typeid</span><span class="p">(</span><span class="n">T</span><span class="p">).</span><span class="n">name</span><span class="p">()),</span>
-          <span class="s">&quot;, but received value of type &quot;</span><span class="p">,</span>
-          <span class="n">c10</span><span class="o">::</span><span class="n">demangle</span><span class="p">(</span><span class="n">value</span><span class="p">.</span><span class="n">type_info</span><span class="p">().</span><span class="n">name</span><span class="p">()));</span>
-    <span class="p">}</span>
-    <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Value</span><span class="o">&gt;&amp;</span> <span class="n">arguments_</span><span class="p">;</span>
-  <span class="p">};</span>
-
-  <span class="k">struct</span> <span class="n">InvokeForward</span> <span class="p">{</span>
-    <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span><span class="p">...</span> <span class="n">Ts</span><span class="o">&gt;</span>
-    <span class="n">Value</span> <span class="k">operator</span><span class="p">()(</span><span class="n">Ts</span><span class="o">&amp;&amp;</span><span class="p">...</span> <span class="n">ts</span><span class="p">)</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="n">Value</span><span class="p">(</span><span class="n">module_</span><span class="o">-&gt;</span><span class="n">forward</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">Ts</span><span class="o">&gt;</span><span class="p">(</span><span class="n">ts</span><span class="p">)...));</span>
-    <span class="p">}</span>
-    <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;&amp;</span> <span class="n">module_</span><span class="p">;</span>
-  <span class="p">};</span>
-
-  <span class="k">explicit</span> <span class="nf">Holder</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;&amp;&amp;</span> <span class="n">module_</span><span class="p">)</span>
-      <span class="o">:</span> <span class="n">Placeholder</span><span class="p">(</span><span class="k">typeid</span><span class="p">(</span><span class="n">ModuleType</span><span class="p">)),</span> <span class="n">module</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">module_</span><span class="p">))</span> <span class="p">{}</span>
-
-  <span class="n">Value</span> <span class="nf">forward</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Value</span><span class="o">&gt;&amp;&amp;</span> <span class="n">arguments</span><span class="p">)</span> <span class="k">override</span> <span class="p">{</span>
-    <span class="n">TORCH_CHECK</span><span class="p">(</span>
-        <span class="n">arguments</span><span class="p">.</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="k">sizeof</span><span class="p">...(</span><span class="n">ArgumentTypes</span><span class="p">),</span>
-        <span class="n">c10</span><span class="o">::</span><span class="n">demangle</span><span class="p">(</span><span class="n">type_info</span><span class="p">.</span><span class="n">name</span><span class="p">()),</span>
-        <span class="s">&quot;&#39;s forward() method expects &quot;</span><span class="p">,</span>
-        <span class="k">sizeof</span><span class="p">...(</span><span class="n">ArgumentTypes</span><span class="p">),</span>
-        <span class="s">&quot; arguments, but received &quot;</span><span class="p">,</span>
-        <span class="n">arguments</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
-    <span class="c1">// FYI: During invocation of a module&#39;s `forward()` method, the values live</span>
-    <span class="c1">// in the `arguments` vector inside this function.</span>
-    <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">unpack</span><span class="o">&lt;</span><span class="n">Value</span><span class="p">,</span> <span class="n">ArgumentTypes</span><span class="p">...</span><span class="o">&gt;</span><span class="p">(</span>
-        <span class="n">InvokeForward</span><span class="p">{</span><span class="n">module</span><span class="p">},</span> <span class="n">CheckedGetter</span><span class="p">{</span><span class="n">arguments</span><span class="p">});</span>
-  <span class="p">}</span>
-
-  <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Module</span><span class="o">&gt;</span> <span class="n">ptr</span><span class="p">()</span> <span class="k">override</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">module</span><span class="p">;</span>
-  <span class="p">}</span>
-
-  <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Placeholder</span><span class="o">&gt;</span> <span class="n">copy</span><span class="p">()</span> <span class="k">const</span> <span class="k">override</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">Holder</span><span class="o">&gt;</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">);</span>
-  <span class="p">}</span>
-
-  <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Placeholder</span><span class="o">&gt;</span> <span class="n">clone</span><span class="p">(</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Device</span><span class="o">&gt;</span> <span class="n">device</span><span class="p">)</span> <span class="k">const</span> <span class="k">override</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">Holder</span><span class="o">&gt;</span><span class="p">(</span>
-        <span class="n">std</span><span class="o">::</span><span class="n">dynamic_pointer_cast</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;</span><span class="p">(</span><span class="n">module</span><span class="o">-&gt;</span><span class="n">clone</span><span class="p">(</span><span class="n">device</span><span class="p">)));</span>
-  <span class="p">}</span>
-
-  <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;</span> <span class="n">module</span><span class="p">;</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">AnyModulePlaceholder</span><span class="o">&gt;</span> <span class="n">content_</span><span class="p">;</span>
 <span class="p">};</span>
 
 <span class="c1">// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ AnyModule ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
@@ -562,7 +412,7 @@
 
 <span class="kr">inline</span> <span class="n">AnyModule</span> <span class="n">AnyModule</span><span class="o">::</span><span class="n">clone</span><span class="p">(</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Device</span><span class="o">&gt;</span> <span class="n">device</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
   <span class="n">AnyModule</span> <span class="n">clone</span><span class="p">;</span>
-  <span class="n">clone</span><span class="p">.</span><span class="n">content_</span> <span class="o">=</span> <span class="n">content_</span> <span class="o">?</span> <span class="n">content_</span><span class="o">-&gt;</span><span class="n">clone</span><span class="p">(</span><span class="n">device</span><span class="p">)</span> <span class="o">:</span> <span class="k">nullptr</span><span class="p">;</span>
+  <span class="n">clone</span><span class="p">.</span><span class="n">content_</span> <span class="o">=</span> <span class="n">content_</span> <span class="o">?</span> <span class="n">content_</span><span class="o">-&gt;</span><span class="n">clone_module</span><span class="p">(</span><span class="n">device</span><span class="p">)</span> <span class="o">:</span> <span class="k">nullptr</span><span class="p">;</span>
   <span class="k">return</span> <span class="n">clone</span><span class="p">;</span>
 <span class="p">}</span>
 
@@ -572,13 +422,13 @@
 <span class="p">}</span>
 
 <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span><span class="p">...</span> <span class="n">ArgumentTypes</span><span class="o">&gt;</span>
-<span class="n">AnyModule</span><span class="o">::</span><span class="n">Value</span> <span class="n">AnyModule</span><span class="o">::</span><span class="n">any_forward</span><span class="p">(</span><span class="n">ArgumentTypes</span><span class="o">&amp;&amp;</span><span class="p">...</span> <span class="n">arguments</span><span class="p">)</span> <span class="p">{</span>
+<span class="n">AnyValue</span> <span class="n">AnyModule</span><span class="o">::</span><span class="n">any_forward</span><span class="p">(</span><span class="n">ArgumentTypes</span><span class="o">&amp;&amp;</span><span class="p">...</span> <span class="n">arguments</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="o">!</span><span class="n">is_empty</span><span class="p">(),</span> <span class="s">&quot;Cannot call forward() on an empty AnyModule&quot;</span><span class="p">);</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Value</span><span class="o">&gt;</span> <span class="n">values</span><span class="p">;</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">AnyValue</span><span class="o">&gt;</span> <span class="n">values</span><span class="p">;</span>
   <span class="n">values</span><span class="p">.</span><span class="n">reserve</span><span class="p">(</span><span class="k">sizeof</span><span class="p">...(</span><span class="n">ArgumentTypes</span><span class="p">));</span>
   <span class="n">torch</span><span class="o">::</span><span class="n">apply</span><span class="p">(</span>
-      <span class="p">[</span><span class="o">&amp;</span><span class="n">values</span><span class="p">](</span><span class="n">Value</span><span class="o">&amp;&amp;</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span> <span class="n">values</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">value</span><span class="p">));</span> <span class="p">},</span>
-      <span class="n">Value</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">ArgumentTypes</span><span class="o">&gt;</span><span class="p">(</span><span class="n">arguments</span><span class="p">))...);</span>
+      <span class="p">[</span><span class="o">&amp;</span><span class="n">values</span><span class="p">](</span><span class="n">AnyValue</span><span class="o">&amp;&amp;</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span> <span class="n">values</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">value</span><span class="p">));</span> <span class="p">},</span>
+      <span class="n">AnyValue</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">ArgumentTypes</span><span class="o">&gt;</span><span class="p">(</span><span class="n">arguments</span><span class="p">))...);</span>
   <span class="k">return</span> <span class="n">content_</span><span class="o">-&gt;</span><span class="n">forward</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">values</span><span class="p">));</span>
 <span class="p">}</span>
 
@@ -634,7 +484,7 @@
     <span class="k">typename</span> <span class="n">Class</span><span class="p">,</span>
     <span class="k">typename</span> <span class="n">ReturnType</span><span class="p">,</span>
     <span class="k">typename</span><span class="p">...</span> <span class="n">ArgumentTypes</span><span class="o">&gt;</span>
-<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">AnyModule</span><span class="o">::</span><span class="n">Placeholder</span><span class="o">&gt;</span> <span class="n">AnyModule</span><span class="o">::</span><span class="n">make_holder</span><span class="p">(</span>
+<span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">AnyModulePlaceholder</span><span class="o">&gt;</span> <span class="n">AnyModule</span><span class="o">::</span><span class="n">make_holder</span><span class="p">(</span>
     <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;&amp;&amp;</span> <span class="n">module</span><span class="p">,</span>
     <span class="n">ReturnType</span> <span class="p">(</span><span class="n">Class</span><span class="o">::*</span><span class="p">)(</span><span class="n">ArgumentTypes</span><span class="p">...))</span> <span class="p">{</span>
   <span class="k">static_assert</span><span class="p">(</span>
@@ -645,7 +495,7 @@
       <span class="o">!</span><span class="n">std</span><span class="o">::</span><span class="n">is_void</span><span class="o">&lt;</span><span class="n">ReturnType</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span>
       <span class="s">&quot;AnyModule cannot store modules that return void &quot;</span>
       <span class="s">&quot;(you can return a dummy value).&quot;</span><span class="p">);</span>
-  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">Holder</span><span class="o">&lt;</span><span class="n">decay_t</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">ArgumentTypes</span><span class="p">...</span><span class="o">&gt;&gt;</span><span class="p">(</span>
+  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">AnyModuleHolder</span><span class="o">&lt;</span><span class="n">decay_t</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">ArgumentTypes</span><span class="p">...</span><span class="o">&gt;&gt;</span><span class="p">(</span>
       <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">module</span><span class="p">));</span>
 <span class="p">}</span>
 
@@ -662,7 +512,7 @@
 <span class="n">ModuleType</span><span class="o">&amp;</span> <span class="n">AnyModule</span><span class="o">::</span><span class="n">get_</span><span class="p">(</span>
     <span class="n">ReturnType</span> <span class="p">(</span><span class="n">ModuleType</span><span class="o">::*</span><span class="p">)(</span><span class="n">ArgumentTypes</span><span class="p">...))</span> <span class="k">const</span> <span class="p">{</span>
   <span class="k">if</span> <span class="p">(</span><span class="k">typeid</span><span class="p">(</span><span class="n">ModuleType</span><span class="p">).</span><span class="n">hash_code</span><span class="p">()</span> <span class="o">==</span> <span class="n">type_info</span><span class="p">().</span><span class="n">hash_code</span><span class="p">())</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="o">*</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="n">Holder</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="p">,</span> <span class="n">ArgumentTypes</span><span class="p">...</span><span class="o">&gt;&amp;&gt;</span><span class="p">(</span><span class="o">*</span><span class="n">content_</span><span class="p">)</span>
+    <span class="k">return</span> <span class="o">*</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="n">AnyModuleHolder</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="p">,</span> <span class="n">ArgumentTypes</span><span class="p">...</span><span class="o">&gt;&amp;&gt;</span><span class="p">(</span><span class="o">*</span><span class="n">content_</span><span class="p">)</span>
                 <span class="p">.</span><span class="n">module</span><span class="p">;</span>
   <span class="p">}</span>
   <span class="n">AT_ERROR</span><span class="p">(</span>

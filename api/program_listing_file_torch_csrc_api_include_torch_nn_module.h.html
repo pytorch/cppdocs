@@ -275,6 +275,8 @@
 <p>↰ <a class="reference internal" href="file_torch_csrc_api_include_torch_nn_module.h.html#file-torch-csrc-api-include-torch-nn-module-h"><span class="std std-ref">Return to documentation for file</span></a> (<code class="docutils literal notranslate"><span class="pre">torch/csrc/api/include/torch/nn/module.h</span></code>)</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#pragma once</span>
 
+<span class="cp">#include</span> <span class="cpf">&lt;torch/nn/modules/container/any_module_holder.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/nn/modules/container/any_value.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;torch/nn/pimpl.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;torch/ordered_dict.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;torch/serialize/archive.h&gt;</span><span class="cp"></span>
@@ -424,11 +426,35 @@
 
   <span class="kt">void</span> <span class="nf">unregister_module</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">);</span>
 
+ <span class="k">protected</span><span class="o">:</span>
+  <span class="k">virtual</span> <span class="kt">bool</span> <span class="n">_forward_has_default_args</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="k">virtual</span> <span class="kt">unsigned</span> <span class="kt">int</span> <span class="n">_forward_num_required_args</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">TORCH_CHECK</span><span class="p">(</span>
+      <span class="nb">false</span><span class="p">,</span>
+      <span class="s">&quot;torch::nn::Module subclass that has default arguments in `forward` method &quot;</span><span class="p">,</span>
+      <span class="s">&quot;must override `_forward_num_required_args` method. Please use &quot;</span><span class="p">,</span>
+      <span class="s">&quot;`FORWARD_HAS_DEFAULT_ARGS` macro to do so.&quot;</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="k">virtual</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">AnyValue</span><span class="o">&gt;</span> <span class="n">_forward_populate_default_args</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">AnyValue</span><span class="o">&gt;&amp;&amp;</span> <span class="n">arguments</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">TORCH_CHECK</span><span class="p">(</span>
+      <span class="nb">false</span><span class="p">,</span>
+      <span class="s">&quot;torch::nn::Module subclass that has default arguments in `forward` method &quot;</span><span class="p">,</span>
+      <span class="s">&quot;must override `_forward_populate_default_args` method. Please use &quot;</span><span class="p">,</span>
+      <span class="s">&quot;`FORWARD_HAS_DEFAULT_ARGS` macro to do so.&quot;</span><span class="p">);</span>
+  <span class="p">}</span>
+
  <span class="k">private</span><span class="o">:</span>
   <span class="c1">// Friend classes.</span>
 
   <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Derived</span><span class="o">&gt;</span>
   <span class="k">friend</span> <span class="k">class</span> <span class="nc">Cloneable</span><span class="p">;</span>
+
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">ModuleType</span><span class="p">,</span> <span class="k">typename</span><span class="p">...</span> <span class="n">ArgumentTypes</span><span class="o">&gt;</span>
+  <span class="k">friend</span> <span class="k">struct</span> <span class="n">AnyModuleHolder</span><span class="p">;</span>
 
   <span class="n">TORCH_API</span> <span class="k">friend</span> <span class="n">std</span><span class="o">::</span><span class="n">ostream</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">&lt;&lt;</span><span class="p">(</span>
       <span class="n">std</span><span class="o">::</span><span class="n">ostream</span><span class="o">&amp;</span> <span class="n">stream</span><span class="p">,</span>
