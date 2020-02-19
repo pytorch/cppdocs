@@ -214,10 +214,12 @@ Program Listing for File Functions.h
    static inline std::tuple<Tensor &,Tensor &> cummax_out(Tensor & values, Tensor & indices, const Tensor & self, int64_t dim);
    static inline std::tuple<Tensor,Tensor> cummax(const Tensor & self, Dimname dim);
    static inline std::tuple<Tensor &,Tensor &> cummax_out(Tensor & values, Tensor & indices, const Tensor & self, Dimname dim);
+   static inline void _cummax_helper(const Tensor & self, Tensor & values, Tensor & indices, int64_t dim);
    static inline std::tuple<Tensor,Tensor> cummin(const Tensor & self, int64_t dim);
    static inline std::tuple<Tensor &,Tensor &> cummin_out(Tensor & values, Tensor & indices, const Tensor & self, int64_t dim);
    static inline std::tuple<Tensor,Tensor> cummin(const Tensor & self, Dimname dim);
    static inline std::tuple<Tensor &,Tensor &> cummin_out(Tensor & values, Tensor & indices, const Tensor & self, Dimname dim);
+   static inline void _cummin_helper(const Tensor & self, Tensor & values, Tensor & indices, int64_t dim);
    static inline Tensor cumprod(const Tensor & self, int64_t dim, c10::optional<ScalarType> dtype=c10::nullopt);
    static inline Tensor & cumprod_out(Tensor & out, const Tensor & self, int64_t dim, c10::optional<ScalarType> dtype=c10::nullopt);
    static inline Tensor cumprod(const Tensor & self, Dimname dim, c10::optional<ScalarType> dtype=c10::nullopt);
@@ -3490,6 +3492,23 @@ Program Listing for File Functions.h
        return op.callUnboxed<std::tuple<Tensor &,Tensor &>, Tensor &, Tensor &, const Tensor &, Dimname>(values, indices, self, dim);
    #endif
    }
+   static inline void _cummax_helper(const Tensor & self, Tensor & values, Tensor & indices, int64_t dim) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(self, values, indices),
+                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
+           case Backend::CPU:
+            CPUType::_cummax_helper(self, values, indices, dim);
+               break;
+           default:
+               AT_ERROR("_cummax_helper not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(self, values, indices)));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::_cummax_helper", "");
+       return op.callUnboxed<void, const Tensor &, Tensor &, Tensor &, int64_t>(self, values, indices, dim);
+   #endif
+   }
    static inline std::tuple<Tensor,Tensor> cummin(const Tensor & self, int64_t dim) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
@@ -3528,6 +3547,23 @@ Program Listing for File Functions.h
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::cummin", "dimname_out");
        return op.callUnboxed<std::tuple<Tensor &,Tensor &>, Tensor &, Tensor &, const Tensor &, Dimname>(values, indices, self, dim);
+   #endif
+   }
+   static inline void _cummin_helper(const Tensor & self, Tensor & values, Tensor & indices, int64_t dim) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(self, values, indices),
+                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
+           case Backend::CPU:
+            CPUType::_cummin_helper(self, values, indices, dim);
+               break;
+           default:
+               AT_ERROR("_cummin_helper not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(self, values, indices)));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::_cummin_helper", "");
+       return op.callUnboxed<void, const Tensor &, Tensor &, Tensor &, int64_t>(self, values, indices, dim);
    #endif
    }
    static inline Tensor cumprod(const Tensor & self, int64_t dim, c10::optional<ScalarType> dtype) {
