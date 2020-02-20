@@ -475,10 +475,10 @@
       <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">filename</span><span class="p">,</span>
       <span class="k">const</span> <span class="n">ExtraFilesMap</span><span class="o">&amp;</span> <span class="n">extra_files</span> <span class="o">=</span> <span class="n">ExtraFilesMap</span><span class="p">())</span> <span class="k">const</span><span class="p">;</span>
 
-  <span class="c1">// Clones both the underlying `ClassType` and the module instance(data), this function</span>
-  <span class="c1">// creates a new `ClassType` and returns a new instance that has the same data</span>
-  <span class="c1">// as the current instance but with the new type, shared ClassType will be</span>
-  <span class="c1">// preserved as well</span>
+  <span class="c1">// Clones both the underlying `ClassType` and the module instance(data), this</span>
+  <span class="c1">// function creates a new `ClassType` and returns a new instance that has the</span>
+  <span class="c1">// same data as the current instance but with the new type, shared ClassType</span>
+  <span class="c1">// will be preserved as well</span>
   <span class="n">Module</span> <span class="nf">clone</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
 
   <span class="c1">// Clones the module instance but shares the underlying type with the</span>
@@ -619,8 +619,12 @@
   <span class="c1">// is the current position of the iterator a valid one?</span>
   <span class="c1">// otherwise, we have to continue advancing.</span>
   <span class="kt">bool</span> <span class="n">valid</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">top</span><span class="p">().</span><span class="n">i_</span> <span class="o">&lt;</span> <span class="kt">int64_t</span><span class="p">(</span><span class="n">top</span><span class="p">().</span><span class="n">module_</span><span class="p">.</span><span class="n">_ivalue</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">numAttributes</span><span class="p">())</span> <span class="o">&amp;&amp;</span>
-        <span class="n">Policy</span><span class="o">::</span><span class="n">valid</span><span class="p">(</span><span class="n">top</span><span class="p">().</span><span class="n">module_</span><span class="p">.</span><span class="n">_ivalue</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">type</span><span class="p">(),</span> <span class="n">top</span><span class="p">().</span><span class="n">i_</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">top</span><span class="p">().</span><span class="n">i_</span> <span class="o">&lt;</span>
+        <span class="kt">int64_t</span><span class="p">(</span><span class="n">top</span><span class="p">().</span><span class="n">module_</span><span class="p">.</span><span class="n">_ivalue</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">type</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">numAttributes</span><span class="p">())</span> <span class="o">&amp;&amp;</span>
+        <span class="n">Policy</span><span class="o">::</span><span class="n">valid</span><span class="p">(</span>
+               <span class="n">top</span><span class="p">().</span><span class="n">module_</span><span class="p">.</span><span class="n">_ivalue</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">type</span><span class="p">(),</span>
+               <span class="n">top</span><span class="p">().</span><span class="n">i_</span><span class="p">,</span>
+               <span class="n">top</span><span class="p">().</span><span class="n">module_</span><span class="p">.</span><span class="n">_ivalue</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">getSlot</span><span class="p">(</span><span class="n">top</span><span class="p">().</span><span class="n">i_</span><span class="p">));</span>
   <span class="p">}</span>
   <span class="kt">void</span> <span class="n">while_not_valid_next</span><span class="p">()</span> <span class="p">{</span>
     <span class="c1">// advance iteration until we are either at the end (cursors_.empty())</span>
@@ -716,7 +720,7 @@
   <span class="p">}</span>
   <span class="c1">// is slot i in typ something that this iterator should return, otherwise,</span>
   <span class="c1">// we skip it.</span>
-  <span class="k">static</span> <span class="kt">bool</span> <span class="nf">valid</span><span class="p">(</span><span class="k">const</span> <span class="n">ClassTypePtr</span><span class="o">&amp;</span> <span class="n">typ</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">static</span> <span class="kt">bool</span> <span class="nf">valid</span><span class="p">(</span><span class="k">const</span> <span class="n">ClassTypePtr</span><span class="o">&amp;</span> <span class="n">typ</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">i</span><span class="p">,</span> <span class="k">const</span> <span class="n">IValue</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">typ</span><span class="o">-&gt;</span><span class="n">getAttribute</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">is_module</span><span class="p">();</span>
   <span class="p">}</span>
   <span class="c1">// are we going to return everything? If so, we can optimize the calculate</span>
@@ -731,8 +735,8 @@
       <span class="n">IValue</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">v</span><span class="p">).</span><span class="n">toTensor</span><span class="p">();</span>
   <span class="p">}</span>
-  <span class="k">static</span> <span class="kt">bool</span> <span class="nf">valid</span><span class="p">(</span><span class="k">const</span> <span class="n">ClassTypePtr</span><span class="o">&amp;</span> <span class="n">typ</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">i</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">typ</span><span class="o">-&gt;</span><span class="n">is_parameter</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
+  <span class="k">static</span> <span class="kt">bool</span> <span class="nf">valid</span><span class="p">(</span><span class="k">const</span> <span class="n">ClassTypePtr</span><span class="o">&amp;</span> <span class="n">typ</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">i</span><span class="p">,</span> <span class="k">const</span> <span class="n">IValue</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">typ</span><span class="o">-&gt;</span><span class="n">is_parameter</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="n">v</span><span class="p">.</span><span class="n">isTensor</span><span class="p">();</span>
   <span class="p">}</span>
   <span class="k">static</span> <span class="k">constexpr</span> <span class="kt">bool</span> <span class="n">all_slots</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
 <span class="p">};</span>
@@ -744,7 +748,7 @@
       <span class="n">IValue</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">v</span><span class="p">).</span><span class="n">toTensor</span><span class="p">();</span>
   <span class="p">}</span>
-  <span class="k">static</span> <span class="kt">bool</span> <span class="nf">valid</span><span class="p">(</span><span class="k">const</span> <span class="n">ClassTypePtr</span><span class="o">&amp;</span> <span class="n">typ</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">static</span> <span class="kt">bool</span> <span class="nf">valid</span><span class="p">(</span><span class="k">const</span> <span class="n">ClassTypePtr</span><span class="o">&amp;</span> <span class="n">typ</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">i</span><span class="p">,</span> <span class="k">const</span> <span class="n">IValue</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">typ</span><span class="o">-&gt;</span><span class="n">getAttribute</span><span class="p">(</span><span class="n">i</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">isSubtypeOf</span><span class="p">(</span><span class="n">TensorType</span><span class="o">::</span><span class="n">get</span><span class="p">())</span> <span class="o">&amp;&amp;</span>
         <span class="o">!</span><span class="n">typ</span><span class="o">-&gt;</span><span class="n">is_parameter</span><span class="p">(</span><span class="n">i</span><span class="p">);</span>
   <span class="p">}</span>
@@ -758,7 +762,7 @@
       <span class="n">IValue</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">v</span><span class="p">;</span>
   <span class="p">}</span>
-  <span class="k">static</span> <span class="kt">bool</span> <span class="nf">valid</span><span class="p">(</span><span class="k">const</span> <span class="n">ClassTypePtr</span><span class="o">&amp;</span> <span class="n">typ</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">static</span> <span class="kt">bool</span> <span class="nf">valid</span><span class="p">(</span><span class="k">const</span> <span class="n">ClassTypePtr</span><span class="o">&amp;</span> <span class="n">typ</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">i</span><span class="p">,</span> <span class="k">const</span> <span class="n">IValue</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
   <span class="p">}</span>
   <span class="k">static</span> <span class="k">constexpr</span> <span class="kt">bool</span> <span class="n">all_slots</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
@@ -788,8 +792,8 @@
     <span class="p">}</span>
     <span class="k">return</span> <span class="n">value_type</span><span class="p">{</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">name</span><span class="p">),</span> <span class="n">Policy</span><span class="o">::</span><span class="n">create</span><span class="p">(</span><span class="n">cursors</span><span class="p">,</span> <span class="n">v</span><span class="p">)};</span>
   <span class="p">}</span>
-  <span class="k">static</span> <span class="kt">bool</span> <span class="nf">valid</span><span class="p">(</span><span class="k">const</span> <span class="n">ClassTypePtr</span><span class="o">&amp;</span> <span class="n">t</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">i</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">Policy</span><span class="o">::</span><span class="n">valid</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">i</span><span class="p">);</span>
+  <span class="k">static</span> <span class="kt">bool</span> <span class="nf">valid</span><span class="p">(</span><span class="k">const</span> <span class="n">ClassTypePtr</span><span class="o">&amp;</span> <span class="n">t</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">i</span><span class="p">,</span> <span class="k">const</span> <span class="n">IValue</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">Policy</span><span class="o">::</span><span class="n">valid</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">v</span><span class="p">);</span>
   <span class="p">}</span>
   <span class="k">static</span> <span class="k">constexpr</span> <span class="kt">bool</span> <span class="n">all_slots</span> <span class="o">=</span> <span class="n">Policy</span><span class="o">::</span><span class="n">all_slots</span><span class="p">;</span>
 
