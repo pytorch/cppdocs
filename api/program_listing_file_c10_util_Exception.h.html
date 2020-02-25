@@ -371,6 +371,11 @@
   <span class="k">using</span> <span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span>
 <span class="p">};</span>
 
+<span class="c1">// Used in ATen for invalid values.  These turn into</span>
+<span class="c1">// ValueError when they cross to Python.</span>
+<span class="k">class</span> <span class="nc">C10_API</span> <span class="nl">ValueError</span> <span class="p">:</span> <span class="k">public</span> <span class="n">Error</span> <span class="p">{</span>
+  <span class="k">using</span> <span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span>
+<span class="p">};</span>
 
 <span class="c1">// Used in ATen for non finite indices.  These turn into</span>
 <span class="c1">// ExitException when they cross to Python.</span>
@@ -563,6 +568,28 @@
 <span class="cp">  }</span>
 <span class="cp">#endif</span>
 
+<span class="c1">// Like TORCH_CHECK, but raises ValueErrors instead of Errors.</span>
+<span class="cp">#ifdef STRIP_ERROR_MESSAGES</span>
+<span class="cp">#define TORCH_CHECK_VALUE(cond, ...)          \</span>
+<span class="cp">  if (C10_UNLIKELY_OR_CONST(!(cond))) {       \</span>
+<span class="cp">    C10_THROW_ERROR(Error,                    \</span>
+<span class="cp">        #cond &quot; VALUE CHECK FAILED at &quot;       \</span>
+<span class="cp">        __FILE__                              \</span>
+<span class="cp">    );                                        \</span>
+<span class="cp">  }</span>
+<span class="cp">#else</span>
+<span class="cp">#define TORCH_CHECK_VALUE(cond, ...)                        \</span>
+<span class="cp">  if (C10_UNLIKELY_OR_CONST(!(cond))) {                     \</span>
+<span class="cp">    C10_THROW_ERROR(ValueError,                             \</span>
+<span class="cp">      ::c10::detail::if_empty_then(                         \</span>
+<span class="cp">        ::c10::str(__VA_ARGS__),                            \</span>
+<span class="cp">        &quot;Expected &quot; #cond &quot; to be true, but got false.  &quot;   \</span>
+<span class="cp">        &quot;(Could this error message be improved?  If so, &quot;   \</span>
+<span class="cp">        &quot;please report an enhancement request to PyTorch.)&quot; \</span>
+<span class="cp">      )                                                     \</span>
+<span class="cp">    );                                                      \</span>
+<span class="cp">  }</span>
+<span class="cp">#endif</span>
 
 <span class="c1">// Report a warning to the user.  Accepts an arbitrary number of extra</span>
 <span class="c1">// arguments which are concatenated into the warning message using operator&lt;&lt;</span>
