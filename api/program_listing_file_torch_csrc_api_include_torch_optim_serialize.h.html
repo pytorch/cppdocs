@@ -483,13 +483,20 @@
 <span class="cp">  torch::optim::serialize&lt;OptimizerName##ParamState, OptimizerName##Options&gt;(archive, self)</span>
 
 <span class="cp">#define _TORCH_OPTIM_SERIALIZE_TORCH_ARG(name) \</span>
-<span class="cp">  archive.write(#name, IValue(name()))</span>
+<span class="cp">{ \</span>
+<span class="cp">  auto ivalue = torch::IValue(name()); \</span>
+<span class="cp">  </span><span class="cm">/* do not serialize if name is an undefined tensor*/</span><span class="cp"> \</span>
+<span class="cp">  if (!(ivalue.isTensor() &amp;&amp; ivalue.unsafeToTensorImpl() == at::UndefinedTensorImpl::singleton())) { \</span>
+<span class="cp">    archive.write(#name, ivalue); \</span>
+<span class="cp">  } \</span>
+<span class="cp">}</span>
 
 <span class="cp">#define _TORCH_OPTIM_DESERIALIZE_TORCH_ARG(T, name) \</span>
 <span class="cp">{ \</span>
 <span class="cp">  c10::IValue ivalue; \</span>
-<span class="cp">  archive.read(#name, ivalue); \</span>
-<span class="cp">  name(ivalue.to&lt;T&gt;()); \</span>
+<span class="cp">  bool exists = archive.try_read(#name, ivalue); \</span>
+<span class="cp">  if (exists) \</span>
+<span class="cp">    name(ivalue.to&lt;T&gt;()); \</span>
 <span class="cp">}</span>
 <span class="p">}</span> <span class="c1">// namespace optim</span>
 <span class="p">}</span> <span class="c1">// namespace torch</span>
