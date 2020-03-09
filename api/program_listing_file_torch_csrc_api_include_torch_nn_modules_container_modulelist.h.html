@@ -299,8 +299,8 @@
   <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Module</span><span class="o">&gt;</span> <span class="n">clone</span><span class="p">(</span>
       <span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">Device</span><span class="o">&gt;&amp;</span> <span class="n">device</span> <span class="o">=</span> <span class="n">nullopt</span><span class="p">)</span> <span class="k">const</span> <span class="k">override</span> <span class="p">{</span>
     <span class="k">auto</span> <span class="n">clone</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">ModuleListImpl</span><span class="o">&gt;</span><span class="p">();</span>
-    <span class="k">for</span> <span class="p">(</span><span class="k">const</span> <span class="k">auto</span><span class="o">&amp;</span> <span class="nl">module</span> <span class="p">:</span> <span class="n">modules_</span><span class="p">)</span> <span class="p">{</span>
-      <span class="n">clone</span><span class="o">-&gt;</span><span class="n">push_back</span><span class="p">(</span><span class="n">module</span><span class="o">-&gt;</span><span class="n">clone</span><span class="p">(</span><span class="n">device</span><span class="p">));</span>
+    <span class="k">for</span> <span class="p">(</span><span class="k">const</span> <span class="k">auto</span><span class="o">&amp;</span> <span class="k">module</span> <span class="o">:</span> <span class="n">modules_</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">clone</span><span class="o">-&gt;</span><span class="n">push_back</span><span class="p">(</span><span class="k">module</span><span class="o">-&gt;</span><span class="n">clone</span><span class="p">(</span><span class="n">device</span><span class="p">));</span>
     <span class="p">}</span>
     <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">clone</span><span class="p">);</span>
   <span class="p">}</span>
@@ -311,16 +311,16 @@
     <span class="n">stream</span> <span class="o">&lt;&lt;</span> <span class="s">&quot;torch::nn::ModuleList&quot;</span><span class="p">;</span>
   <span class="p">}</span>
 
-  <span class="kt">void</span> <span class="n">push_back</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Module</span><span class="o">&gt;</span> <span class="n">module</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">modules_</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">module</span><span class="p">));</span>
+  <span class="kt">void</span> <span class="n">push_back</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Module</span><span class="o">&gt;</span> <span class="k">module</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">modules_</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="k">module</span><span class="p">));</span>
     <span class="k">const</span> <span class="k">auto</span> <span class="n">index</span> <span class="o">=</span> <span class="n">modules_</span><span class="p">.</span><span class="n">size</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span>
     <span class="n">register_module</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">to_string</span><span class="p">(</span><span class="n">index</span><span class="p">),</span> <span class="n">modules_</span><span class="p">[</span><span class="n">index</span><span class="p">]);</span>
   <span class="p">}</span>
 
   <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">M</span><span class="p">,</span> <span class="k">typename</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">detail</span><span class="o">::</span><span class="n">enable_if_module_t</span><span class="o">&lt;</span><span class="n">M</span><span class="o">&gt;&gt;</span>
-  <span class="kt">void</span> <span class="n">push_back</span><span class="p">(</span><span class="n">M</span><span class="o">&amp;&amp;</span> <span class="n">module</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kt">void</span> <span class="n">push_back</span><span class="p">(</span><span class="n">M</span><span class="o">&amp;&amp;</span> <span class="k">module</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">using</span> <span class="n">Type</span> <span class="o">=</span> <span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">remove_reference</span><span class="o">&lt;</span><span class="n">M</span><span class="o">&gt;::</span><span class="n">type</span><span class="p">;</span>
-    <span class="n">push_back</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">Type</span><span class="o">&gt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">M</span><span class="o">&gt;</span><span class="p">(</span><span class="n">module</span><span class="p">)));</span>
+    <span class="n">push_back</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">Type</span><span class="o">&gt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">M</span><span class="o">&gt;</span><span class="p">(</span><span class="k">module</span><span class="p">)));</span>
   <span class="p">}</span>
 
   <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">M</span><span class="o">&gt;</span>
@@ -330,8 +330,8 @@
 
   <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Container</span><span class="o">&gt;</span>
   <span class="kt">void</span> <span class="n">extend</span><span class="p">(</span><span class="k">const</span> <span class="n">Container</span><span class="o">&amp;</span> <span class="n">container</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">for</span> <span class="p">(</span><span class="k">const</span> <span class="k">auto</span><span class="o">&amp;</span> <span class="nl">module</span> <span class="p">:</span> <span class="n">container</span><span class="p">)</span> <span class="p">{</span>
-      <span class="n">push_back</span><span class="p">(</span><span class="n">module</span><span class="p">);</span>
+    <span class="k">for</span> <span class="p">(</span><span class="k">const</span> <span class="k">auto</span><span class="o">&amp;</span> <span class="k">module</span> <span class="o">:</span> <span class="n">container</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">push_back</span><span class="p">(</span><span class="k">module</span><span class="p">);</span>
     <span class="p">}</span>
   <span class="p">}</span>
 
@@ -396,15 +396,15 @@
     <span class="k">return</span> <span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">;</span>
   <span class="p">}</span>
 
-  <span class="kt">void</span> <span class="n">insert</span><span class="p">(</span><span class="kt">size_t</span> <span class="n">index</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Module</span><span class="o">&gt;</span> <span class="n">module</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kt">void</span> <span class="n">insert</span><span class="p">(</span><span class="kt">size_t</span> <span class="n">index</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Module</span><span class="o">&gt;</span> <span class="k">module</span><span class="p">)</span> <span class="p">{</span>
     <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">index</span> <span class="o">&lt;=</span> <span class="n">size</span><span class="p">(),</span> <span class="s">&quot;Index out of range&quot;</span><span class="p">);</span>
 
     <span class="k">if</span> <span class="p">(</span><span class="n">index</span> <span class="o">==</span> <span class="n">size</span><span class="p">())</span>
-      <span class="n">push_back</span><span class="p">(</span><span class="n">module</span><span class="p">);</span>
+      <span class="n">push_back</span><span class="p">(</span><span class="k">module</span><span class="p">);</span>
     <span class="k">else</span> <span class="p">{</span>
       <span class="n">modules_</span><span class="p">.</span><span class="n">insert</span><span class="p">(</span>
           <span class="n">modules_</span><span class="p">.</span><span class="n">begin</span><span class="p">()</span> <span class="o">+</span> <span class="n">Iterator</span><span class="o">::</span><span class="n">difference_type</span><span class="p">(</span><span class="n">index</span><span class="p">),</span>
-          <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">module</span><span class="p">));</span>
+          <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="k">module</span><span class="p">));</span>
 
       <span class="k">for</span> <span class="p">(</span><span class="kt">size_t</span> <span class="n">i</span> <span class="o">=</span> <span class="n">index</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">size</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span>
         <span class="n">replace_module</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">to_string</span><span class="p">(</span><span class="n">index</span><span class="p">),</span> <span class="n">modules_</span><span class="p">[</span><span class="n">index</span><span class="p">]);</span>
@@ -418,9 +418,9 @@
   <span class="p">}</span>
 
   <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">M</span><span class="p">,</span> <span class="k">typename</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">detail</span><span class="o">::</span><span class="n">enable_if_module_t</span><span class="o">&lt;</span><span class="n">M</span><span class="o">&gt;&gt;</span>
-  <span class="kt">void</span> <span class="n">insert</span><span class="p">(</span><span class="kt">size_t</span> <span class="n">index</span><span class="p">,</span> <span class="n">M</span><span class="o">&amp;&amp;</span> <span class="n">module</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kt">void</span> <span class="n">insert</span><span class="p">(</span><span class="kt">size_t</span> <span class="n">index</span><span class="p">,</span> <span class="n">M</span><span class="o">&amp;&amp;</span> <span class="k">module</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">using</span> <span class="n">Type</span> <span class="o">=</span> <span class="k">typename</span> <span class="n">std</span><span class="o">::</span><span class="n">remove_reference</span><span class="o">&lt;</span><span class="n">M</span><span class="o">&gt;::</span><span class="n">type</span><span class="p">;</span>
-    <span class="n">insert</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">Type</span><span class="o">&gt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">M</span><span class="o">&gt;</span><span class="p">(</span><span class="n">module</span><span class="p">)));</span>
+    <span class="n">insert</span><span class="p">(</span><span class="n">index</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">Type</span><span class="o">&gt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">M</span><span class="o">&gt;</span><span class="p">(</span><span class="k">module</span><span class="p">)));</span>
   <span class="p">}</span>
 
  <span class="k">private</span><span class="o">:</span>

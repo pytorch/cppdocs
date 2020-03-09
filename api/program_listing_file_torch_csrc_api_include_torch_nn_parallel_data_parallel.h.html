@@ -371,11 +371,11 @@
 <span class="c1">// original module. See [Replicating Modules]</span>
 <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">ModuleType</span><span class="o">&gt;</span>
 <span class="kt">void</span> <span class="n">replicate_grad_edges</span><span class="p">(</span>
-    <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Module</span><span class="o">&gt;&amp;</span> <span class="n">module</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Module</span><span class="o">&gt;&amp;</span> <span class="k">module</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;&gt;&amp;</span> <span class="n">replicas</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Device</span><span class="o">&gt;&amp;</span> <span class="n">devices</span><span class="p">)</span> <span class="p">{</span>
 
-  <span class="k">for</span> <span class="p">(</span><span class="k">auto</span><span class="o">&amp;</span> <span class="nl">parameter</span> <span class="p">:</span> <span class="n">module</span><span class="o">-&gt;</span><span class="n">named_parameters</span><span class="p">(</span><span class="cm">/*recurse=*/</span><span class="nb">false</span><span class="p">))</span> <span class="p">{</span>
+  <span class="k">for</span> <span class="p">(</span><span class="k">auto</span><span class="o">&amp;</span> <span class="nl">parameter</span> <span class="p">:</span> <span class="k">module</span><span class="o">-&gt;</span><span class="n">named_parameters</span><span class="p">(</span><span class="cm">/*recurse=*/</span><span class="nb">false</span><span class="p">))</span> <span class="p">{</span>
     <span class="k">auto</span> <span class="n">grad_fn</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">ReduceAdd</span><span class="o">&gt;</span><span class="p">((</span><span class="o">*</span><span class="n">parameter</span><span class="p">).</span><span class="n">device</span><span class="p">());</span>
     <span class="n">grad_fn</span><span class="o">-&gt;</span><span class="n">set_next_edges</span><span class="p">(</span><span class="n">autograd</span><span class="o">::</span><span class="n">collect_next_edges</span><span class="p">(</span><span class="o">*</span><span class="n">parameter</span><span class="p">));</span>
 
@@ -384,7 +384,7 @@
     <span class="p">}</span>
   <span class="p">}</span>
 
-  <span class="k">for</span> <span class="p">(</span><span class="k">auto</span><span class="o">&amp;</span> <span class="nl">buffer</span> <span class="p">:</span> <span class="n">module</span><span class="o">-&gt;</span><span class="n">named_buffers</span><span class="p">(</span><span class="cm">/*recurse=*/</span><span class="nb">false</span><span class="p">))</span> <span class="p">{</span>
+  <span class="k">for</span> <span class="p">(</span><span class="k">auto</span><span class="o">&amp;</span> <span class="nl">buffer</span> <span class="p">:</span> <span class="k">module</span><span class="o">-&gt;</span><span class="n">named_buffers</span><span class="p">(</span><span class="cm">/*recurse=*/</span><span class="nb">false</span><span class="p">))</span> <span class="p">{</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">buffer</span><span class="p">.</span><span class="n">value</span><span class="p">().</span><span class="n">requires_grad</span><span class="p">()){</span>
       <span class="k">auto</span> <span class="n">grad_fn</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">ReduceAdd</span><span class="o">&gt;</span><span class="p">((</span><span class="o">*</span><span class="n">buffer</span><span class="p">).</span><span class="n">device</span><span class="p">());</span>
       <span class="n">grad_fn</span><span class="o">-&gt;</span><span class="n">set_next_edges</span><span class="p">(</span><span class="n">autograd</span><span class="o">::</span><span class="n">collect_next_edges</span><span class="p">(</span><span class="o">*</span><span class="n">buffer</span><span class="p">));</span>
@@ -395,7 +395,7 @@
     <span class="p">}</span>
   <span class="p">}</span>
 
-  <span class="k">for</span> <span class="p">(</span><span class="k">auto</span><span class="o">&amp;</span> <span class="nl">child</span> <span class="p">:</span> <span class="n">module</span><span class="o">-&gt;</span><span class="n">children_</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">for</span> <span class="p">(</span><span class="k">auto</span><span class="o">&amp;</span> <span class="nl">child</span> <span class="p">:</span> <span class="k">module</span><span class="o">-&gt;</span><span class="n">children_</span><span class="p">)</span> <span class="p">{</span>
     <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Module</span><span class="o">&gt;&gt;</span> <span class="n">child_replicas</span><span class="p">;</span>
     <span class="n">child_replicas</span><span class="p">.</span><span class="n">reserve</span><span class="p">(</span><span class="n">devices</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
     <span class="k">for</span> <span class="p">(</span><span class="k">auto</span><span class="o">&amp;</span> <span class="nl">replica</span> <span class="p">:</span> <span class="n">replicas</span><span class="p">)</span> <span class="p">{</span>
@@ -411,25 +411,25 @@
 
 <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">ModuleType</span><span class="o">&gt;</span>
 <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;&gt;</span> <span class="n">replicate</span><span class="p">(</span>
-    <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;&amp;</span> <span class="n">module</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;&amp;</span> <span class="k">module</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Device</span><span class="o">&gt;&amp;</span> <span class="n">devices</span><span class="p">)</span> <span class="p">{</span>
   <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;&gt;</span> <span class="n">replicas</span><span class="p">;</span>
   <span class="n">replicas</span><span class="p">.</span><span class="n">reserve</span><span class="p">(</span><span class="n">devices</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
   <span class="k">for</span> <span class="p">(</span><span class="k">const</span> <span class="k">auto</span><span class="o">&amp;</span> <span class="nl">device</span> <span class="p">:</span> <span class="n">devices</span><span class="p">)</span> <span class="p">{</span>
     <span class="n">replicas</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span>
-        <span class="n">std</span><span class="o">::</span><span class="n">dynamic_pointer_cast</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;</span><span class="p">(</span><span class="n">module</span><span class="o">-&gt;</span><span class="n">clone</span><span class="p">(</span><span class="n">device</span><span class="p">)));</span>
+        <span class="n">std</span><span class="o">::</span><span class="n">dynamic_pointer_cast</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;</span><span class="p">(</span><span class="k">module</span><span class="o">-&gt;</span><span class="n">clone</span><span class="p">(</span><span class="n">device</span><span class="p">)));</span>
   <span class="p">}</span>
   <span class="c1">// Configure gradient edges to point from replcia parameters to original</span>
   <span class="c1">// module parameters. See [Replicating Modules]</span>
-  <span class="n">replicate_grad_edges</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">replicas</span><span class="p">,</span> <span class="n">devices</span><span class="p">);</span>
+  <span class="n">replicate_grad_edges</span><span class="p">(</span><span class="k">module</span><span class="p">,</span> <span class="n">replicas</span><span class="p">,</span> <span class="n">devices</span><span class="p">);</span>
   <span class="k">return</span> <span class="n">replicas</span><span class="p">;</span>
 <span class="p">}</span>
 
 <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">ModuleType</span><span class="o">&gt;</span>
 <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">ModuleHolder</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;&gt;</span> <span class="n">replicate</span><span class="p">(</span>
-    <span class="k">const</span> <span class="n">ModuleHolder</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;&amp;</span> <span class="n">module</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">ModuleHolder</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;&amp;</span> <span class="k">module</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Device</span><span class="o">&gt;&amp;</span> <span class="n">devices</span><span class="p">)</span> <span class="p">{</span>
-  <span class="k">auto</span> <span class="n">ptrs</span> <span class="o">=</span> <span class="n">replicate</span><span class="p">(</span><span class="n">module</span><span class="p">.</span><span class="n">ptr</span><span class="p">(),</span> <span class="n">devices</span><span class="p">);</span>
+  <span class="k">auto</span> <span class="n">ptrs</span> <span class="o">=</span> <span class="n">replicate</span><span class="p">(</span><span class="k">module</span><span class="p">.</span><span class="n">ptr</span><span class="p">(),</span> <span class="n">devices</span><span class="p">);</span>
   <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">ModuleHolder</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="n">ptrs</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span> <span class="n">ptrs</span><span class="p">.</span><span class="n">end</span><span class="p">());</span>
 <span class="p">}</span>
 
@@ -486,7 +486,7 @@
 
 <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">ModuleType</span><span class="o">&gt;</span>
 <span class="n">Tensor</span> <span class="n">data_parallel</span><span class="p">(</span>
-    <span class="n">ModuleType</span> <span class="n">module</span><span class="p">,</span>
+    <span class="n">ModuleType</span> <span class="k">module</span><span class="p">,</span>
     <span class="n">Tensor</span> <span class="n">input</span><span class="p">,</span>
     <span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Device</span><span class="o">&gt;&gt;</span> <span class="n">devices</span> <span class="o">=</span> <span class="n">nullopt</span><span class="p">,</span>
     <span class="n">optional</span><span class="o">&lt;</span><span class="n">Device</span><span class="o">&gt;</span> <span class="n">output_device</span> <span class="o">=</span> <span class="n">nullopt</span><span class="p">,</span>
@@ -506,15 +506,15 @@
   <span class="p">}</span>
 
   <span class="k">if</span> <span class="p">(</span><span class="n">devices</span><span class="o">-&gt;</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">module</span><span class="o">-&gt;</span><span class="n">to</span><span class="p">(</span><span class="n">devices</span><span class="o">-&gt;</span><span class="n">front</span><span class="p">());</span>
+    <span class="k">module</span><span class="o">-&gt;</span><span class="n">to</span><span class="p">(</span><span class="n">devices</span><span class="o">-&gt;</span><span class="n">front</span><span class="p">());</span>
     <span class="n">input</span> <span class="o">=</span> <span class="n">input</span><span class="p">.</span><span class="n">to</span><span class="p">(</span><span class="n">devices</span><span class="o">-&gt;</span><span class="n">front</span><span class="p">());</span>
-    <span class="k">return</span> <span class="n">module</span><span class="o">-&gt;</span><span class="n">forward</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">input</span><span class="p">)).</span><span class="n">to</span><span class="p">(</span><span class="o">*</span><span class="n">output_device</span><span class="p">);</span>
+    <span class="k">return</span> <span class="k">module</span><span class="o">-&gt;</span><span class="n">forward</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">input</span><span class="p">)).</span><span class="n">to</span><span class="p">(</span><span class="o">*</span><span class="n">output_device</span><span class="p">);</span>
   <span class="p">}</span>
 
   <span class="n">autograd</span><span class="o">::</span><span class="n">Scatter</span> <span class="n">scatter</span><span class="p">(</span><span class="o">*</span><span class="n">devices</span><span class="p">,</span> <span class="cm">/*chunk_sizes=*/</span><span class="n">nullopt</span><span class="p">,</span> <span class="n">dim</span><span class="p">);</span>
   <span class="k">auto</span> <span class="n">scattered_inputs</span> <span class="o">=</span> <span class="n">fmap</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span><span class="p">(</span><span class="n">scatter</span><span class="p">.</span><span class="n">apply</span><span class="p">({</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">input</span><span class="p">)}));</span>
 
-  <span class="k">auto</span> <span class="n">replicas</span> <span class="o">=</span> <span class="n">replicate</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="o">*</span><span class="n">devices</span><span class="p">);</span>
+  <span class="k">auto</span> <span class="n">replicas</span> <span class="o">=</span> <span class="n">replicate</span><span class="p">(</span><span class="k">module</span><span class="p">,</span> <span class="o">*</span><span class="n">devices</span><span class="p">);</span>
   <span class="k">auto</span> <span class="n">outputs</span> <span class="o">=</span> <span class="n">parallel_apply</span><span class="p">(</span><span class="n">replicas</span><span class="p">,</span> <span class="n">scattered_inputs</span><span class="p">,</span> <span class="o">*</span><span class="n">devices</span><span class="p">);</span>
   <span class="k">return</span> <span class="n">autograd</span><span class="o">::</span><span class="n">Gather</span><span class="p">(</span><span class="o">*</span><span class="n">output_device</span><span class="p">,</span> <span class="n">dim</span><span class="p">)</span>
       <span class="p">.</span><span class="n">apply</span><span class="p">(</span><span class="n">fmap</span><span class="o">&lt;</span><span class="n">autograd</span><span class="o">::</span><span class="n">Variable</span><span class="o">&gt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">outputs</span><span class="p">)))</span>
