@@ -629,6 +629,9 @@ Program Listing for File Functions.h
    static inline Tensor trapz(const Tensor & y, double dx=1, int64_t dim=-1);
    static inline Tensor _trilinear(const Tensor & i1, const Tensor & i2, const Tensor & i3, IntArrayRef expand1, IntArrayRef expand2, IntArrayRef expand3, IntArrayRef sumdim, int64_t unroll_dim=1);
    static inline Tensor triplet_margin_loss(const Tensor & anchor, const Tensor & positive, const Tensor & negative, double margin=1.0, double p=2, double eps=1e-06, bool swap=false, int64_t reduction=at::Reduction::Mean);
+   static inline Tensor true_divide(const Tensor & self, const Tensor & other);
+   static inline Tensor & true_divide_out(Tensor & out, const Tensor & self, const Tensor & other);
+   static inline Tensor true_divide(const Tensor & self, Scalar other);
    static inline Tensor trunc(const Tensor & self);
    static inline Tensor & trunc_(Tensor & self);
    static inline Tensor & trunc_out(Tensor & out, const Tensor & self);
@@ -8475,6 +8478,50 @@ Program Listing for File Functions.h
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::triplet_margin_loss", "");
        return op.callUnboxed<Tensor, const Tensor &, const Tensor &, const Tensor &, double, double, double, bool, int64_t>(anchor, positive, negative, margin, p, eps, swap, reduction);
+   #endif
+   }
+   static inline Tensor true_divide(const Tensor & self, const Tensor & other) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(self, other),
+                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
+           case Backend::CPU:
+               return CPUType::true_divide_Tensor(self, other);
+               break;
+           default:
+               AT_ERROR("true_divide not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(self, other)));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::true_divide", "Tensor");
+       return op.callUnboxed<Tensor, const Tensor &, const Tensor &>(self, other);
+   #endif
+   }
+   static inline Tensor & true_divide_out(Tensor & out, const Tensor & self, const Tensor & other) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(out, self, other),
+                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
+           case Backend::CPU:
+               return CPUType::true_divide_out_out(out, self, other);
+               break;
+           default:
+               AT_ERROR("true_divide_out not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(out, self, other)));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::true_divide", "out");
+       return op.callUnboxed<Tensor &, Tensor &, const Tensor &, const Tensor &>(out, self, other);
+   #endif
+   }
+   static inline Tensor true_divide(const Tensor & self, Scalar other) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       return TypeDefault::true_divide_Scalar(self, other);
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::true_divide", "Scalar");
+       return op.callUnboxed<Tensor, const Tensor &, Scalar>(self, other);
    #endif
    }
    static inline Tensor trunc(const Tensor & self) {
