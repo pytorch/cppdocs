@@ -44,6 +44,7 @@ Program Listing for File Functions.h
    static inline std::vector<Tensor> align_tensors(TensorList tensors);
    static inline bool _use_cudnn_ctc_loss(const Tensor & log_probs, const Tensor & targets, IntArrayRef input_lengths, IntArrayRef target_lengths, int64_t blank);
    static inline std::tuple<Tensor,Tensor> _cudnn_ctc_loss(const Tensor & log_probs, const Tensor & targets, IntArrayRef input_lengths, IntArrayRef target_lengths, int64_t blank, bool deterministic, bool zero_infinity);
+   static inline bool _use_cudnn_rnn_flatten_weight();
    static inline Tensor _cudnn_rnn_flatten_weight(TensorList weight_arr, int64_t weight_stride0, int64_t input_size, int64_t mode, int64_t hidden_size, int64_t num_layers, bool batch_first, bool bidirectional);
    static inline std::tuple<Tensor,Tensor,Tensor,Tensor,Tensor> _cudnn_rnn(const Tensor & input, TensorList weight, int64_t weight_stride0, const Tensor & weight_buf, const Tensor & hx, const Tensor & cx, int64_t mode, int64_t hidden_size, int64_t num_layers, bool batch_first, double dropout, bool train, bool bidirectional, IntArrayRef batch_sizes, const Tensor & dropout_state);
    static inline std::tuple<Tensor,Tensor,Tensor,std::vector<Tensor>> _cudnn_rnn_backward(const Tensor & input, TensorList weight, int64_t weight_stride0, const Tensor & weight_buf, const Tensor & hx, const Tensor & cx, const Tensor & output, const Tensor & grad_output, const Tensor & grad_hy, const Tensor & grad_cy, int64_t mode, int64_t hidden_size, int64_t num_layers, bool batch_first, double dropout, bool train, bool bidirectional, IntArrayRef batch_sizes, const Tensor & dropout_state, const Tensor & reserve, std::array<bool,4> output_mask);
@@ -1389,6 +1390,16 @@ Program Listing for File Functions.h
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::_cudnn_ctc_loss", "");
        return op.callUnboxed<std::tuple<Tensor,Tensor>, const Tensor &, const Tensor &, IntArrayRef, IntArrayRef, int64_t, bool, bool>(log_probs, targets, input_lengths, target_lengths, blank, deterministic, zero_infinity);
+   #endif
+   }
+   static inline bool _use_cudnn_rnn_flatten_weight() {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       return TypeDefault::_use_cudnn_rnn_flatten_weight();
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::_use_cudnn_rnn_flatten_weight", "");
+       return op.callUnboxed<bool>();
    #endif
    }
    static inline Tensor _cudnn_rnn_flatten_weight(TensorList weight_arr, int64_t weight_stride0, int64_t input_size, int64_t mode, int64_t hidden_size, int64_t num_layers, bool batch_first, bool bidirectional) {
