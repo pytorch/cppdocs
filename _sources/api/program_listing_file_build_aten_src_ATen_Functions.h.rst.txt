@@ -14097,7 +14097,17 @@ Program Listing for File Functions.h
    static inline Tensor & hardtanh_out(Tensor & out, const Tensor & self, Scalar min_val, Scalar max_val) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::hardtanh_out_out(out, self, min_val, max_val);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(out, self),
+                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
+           case Backend::CPU:
+               return CPUType::hardtanh_out_out(out, self, min_val, max_val);
+               break;
+           case Backend::QuantizedCPU:
+               return QuantizedCPUType::hardtanh_out_out(out, self, min_val, max_val);
+               break;
+           default:
+               AT_ERROR("hardtanh_out not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(out, self)));
+       }
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::hardtanh", "out");
@@ -14107,7 +14117,17 @@ Program Listing for File Functions.h
    static inline Tensor hardtanh(const Tensor & self, Scalar min_val, Scalar max_val) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::hardtanh(self, min_val, max_val);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(self),
+                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
+           case Backend::CPU:
+               return CPUType::hardtanh(self, min_val, max_val);
+               break;
+           case Backend::QuantizedCPU:
+               return QuantizedCPUType::hardtanh(self, min_val, max_val);
+               break;
+           default:
+               AT_ERROR("hardtanh not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(self)));
+       }
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::hardtanh", "");
@@ -14144,7 +14164,17 @@ Program Listing for File Functions.h
    static inline Tensor & hardtanh_(Tensor & self, Scalar min_val, Scalar max_val) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::hardtanh_(self, min_val, max_val);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(self),
+                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
+           case Backend::CPU:
+               return CPUType::hardtanh_(self, min_val, max_val);
+               break;
+           case Backend::QuantizedCPU:
+               return QuantizedCPUType::hardtanh_(self, min_val, max_val);
+               break;
+           default:
+               AT_ERROR("hardtanh_ not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(self)));
+       }
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::hardtanh_", "");
