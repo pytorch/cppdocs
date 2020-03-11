@@ -455,6 +455,7 @@ Program Listing for File Functions.h
    static inline Tensor & mv_out(Tensor & out, const Tensor & self, const Tensor & vec);
    static inline Tensor mvlgamma(const Tensor & self, int64_t p);
    static inline Tensor narrow(const Tensor & self, int64_t dim, int64_t start, int64_t length);
+   static inline Tensor narrow(const Tensor & self, int64_t dim, const Tensor & start, int64_t length);
    static inline std::tuple<Tensor,Tensor,Tensor> native_batch_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps);
    static inline std::tuple<Tensor &,Tensor &,Tensor &> native_batch_norm_out(Tensor & out, Tensor & save_mean, Tensor & save_invstd, const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps);
    static inline std::tuple<Tensor,Tensor> batch_norm_stats(const Tensor & input, double eps);
@@ -6424,6 +6425,16 @@ Program Listing for File Functions.h
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::narrow", "");
        return op.callUnboxed<Tensor, const Tensor &, int64_t, int64_t, int64_t>(self, dim, start, length);
+   #endif
+   }
+   static inline Tensor narrow(const Tensor & self, int64_t dim, const Tensor & start, int64_t length) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       return TypeDefault::narrow_Tensor(self, dim, start, length);
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::narrow", "Tensor");
+       return op.callUnboxed<Tensor, const Tensor &, int64_t, const Tensor &, int64_t>(self, dim, start, length);
    #endif
    }
    static inline std::tuple<Tensor,Tensor,Tensor> native_batch_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool training, double momentum, double eps) {
