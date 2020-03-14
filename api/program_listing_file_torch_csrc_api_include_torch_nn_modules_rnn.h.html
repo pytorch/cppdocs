@@ -405,6 +405,92 @@
 
 <span class="n">TORCH_MODULE</span><span class="p">(</span><span class="n">GRU</span><span class="p">);</span>
 
+<span class="c1">// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ RNNCellImplBase ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
+
+<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Derived</span><span class="o">&gt;</span>
+<span class="k">class</span> <span class="nc">TORCH_API</span> <span class="nl">RNNCellImplBase</span> <span class="p">:</span> <span class="k">public</span> <span class="n">torch</span><span class="o">::</span><span class="n">nn</span><span class="o">::</span><span class="n">Cloneable</span><span class="o">&lt;</span><span class="n">Derived</span><span class="o">&gt;</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="k">explicit</span> <span class="n">RNNCellImplBase</span><span class="p">(</span><span class="k">const</span> <span class="n">RNNCellOptionsBase</span><span class="o">&amp;</span> <span class="n">options_</span><span class="p">);</span>
+
+  <span class="kt">void</span> <span class="nf">reset</span><span class="p">()</span> <span class="k">override</span><span class="p">;</span>
+
+  <span class="kt">void</span> <span class="nf">reset_parameters</span><span class="p">();</span>
+
+  <span class="kt">void</span> <span class="nf">pretty_print</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">ostream</span><span class="o">&amp;</span> <span class="n">stream</span><span class="p">)</span> <span class="k">const</span> <span class="k">override</span><span class="p">;</span>
+
+  <span class="n">RNNCellOptionsBase</span> <span class="n">options_base</span><span class="p">;</span>
+
+  <span class="n">Tensor</span> <span class="n">weight_ih</span><span class="p">;</span>
+  <span class="n">Tensor</span> <span class="n">weight_hh</span><span class="p">;</span>
+  <span class="n">Tensor</span> <span class="n">bias_ih</span><span class="p">;</span>
+  <span class="n">Tensor</span> <span class="n">bias_hh</span><span class="p">;</span>
+
+ <span class="k">protected</span><span class="o">:</span>
+  <span class="kt">void</span> <span class="n">check_forward_input</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
+  <span class="kt">void</span> <span class="nf">check_forward_hidden</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">hx</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">hidden_label</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
+  <span class="k">virtual</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">get_nonlinearity_str</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+<span class="p">};</span>
+<span class="p">}</span> <span class="c1">// namespace detail</span>
+
+
+<span class="c1">// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ RNNCell ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
+
+<span class="k">class</span> <span class="nc">TORCH_API</span> <span class="nl">RNNCellImpl</span> <span class="p">:</span> <span class="k">public</span> <span class="n">detail</span><span class="o">::</span><span class="n">RNNCellImplBase</span><span class="o">&lt;</span><span class="n">RNNCellImpl</span><span class="o">&gt;</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="n">RNNCellImpl</span><span class="p">(</span><span class="kt">int64_t</span> <span class="n">input_size</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">hidden_size</span><span class="p">)</span>
+      <span class="o">:</span> <span class="n">RNNCellImpl</span><span class="p">(</span><span class="n">RNNCellOptions</span><span class="p">(</span><span class="n">input_size</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">))</span> <span class="p">{}</span>
+  <span class="k">explicit</span> <span class="n">RNNCellImpl</span><span class="p">(</span><span class="k">const</span> <span class="n">RNNCellOptions</span><span class="o">&amp;</span> <span class="n">options_</span><span class="p">);</span>
+
+  <span class="n">Tensor</span> <span class="nf">forward</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="n">Tensor</span> <span class="n">hx</span> <span class="o">=</span> <span class="p">{});</span>
+ <span class="k">protected</span><span class="o">:</span>
+  <span class="n">FORWARD_HAS_DEFAULT_ARGS</span><span class="p">({</span><span class="mi">1</span><span class="p">,</span> <span class="n">AnyValue</span><span class="p">(</span><span class="n">Tensor</span><span class="p">())})</span>
+
+ <span class="k">public</span><span class="o">:</span>
+  <span class="n">RNNCellOptions</span> <span class="n">options</span><span class="p">;</span>
+
+ <span class="k">protected</span><span class="o">:</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">get_nonlinearity_str</span><span class="p">()</span> <span class="k">const</span> <span class="k">override</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="n">TORCH_MODULE</span><span class="p">(</span><span class="n">RNNCell</span><span class="p">);</span>
+
+<span class="c1">// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ LSTMCell ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
+
+<span class="k">class</span> <span class="nc">TORCH_API</span> <span class="nl">LSTMCellImpl</span> <span class="p">:</span> <span class="k">public</span> <span class="n">detail</span><span class="o">::</span><span class="n">RNNCellImplBase</span><span class="o">&lt;</span><span class="n">LSTMCellImpl</span><span class="o">&gt;</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="n">LSTMCellImpl</span><span class="p">(</span><span class="kt">int64_t</span> <span class="n">input_size</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">hidden_size</span><span class="p">)</span>
+      <span class="o">:</span> <span class="n">LSTMCellImpl</span><span class="p">(</span><span class="n">LSTMCellOptions</span><span class="p">(</span><span class="n">input_size</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">))</span> <span class="p">{}</span>
+  <span class="k">explicit</span> <span class="n">LSTMCellImpl</span><span class="p">(</span><span class="k">const</span> <span class="n">LSTMCellOptions</span><span class="o">&amp;</span> <span class="n">options_</span><span class="p">);</span>
+
+  <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">forward</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="n">torch</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="o">&gt;&gt;</span> <span class="n">hx_opt</span> <span class="o">=</span> <span class="p">{});</span>
+ <span class="k">protected</span><span class="o">:</span>
+  <span class="n">FORWARD_HAS_DEFAULT_ARGS</span><span class="p">({</span><span class="mi">1</span><span class="p">,</span> <span class="n">AnyValue</span><span class="p">(</span><span class="n">torch</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="o">&gt;&gt;</span><span class="p">())})</span>
+
+ <span class="k">public</span><span class="o">:</span>
+  <span class="n">LSTMCellOptions</span> <span class="n">options</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="n">TORCH_MODULE</span><span class="p">(</span><span class="n">LSTMCell</span><span class="p">);</span>
+
+<span class="c1">// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ GRUCell ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
+
+<span class="k">class</span> <span class="nc">TORCH_API</span> <span class="nl">GRUCellImpl</span> <span class="p">:</span> <span class="k">public</span> <span class="n">detail</span><span class="o">::</span><span class="n">RNNCellImplBase</span><span class="o">&lt;</span><span class="n">GRUCellImpl</span><span class="o">&gt;</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="n">GRUCellImpl</span><span class="p">(</span><span class="kt">int64_t</span> <span class="n">input_size</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">hidden_size</span><span class="p">)</span>
+      <span class="o">:</span> <span class="n">GRUCellImpl</span><span class="p">(</span><span class="n">GRUCellOptions</span><span class="p">(</span><span class="n">input_size</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">))</span> <span class="p">{}</span>
+  <span class="k">explicit</span> <span class="n">GRUCellImpl</span><span class="p">(</span><span class="k">const</span> <span class="n">GRUCellOptions</span><span class="o">&amp;</span> <span class="n">options_</span><span class="p">);</span>
+
+  <span class="n">Tensor</span> <span class="nf">forward</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="n">Tensor</span> <span class="n">hx</span> <span class="o">=</span> <span class="p">{});</span>
+ <span class="k">protected</span><span class="o">:</span>
+  <span class="n">FORWARD_HAS_DEFAULT_ARGS</span><span class="p">({</span><span class="mi">1</span><span class="p">,</span> <span class="n">AnyValue</span><span class="p">(</span><span class="n">Tensor</span><span class="p">())})</span>
+
+ <span class="k">public</span><span class="o">:</span>
+  <span class="n">GRUCellOptions</span> <span class="n">options</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="n">TORCH_MODULE</span><span class="p">(</span><span class="n">GRUCell</span><span class="p">);</span>
+
 <span class="p">}</span> <span class="c1">// namespace nn</span>
 <span class="p">}</span> <span class="c1">// namespace torch</span>
 </pre></div>
