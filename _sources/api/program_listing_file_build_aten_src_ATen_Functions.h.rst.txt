@@ -181,8 +181,6 @@ Program Listing for File Functions.h
    static inline std::tuple<Tensor,Tensor,Tensor> _convolution_double_backward(const Tensor & ggI, const Tensor & ggW, const Tensor & ggb, const Tensor & gO, const Tensor & weight, const Tensor & self, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation, bool transposed, IntArrayRef output_padding, int64_t groups, bool benchmark, bool deterministic, bool cudnn_enabled, std::array<bool,3> output_mask);
    static inline Tensor conv1d(const Tensor & input, const Tensor & weight, const Tensor & bias={}, IntArrayRef stride=1, IntArrayRef padding=0, IntArrayRef dilation=1, int64_t groups=1);
    static inline Tensor conv2d(const Tensor & input, const Tensor & weight, const Tensor & bias={}, IntArrayRef stride=1, IntArrayRef padding=0, IntArrayRef dilation=1, int64_t groups=1);
-   static inline Tensor _conv2d_prepack(const Tensor & weight, const Tensor & bias={}, IntArrayRef stride=1, IntArrayRef padding=0, IntArrayRef dilation=1, int64_t groups=1, c10::optional<double> output_min=c10::nullopt, c10::optional<double> output_max=c10::nullopt);
-   static inline Tensor _conv2d_packed(const Tensor & packed_weight, const Tensor & input);
    static inline Tensor conv3d(const Tensor & input, const Tensor & weight, const Tensor & bias={}, IntArrayRef stride=1, IntArrayRef padding=0, IntArrayRef dilation=1, int64_t groups=1);
    static inline Tensor conv_tbc(const Tensor & self, const Tensor & weight, const Tensor & bias, int64_t pad=0);
    static inline std::tuple<Tensor,Tensor,Tensor> conv_tbc_backward(const Tensor & self, const Tensor & input, const Tensor & weight, const Tensor & bias, int64_t pad);
@@ -351,8 +349,6 @@ Program Listing for File Functions.h
    static inline std::tuple<Tensor,Tensor,Tensor> native_layer_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, int64_t M, int64_t N, double eps);
    static inline std::tuple<Tensor,Tensor,Tensor> native_layer_norm_backward(const Tensor & grad_out, const Tensor & input, const Tensor & mean, const Tensor & rstd, const Tensor & weight, int64_t M, int64_t N, std::array<bool,3> output_mask);
    static inline Tensor linear(const Tensor & input, const Tensor & weight, const Tensor & bias={});
-   static inline Tensor _linear_prepack(const Tensor & weight, const Tensor & bias={}, c10::optional<double> output_min=c10::nullopt, c10::optional<double> output_max=c10::nullopt);
-   static inline Tensor _linear_packed(const Tensor & packed_weight, const Tensor & input);
    static inline Tensor mkldnn_linear(const Tensor & input, const Tensor & weight, const Tensor & bias={});
    static inline Tensor fbgemm_linear_int8_weight_fp32_activation(const Tensor & input, const Tensor & weight, const Tensor & packed, const Tensor & col_offsets, Scalar weight_scale, Scalar weight_zero_point, const Tensor & bias);
    static inline Tensor fbgemm_linear_int8_weight(const Tensor & input, const Tensor & weight, const Tensor & packed, const Tensor & col_offsets, Scalar weight_scale, Scalar weight_zero_point, const Tensor & bias);
@@ -3045,26 +3041,6 @@ Program Listing for File Functions.h
        return op.callUnboxed<Tensor, const Tensor &, const Tensor &, const Tensor &, IntArrayRef, IntArrayRef, IntArrayRef, int64_t>(input, weight, bias, stride, padding, dilation, groups);
    #endif
    }
-   static inline Tensor _conv2d_prepack(const Tensor & weight, const Tensor & bias, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation, int64_t groups, c10::optional<double> output_min, c10::optional<double> output_max) {
-   #ifdef USE_STATIC_DISPATCH
-       at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::_conv2d_prepack(weight, bias, stride, padding, dilation, groups, output_min, output_max);
-   #else
-       static c10::OperatorHandle op = c10::Dispatcher::singleton()
-           .findSchemaOrThrow("aten::_conv2d_prepack", "");
-       return op.callUnboxed<Tensor, const Tensor &, const Tensor &, IntArrayRef, IntArrayRef, IntArrayRef, int64_t, c10::optional<double>, c10::optional<double>>(weight, bias, stride, padding, dilation, groups, output_min, output_max);
-   #endif
-   }
-   static inline Tensor _conv2d_packed(const Tensor & packed_weight, const Tensor & input) {
-   #ifdef USE_STATIC_DISPATCH
-       at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::_conv2d_packed(packed_weight, input);
-   #else
-       static c10::OperatorHandle op = c10::Dispatcher::singleton()
-           .findSchemaOrThrow("aten::_conv2d_packed", "");
-       return op.callUnboxed<Tensor, const Tensor &, const Tensor &>(packed_weight, input);
-   #endif
-   }
    static inline Tensor conv3d(const Tensor & input, const Tensor & weight, const Tensor & bias, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation, int64_t groups) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
@@ -5146,26 +5122,6 @@ Program Listing for File Functions.h
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::linear", "");
        return op.callUnboxed<Tensor, const Tensor &, const Tensor &, const Tensor &>(input, weight, bias);
-   #endif
-   }
-   static inline Tensor _linear_prepack(const Tensor & weight, const Tensor & bias, c10::optional<double> output_min, c10::optional<double> output_max) {
-   #ifdef USE_STATIC_DISPATCH
-       at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::_linear_prepack(weight, bias, output_min, output_max);
-   #else
-       static c10::OperatorHandle op = c10::Dispatcher::singleton()
-           .findSchemaOrThrow("aten::_linear_prepack", "");
-       return op.callUnboxed<Tensor, const Tensor &, const Tensor &, c10::optional<double>, c10::optional<double>>(weight, bias, output_min, output_max);
-   #endif
-   }
-   static inline Tensor _linear_packed(const Tensor & packed_weight, const Tensor & input) {
-   #ifdef USE_STATIC_DISPATCH
-       at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::_linear_packed(packed_weight, input);
-   #else
-       static c10::OperatorHandle op = c10::Dispatcher::singleton()
-           .findSchemaOrThrow("aten::_linear_packed", "");
-       return op.callUnboxed<Tensor, const Tensor &, const Tensor &>(packed_weight, input);
    #endif
    }
    static inline Tensor mkldnn_linear(const Tensor & input, const Tensor & weight, const Tensor & bias) {
