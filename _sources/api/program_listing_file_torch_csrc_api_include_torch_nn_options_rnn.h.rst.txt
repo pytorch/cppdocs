@@ -25,64 +25,39 @@ Program Listing for File rnn.h
    namespace detail {
    
    struct TORCH_API RNNOptionsBase {
-     typedef c10::variant<
-       enumtype::kLSTM,
-       enumtype::kGRU,
-       enumtype::kRNN_TANH,
-       enumtype::kRNN_RELU> rnn_options_base_mode_t;
-   
-     RNNOptionsBase(rnn_options_base_mode_t mode, int64_t input_size, int64_t hidden_size);
-   
-     TORCH_ARG(rnn_options_base_mode_t, mode);
+     RNNOptionsBase(int64_t input_size, int64_t hidden_size);
+     virtual ~RNNOptionsBase() = default;
      TORCH_ARG(int64_t, input_size);
      TORCH_ARG(int64_t, hidden_size);
-     TORCH_ARG(int64_t, num_layers) = 1;
-     TORCH_ARG(bool, bias) = true;
-     TORCH_ARG(bool, batch_first) = false;
+     TORCH_ARG(int64_t, layers) = 1;
+     TORCH_ARG(bool, with_bias) = true;
      TORCH_ARG(double, dropout) = 0.0;
      TORCH_ARG(bool, bidirectional) = false;
+     TORCH_ARG(bool, batch_first) = false;
    };
    
    } // namespace detail
    
-   struct TORCH_API RNNOptions {
-     typedef c10::variant<enumtype::kTanh, enumtype::kReLU> nonlinearity_t;
+   enum class RNNActivation : uint32_t {ReLU, Tanh};
    
+   struct TORCH_API RNNOptions {
      RNNOptions(int64_t input_size, int64_t hidden_size);
    
-     TORCH_ARG(int64_t, input_size);
-     TORCH_ARG(int64_t, hidden_size);
-     TORCH_ARG(int64_t, num_layers) = 1;
-     TORCH_ARG(nonlinearity_t, nonlinearity) = torch::kTanh;
-     TORCH_ARG(bool, bias) = true;
-     TORCH_ARG(bool, batch_first) = false;
-     TORCH_ARG(double, dropout) = 0.0;
-     TORCH_ARG(bool, bidirectional) = false;
-   };
-   
-   struct TORCH_API LSTMOptions {
-     LSTMOptions(int64_t input_size, int64_t hidden_size);
+     RNNOptions& tanh();
+     RNNOptions& relu();
    
      TORCH_ARG(int64_t, input_size);
      TORCH_ARG(int64_t, hidden_size);
-     TORCH_ARG(int64_t, num_layers) = 1;
-     TORCH_ARG(bool, bias) = true;
-     TORCH_ARG(bool, batch_first) = false;
+     TORCH_ARG(int64_t, layers) = 1;
+     TORCH_ARG(bool, with_bias) = true;
      TORCH_ARG(double, dropout) = 0.0;
      TORCH_ARG(bool, bidirectional) = false;
-   };
-   
-   struct TORCH_API GRUOptions {
-     GRUOptions(int64_t input_size, int64_t hidden_size);
-   
-     TORCH_ARG(int64_t, input_size);
-     TORCH_ARG(int64_t, hidden_size);
-     TORCH_ARG(int64_t, num_layers) = 1;
-     TORCH_ARG(bool, bias) = true;
      TORCH_ARG(bool, batch_first) = false;
-     TORCH_ARG(double, dropout) = 0.0;
-     TORCH_ARG(bool, bidirectional) = false;
+     TORCH_ARG(RNNActivation, activation) = RNNActivation::ReLU;
    };
+   
+   using LSTMOptions = detail::RNNOptionsBase;
+   using GRUOptions = detail::RNNOptionsBase;
    
    namespace detail {
    
