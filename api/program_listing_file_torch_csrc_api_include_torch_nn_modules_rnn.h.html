@@ -280,6 +280,7 @@
 <span class="cp">#include</span> <span class="cpf">&lt;torch/nn/modules/common.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;torch/nn/modules/dropout.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;torch/nn/pimpl.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/nn/utils/rnn.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;torch/types.h&gt;</span><span class="cp"></span>
 
 <span class="cp">#include</span> <span class="cpf">&lt;ATen/ATen.h&gt;</span><span class="cp"></span>
@@ -290,26 +291,20 @@
 <span class="cp">#include</span> <span class="cpf">&lt;memory&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;vector&gt;</span><span class="cp"></span>
 
+<span class="k">using</span> <span class="k">namespace</span> <span class="n">torch</span><span class="o">::</span><span class="n">nn</span><span class="o">::</span><span class="n">utils</span><span class="o">::</span><span class="n">rnn</span><span class="p">;</span>
+
 <span class="k">namespace</span> <span class="n">torch</span> <span class="p">{</span>
 <span class="k">namespace</span> <span class="n">nn</span> <span class="p">{</span>
-
-<span class="k">struct</span> <span class="n">TORCH_API</span> <span class="n">RNNOutput</span> <span class="p">{</span>
-  <span class="n">Tensor</span> <span class="n">output</span><span class="p">;</span>
-  <span class="n">Tensor</span> <span class="n">state</span><span class="p">;</span>
-<span class="p">};</span>
 
 <span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
 <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Derived</span><span class="o">&gt;</span>
 <span class="k">class</span> <span class="nc">TORCH_API</span> <span class="nl">RNNImplBase</span> <span class="p">:</span> <span class="k">public</span> <span class="n">torch</span><span class="o">::</span><span class="n">nn</span><span class="o">::</span><span class="n">Cloneable</span><span class="o">&lt;</span><span class="n">Derived</span><span class="o">&gt;</span> <span class="p">{</span>
  <span class="k">public</span><span class="o">:</span>
-  <span class="k">enum</span> <span class="k">class</span> <span class="nc">CuDNNMode</span> <span class="p">{</span> <span class="n">RNN_RELU</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">RNN_TANH</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="n">LSTM</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span> <span class="n">GRU</span> <span class="o">=</span> <span class="mi">3</span> <span class="p">};</span>
-
-  <span class="k">explicit</span> <span class="nf">RNNImplBase</span><span class="p">(</span>
-      <span class="k">const</span> <span class="n">RNNOptionsBase</span><span class="o">&amp;</span> <span class="n">options_</span><span class="p">,</span>
-      <span class="n">optional</span><span class="o">&lt;</span><span class="n">CuDNNMode</span><span class="o">&gt;</span> <span class="n">cudnn_mode</span> <span class="o">=</span> <span class="n">nullopt</span><span class="p">,</span>
-      <span class="kt">int64_t</span> <span class="n">number_of_gates</span> <span class="o">=</span> <span class="mi">1</span><span class="p">);</span>
+  <span class="k">explicit</span> <span class="n">RNNImplBase</span><span class="p">(</span><span class="k">const</span> <span class="n">RNNOptionsBase</span><span class="o">&amp;</span> <span class="n">options_</span><span class="p">);</span>
 
   <span class="kt">void</span> <span class="nf">reset</span><span class="p">()</span> <span class="k">override</span><span class="p">;</span>
+
+  <span class="kt">void</span> <span class="nf">reset_parameters</span><span class="p">();</span>
 
   <span class="kt">void</span> <span class="nf">to</span><span class="p">(</span><span class="n">torch</span><span class="o">::</span><span class="n">Device</span> <span class="n">device</span><span class="p">,</span> <span class="n">torch</span><span class="o">::</span><span class="n">Dtype</span> <span class="n">dtype</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">non_blocking</span> <span class="o">=</span> <span class="nb">false</span><span class="p">)</span>
       <span class="k">override</span><span class="p">;</span>
@@ -320,38 +315,31 @@
 
   <span class="kt">void</span> <span class="nf">flatten_parameters</span><span class="p">();</span>
 
-  <span class="n">RNNOptionsBase</span> <span class="n">options</span><span class="p">;</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">all_weights</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
 
-  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">w_ih</span><span class="p">;</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">w_hh</span><span class="p">;</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">b_ih</span><span class="p">;</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">b_hh</span><span class="p">;</span>
+  <span class="n">RNNOptionsBase</span> <span class="n">options_base</span><span class="p">;</span>
 
  <span class="k">protected</span><span class="o">:</span>
-  <span class="k">using</span> <span class="n">RNNFunctionSignature</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="o">&gt;</span><span class="p">(</span>
-      <span class="cm">/*input=*/</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span><span class="p">,</span>
-      <span class="cm">/*state=*/</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span><span class="p">,</span>
-      <span class="cm">/*params=*/</span><span class="n">TensorList</span><span class="p">,</span>
-      <span class="cm">/*has_biases=*/</span><span class="kt">bool</span><span class="p">,</span>
-      <span class="cm">/*layers=*/</span><span class="kt">int64_t</span><span class="p">,</span>
-      <span class="cm">/*dropout=*/</span><span class="kt">double</span><span class="p">,</span>
-      <span class="cm">/*train=*/</span><span class="kt">bool</span><span class="p">,</span>
-      <span class="cm">/*bidirectional=*/</span><span class="kt">bool</span><span class="p">,</span>
-      <span class="cm">/*batch_first=*/</span><span class="kt">bool</span><span class="p">);</span>
+  <span class="c1">// Resets flat_weights_</span>
+  <span class="c1">// Note: be v. careful before removing this, as 3rd party device types</span>
+  <span class="c1">// likely rely on this behavior to properly .to() modules like LSTM.</span>
+  <span class="kt">void</span> <span class="n">reset_flat_weights</span><span class="p">();</span>
 
-  <span class="n">RNNOutput</span> <span class="nf">generic_forward</span><span class="p">(</span>
-      <span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">RNNFunctionSignature</span><span class="o">&gt;</span> <span class="n">function</span><span class="p">,</span>
-      <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
-      <span class="n">Tensor</span> <span class="n">state</span><span class="p">);</span>
+  <span class="kt">void</span> <span class="nf">check_input</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">batch_sizes</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
 
-  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">flat_weights</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="p">,</span> <span class="kt">int64_t</span><span class="p">,</span> <span class="kt">int64_t</span><span class="o">&gt;</span> <span class="n">get_expected_hidden_size</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">batch_sizes</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
 
-  <span class="kt">bool</span> <span class="nf">any_parameters_alias</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+  <span class="kt">void</span> <span class="nf">check_hidden_size</span><span class="p">(</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">hx</span><span class="p">,</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="p">,</span> <span class="kt">int64_t</span><span class="p">,</span> <span class="kt">int64_t</span><span class="o">&gt;</span> <span class="n">expected_hidden_size</span><span class="p">,</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">msg</span> <span class="o">=</span> <span class="s">&quot;Expected hidden size {1}, got {2}&quot;</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
 
-  <span class="kt">int64_t</span> <span class="n">number_of_gates_</span><span class="p">;</span>
+  <span class="kt">void</span> <span class="nf">check_forward_args</span><span class="p">(</span><span class="n">Tensor</span> <span class="n">input</span><span class="p">,</span> <span class="n">Tensor</span> <span class="n">hidden</span><span class="p">,</span> <span class="n">Tensor</span> <span class="n">batch_sizes</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
 
-  <span class="n">optional</span><span class="o">&lt;</span><span class="n">CuDNNMode</span><span class="o">&gt;</span> <span class="n">cudnn_mode_</span><span class="p">;</span>
+  <span class="n">Tensor</span> <span class="nf">permute_hidden</span><span class="p">(</span><span class="n">Tensor</span> <span class="n">hx</span><span class="p">,</span> <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">permutation</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
 
+  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span> <span class="n">flat_weights_names_</span><span class="p">;</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;&gt;</span> <span class="n">all_weights_</span><span class="p">;</span>
   <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">flat_weights_</span><span class="p">;</span>
 <span class="p">};</span>
 <span class="p">}</span> <span class="c1">// namespace detail</span>
@@ -364,13 +352,22 @@
       <span class="o">:</span> <span class="n">RNNImpl</span><span class="p">(</span><span class="n">RNNOptions</span><span class="p">(</span><span class="n">input_size</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">))</span> <span class="p">{}</span>
   <span class="k">explicit</span> <span class="n">RNNImpl</span><span class="p">(</span><span class="k">const</span> <span class="n">RNNOptions</span><span class="o">&amp;</span> <span class="n">options_</span><span class="p">);</span>
 
-  <span class="kt">void</span> <span class="nf">pretty_print</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">ostream</span><span class="o">&amp;</span> <span class="n">stream</span><span class="p">)</span> <span class="k">const</span> <span class="k">override</span><span class="p">;</span>
-
-  <span class="n">RNNOutput</span> <span class="nf">forward</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="n">Tensor</span> <span class="n">state</span> <span class="o">=</span> <span class="p">{});</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">forward</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="n">Tensor</span> <span class="n">hx</span> <span class="o">=</span> <span class="p">{});</span>
  <span class="k">protected</span><span class="o">:</span>
   <span class="n">FORWARD_HAS_DEFAULT_ARGS</span><span class="p">({</span><span class="mi">1</span><span class="p">,</span> <span class="n">AnyValue</span><span class="p">(</span><span class="n">Tensor</span><span class="p">())})</span>
+
  <span class="k">public</span><span class="o">:</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">PackedSequence</span><span class="p">,</span> <span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">forward_with_packed_input</span><span class="p">(</span><span class="k">const</span> <span class="n">PackedSequence</span><span class="o">&amp;</span> <span class="n">packed_input</span><span class="p">,</span> <span class="n">Tensor</span> <span class="n">hx</span> <span class="o">=</span> <span class="p">{});</span>
+
   <span class="n">RNNOptions</span> <span class="n">options</span><span class="p">;</span>
+
+ <span class="k">protected</span><span class="o">:</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">forward_helper</span><span class="p">(</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">batch_sizes</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">sorted_indices</span><span class="p">,</span>
+    <span class="kt">int64_t</span> <span class="n">max_batch_size</span><span class="p">,</span>
+    <span class="n">Tensor</span> <span class="n">hx</span><span class="p">);</span>
 <span class="p">};</span>
 
 <span class="n">TORCH_MODULE</span><span class="p">(</span><span class="n">RNN</span><span class="p">);</span>
@@ -383,9 +380,28 @@
       <span class="o">:</span> <span class="n">LSTMImpl</span><span class="p">(</span><span class="n">LSTMOptions</span><span class="p">(</span><span class="n">input_size</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">))</span> <span class="p">{}</span>
   <span class="k">explicit</span> <span class="n">LSTMImpl</span><span class="p">(</span><span class="k">const</span> <span class="n">LSTMOptions</span><span class="o">&amp;</span> <span class="n">options_</span><span class="p">);</span>
 
-  <span class="n">RNNOutput</span> <span class="nf">forward</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="n">Tensor</span> <span class="n">state</span> <span class="o">=</span> <span class="p">{});</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="o">&gt;&gt;</span> <span class="n">forward</span><span class="p">(</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="n">torch</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="o">&gt;&gt;</span> <span class="n">hx_opt</span> <span class="o">=</span> <span class="p">{});</span>
  <span class="k">protected</span><span class="o">:</span>
-  <span class="n">FORWARD_HAS_DEFAULT_ARGS</span><span class="p">({</span><span class="mi">1</span><span class="p">,</span> <span class="n">AnyValue</span><span class="p">(</span><span class="n">Tensor</span><span class="p">())})</span>
+  <span class="n">FORWARD_HAS_DEFAULT_ARGS</span><span class="p">({</span><span class="mi">1</span><span class="p">,</span> <span class="n">AnyValue</span><span class="p">(</span><span class="n">torch</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="o">&gt;&gt;</span><span class="p">())})</span>
+
+ <span class="k">public</span><span class="o">:</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">PackedSequence</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="o">&gt;&gt;</span> <span class="n">forward_with_packed_input</span><span class="p">(</span>
+    <span class="k">const</span> <span class="n">PackedSequence</span><span class="o">&amp;</span> <span class="n">packed_input</span><span class="p">,</span> <span class="n">torch</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="o">&gt;&gt;</span> <span class="n">hx_opt</span> <span class="o">=</span> <span class="p">{});</span>
+
+  <span class="n">LSTMOptions</span> <span class="n">options</span><span class="p">;</span>
+
+ <span class="k">protected</span><span class="o">:</span>
+  <span class="kt">void</span> <span class="n">check_forward_args</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">hidden</span><span class="p">,</span> <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">batch_sizes</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
+
+  <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">permute_hidden</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">hx</span><span class="p">,</span> <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">permutation</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
+
+  <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="o">&gt;&gt;</span> <span class="n">forward_helper</span><span class="p">(</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">batch_sizes</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">sorted_indices</span><span class="p">,</span>
+    <span class="kt">int64_t</span> <span class="n">max_batch_size</span><span class="p">,</span>
+    <span class="n">torch</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="o">&gt;&gt;</span> <span class="n">hx_opt</span><span class="p">);</span>
 <span class="p">};</span>
 
 <span class="n">TORCH_MODULE</span><span class="p">(</span><span class="n">LSTM</span><span class="p">);</span>
@@ -398,9 +414,22 @@
       <span class="o">:</span> <span class="n">GRUImpl</span><span class="p">(</span><span class="n">GRUOptions</span><span class="p">(</span><span class="n">input_size</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">))</span> <span class="p">{}</span>
   <span class="k">explicit</span> <span class="n">GRUImpl</span><span class="p">(</span><span class="k">const</span> <span class="n">GRUOptions</span><span class="o">&amp;</span> <span class="n">options_</span><span class="p">);</span>
 
-  <span class="n">RNNOutput</span> <span class="nf">forward</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="n">Tensor</span> <span class="n">state</span> <span class="o">=</span> <span class="p">{});</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">forward</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="n">Tensor</span> <span class="n">hx</span> <span class="o">=</span> <span class="p">{});</span>
  <span class="k">protected</span><span class="o">:</span>
-  <span class="n">FORWARD_HAS_DEFAULT_ARGS</span><span class="p">({</span><span class="mi">1</span><span class="p">,</span> <span class="n">AnyValue</span><span class="p">(</span><span class="n">Tensor</span><span class="p">())})</span>
+  <span class="n">FORWARD_HAS_DEFAULT_ARGS</span><span class="p">({</span><span class="mi">1</span><span class="p">,</span> <span class="n">AnyValue</span><span class="p">(</span><span class="n">torch</span><span class="o">::</span><span class="n">Tensor</span><span class="p">())})</span>
+
+ <span class="k">public</span><span class="o">:</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">PackedSequence</span><span class="p">,</span> <span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">forward_with_packed_input</span><span class="p">(</span><span class="k">const</span> <span class="n">PackedSequence</span><span class="o">&amp;</span> <span class="n">packed_input</span><span class="p">,</span> <span class="n">Tensor</span> <span class="n">hx</span> <span class="o">=</span> <span class="p">{});</span>
+
+  <span class="n">GRUOptions</span> <span class="n">options</span><span class="p">;</span>
+
+ <span class="k">protected</span><span class="o">:</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">forward_helper</span><span class="p">(</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">batch_sizes</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">sorted_indices</span><span class="p">,</span>
+    <span class="kt">int64_t</span> <span class="n">max_batch_size</span><span class="p">,</span>
+    <span class="n">Tensor</span> <span class="n">hx</span><span class="p">);</span>
 <span class="p">};</span>
 
 <span class="n">TORCH_MODULE</span><span class="p">(</span><span class="n">GRU</span><span class="p">);</span>

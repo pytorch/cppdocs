@@ -286,39 +286,64 @@
 <span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
 
 <span class="k">struct</span> <span class="n">TORCH_API</span> <span class="n">RNNOptionsBase</span> <span class="p">{</span>
-  <span class="n">RNNOptionsBase</span><span class="p">(</span><span class="kt">int64_t</span> <span class="n">input_size</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">hidden_size</span><span class="p">);</span>
-  <span class="k">virtual</span> <span class="o">~</span><span class="n">RNNOptionsBase</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
+  <span class="k">typedef</span> <span class="n">c10</span><span class="o">::</span><span class="n">variant</span><span class="o">&lt;</span>
+    <span class="n">enumtype</span><span class="o">::</span><span class="n">kLSTM</span><span class="p">,</span>
+    <span class="n">enumtype</span><span class="o">::</span><span class="n">kGRU</span><span class="p">,</span>
+    <span class="n">enumtype</span><span class="o">::</span><span class="n">kRNN_TANH</span><span class="p">,</span>
+    <span class="n">enumtype</span><span class="o">::</span><span class="n">kRNN_RELU</span><span class="o">&gt;</span> <span class="n">rnn_options_base_mode_t</span><span class="p">;</span>
+
+  <span class="n">RNNOptionsBase</span><span class="p">(</span><span class="n">rnn_options_base_mode_t</span> <span class="n">mode</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">input_size</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">hidden_size</span><span class="p">);</span>
+
+  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="n">rnn_options_base_mode_t</span><span class="p">,</span> <span class="n">mode</span><span class="p">);</span>
   <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">int64_t</span><span class="p">,</span> <span class="n">input_size</span><span class="p">);</span>
   <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">int64_t</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">);</span>
-  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">int64_t</span><span class="p">,</span> <span class="n">layers</span><span class="p">)</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">bool</span><span class="p">,</span> <span class="n">with_bias</span><span class="p">)</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">int64_t</span><span class="p">,</span> <span class="n">num_layers</span><span class="p">)</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">bool</span><span class="p">,</span> <span class="n">bias</span><span class="p">)</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">bool</span><span class="p">,</span> <span class="n">batch_first</span><span class="p">)</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
   <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">double</span><span class="p">,</span> <span class="n">dropout</span><span class="p">)</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
   <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">bool</span><span class="p">,</span> <span class="n">bidirectional</span><span class="p">)</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
-  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">bool</span><span class="p">,</span> <span class="n">batch_first</span><span class="p">)</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
 <span class="p">};</span>
 
 <span class="p">}</span> <span class="c1">// namespace detail</span>
 
-<span class="k">enum</span> <span class="k">class</span> <span class="nc">RNNActivation</span> <span class="o">:</span> <span class="kt">uint32_t</span> <span class="p">{</span><span class="n">ReLU</span><span class="p">,</span> <span class="n">Tanh</span><span class="p">};</span>
-
 <span class="k">struct</span> <span class="n">TORCH_API</span> <span class="n">RNNOptions</span> <span class="p">{</span>
-  <span class="n">RNNOptions</span><span class="p">(</span><span class="kt">int64_t</span> <span class="n">input_size</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">hidden_size</span><span class="p">);</span>
+  <span class="k">typedef</span> <span class="n">c10</span><span class="o">::</span><span class="n">variant</span><span class="o">&lt;</span><span class="n">enumtype</span><span class="o">::</span><span class="n">kTanh</span><span class="p">,</span> <span class="n">enumtype</span><span class="o">::</span><span class="n">kReLU</span><span class="o">&gt;</span> <span class="n">nonlinearity_t</span><span class="p">;</span>
 
-  <span class="n">RNNOptions</span><span class="o">&amp;</span> <span class="n">tanh</span><span class="p">();</span>
-  <span class="n">RNNOptions</span><span class="o">&amp;</span> <span class="n">relu</span><span class="p">();</span>
+  <span class="n">RNNOptions</span><span class="p">(</span><span class="kt">int64_t</span> <span class="n">input_size</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">hidden_size</span><span class="p">);</span>
 
   <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">int64_t</span><span class="p">,</span> <span class="n">input_size</span><span class="p">);</span>
   <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">int64_t</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">);</span>
-  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">int64_t</span><span class="p">,</span> <span class="n">layers</span><span class="p">)</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">bool</span><span class="p">,</span> <span class="n">with_bias</span><span class="p">)</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">int64_t</span><span class="p">,</span> <span class="n">num_layers</span><span class="p">)</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="n">nonlinearity_t</span><span class="p">,</span> <span class="n">nonlinearity</span><span class="p">)</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">kTanh</span><span class="p">;</span>
+  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">bool</span><span class="p">,</span> <span class="n">bias</span><span class="p">)</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">bool</span><span class="p">,</span> <span class="n">batch_first</span><span class="p">)</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
   <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">double</span><span class="p">,</span> <span class="n">dropout</span><span class="p">)</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
   <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">bool</span><span class="p">,</span> <span class="n">bidirectional</span><span class="p">)</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
-  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">bool</span><span class="p">,</span> <span class="n">batch_first</span><span class="p">)</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
-  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="n">RNNActivation</span><span class="p">,</span> <span class="n">activation</span><span class="p">)</span> <span class="o">=</span> <span class="n">RNNActivation</span><span class="o">::</span><span class="n">ReLU</span><span class="p">;</span>
 <span class="p">};</span>
 
-<span class="k">using</span> <span class="n">LSTMOptions</span> <span class="o">=</span> <span class="n">detail</span><span class="o">::</span><span class="n">RNNOptionsBase</span><span class="p">;</span>
-<span class="k">using</span> <span class="n">GRUOptions</span> <span class="o">=</span> <span class="n">detail</span><span class="o">::</span><span class="n">RNNOptionsBase</span><span class="p">;</span>
+<span class="k">struct</span> <span class="n">TORCH_API</span> <span class="n">LSTMOptions</span> <span class="p">{</span>
+  <span class="n">LSTMOptions</span><span class="p">(</span><span class="kt">int64_t</span> <span class="n">input_size</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">hidden_size</span><span class="p">);</span>
+
+  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">int64_t</span><span class="p">,</span> <span class="n">input_size</span><span class="p">);</span>
+  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">int64_t</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">);</span>
+  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">int64_t</span><span class="p">,</span> <span class="n">num_layers</span><span class="p">)</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">bool</span><span class="p">,</span> <span class="n">bias</span><span class="p">)</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">bool</span><span class="p">,</span> <span class="n">batch_first</span><span class="p">)</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">double</span><span class="p">,</span> <span class="n">dropout</span><span class="p">)</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">bool</span><span class="p">,</span> <span class="n">bidirectional</span><span class="p">)</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="k">struct</span> <span class="n">TORCH_API</span> <span class="n">GRUOptions</span> <span class="p">{</span>
+  <span class="n">GRUOptions</span><span class="p">(</span><span class="kt">int64_t</span> <span class="n">input_size</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">hidden_size</span><span class="p">);</span>
+
+  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">int64_t</span><span class="p">,</span> <span class="n">input_size</span><span class="p">);</span>
+  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">int64_t</span><span class="p">,</span> <span class="n">hidden_size</span><span class="p">);</span>
+  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">int64_t</span><span class="p">,</span> <span class="n">num_layers</span><span class="p">)</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">bool</span><span class="p">,</span> <span class="n">bias</span><span class="p">)</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">bool</span><span class="p">,</span> <span class="n">batch_first</span><span class="p">)</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">double</span><span class="p">,</span> <span class="n">dropout</span><span class="p">)</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
+  <span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">bool</span><span class="p">,</span> <span class="n">bidirectional</span><span class="p">)</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+<span class="p">};</span>
 
 <span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
 
