@@ -448,13 +448,24 @@
 
   <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">caffe2</span><span class="o">::</span><span class="n">Blob</span><span class="o">&gt;</span> <span class="n">toBlob</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span><span class="p">;</span>
 
-  <span class="c1">// Capsule</span>
-  <span class="n">IValue</span><span class="p">(</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">torch</span><span class="o">::</span><span class="n">CustomClassHolder</span><span class="o">&gt;</span> <span class="n">blob</span><span class="p">);</span>
+  <span class="c1">// Capsule. Capsule is an internal implementation detail</span>
+  <span class="c1">// of custom C++ classes. No new callsites of these APIs should</span>
+  <span class="c1">// be introduced.</span>
+  <span class="k">static</span> <span class="kr">inline</span> <span class="n">IValue</span> <span class="nf">make_capsule</span><span class="p">(</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">torch</span><span class="o">::</span><span class="n">CustomClassHolder</span><span class="o">&gt;</span> <span class="n">blob</span><span class="p">);</span>
   <span class="kt">bool</span> <span class="nf">isCapsule</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">Tag</span><span class="o">::</span><span class="n">Capsule</span> <span class="o">==</span> <span class="n">tag</span><span class="p">;</span>
   <span class="p">}</span>
   <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">torch</span><span class="o">::</span><span class="n">CustomClassHolder</span><span class="o">&gt;</span> <span class="n">toCapsule</span><span class="p">()</span> <span class="o">&amp;&amp;</span><span class="p">;</span>
   <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">torch</span><span class="o">::</span><span class="n">CustomClassHolder</span><span class="o">&gt;</span> <span class="n">toCapsule</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span><span class="p">;</span>
+
+  <span class="c1">// Custom C++ classes</span>
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">enable_if_t</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">is_base_of</span><span class="o">&lt;</span><span class="n">torch</span><span class="o">::</span><span class="n">CustomClassHolder</span><span class="p">,</span> <span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span> <span class="kt">int</span><span class="o">&gt;</span> <span class="o">=</span> <span class="mi">0</span><span class="o">&gt;</span>
+  <span class="n">IValue</span><span class="p">(</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">custom_class</span><span class="p">);</span>
+  <span class="kt">bool</span> <span class="nf">isCustomClass</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">toCustomClass</span><span class="p">()</span> <span class="o">&amp;&amp;</span><span class="p">;</span>
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">toCustomClass</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span><span class="p">;</span>
 
   <span class="c1">// Tuple</span>
   <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Tuple</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>

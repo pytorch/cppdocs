@@ -476,14 +476,32 @@
   <span class="p">}</span>
 <span class="p">}</span>
 
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+<span class="n">c10</span><span class="o">::</span><span class="n">List</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">deque_to_list</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">deque</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">dq</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">List</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">list</span><span class="p">;</span>
+  <span class="n">list</span><span class="p">.</span><span class="n">reserve</span><span class="p">(</span><span class="n">dq</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
+  <span class="k">for</span> <span class="p">(</span><span class="k">const</span> <span class="k">auto</span><span class="o">&amp;</span> <span class="nl">e</span> <span class="p">:</span> <span class="n">dq</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">list</span><span class="p">.</span><span class="n">emplace_back</span><span class="p">(</span><span class="n">e</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="n">list</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+<span class="n">std</span><span class="o">::</span><span class="n">deque</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">list_to_deque</span><span class="p">(</span><span class="k">const</span> <span class="n">c10</span><span class="o">::</span><span class="n">List</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">list</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">deque</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">dq</span><span class="p">;</span>
+  <span class="k">for</span> <span class="p">(</span><span class="k">const</span> <span class="k">auto</span><span class="o">&amp;</span> <span class="nl">e</span> <span class="p">:</span> <span class="n">list</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">dq</span><span class="p">.</span><span class="n">emplace_back</span><span class="p">(</span><span class="n">e</span><span class="p">);</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="n">dq</span><span class="p">;</span>
+<span class="p">}</span>
+
 <span class="cp">#define _TORCH_OPTIM_SERIALIZE(name) \</span>
 <span class="cp">  torch::optim::serialize(archive, #name, self.name)</span>
 
 <span class="cp">#define _TORCH_OPTIM_SERIALIZE_WITH_TEMPLATE_ARG(OptimizerName) \</span>
 <span class="cp">  torch::optim::serialize&lt;OptimizerName##ParamState, OptimizerName##Options&gt;(archive, self)</span>
 
-<span class="cp">#define _TORCH_OPTIM_SERIALIZE_TORCH_ARG(name) \</span>
-<span class="cp">{ \</span>
+<span class="cp">#define _TORCH_OPTIM_SERIALIZE_TORCH_ARG(name) { \</span>
 <span class="cp">  auto ivalue = torch::IValue(name()); \</span>
 <span class="cp">  </span><span class="cm">/* do not serialize if name is an undefined tensor*/</span><span class="cp"> \</span>
 <span class="cp">  if (!(ivalue.isTensor() &amp;&amp; ivalue.unsafeToTensorImpl() == at::UndefinedTensorImpl::singleton())) { \</span>
@@ -491,13 +509,37 @@
 <span class="cp">  } \</span>
 <span class="cp">}</span>
 
-<span class="cp">#define _TORCH_OPTIM_DESERIALIZE_TORCH_ARG(T, name) \</span>
-<span class="cp">{ \</span>
+<span class="cp">#define _TORCH_OPTIM_SERIALIZE_TORCH_ARG_DEQUE(name) { \</span>
+<span class="cp">  c10::IValue ivalue = torch::IValue(deque_to_list(name())); \</span>
+<span class="cp">  archive.write(#name, ivalue); \</span>
+<span class="cp">}</span>
+
+<span class="cp">#define _TORCH_OPTIM_DESERIALIZE_TORCH_ARG(T, name) { \</span>
 <span class="cp">  c10::IValue ivalue; \</span>
 <span class="cp">  bool exists = archive.try_read(#name, ivalue); \</span>
-<span class="cp">  if (exists) \</span>
+<span class="cp">  if (exists) {\</span>
 <span class="cp">    name(ivalue.to&lt;T&gt;()); \</span>
+<span class="cp">  } else { \</span>
+<span class="cp">    bool is_tensor_type = std::is_base_of&lt;torch::Tensor, T&gt;::value; \</span>
+<span class="cp">    TORCH_INTERNAL_ASSERT(is_tensor_type); \</span>
+<span class="cp">  } \</span>
 <span class="cp">}</span>
+
+<span class="cp">#define _TORCH_OPTIM_DESERIALIZE_TORCH_ARG_OPTIONAL(T, name) { \</span>
+<span class="cp">  c10::IValue ivalue; \</span>
+<span class="cp">  bool exists = archive.try_read(#name, ivalue); \</span>
+<span class="cp">  if (exists) { \</span>
+<span class="cp">    name(ivalue.toOptional&lt;T&gt;()); \</span>
+<span class="cp">  } \</span>
+<span class="cp">}</span>
+
+<span class="cp">#define _TORCH_OPTIM_DESERIALIZE_TORCH_ARG_DEQUE(T, name) { \</span>
+<span class="cp">  c10::IValue ivalue; \</span>
+<span class="cp">  archive.read(#name, ivalue); \</span>
+<span class="cp">  auto list = ivalue.to&lt;c10::List&lt;T::value_type&gt;&gt;(); \</span>
+<span class="cp">  name(list_to_deque(list)); \</span>
+<span class="cp">}</span>
+
 <span class="p">}</span> <span class="c1">// namespace optim</span>
 <span class="p">}</span> <span class="c1">// namespace torch</span>
 </pre></div>

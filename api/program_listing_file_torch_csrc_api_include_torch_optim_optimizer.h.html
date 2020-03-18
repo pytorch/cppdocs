@@ -434,6 +434,24 @@
   <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">parameters_</span><span class="p">;</span>
 <span class="p">};</span>
 
+<span class="cm">/* How do we decide whether to serialize undefined tensors or</span>
+<span class="cm">  c10::nullopt values into the output archive?</span>
+<span class="cm">Answer: we strictly follow the behavior of Python API. To be more specific:</span>
+
+<span class="cm">For optimizer options:</span>
+<span class="cm">a) For undefined tensor: currently no tensor is used as an options argument in Python API,</span>
+<span class="cm">   so we don&#39;t need to worry about it now.</span>
+<span class="cm">b) For c10::nullopt value: we serialize c10::nullopt values into the output archive,</span>
+<span class="cm">   to follow the exact same behavior as Python API.</span>
+
+<span class="cm">For optimizer param state:</span>
+<span class="cm">a) For undefined tensor: in param state, undefined tensor in C++ impl is equivalent to</span>
+<span class="cm">   missing key in Python impl. Since we don&#39;t serialize missing keys in Python API,</span>
+<span class="cm">   we skip undefined tensors when serializing the param state.</span>
+<span class="cm">b) For c10::nullopt value: in param state, c10::nullopt value in C++ impl is equivalent to</span>
+<span class="cm">   missing key in Python impl. Since we don&#39;t serialize missing keys in Python API,</span>
+<span class="cm">   we skip c10::nullopt values when serializing the param state. */</span>
+
 <span class="n">TORCH_API</span> <span class="n">serialize</span><span class="o">::</span><span class="n">OutputArchive</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">&lt;&lt;</span><span class="p">(</span>
     <span class="n">serialize</span><span class="o">::</span><span class="n">OutputArchive</span><span class="o">&amp;</span> <span class="n">archive</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">OptimizerBase</span><span class="o">&amp;</span> <span class="n">optimizer</span><span class="p">);</span>
