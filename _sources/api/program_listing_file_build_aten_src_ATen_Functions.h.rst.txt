@@ -287,9 +287,8 @@ Program Listing for File Functions.h
    static inline Tensor floor(const Tensor & self);
    static inline Tensor & floor_(Tensor & self);
    static inline Tensor & floor_out(Tensor & out, const Tensor & self);
-   static inline Tensor floor_divide(const Tensor & self, const Tensor & other);
-   static inline Tensor & floor_divide_out(Tensor & out, const Tensor & self, const Tensor & other);
-   static inline Tensor floor_divide(const Tensor & self, Scalar other);
+   static inline Tensor floor_divide(const Tensor & input, const Tensor & other);
+   static inline Tensor floor_divide(const Tensor & input, Scalar other);
    static inline Tensor frac(const Tensor & self);
    static inline Tensor & frac_(Tensor & self);
    static inline Tensor & frac_out(Tensor & out, const Tensor & self);
@@ -4415,48 +4414,24 @@ Program Listing for File Functions.h
        return op.callUnboxed<Tensor &, Tensor &, const Tensor &>(out, self);
    #endif
    }
-   static inline Tensor floor_divide(const Tensor & self, const Tensor & other) {
+   static inline Tensor floor_divide(const Tensor & input, const Tensor & other) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(self, other),
-                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
-           case Backend::CPU:
-               return CPUType::floor_divide(self, other);
-               break;
-           default:
-               AT_ERROR("floor_divide not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(self, other)));
-       }
+       return TypeDefault::floor_divide(input, other);
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::floor_divide", "");
-       return op.callUnboxed<Tensor, const Tensor &, const Tensor &>(self, other);
+       return op.callUnboxed<Tensor, const Tensor &, const Tensor &>(input, other);
    #endif
    }
-   static inline Tensor & floor_divide_out(Tensor & out, const Tensor & self, const Tensor & other) {
+   static inline Tensor floor_divide(const Tensor & input, Scalar other) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(out, self, other),
-                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
-           case Backend::CPU:
-               return CPUType::floor_divide_out_out(out, self, other);
-               break;
-           default:
-               AT_ERROR("floor_divide_out not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(out, self, other)));
-       }
-   #else
-       static c10::OperatorHandle op = c10::Dispatcher::singleton()
-           .findSchemaOrThrow("aten::floor_divide", "out");
-       return op.callUnboxed<Tensor &, Tensor &, const Tensor &, const Tensor &>(out, self, other);
-   #endif
-   }
-   static inline Tensor floor_divide(const Tensor & self, Scalar other) {
-   #ifdef USE_STATIC_DISPATCH
-       at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::floor_divide_Scalar(self, other);
+       return TypeDefault::floor_divide_Scalar(input, other);
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::floor_divide", "Scalar");
-       return op.callUnboxed<Tensor, const Tensor &, Scalar>(self, other);
+       return op.callUnboxed<Tensor, const Tensor &, Scalar>(input, other);
    #endif
    }
    static inline Tensor frac(const Tensor & self) {
