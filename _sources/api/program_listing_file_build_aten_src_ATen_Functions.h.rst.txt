@@ -14108,7 +14108,17 @@ Program Listing for File Functions.h
    static inline Tensor hardsigmoid(const Tensor & self) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::hardsigmoid(self);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(self),
+                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
+           case Backend::CPU:
+               return CPUType::hardsigmoid(self);
+               break;
+           case Backend::QuantizedCPU:
+               return QuantizedCPUType::hardsigmoid(self);
+               break;
+           default:
+               AT_ERROR("hardsigmoid not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(self)));
+       }
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::hardsigmoid", "");

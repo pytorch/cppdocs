@@ -562,11 +562,23 @@
   <span class="n">c10</span><span class="o">::</span><span class="n">List</span><span class="o">&lt;</span><span class="n">IValue</span><span class="o">&gt;</span> <span class="n">toList</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span><span class="p">;</span>
   <span class="n">c10</span><span class="o">::</span><span class="n">ArrayRef</span><span class="o">&lt;</span><span class="n">IValue</span><span class="o">&gt;</span> <span class="n">toListRef</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
 
+  <span class="c1">// Some template constructors of IValue calls another constructor recursively.</span>
+  <span class="c1">// This SNIFAEs the called constructor exists.</span>
   <span class="k">template</span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+  <span class="k">using</span> <span class="n">enable_if_ivalue_constructible</span> <span class="o">=</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">enable_if_t</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">is_constructible</span><span class="o">&lt;</span><span class="n">IValue</span><span class="p">,</span> <span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">nullptr_t</span><span class="o">&gt;</span><span class="p">;</span>
+
+  <span class="k">template</span> <span class="o">&lt;</span>
+      <span class="k">class</span> <span class="nc">T</span><span class="p">,</span>
+      <span class="n">enable_if_ivalue_constructible</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="o">=</span> <span class="k">nullptr</span><span class="o">&gt;</span>
   <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">List</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
-  <span class="k">template</span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+  <span class="k">template</span> <span class="o">&lt;</span>
+      <span class="k">class</span> <span class="nc">T</span><span class="p">,</span>
+      <span class="n">enable_if_ivalue_constructible</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="o">=</span> <span class="k">nullptr</span><span class="o">&gt;</span>
   <span class="n">IValue</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">ArrayRef</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
-  <span class="k">template</span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+  <span class="k">template</span> <span class="o">&lt;</span>
+      <span class="k">class</span> <span class="nc">T</span><span class="p">,</span>
+      <span class="n">enable_if_ivalue_constructible</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="o">=</span> <span class="k">nullptr</span><span class="o">&gt;</span>
   <span class="n">IValue</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">v</span><span class="p">);</span>
 
   <span class="c1">// GenericDict</span>
@@ -582,7 +594,9 @@
   <span class="n">C10_DEPRECATED_MESSAGE</span><span class="p">(</span><span class="s">&quot;IValues based on std::unordered_map&lt;K, V&gt; are slow and deprecated. Please use c10::Dict&lt;K, V&gt; instead.&quot;</span><span class="p">)</span>
   <span class="n">IValue</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">unordered_map</span><span class="o">&lt;</span><span class="n">Key</span><span class="p">,</span> <span class="n">Value</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
 
-  <span class="k">template</span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
+  <span class="k">template</span> <span class="o">&lt;</span>
+      <span class="k">class</span> <span class="nc">T</span><span class="p">,</span>
+      <span class="n">enable_if_ivalue_constructible</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="o">=</span> <span class="k">nullptr</span><span class="o">&gt;</span>
   <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
   <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">nullopt_t</span><span class="p">);</span>
 
