@@ -277,6 +277,7 @@
 
 <span class="cp">#include</span> <span class="cpf">&lt;torch/nn/functional/activation.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;torch/nn/options/pooling.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/nn/modules/utils.h&gt;</span><span class="cp"></span>
 
 <span class="k">namespace</span> <span class="n">torch</span> <span class="p">{</span>
 <span class="k">namespace</span> <span class="n">nn</span> <span class="p">{</span>
@@ -558,65 +559,79 @@
 
 <span class="cp">#ifndef DOXYGEN_SHOULD_SKIP_THIS</span>
 <span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
-<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">adaptive_max_pool1d</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
-  <span class="n">ExpandingArray</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span> <span class="n">output_size</span><span class="p">)</span> <span class="p">{</span>
-   <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">get</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">(</span><span class="n">torch</span><span class="o">::</span><span class="n">adaptive_max_pool1d</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">output_size</span><span class="p">));</span>
-<span class="p">}</span>
-<span class="p">}</span> <span class="c1">// namespace detail</span>
-<span class="cp">#endif </span><span class="cm">/* DOXYGEN_SHOULD_SKIP_THIS */</span><span class="cp"></span>
-
-<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">adaptive_max_pool1d</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
-  <span class="k">const</span> <span class="n">AdaptiveMaxPool1dFuncOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">)</span> <span class="p">{</span>
-   <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">adaptive_max_pool1d</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">output_size</span><span class="p">());</span>
-<span class="p">}</span>
-
-<span class="cp">#ifndef DOXYGEN_SHOULD_SKIP_THIS</span>
-<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
 <span class="kr">inline</span> <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">adaptive_max_pool1d_with_indices</span><span class="p">(</span>
-  <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="n">ExpandingArray</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span> <span class="n">output_size</span><span class="p">)</span> <span class="p">{</span>
-   <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">adaptive_max_pool1d</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">output_size</span><span class="p">);</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="n">ExpandingArray</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span> <span class="n">output_size</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">adaptive_max_pool1d</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">output_size</span><span class="p">);</span>
 <span class="p">}</span>
 <span class="p">}</span> <span class="c1">// namespace detail</span>
-<span class="cp">#endif </span><span class="cm">/* DOXYGEN_SHOULD_SKIP_THIS */</span><span class="cp"></span>
 
 <span class="kr">inline</span> <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">adaptive_max_pool1d_with_indices</span><span class="p">(</span>
-  <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="k">const</span> <span class="n">AdaptiveMaxPool1dFuncOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">)</span> <span class="p">{</span>
-   <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">adaptive_max_pool1d_with_indices</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">output_size</span><span class="p">());</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="k">const</span> <span class="n">AdaptiveMaxPool1dFuncOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">adaptive_max_pool1d_with_indices</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">output_size</span><span class="p">());</span>
 <span class="p">}</span>
 
-<span class="cp">#ifndef DOXYGEN_SHOULD_SKIP_THIS</span>
 <span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
-<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">adaptive_max_pool2d</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
-  <span class="n">ExpandingArray</span><span class="o">&lt;</span><span class="mi">2</span><span class="o">&gt;</span> <span class="n">output_size</span><span class="p">)</span> <span class="p">{</span>
-   <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">get</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">(</span><span class="n">torch</span><span class="o">::</span><span class="n">adaptive_max_pool2d</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">output_size</span><span class="p">));</span>
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">adaptive_max_pool1d</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
+    <span class="n">ExpandingArray</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span> <span class="n">output_size</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">get</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">(</span><span class="n">adaptive_max_pool1d_with_indices</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">output_size</span><span class="p">));</span>
 <span class="p">}</span>
 <span class="p">}</span> <span class="c1">// namespace detail</span>
 <span class="cp">#endif </span><span class="cm">/* DOXYGEN_SHOULD_SKIP_THIS */</span><span class="cp"></span>
 
-<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">adaptive_max_pool2d</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
-  <span class="k">const</span> <span class="n">AdaptiveMaxPool2dFuncOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">)</span> <span class="p">{</span>
-   <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">adaptive_max_pool2d</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">output_size</span><span class="p">());</span>
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">adaptive_max_pool1d</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">AdaptiveMaxPool1dFuncOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">adaptive_max_pool1d</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">output_size</span><span class="p">());</span>
 <span class="p">}</span>
 
 <span class="cp">#ifndef DOXYGEN_SHOULD_SKIP_THIS</span>
 <span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
 <span class="kr">inline</span> <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">adaptive_max_pool2d_with_indices</span><span class="p">(</span>
-  <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="n">ExpandingArray</span><span class="o">&lt;</span><span class="mi">2</span><span class="o">&gt;</span> <span class="n">output_size</span><span class="p">)</span> <span class="p">{</span>
-   <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">adaptive_max_pool2d</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">output_size</span><span class="p">);</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="n">ExpandingArrayWithOptionalElem</span><span class="o">&lt;</span><span class="mi">2</span><span class="o">&gt;</span> <span class="n">output_size</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">auto</span> <span class="n">output_size_</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">nn</span><span class="o">::</span><span class="n">modules</span><span class="o">::</span><span class="n">utils</span><span class="o">::</span><span class="n">_list_with_default</span><span class="p">(</span><span class="n">output_size</span><span class="p">,</span> <span class="n">input</span><span class="p">.</span><span class="n">sizes</span><span class="p">());</span>
+  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">adaptive_max_pool2d</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">output_size_</span><span class="p">);</span>
 <span class="p">}</span>
 <span class="p">}</span> <span class="c1">// namespace detail</span>
 <span class="cp">#endif </span><span class="cm">/* DOXYGEN_SHOULD_SKIP_THIS */</span><span class="cp"></span>
 
 <span class="kr">inline</span> <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">adaptive_max_pool2d_with_indices</span><span class="p">(</span>
-  <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="k">const</span> <span class="n">AdaptiveMaxPool2dFuncOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">)</span> <span class="p">{</span>
-   <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">adaptive_max_pool2d_with_indices</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">output_size</span><span class="p">());</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="k">const</span> <span class="n">AdaptiveMaxPool2dFuncOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">adaptive_max_pool2d_with_indices</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">output_size</span><span class="p">());</span>
+<span class="p">}</span>
+
+<span class="cp">#ifndef DOXYGEN_SHOULD_SKIP_THIS</span>
+<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">adaptive_max_pool2d</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
+    <span class="n">ExpandingArrayWithOptionalElem</span><span class="o">&lt;</span><span class="mi">2</span><span class="o">&gt;</span> <span class="n">output_size</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">get</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">(</span><span class="n">adaptive_max_pool2d_with_indices</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">output_size</span><span class="p">));</span>
+<span class="p">}</span>
+<span class="p">}</span> <span class="c1">// namespace detail</span>
+<span class="cp">#endif </span><span class="cm">/* DOXYGEN_SHOULD_SKIP_THIS */</span><span class="cp"></span>
+
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">adaptive_max_pool2d</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">AdaptiveMaxPool2dFuncOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">adaptive_max_pool2d</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">output_size</span><span class="p">());</span>
+<span class="p">}</span>
+
+<span class="cp">#ifndef DOXYGEN_SHOULD_SKIP_THIS</span>
+<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
+<span class="kr">inline</span> <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">adaptive_max_pool3d_with_indices</span><span class="p">(</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="n">ExpandingArrayWithOptionalElem</span><span class="o">&lt;</span><span class="mi">3</span><span class="o">&gt;</span> <span class="n">output_size</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">auto</span> <span class="n">output_size_</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">nn</span><span class="o">::</span><span class="n">modules</span><span class="o">::</span><span class="n">utils</span><span class="o">::</span><span class="n">_list_with_default</span><span class="p">(</span><span class="n">output_size</span><span class="p">,</span> <span class="n">input</span><span class="p">.</span><span class="n">sizes</span><span class="p">());</span>
+  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">adaptive_max_pool3d</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">output_size_</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="p">}</span> <span class="c1">// namespace detail</span>
+<span class="cp">#endif </span><span class="cm">/* DOXYGEN_SHOULD_SKIP_THIS */</span><span class="cp"></span>
+
+<span class="kr">inline</span> <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">adaptive_max_pool3d_with_indices</span><span class="p">(</span>
+    <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="k">const</span> <span class="n">AdaptiveMaxPool3dFuncOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">adaptive_max_pool3d_with_indices</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">output_size</span><span class="p">());</span>
 <span class="p">}</span>
 
 <span class="cp">#ifndef DOXYGEN_SHOULD_SKIP_THIS</span>
 <span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
 <span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">adaptive_max_pool3d</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
-  <span class="n">ExpandingArray</span><span class="o">&lt;</span><span class="mi">3</span><span class="o">&gt;</span> <span class="n">output_size</span><span class="p">)</span> <span class="p">{</span>
-   <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">get</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">(</span><span class="n">torch</span><span class="o">::</span><span class="n">adaptive_max_pool3d</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">output_size</span><span class="p">));</span>
+    <span class="n">ExpandingArrayWithOptionalElem</span><span class="o">&lt;</span><span class="mi">3</span><span class="o">&gt;</span> <span class="n">output_size</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">get</span><span class="o">&lt;</span><span class="mi">0</span><span class="o">&gt;</span><span class="p">(</span><span class="n">adaptive_max_pool3d_with_indices</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">output_size</span><span class="p">));</span>
 <span class="p">}</span>
 <span class="p">}</span> <span class="c1">// namespace detail</span>
 <span class="cp">#endif </span><span class="cm">/* DOXYGEN_SHOULD_SKIP_THIS */</span><span class="cp"></span>
@@ -626,62 +641,50 @@
    <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">adaptive_max_pool3d</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">output_size</span><span class="p">());</span>
 <span class="p">}</span>
 
-<span class="cp">#ifndef DOXYGEN_SHOULD_SKIP_THIS</span>
-<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
-<span class="kr">inline</span> <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">adaptive_max_pool3d_with_indices</span><span class="p">(</span>
-  <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="n">ExpandingArray</span><span class="o">&lt;</span><span class="mi">3</span><span class="o">&gt;</span> <span class="n">output_size</span><span class="p">)</span> <span class="p">{</span>
-   <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">adaptive_max_pool3d</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">output_size</span><span class="p">);</span>
-<span class="p">}</span>
-<span class="p">}</span> <span class="c1">// namespace detail</span>
-<span class="cp">#endif </span><span class="cm">/* DOXYGEN_SHOULD_SKIP_THIS */</span><span class="cp"></span>
-
-<span class="kr">inline</span> <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">adaptive_max_pool3d_with_indices</span><span class="p">(</span>
-  <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="k">const</span> <span class="n">AdaptiveMaxPool3dFuncOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">)</span> <span class="p">{</span>
-   <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">adaptive_max_pool3d_with_indices</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">output_size</span><span class="p">());</span>
-<span class="p">}</span>
-
 <span class="c1">// ============================================================================</span>
 
 <span class="cp">#ifndef DOXYGEN_SHOULD_SKIP_THIS</span>
 <span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
 <span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">adaptive_avg_pool1d</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
-  <span class="n">ExpandingArray</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span> <span class="n">output_size</span><span class="p">)</span> <span class="p">{</span>
-   <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">adaptive_avg_pool1d</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">output_size</span><span class="p">);</span>
+    <span class="n">ExpandingArray</span><span class="o">&lt;</span><span class="mi">1</span><span class="o">&gt;</span> <span class="n">output_size</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">adaptive_avg_pool1d</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">output_size</span><span class="p">);</span>
 <span class="p">}</span>
 <span class="p">}</span> <span class="c1">// namespace detail</span>
 <span class="cp">#endif </span><span class="cm">/* DOXYGEN_SHOULD_SKIP_THIS */</span><span class="cp"></span>
 
 <span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">adaptive_avg_pool1d</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
-  <span class="k">const</span> <span class="n">AdaptiveAvgPool1dFuncOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">)</span> <span class="p">{</span>
-   <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">adaptive_avg_pool1d</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">output_size</span><span class="p">());</span>
+    <span class="k">const</span> <span class="n">AdaptiveAvgPool1dFuncOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">adaptive_avg_pool1d</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">output_size</span><span class="p">());</span>
 <span class="p">}</span>
 
 <span class="cp">#ifndef DOXYGEN_SHOULD_SKIP_THIS</span>
 <span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
 <span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">adaptive_avg_pool2d</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
-  <span class="n">ExpandingArray</span><span class="o">&lt;</span><span class="mi">2</span><span class="o">&gt;</span> <span class="n">output_size</span><span class="p">)</span> <span class="p">{</span>
-   <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">adaptive_avg_pool2d</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">output_size</span><span class="p">);</span>
+    <span class="n">ExpandingArrayWithOptionalElem</span><span class="o">&lt;</span><span class="mi">2</span><span class="o">&gt;</span> <span class="n">output_size</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">auto</span> <span class="n">output_size_</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">nn</span><span class="o">::</span><span class="n">modules</span><span class="o">::</span><span class="n">utils</span><span class="o">::</span><span class="n">_list_with_default</span><span class="p">(</span><span class="n">output_size</span><span class="p">,</span> <span class="n">input</span><span class="p">.</span><span class="n">sizes</span><span class="p">());</span>
+  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">adaptive_avg_pool2d</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">output_size_</span><span class="p">);</span>
 <span class="p">}</span>
 <span class="p">}</span> <span class="c1">// namespace detail</span>
 <span class="cp">#endif </span><span class="cm">/* DOXYGEN_SHOULD_SKIP_THIS */</span><span class="cp"></span>
 
 <span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">adaptive_avg_pool2d</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
-  <span class="k">const</span> <span class="n">AdaptiveAvgPool2dFuncOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">)</span> <span class="p">{</span>
-   <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">adaptive_avg_pool2d</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">output_size</span><span class="p">());</span>
+    <span class="k">const</span> <span class="n">AdaptiveAvgPool2dFuncOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">adaptive_avg_pool2d</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">output_size</span><span class="p">());</span>
 <span class="p">}</span>
 
 <span class="cp">#ifndef DOXYGEN_SHOULD_SKIP_THIS</span>
 <span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
 <span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">adaptive_avg_pool3d</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
-  <span class="n">ExpandingArray</span><span class="o">&lt;</span><span class="mi">3</span><span class="o">&gt;</span> <span class="n">output_size</span><span class="p">)</span> <span class="p">{</span>
-   <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">adaptive_avg_pool3d</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">output_size</span><span class="p">);</span>
+    <span class="n">ExpandingArrayWithOptionalElem</span><span class="o">&lt;</span><span class="mi">3</span><span class="o">&gt;</span> <span class="n">output_size</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">auto</span> <span class="n">output_size_</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">nn</span><span class="o">::</span><span class="n">modules</span><span class="o">::</span><span class="n">utils</span><span class="o">::</span><span class="n">_list_with_default</span><span class="p">(</span><span class="n">output_size</span><span class="p">,</span> <span class="n">input</span><span class="p">.</span><span class="n">sizes</span><span class="p">());</span>
+  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">adaptive_avg_pool3d</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">output_size_</span><span class="p">);</span>
 <span class="p">}</span>
 <span class="p">}</span> <span class="c1">// namespace detail</span>
 <span class="cp">#endif </span><span class="cm">/* DOXYGEN_SHOULD_SKIP_THIS */</span><span class="cp"></span>
 
 <span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">adaptive_avg_pool3d</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span>
-  <span class="k">const</span> <span class="n">AdaptiveAvgPool3dFuncOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">)</span> <span class="p">{</span>
-   <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">adaptive_avg_pool3d</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">output_size</span><span class="p">());</span>
+    <span class="k">const</span> <span class="n">AdaptiveAvgPool3dFuncOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">adaptive_avg_pool3d</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">output_size</span><span class="p">());</span>
 <span class="p">}</span>
 
 <span class="c1">// ============================================================================</span>
@@ -900,7 +903,7 @@
   <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">_random_samples_</span><span class="p">.</span><span class="n">defined</span><span class="p">())</span> <span class="p">{</span>
     <span class="n">_random_samples_</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">rand</span><span class="p">({</span><span class="n">input</span><span class="p">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span> <span class="n">input</span><span class="p">.</span><span class="n">size</span><span class="p">(</span><span class="mi">1</span><span class="p">),</span> <span class="mi">3</span><span class="p">},</span> <span class="n">torch</span><span class="o">::</span><span class="n">TensorOptions</span><span class="p">().</span><span class="n">dtype</span><span class="p">(</span><span class="n">input</span><span class="p">.</span><span class="n">dtype</span><span class="p">()).</span><span class="n">device</span><span class="p">(</span><span class="n">input</span><span class="p">.</span><span class="n">device</span><span class="p">()));</span>
   <span class="p">}</span>
-  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">fractional_max_pool3d</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">kernel_size</span><span class="p">,</span> <span class="o">*</span><span class="n">output_size</span><span class="p">,</span> <span class="n">_random_samples_</span><span class="p">);</span>
+  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">fractional_max_pool3d</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="n">kernel_size</span><span class="p">,</span> <span class="o">*</span><span class="n">output_size_</span><span class="p">,</span> <span class="n">_random_samples_</span><span class="p">);</span>
 <span class="p">}</span>
 <span class="p">}</span> <span class="c1">// namespace detail</span>
 <span class="cp">#endif </span><span class="cm">/* DOXYGEN_SHOULD_SKIP_THIS */</span><span class="cp"></span>

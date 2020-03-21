@@ -18,6 +18,7 @@ Program Listing for File conv.h
    #include <torch/nn/cloneable.h>
    #include <torch/nn/init.h>
    #include <torch/nn/modules/common.h>
+   #include <torch/nn/modules/utils.h>
    #include <torch/nn/options/conv.h>
    #include <torch/nn/pimpl.h>
    #include <torch/types.h>
@@ -44,6 +45,8 @@ Program Listing for File conv.h
        TORCH_CHECK(
          options.out_channels() % options.groups() == 0,
          "out_channels must be divisible by groups");
+   
+       _padding_repeated_twice = torch::nn::modules::utils::_repeat_vector(options.padding(), 2);
    
        if (options.transposed()) {
          std::vector<int64_t> weight_sizes = {
@@ -115,6 +118,9 @@ Program Listing for File conv.h
      Tensor weight;
    
      Tensor bias;
+   
+    protected:
+     std::vector<int64_t> _padding_repeated_twice;
    };
    
    // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ Conv1d ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -145,6 +151,9 @@ Program Listing for File conv.h
      }
      explicit Conv2dImpl(Conv2dOptions options_);
      Tensor forward(const Tensor& input);
+   
+    protected:
+     Tensor _conv_forward(const Tensor& input, const Tensor& weight);
    };
    
    TORCH_MODULE(Conv2d);
