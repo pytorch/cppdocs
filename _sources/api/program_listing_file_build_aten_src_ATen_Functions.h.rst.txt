@@ -720,6 +720,7 @@ Program Listing for File Functions.h
    static inline Tensor quantize_per_tensor(const Tensor & self, double scale, int64_t zero_point, ScalarType dtype);
    static inline Tensor quantize_per_channel(const Tensor & self, const Tensor & scales, const Tensor & zero_points, int64_t axis, ScalarType dtype);
    static inline Tensor dequantize(const Tensor & self);
+   static inline std::vector<Tensor> dequantize(TensorList tensors);
    static inline double q_scale(const Tensor & self);
    static inline int64_t q_zero_point(const Tensor & self);
    static inline Tensor q_per_channel_scales(const Tensor & self);
@@ -9626,15 +9627,32 @@ Program Listing for File Functions.h
        switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(self),
                                    c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
            case Backend::QuantizedCPU:
-               return QuantizedCPUType::dequantize(self);
+               return QuantizedCPUType::dequantize_self(self);
                break;
            default:
                AT_ERROR("dequantize not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(self)));
        }
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
-           .findSchemaOrThrow("aten::dequantize", "");
+           .findSchemaOrThrow("aten::dequantize", "self");
        return op.callUnboxed<Tensor, const Tensor &>(self);
+   #endif
+   }
+   static inline std::vector<Tensor> dequantize(TensorList tensors) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(tensors),
+                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
+           case Backend::QuantizedCPU:
+               return QuantizedCPUType::dequantize_tensors(tensors);
+               break;
+           default:
+               AT_ERROR("dequantize not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(tensors)));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::dequantize", "tensors");
+       return op.callUnboxed<std::vector<Tensor>, TensorList>(tensors);
    #endif
    }
    static inline double q_scale(const Tensor & self) {
