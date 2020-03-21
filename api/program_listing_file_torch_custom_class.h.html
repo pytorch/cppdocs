@@ -303,10 +303,8 @@
     <span class="s">&quot;torch::class_&lt;T&gt; requires T to inherit from CustomClassHolder&quot;</span><span class="p">);</span>
 
  <span class="k">public</span><span class="o">:</span>
-  <span class="k">explicit</span> <span class="n">class_</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">namespaceName</span><span class="p">,</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">className</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">detail</span><span class="o">::</span><span class="n">checkValidIdent</span><span class="p">(</span><span class="n">namespaceName</span><span class="p">,</span> <span class="s">&quot;Namespace name&quot;</span><span class="p">);</span>
-    <span class="n">detail</span><span class="o">::</span><span class="n">checkValidIdent</span><span class="p">(</span><span class="n">className</span><span class="p">,</span> <span class="s">&quot;Class name&quot;</span><span class="p">);</span>
-    <span class="n">qualClassName</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">(</span><span class="s">&quot;__torch__.torch.classes.&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="n">namespaceName</span> <span class="o">+</span> <span class="s">&quot;.&quot;</span> <span class="o">+</span> <span class="n">className</span><span class="p">;</span>
+  <span class="k">explicit</span> <span class="n">class_</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">className</span><span class="p">)</span> <span class="o">:</span> <span class="n">className</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">className</span><span class="p">))</span> <span class="p">{</span>
+    <span class="n">qualClassName</span> <span class="o">=</span> <span class="n">topModule</span> <span class="o">+</span> <span class="s">&quot;.&quot;</span> <span class="o">+</span> <span class="n">parentModule</span> <span class="o">+</span> <span class="s">&quot;.&quot;</span> <span class="o">+</span> <span class="n">className</span><span class="p">;</span>
 
     <span class="n">classTypePtr</span> <span class="o">=</span> <span class="n">at</span><span class="o">::</span><span class="n">ClassType</span><span class="o">::</span><span class="n">create</span><span class="p">(</span>
         <span class="n">c10</span><span class="o">::</span><span class="n">QualifiedName</span><span class="p">(</span><span class="n">qualClassName</span><span class="p">),</span>
@@ -430,8 +428,12 @@
     <span class="n">classTypePtr</span><span class="o">-&gt;</span><span class="n">addMethod</span><span class="p">(</span><span class="n">method</span><span class="p">.</span><span class="n">get</span><span class="p">());</span>
   <span class="p">}</span>
 
+  <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">className</span><span class="p">;</span>
   <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">qualClassName</span><span class="p">;</span>
   <span class="n">at</span><span class="o">::</span><span class="n">ClassTypePtr</span> <span class="n">classTypePtr</span><span class="p">;</span>
+
+  <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">parentModule</span> <span class="o">=</span> <span class="s">&quot;classes&quot;</span><span class="p">;</span>
+  <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">topModule</span> <span class="o">=</span> <span class="s">&quot;__torch__.torch&quot;</span><span class="p">;</span>
 <span class="p">};</span>
 
 <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">CurClass</span><span class="p">,</span> <span class="k">typename</span><span class="p">...</span> <span class="n">CtorArgs</span><span class="o">&gt;</span>
