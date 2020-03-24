@@ -42,8 +42,10 @@ Program Listing for File custom_class.h
        "torch::class_<T> requires T to inherit from CustomClassHolder");
    
     public:
-     explicit class_(const std::string& className) : className(std::move(className)) {
-       qualClassName = topModule + "." + parentModule + "." + className;
+     explicit class_(const std::string& namespaceName, const std::string& className) {
+       detail::checkValidIdent(namespaceName, "Namespace name");
+       detail::checkValidIdent(className, "Class name");
+       qualClassName = std::string("__torch__.torch.classes.") + namespaceName + "." + className;
    
        classTypePtr = at::ClassType::create(
            c10::QualifiedName(qualClassName),
@@ -167,12 +169,8 @@ Program Listing for File custom_class.h
        classTypePtr->addMethod(method.get());
      }
    
-     std::string className;
      std::string qualClassName;
      at::ClassTypePtr classTypePtr;
-   
-     const std::string parentModule = "classes";
-     const std::string topModule = "__torch__.torch";
    };
    
    template <typename CurClass, typename... CtorArgs>
