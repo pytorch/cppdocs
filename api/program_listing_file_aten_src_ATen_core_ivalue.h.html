@@ -774,30 +774,25 @@
 
   <span class="n">TypePtr</span> <span class="nf">type</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
 
-  <span class="kt">size_t</span> <span class="nf">hash</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">payload</span><span class="p">.</span><span class="n">as_int</span><span class="p">;</span>
-  <span class="p">}</span>
-
-  <span class="c1">// Detection Aliased tensors.</span>
-  <span class="k">struct</span> <span class="n">HashIValue</span> <span class="p">{</span>
+  <span class="c1">// Detect aliased tensors.</span>
+  <span class="k">struct</span> <span class="n">HashAliasedIValue</span> <span class="p">{</span>
     <span class="kt">size_t</span> <span class="k">operator</span><span class="p">()(</span><span class="k">const</span> <span class="n">IValue</span><span class="o">&amp;</span> <span class="n">val</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
       <span class="k">if</span> <span class="p">(</span><span class="n">val</span><span class="p">.</span><span class="n">isTensor</span><span class="p">())</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+        <span class="k">return</span> <span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">val</span><span class="p">.</span><span class="n">toTensor</span><span class="p">().</span><span class="n">storage</span><span class="p">().</span><span class="n">unsafeGetStorageImpl</span><span class="p">());</span>
       <span class="p">}</span>
-      <span class="k">return</span> <span class="n">val</span><span class="p">.</span><span class="n">hash</span><span class="p">();</span>
+      <span class="c1">// If it is not a Tensor, then two mutable IValues alias each other only</span>
+      <span class="c1">// if they are the same pointer.</span>
+      <span class="k">return</span> <span class="n">val</span><span class="p">.</span><span class="n">payload</span><span class="p">.</span><span class="n">as_int</span><span class="p">;</span>
     <span class="p">}</span>
   <span class="p">};</span>
 
-  <span class="k">struct</span> <span class="n">CompIValues</span> <span class="p">{</span>
+  <span class="k">struct</span> <span class="n">CompAliasedIValues</span> <span class="p">{</span>
     <span class="kt">bool</span> <span class="k">operator</span><span class="p">()(</span><span class="k">const</span> <span class="n">IValue</span><span class="o">&amp;</span> <span class="n">lhs</span><span class="p">,</span> <span class="k">const</span> <span class="n">IValue</span><span class="o">&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
-      <span class="k">if</span> <span class="p">(</span><span class="n">lhs</span><span class="p">.</span><span class="n">isTensor</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">.</span><span class="n">isTensor</span><span class="p">())</span> <span class="p">{</span>
         <span class="k">return</span> <span class="n">lhs</span><span class="p">.</span><span class="n">isAliasOf</span><span class="p">(</span><span class="n">rhs</span><span class="p">);</span>
-      <span class="p">}</span>
-      <span class="k">return</span> <span class="n">lhs</span><span class="p">.</span><span class="n">hash</span><span class="p">()</span> <span class="o">==</span> <span class="n">rhs</span><span class="p">.</span><span class="n">hash</span><span class="p">();</span>
     <span class="p">}</span>
   <span class="p">};</span>
 
-  <span class="k">using</span> <span class="n">HashAliasedIValues</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">unordered_set</span><span class="o">&lt;</span><span class="n">IValue</span><span class="p">,</span> <span class="n">HashIValue</span><span class="p">,</span> <span class="n">CompIValues</span><span class="o">&gt;</span><span class="p">;</span>
+  <span class="k">using</span> <span class="n">HashAliasedIValues</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">unordered_set</span><span class="o">&lt;</span><span class="n">IValue</span><span class="p">,</span> <span class="n">HashAliasedIValue</span><span class="p">,</span> <span class="n">CompAliasedIValues</span><span class="o">&gt;</span><span class="p">;</span>
 
   <span class="c1">// Chechs if this and rhs has a subvalues in common.</span>
   <span class="c1">// [t1,t2] and [t2, t3] returns true.</span>
