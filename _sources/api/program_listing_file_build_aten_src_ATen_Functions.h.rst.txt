@@ -1043,6 +1043,10 @@ Program Listing for File Functions.h
    static inline Tensor & hardtanh_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, Scalar min_val, Scalar max_val);
    static inline Tensor hardtanh_backward(const Tensor & grad_output, const Tensor & self, Scalar min_val, Scalar max_val);
    static inline Tensor & hardtanh_(Tensor & self, Scalar min_val=-1, Scalar max_val=1);
+   static inline Tensor & hardswish_out(Tensor & out, const Tensor & self);
+   static inline Tensor hardswish(const Tensor & self);
+   static inline Tensor & hardswish_(Tensor & self);
+   static inline Tensor hardswish_backward(const Tensor & grad_output, const Tensor & self);
    static inline Tensor & leaky_relu_out(Tensor & out, const Tensor & self, Scalar negative_slope=0.01);
    static inline Tensor leaky_relu(const Tensor & self, Scalar negative_slope=0.01);
    static inline Tensor leaky_relu_backward(const Tensor & grad_output, const Tensor & self, Scalar negative_slope, bool self_is_result);
@@ -14273,6 +14277,66 @@ Program Listing for File Functions.h
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::hardtanh_", "");
        return op.callUnboxed<Tensor &, Tensor &, Scalar, Scalar>(self, min_val, max_val);
+   #endif
+   }
+   static inline Tensor & hardswish_out(Tensor & out, const Tensor & self) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       return TypeDefault::hardswish_out_out(out, self);
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::hardswish", "out");
+       return op.callUnboxed<Tensor &, Tensor &, const Tensor &>(out, self);
+   #endif
+   }
+   static inline Tensor hardswish(const Tensor & self) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(self),
+                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
+           case Backend::CPU:
+               return CPUType::hardswish(self);
+               break;
+           case Backend::QuantizedCPU:
+               return QuantizedCPUType::hardswish(self);
+               break;
+           default:
+               AT_ERROR("hardswish not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(self)));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::hardswish", "");
+       return op.callUnboxed<Tensor, const Tensor &>(self);
+   #endif
+   }
+   static inline Tensor & hardswish_(Tensor & self) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(self),
+                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
+           case Backend::CPU:
+               return CPUType::hardswish_(self);
+               break;
+           case Backend::QuantizedCPU:
+               return QuantizedCPUType::hardswish_(self);
+               break;
+           default:
+               AT_ERROR("hardswish_ not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(self)));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::hardswish_", "");
+       return op.callUnboxed<Tensor &, Tensor &>(self);
+   #endif
+   }
+   static inline Tensor hardswish_backward(const Tensor & grad_output, const Tensor & self) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       return TypeDefault::hardswish_backward(grad_output, self);
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::hardswish_backward", "");
+       return op.callUnboxed<Tensor, const Tensor &, const Tensor &>(grad_output, self);
    #endif
    }
    static inline Tensor & leaky_relu_out(Tensor & out, const Tensor & self, Scalar negative_slope) {
