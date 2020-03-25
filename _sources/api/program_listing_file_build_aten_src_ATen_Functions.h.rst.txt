@@ -733,6 +733,7 @@ Program Listing for File Functions.h
    static inline Tensor fake_quantize_per_tensor_affine_backward(const Tensor & grad, const Tensor & self, double scale, int64_t zero_point, int64_t quant_min, int64_t quant_max);
    static inline Tensor fake_quantize_per_channel_affine(const Tensor & self, const Tensor & scale, const Tensor & zero_point, int64_t axis, int64_t quant_min, int64_t quant_max);
    static inline Tensor fake_quantize_per_channel_affine_backward(const Tensor & grad, const Tensor & self, const Tensor & scale, const Tensor & zero_point, int64_t axis, int64_t quant_min, int64_t quant_max);
+   static inline std::tuple<double,int64_t> _choose_qparams_per_tensor(const Tensor & self, bool reduce_range=false);
    static inline std::vector<Tensor> meshgrid(TensorList tensors);
    static inline Tensor cartesian_prod(TensorList tensors);
    static inline Tensor combinations(const Tensor & self, int64_t r=2, bool with_replacement=false);
@@ -9833,6 +9834,16 @@ Program Listing for File Functions.h
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::fake_quantize_per_channel_affine_backward", "");
        return op.callUnboxed<Tensor, const Tensor &, const Tensor &, const Tensor &, const Tensor &, int64_t, int64_t, int64_t>(grad, self, scale, zero_point, axis, quant_min, quant_max);
+   #endif
+   }
+   static inline std::tuple<double,int64_t> _choose_qparams_per_tensor(const Tensor & self, bool reduce_range) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       return TypeDefault::_choose_qparams_per_tensor(self, reduce_range);
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::_choose_qparams_per_tensor", "");
+       return op.callUnboxed<std::tuple<double,int64_t>, const Tensor &, bool>(self, reduce_range);
    #endif
    }
    static inline std::vector<Tensor> meshgrid(TensorList tensors) {
