@@ -315,7 +315,7 @@
 <span class="p">};</span>
 
 <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Derived</span><span class="o">&gt;</span>
-<span class="k">class</span> <span class="nc">OptimizerCloneableParamState</span> <span class="o">:</span> <span class="k">public</span> <span class="n">OptimizerParamState</span> <span class="p">{</span>
+<span class="k">class</span> <span class="nc">TORCH_API</span> <span class="nl">OptimizerCloneableParamState</span> <span class="p">:</span> <span class="k">public</span> <span class="n">OptimizerParamState</span> <span class="p">{</span>
   <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">OptimizerParamState</span><span class="o">&gt;</span> <span class="n">clone</span><span class="p">()</span> <span class="k">const</span> <span class="k">override</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">Derived</span><span class="o">&gt;</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="k">const</span> <span class="n">Derived</span><span class="o">&amp;&gt;</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">));</span>
   <span class="p">}</span>
@@ -330,7 +330,7 @@
 <span class="p">};</span>
 
 <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Derived</span><span class="o">&gt;</span>
-<span class="k">class</span> <span class="nc">OptimizerCloneableOptions</span> <span class="o">:</span> <span class="k">public</span> <span class="n">OptimizerOptions</span> <span class="p">{</span>
+<span class="k">class</span> <span class="nc">TORCH_API</span> <span class="nl">OptimizerCloneableOptions</span> <span class="p">:</span> <span class="k">public</span> <span class="n">OptimizerOptions</span> <span class="p">{</span>
   <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">OptimizerOptions</span><span class="o">&gt;</span> <span class="n">clone</span><span class="p">()</span> <span class="k">const</span> <span class="k">override</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">Derived</span><span class="o">&gt;</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="k">const</span> <span class="n">Derived</span><span class="o">&amp;&gt;</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">));</span>
   <span class="p">}</span>
@@ -355,37 +355,47 @@
   <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">OptimizerOptions</span><span class="o">&gt;</span> <span class="n">options_</span><span class="p">;</span>
 <span class="p">};</span>
 
-<span class="k">class</span> <span class="nc">TORCH_API</span> <span class="n">Optimizer</span> <span class="p">{</span>
+<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
+
+<span class="k">class</span> <span class="nc">TORCH_API</span> <span class="n">OptimizerBase</span> <span class="p">{</span>
  <span class="k">public</span><span class="o">:</span>
   <span class="c1">// The copy constructor is deleted, because the user should use the</span>
   <span class="c1">// `state_dict` / `load_state_dict` API to copy an optimizer instead.</span>
-  <span class="n">Optimizer</span><span class="p">(</span><span class="k">const</span> <span class="n">Optimizer</span><span class="o">&amp;</span> <span class="n">optimizer</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
-  <span class="n">Optimizer</span><span class="p">(</span><span class="n">Optimizer</span><span class="o">&amp;&amp;</span> <span class="n">optimizer</span><span class="p">)</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
+  <span class="n">OptimizerBase</span><span class="p">(</span><span class="k">const</span> <span class="n">OptimizerBase</span><span class="o">&amp;</span> <span class="n">optimizer_base</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+  <span class="n">OptimizerBase</span><span class="p">(</span><span class="n">OptimizerBase</span><span class="o">&amp;&amp;</span> <span class="n">optimizer_base</span><span class="p">)</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
 
-  <span class="k">explicit</span> <span class="nf">Optimizer</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">OptimizerParamGroup</span><span class="o">&gt;</span> <span class="n">param_groups</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">OptimizerOptions</span><span class="o">&gt;</span> <span class="n">defaults</span><span class="p">)</span> <span class="o">:</span> <span class="n">defaults_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">defaults</span><span class="p">))</span> <span class="p">{</span>
+  <span class="k">explicit</span> <span class="nf">OptimizerBase</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">parameters</span><span class="p">);</span>
+
+  <span class="k">explicit</span> <span class="nf">OptimizerBase</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">OptimizerParamGroup</span><span class="o">&gt;</span> <span class="n">param_groups</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">OptimizerOptions</span><span class="o">&gt;</span> <span class="n">defaults</span><span class="p">)</span> <span class="o">:</span> <span class="n">defaults_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">defaults</span><span class="p">))</span> <span class="p">{</span>
     <span class="k">for</span> <span class="p">(</span><span class="k">const</span> <span class="k">auto</span><span class="o">&amp;</span> <span class="nl">param_group</span> <span class="p">:</span> <span class="n">param_groups</span><span class="p">)</span> <span class="p">{</span>
       <span class="n">add_param_group</span><span class="p">(</span><span class="n">param_group</span><span class="p">);</span>
     <span class="p">}</span>
   <span class="p">}</span>
 
-  <span class="k">explicit</span> <span class="nf">Optimizer</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">parameters</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">OptimizerOptions</span><span class="o">&gt;</span> <span class="n">defaults</span><span class="p">)</span> <span class="o">:</span> <span class="n">Optimizer</span><span class="p">({</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">OptimizerParamGroup</span><span class="p">(</span><span class="n">parameters</span><span class="p">))},</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">defaults</span><span class="p">))</span> <span class="p">{};</span>
-
   <span class="kt">void</span> <span class="nf">add_param_group</span><span class="p">(</span><span class="k">const</span> <span class="n">OptimizerParamGroup</span><span class="o">&amp;</span> <span class="n">param_group</span><span class="p">);</span>
 
-  <span class="k">virtual</span> <span class="o">~</span><span class="n">Optimizer</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
+  <span class="k">virtual</span> <span class="o">~</span><span class="n">OptimizerBase</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
 
-  <span class="k">using</span> <span class="n">LossClosure</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">()</span><span class="o">&gt;</span><span class="p">;</span>
-  <span class="k">virtual</span> <span class="n">Tensor</span> <span class="nf">step</span><span class="p">(</span><span class="n">LossClosure</span> <span class="n">closure</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="c1">// TODO: when all optimizers use the new design, we can devirtualize some of the following methods</span>
+  <span class="c1">// such as add_parameters() / parameters() / size()</span>
 
-  <span class="kt">void</span> <span class="nf">add_parameters</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;&amp;</span> <span class="n">parameters</span><span class="p">);</span>
+  <span class="k">virtual</span> <span class="kt">void</span> <span class="nf">add_parameters</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;&amp;</span> <span class="n">parameters</span><span class="p">);</span>
 
-  <span class="kt">void</span> <span class="nf">zero_grad</span><span class="p">();</span>
+  <span class="k">virtual</span> <span class="kt">void</span> <span class="nf">_add_parameters_new_design</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;&amp;</span> <span class="n">parameters</span><span class="p">);</span>
 
-  <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;&amp;</span> <span class="n">parameters</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span><span class="p">;</span>
+  <span class="k">virtual</span> <span class="kt">void</span> <span class="nf">zero_grad</span><span class="p">();</span>
 
-  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;&amp;</span> <span class="n">parameters</span><span class="p">()</span> <span class="k">noexcept</span><span class="p">;</span>
+  <span class="k">virtual</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;&amp;</span> <span class="n">parameters</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span><span class="p">;</span>
 
-  <span class="kt">size_t</span> <span class="nf">size</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span><span class="p">;</span>
+  <span class="k">virtual</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;&amp;</span> <span class="n">_parameters_new_design</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span><span class="p">;</span>
+
+  <span class="k">virtual</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;&amp;</span> <span class="n">parameters</span><span class="p">()</span> <span class="k">noexcept</span><span class="p">;</span>
+
+  <span class="k">virtual</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;&amp;</span> <span class="n">_parameters_new_design</span><span class="p">()</span> <span class="k">noexcept</span><span class="p">;</span>
+
+  <span class="k">virtual</span> <span class="kt">size_t</span> <span class="nf">size</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span><span class="p">;</span>
+
+  <span class="k">virtual</span> <span class="kt">size_t</span> <span class="nf">_size_new_design</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span><span class="p">;</span>
 
   <span class="n">OptimizerOptions</span><span class="o">&amp;</span> <span class="n">defaults</span><span class="p">()</span> <span class="k">noexcept</span><span class="p">;</span>
 
@@ -407,6 +417,21 @@
    <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">OptimizerParamGroup</span><span class="o">&gt;</span> <span class="n">param_groups_</span><span class="p">;</span>
    <span class="n">ska</span><span class="o">::</span><span class="n">flat_hash_map</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">OptimizerParamState</span><span class="o">&gt;&gt;</span> <span class="n">state_</span><span class="p">;</span>
    <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">OptimizerOptions</span><span class="o">&gt;</span> <span class="n">defaults_</span><span class="p">;</span>
+   <span class="n">OptimizerBase</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
+
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+  <span class="n">T</span><span class="o">&amp;</span> <span class="n">buffer_at</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">buffers</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">index</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">buffers</span><span class="p">.</span><span class="n">size</span><span class="p">()</span> <span class="o">&lt;=</span> <span class="n">index</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">const</span> <span class="k">auto</span> <span class="n">old_size</span> <span class="o">=</span> <span class="n">buffers</span><span class="p">.</span><span class="n">size</span><span class="p">();</span>
+      <span class="n">buffers</span><span class="p">.</span><span class="n">resize</span><span class="p">(</span><span class="n">index</span> <span class="o">+</span> <span class="mi">1</span><span class="p">);</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">fill</span><span class="p">(</span><span class="n">buffers</span><span class="p">.</span><span class="n">begin</span><span class="p">()</span> <span class="o">+</span> <span class="n">old_size</span><span class="p">,</span> <span class="n">buffers</span><span class="p">.</span><span class="n">end</span><span class="p">(),</span> <span class="n">T</span><span class="p">{</span><span class="mi">0</span><span class="p">});</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">buffers</span><span class="p">[</span><span class="n">index</span><span class="p">];</span>
+  <span class="p">}</span>
+
+  <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">buffer_at</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;&amp;</span> <span class="n">buffers</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">index</span><span class="p">);</span>
+
+  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">parameters_</span><span class="p">;</span>
 <span class="p">};</span>
 
 <span class="cm">/* How do we decide whether to serialize undefined tensors or</span>
@@ -429,11 +454,26 @@
 
 <span class="n">TORCH_API</span> <span class="n">serialize</span><span class="o">::</span><span class="n">OutputArchive</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">&lt;&lt;</span><span class="p">(</span>
     <span class="n">serialize</span><span class="o">::</span><span class="n">OutputArchive</span><span class="o">&amp;</span> <span class="n">archive</span><span class="p">,</span>
-    <span class="k">const</span> <span class="n">Optimizer</span><span class="o">&amp;</span> <span class="n">optimizer</span><span class="p">);</span>
+    <span class="k">const</span> <span class="n">OptimizerBase</span><span class="o">&amp;</span> <span class="n">optimizer</span><span class="p">);</span>
 
 <span class="n">TORCH_API</span> <span class="n">serialize</span><span class="o">::</span><span class="n">InputArchive</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">&gt;&gt;</span><span class="p">(</span>
     <span class="n">serialize</span><span class="o">::</span><span class="n">InputArchive</span><span class="o">&amp;</span> <span class="n">archive</span><span class="p">,</span>
-    <span class="n">Optimizer</span><span class="o">&amp;</span> <span class="n">optimizer</span><span class="p">);</span>
+    <span class="n">OptimizerBase</span><span class="o">&amp;</span> <span class="n">optimizer</span><span class="p">);</span>
+<span class="p">}</span> <span class="c1">// namespace detail</span>
+
+<span class="k">class</span> <span class="nc">Optimizer</span> <span class="o">:</span> <span class="k">public</span> <span class="n">detail</span><span class="o">::</span><span class="n">OptimizerBase</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+   <span class="k">using</span> <span class="n">LossClosure</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">()</span><span class="o">&gt;</span><span class="p">;</span>
+   <span class="k">using</span> <span class="n">detail</span><span class="o">::</span><span class="n">OptimizerBase</span><span class="o">::</span><span class="n">OptimizerBase</span><span class="p">;</span>
+   <span class="k">virtual</span> <span class="n">Tensor</span> <span class="nf">step</span><span class="p">(</span><span class="n">LossClosure</span> <span class="n">closure</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="k">class</span> <span class="nc">LossClosureOptimizer</span> <span class="o">:</span> <span class="k">public</span> <span class="n">detail</span><span class="o">::</span><span class="n">OptimizerBase</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="k">using</span> <span class="n">LossClosure</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">()</span><span class="o">&gt;</span><span class="p">;</span>
+  <span class="k">using</span> <span class="n">detail</span><span class="o">::</span><span class="n">OptimizerBase</span><span class="o">::</span><span class="n">OptimizerBase</span><span class="p">;</span>
+  <span class="k">virtual</span> <span class="n">Tensor</span> <span class="nf">step</span><span class="p">(</span><span class="n">LossClosure</span> <span class="n">closure</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="p">};</span>
 
 <span class="p">}</span> <span class="c1">// namespace optim</span>
 <span class="p">}</span> <span class="c1">// namespace torch</span>

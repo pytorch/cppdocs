@@ -68,7 +68,7 @@ Program Listing for File rmsprop.h
    class TORCH_API RMSprop : public Optimizer {
     public:
      explicit RMSprop(std::vector<OptimizerParamGroup> param_groups,
-         RMSpropOptions defaults = {}) : Optimizer(std::move(param_groups), std::make_unique<RMSpropOptions>(defaults)) {
+         RMSpropOptions defaults) : Optimizer(std::move(param_groups), std::make_unique<RMSpropOptions>(defaults)) {
        TORCH_CHECK(defaults.lr() >= 0, "Invalid learning rate: ", defaults.lr());
        TORCH_CHECK(defaults.eps() >= 0, "Invalid epsilon value: ", defaults.eps());
        TORCH_CHECK(defaults.momentum() >= 0, "Invalid momentum value: ", defaults.momentum());
@@ -77,9 +77,18 @@ Program Listing for File rmsprop.h
      }
    
      explicit RMSprop(std::vector<Tensor> params,
-         RMSpropOptions defaults = {}) : RMSprop({std::move(OptimizerParamGroup(params))}, defaults) {}
+         RMSpropOptions defaults) : RMSprop({std::move(OptimizerParamGroup(params))}, defaults) {}
    
      torch::Tensor step(LossClosure closure = nullptr) override;
+   
+     size_t size() const noexcept override;
+   
+     void add_parameters(const std::vector<Tensor>& parameters) override;
+   
+     const std::vector<Tensor>& parameters() const noexcept override;
+   
+     std::vector<Tensor>& parameters() noexcept override;
+   
      void save(serialize::OutputArchive& archive) const override;
      void load(serialize::InputArchive& archive) override;
    
