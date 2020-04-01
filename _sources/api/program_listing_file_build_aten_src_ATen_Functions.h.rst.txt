@@ -338,8 +338,8 @@ Program Listing for File Functions.h
    static inline bool is_nonzero(const Tensor & self);
    static inline bool is_same_size(const Tensor & self, const Tensor & other);
    static inline bool is_signed(const Tensor & self);
-   static inline Tensor kl_div(const Tensor & self, const Tensor & target, int64_t reduction=at::Reduction::Mean);
-   static inline Tensor kl_div_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction=at::Reduction::Mean);
+   static inline Tensor kl_div(const Tensor & self, const Tensor & target, int64_t reduction=at::Reduction::Mean, bool log_target=false);
+   static inline Tensor kl_div_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction=at::Reduction::Mean, bool log_target=false);
    static inline std::tuple<Tensor,Tensor> kthvalue(const Tensor & self, int64_t k, int64_t dim=-1, bool keepdim=false);
    static inline std::tuple<Tensor &,Tensor &> kthvalue_out(Tensor & values, Tensor & indices, const Tensor & self, int64_t k, int64_t dim=-1, bool keepdim=false);
    static inline std::tuple<Tensor,Tensor> kthvalue(const Tensor & self, int64_t k, Dimname dim, bool keepdim=false);
@@ -5009,23 +5009,23 @@ Program Listing for File Functions.h
        return op.callUnboxed<bool, const Tensor &>(self);
    #endif
    }
-   static inline Tensor kl_div(const Tensor & self, const Tensor & target, int64_t reduction) {
+   static inline Tensor kl_div(const Tensor & self, const Tensor & target, int64_t reduction, bool log_target) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::kl_div(self, target, reduction);
+       return TypeDefault::kl_div(self, target, reduction, log_target);
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::kl_div", "");
-       return op.callUnboxed<Tensor, const Tensor &, const Tensor &, int64_t>(self, target, reduction);
+       return op.callUnboxed<Tensor, const Tensor &, const Tensor &, int64_t, bool>(self, target, reduction, log_target);
    #endif
    }
-   static inline Tensor kl_div_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction) {
+   static inline Tensor kl_div_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction, bool log_target) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
        switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(grad_output, self, target),
                                    c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
            case Backend::CPU:
-               return CPUType::kl_div_backward(grad_output, self, target, reduction);
+               return CPUType::kl_div_backward(grad_output, self, target, reduction, log_target);
                break;
            default:
                AT_ERROR("kl_div_backward not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(grad_output, self, target)));
@@ -5033,7 +5033,7 @@ Program Listing for File Functions.h
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::kl_div_backward", "");
-       return op.callUnboxed<Tensor, const Tensor &, const Tensor &, const Tensor &, int64_t>(grad_output, self, target, reduction);
+       return op.callUnboxed<Tensor, const Tensor &, const Tensor &, const Tensor &, int64_t, bool>(grad_output, self, target, reduction, log_target);
    #endif
    }
    static inline std::tuple<Tensor,Tensor> kthvalue(const Tensor & self, int64_t k, int64_t dim, bool keepdim) {
