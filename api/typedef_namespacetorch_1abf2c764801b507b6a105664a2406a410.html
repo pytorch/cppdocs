@@ -195,6 +195,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../notes/faq.html">FAQ</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../notes/tensor_basics.html">Tensor Basics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../notes/tensor_creation.html">Tensor Creation API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notes/tensor_indexing.html">Tensor Indexing API</a></li>
 </ul>
 
             
@@ -284,7 +285,28 @@
 <dl class="type">
 <dt id="_CPPv4N5torch11NoGradGuardE">
 <span id="_CPPv3N5torch11NoGradGuardE"></span><span id="_CPPv2N5torch11NoGradGuardE"></span><span class="target" id="namespacetorch_1abf2c764801b507b6a105664a2406a410"></span><em class="property">using </em><code class="sig-prename descclassname">torch<code class="sig-prename descclassname">::</code></code><code class="sig-name descname">NoGradGuard</code> = at::NoGradGuard<a class="headerlink" href="#_CPPv4N5torch11NoGradGuardE" title="Permalink to this definition">¶</a><br /></dt>
-<dd></dd></dl>
+<dd><p>A RAII, thread-local guard that disabled gradient calculation. </p>
+<p>Disabling gradient calculation is useful for inference, when you are sure that you will not call <code class="docutils literal notranslate"><a class="reference internal" href="classat_1_1_tensor.html#classat_1_1_tensor_1ad459216940f0c44f73bc89f8c5c98d75"><span class="std std-ref"><span class="pre">at::Tensor::backward</span></span></a></code>. It will reduce memory consumption for computations that would otherwise have <code class="docutils literal notranslate"><span class="pre">requires_grad()</span> <span class="pre">==</span> <span class="pre">true</span></code>.</p>
+<p>In this mode, the result of every computation will have <code class="docutils literal notranslate"><span class="pre">requires_grad()</span> <span class="pre">==</span> <span class="pre">false</span></code>, even when the inputs have <code class="docutils literal notranslate"><span class="pre">requires_grad()</span> <span class="pre">==</span> <span class="pre">true</span></code>.</p>
+<p>This context manager is thread-local; it will not affect computation in other threads.</p>
+<p>Example: <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">auto</span> <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">tensor</span><span class="p">({</span><span class="mf">1.</span><span class="p">},</span> <span class="n">torch</span><span class="o">::</span><span class="n">requires_grad</span><span class="p">());</span>
+<span class="p">{</span>
+  <span class="n">torch</span><span class="o">::</span><span class="n">NoGradGuard</span> <span class="n">no_grad</span><span class="p">;</span>
+  <span class="k">auto</span> <span class="n">y</span> <span class="o">=</span> <span class="n">x</span> <span class="o">*</span> <span class="mi">2</span><span class="p">;</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">y</span><span class="p">.</span><span class="n">requires_grad</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span> <span class="c1">// prints `false`</span>
+<span class="p">}</span>
+<span class="p">{</span>
+  <span class="k">auto</span> <span class="n">doubler</span> <span class="o">=</span> <span class="p">[](</span><span class="n">torch</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">torch</span><span class="o">::</span><span class="n">NoGradGuard</span> <span class="n">no_grad</span><span class="p">;</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">*</span> <span class="mi">2</span><span class="p">;</span>
+  <span class="p">};</span>
+  <span class="k">auto</span> <span class="n">z</span> <span class="o">=</span> <span class="n">doubler</span><span class="p">(</span><span class="n">x</span><span class="p">);</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">cout</span> <span class="o">&lt;&lt;</span> <span class="n">z</span><span class="p">.</span><span class="n">requires_grad</span><span class="p">()</span> <span class="o">&lt;&lt;</span> <span class="n">std</span><span class="o">::</span><span class="n">endl</span><span class="p">;</span> <span class="c1">// prints `false`</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+ </p>
+</dd></dl>
 
 </div>
 </div>
