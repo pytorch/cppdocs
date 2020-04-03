@@ -716,6 +716,7 @@ Program Listing for File Functions.h
    static inline Tensor mkldnn_reorder_conv2d_weight(const Tensor & self, IntArrayRef padding=0, IntArrayRef stride=1, IntArrayRef dilation=1, int64_t groups=1);
    static inline Tensor to_mkldnn_backward(const Tensor & grad, const Tensor & input);
    static inline Tensor quantize_per_tensor(const Tensor & self, double scale, int64_t zero_point, ScalarType dtype);
+   static inline std::vector<Tensor> quantize_per_tensor(TensorList tensors, const Tensor & scales, const Tensor & zero_points, ScalarType dtype);
    static inline Tensor quantize_per_channel(const Tensor & self, const Tensor & scales, const Tensor & zero_points, int64_t axis, ScalarType dtype);
    static inline Tensor dequantize(const Tensor & self);
    static inline std::vector<Tensor> dequantize(TensorList tensors);
@@ -9585,6 +9586,23 @@ Program Listing for File Functions.h
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::quantize_per_tensor", "");
        return op.callUnboxed<Tensor, const Tensor &, double, int64_t, ScalarType>(self, scale, zero_point, dtype);
+   #endif
+   }
+   static inline std::vector<Tensor> quantize_per_tensor(TensorList tensors, const Tensor & scales, const Tensor & zero_points, ScalarType dtype) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(tensors, scales, zero_points),
+                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
+           case Backend::CPU:
+               return CPUType::quantize_per_tensor_tensors(tensors, scales, zero_points, dtype);
+               break;
+           default:
+               AT_ERROR("quantize_per_tensor not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(tensors, scales, zero_points)));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::quantize_per_tensor", "tensors");
+       return op.callUnboxed<std::vector<Tensor>, TensorList, const Tensor &, const Tensor &, ScalarType>(tensors, scales, zero_points, dtype);
    #endif
    }
    static inline Tensor quantize_per_channel(const Tensor & self, const Tensor & scales, const Tensor & zero_points, int64_t axis, ScalarType dtype) {
