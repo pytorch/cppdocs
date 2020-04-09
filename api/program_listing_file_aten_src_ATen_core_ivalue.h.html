@@ -339,6 +339,7 @@
 <span class="cp">  _(Uninitialized) \</span>
 <span class="cp">  _(Capsule) \</span>
 <span class="cp">  _(RRef) \</span>
+<span class="cp">  _(Generator) \</span>
 
 <span class="c1">// [doxygen private]</span>
 <span class="c1">// These methods are not actually private but we don&#39;t want to document them, so</span>
@@ -718,6 +719,19 @@
     <span class="k">return</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">QScheme</span><span class="o">&gt;</span><span class="p">(</span><span class="n">toInt</span><span class="p">());</span>
   <span class="p">}</span>
 
+  <span class="c1">// Generator</span>
+  <span class="n">IValue</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">Generator</span> <span class="n">g</span><span class="p">)</span>
+  <span class="o">:</span> <span class="n">tag</span><span class="p">(</span><span class="n">Tag</span><span class="o">::</span><span class="n">Generator</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="n">g</span><span class="p">.</span><span class="n">defined</span><span class="p">())</span>  <span class="p">{</span>
+    <span class="c1">// Note: the undefined generator is not refcounted, so while it</span>
+    <span class="c1">// is tagged as a generator, is_intrusive_ptr is set to false.</span>
+    <span class="c1">// This is not an optional optimization: our incref call</span>
+    <span class="c1">// *will not* do the right thing when called on an</span>
+    <span class="c1">// undefined generator.</span>
+    <span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">=</span> <span class="n">g</span><span class="p">.</span><span class="n">unsafeReleaseGeneratorImpl</span><span class="p">();</span>
+  <span class="p">}</span>
+  <span class="kt">bool</span> <span class="n">isGenerator</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Tag</span><span class="o">::</span><span class="n">Generator</span> <span class="o">==</span> <span class="n">tag</span><span class="p">;</span> <span class="p">}</span>
+  <span class="n">at</span><span class="o">::</span><span class="n">Generator</span> <span class="n">toGenerator</span><span class="p">()</span> <span class="o">&amp;&amp;</span><span class="p">;</span>
+  <span class="n">at</span><span class="o">::</span><span class="n">Generator</span> <span class="n">toGenerator</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span><span class="p">;</span>
 
   <span class="c1">// for debugging</span>
   <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">tagKind</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
