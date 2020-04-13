@@ -159,6 +159,7 @@ Program Listing for File Functions.h
    static inline Tensor & cat_out(Tensor & out, TensorList tensors, int64_t dim=0);
    static inline Tensor cat(TensorList tensors, Dimname dim);
    static inline Tensor & cat_out(Tensor & out, TensorList tensors, Dimname dim);
+   static inline Tensor block_diag(TensorList tensors);
    static inline Tensor ceil(const Tensor & self);
    static inline Tensor & ceil_(Tensor & self);
    static inline Tensor & ceil_out(Tensor & out, const Tensor & self);
@@ -2774,6 +2775,16 @@ Program Listing for File Functions.h
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::cat", "names_out");
        return op.callUnboxed<Tensor &, Tensor &, TensorList, Dimname>(out, tensors, dim);
+   #endif
+   }
+   static inline Tensor block_diag(TensorList tensors) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       return TypeDefault::block_diag(tensors);
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::block_diag", "");
+       return op.callUnboxed<Tensor, TensorList>(tensors);
    #endif
    }
    static inline Tensor ceil(const Tensor & self) {
