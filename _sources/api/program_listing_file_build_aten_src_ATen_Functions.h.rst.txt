@@ -992,6 +992,12 @@ Program Listing for File Functions.h
    static inline std::tuple<Tensor &,Tensor &> _max_out(Tensor & max, Tensor & max_indices, const Tensor & self, int64_t dim, bool keepdim=false);
    static inline std::tuple<Tensor,Tensor> _min(const Tensor & self, int64_t dim, bool keepdim=false);
    static inline std::tuple<Tensor &,Tensor &> _min_out(Tensor & min, Tensor & min_indices, const Tensor & self, int64_t dim, bool keepdim=false);
+   static inline Tensor bucketize(const Tensor & self, const Tensor & boundaries, bool out_int32=false, bool right=false);
+   static inline Tensor & bucketize_out(Tensor & out, const Tensor & self, const Tensor & boundaries, bool out_int32=false, bool right=false);
+   static inline Tensor bucketize(Scalar self, const Tensor & boundaries, bool out_int32=false, bool right=false);
+   static inline Tensor searchsorted(const Tensor & sorted_sequence, const Tensor & self, bool out_int32=false, bool right=false);
+   static inline Tensor & searchsorted_out(Tensor & out, const Tensor & sorted_sequence, const Tensor & self, bool out_int32=false, bool right=false);
+   static inline Tensor searchsorted(const Tensor & sorted_sequence, Scalar self, bool out_int32=false, bool right=false);
    static inline Tensor & mse_loss_out(Tensor & out, const Tensor & self, const Tensor & target, int64_t reduction=at::Reduction::Mean);
    static inline Tensor mse_loss(const Tensor & self, const Tensor & target, int64_t reduction=at::Reduction::Mean);
    static inline Tensor & mse_loss_backward_out(Tensor & grad_input, const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction);
@@ -13478,6 +13484,108 @@ Program Listing for File Functions.h
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::_min", "min");
        return op.callUnboxed<std::tuple<Tensor &,Tensor &>, Tensor &, Tensor &, const Tensor &, int64_t, bool>(min, min_indices, self, dim, keepdim);
+   #endif
+   }
+   static inline Tensor bucketize(const Tensor & self, const Tensor & boundaries, bool out_int32, bool right) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(self, boundaries),
+                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
+           case Backend::CPU:
+               return CPUType::bucketize_Tensor(self, boundaries, out_int32, right);
+               break;
+           default:
+               AT_ERROR("bucketize not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(self, boundaries)));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::bucketize", "Tensor");
+       return op.callUnboxed<Tensor, const Tensor &, const Tensor &, bool, bool>(self, boundaries, out_int32, right);
+   #endif
+   }
+   static inline Tensor & bucketize_out(Tensor & out, const Tensor & self, const Tensor & boundaries, bool out_int32, bool right) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(out, self, boundaries),
+                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
+           case Backend::CPU:
+               return CPUType::bucketize_out_Tensor_out(out, self, boundaries, out_int32, right);
+               break;
+           default:
+               AT_ERROR("bucketize_out not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(out, self, boundaries)));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::bucketize", "Tensor_out");
+       return op.callUnboxed<Tensor &, Tensor &, const Tensor &, const Tensor &, bool, bool>(out, self, boundaries, out_int32, right);
+   #endif
+   }
+   static inline Tensor bucketize(Scalar self, const Tensor & boundaries, bool out_int32, bool right) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(boundaries),
+                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
+           case Backend::CPU:
+               return CPUType::bucketize_Scalar(self, boundaries, out_int32, right);
+               break;
+           default:
+               AT_ERROR("bucketize not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(boundaries)));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::bucketize", "Scalar");
+       return op.callUnboxed<Tensor, Scalar, const Tensor &, bool, bool>(self, boundaries, out_int32, right);
+   #endif
+   }
+   static inline Tensor searchsorted(const Tensor & sorted_sequence, const Tensor & self, bool out_int32, bool right) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(sorted_sequence, self),
+                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
+           case Backend::CPU:
+               return CPUType::searchsorted_Tensor(sorted_sequence, self, out_int32, right);
+               break;
+           default:
+               AT_ERROR("searchsorted not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(sorted_sequence, self)));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::searchsorted", "Tensor");
+       return op.callUnboxed<Tensor, const Tensor &, const Tensor &, bool, bool>(sorted_sequence, self, out_int32, right);
+   #endif
+   }
+   static inline Tensor & searchsorted_out(Tensor & out, const Tensor & sorted_sequence, const Tensor & self, bool out_int32, bool right) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(out, sorted_sequence, self),
+                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
+           case Backend::CPU:
+               return CPUType::searchsorted_out_Tensor_out(out, sorted_sequence, self, out_int32, right);
+               break;
+           default:
+               AT_ERROR("searchsorted_out not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(out, sorted_sequence, self)));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::searchsorted", "Tensor_out");
+       return op.callUnboxed<Tensor &, Tensor &, const Tensor &, const Tensor &, bool, bool>(out, sorted_sequence, self, out_int32, right);
+   #endif
+   }
+   static inline Tensor searchsorted(const Tensor & sorted_sequence, Scalar self, bool out_int32, bool right) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(sorted_sequence),
+                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
+           case Backend::CPU:
+               return CPUType::searchsorted_Scalar(sorted_sequence, self, out_int32, right);
+               break;
+           default:
+               AT_ERROR("searchsorted not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(sorted_sequence)));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::searchsorted", "Scalar");
+       return op.callUnboxed<Tensor, const Tensor &, Scalar, bool, bool>(sorted_sequence, self, out_int32, right);
    #endif
    }
    static inline Tensor & mse_loss_out(Tensor & out, const Tensor & self, const Tensor & target, int64_t reduction) {
