@@ -14410,7 +14410,17 @@ Program Listing for File Functions.h
    static inline Tensor & hardswish_out(Tensor & out, const Tensor & self) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::hardswish_out_out(out, self);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(out, self),
+                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
+           case Backend::CPU:
+               return CPUType::hardswish_out_out(out, self);
+               break;
+           case Backend::QuantizedCPU:
+               return QuantizedCPUType::hardswish_out_out(out, self);
+               break;
+           default:
+               AT_ERROR("hardswish_out not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(out, self)));
+       }
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::hardswish", "out");
@@ -14420,17 +14430,7 @@ Program Listing for File Functions.h
    static inline Tensor hardswish(const Tensor & self) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(self),
-                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
-           case Backend::CPU:
-               return CPUType::hardswish(self);
-               break;
-           case Backend::QuantizedCPU:
-               return QuantizedCPUType::hardswish(self);
-               break;
-           default:
-               AT_ERROR("hardswish not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(self)));
-       }
+       return TypeDefault::hardswish(self);
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::hardswish", "");
@@ -14440,17 +14440,7 @@ Program Listing for File Functions.h
    static inline Tensor & hardswish_(Tensor & self) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(self),
-                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
-           case Backend::CPU:
-               return CPUType::hardswish_(self);
-               break;
-           case Backend::QuantizedCPU:
-               return QuantizedCPUType::hardswish_(self);
-               break;
-           default:
-               AT_ERROR("hardswish_ not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(self)));
-       }
+       return TypeDefault::hardswish_(self);
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::hardswish_", "");
