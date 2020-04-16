@@ -352,6 +352,7 @@ Program Listing for File Functions.h
    static inline Tensor layer_norm(const Tensor & input, IntArrayRef normalized_shape, const Tensor & weight={}, const Tensor & bias={}, double eps=1e-05, bool cudnn_enable=true);
    static inline std::tuple<Tensor,Tensor,Tensor> native_layer_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, int64_t M, int64_t N, double eps);
    static inline std::tuple<Tensor,Tensor,Tensor> native_layer_norm_backward(const Tensor & grad_out, const Tensor & input, const Tensor & mean, const Tensor & rstd, const Tensor & weight, int64_t M, int64_t N, std::array<bool,3> output_mask);
+   static inline Tensor quantized_layer_norm(const Tensor & input, IntArrayRef normalized_shape, const Tensor & weight, const Tensor & bias, double eps, double output_scale, int64_t output_zero_point);
    static inline Tensor linear(const Tensor & input, const Tensor & weight, const Tensor & bias={});
    static inline Tensor mkldnn_linear(const Tensor & input, const Tensor & weight, const Tensor & bias={});
    static inline Tensor fbgemm_linear_int8_weight_fp32_activation(const Tensor & input, const Tensor & weight, const Tensor & packed, const Tensor & col_offsets, Scalar weight_scale, Scalar weight_zero_point, const Tensor & bias);
@@ -5187,6 +5188,23 @@ Program Listing for File Functions.h
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::native_layer_norm_backward", "");
        return op.callUnboxed<std::tuple<Tensor,Tensor,Tensor>, const Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, int64_t, int64_t, std::array<bool,3>>(grad_out, input, mean, rstd, weight, M, N, output_mask);
+   #endif
+   }
+   static inline Tensor quantized_layer_norm(const Tensor & input, IntArrayRef normalized_shape, const Tensor & weight, const Tensor & bias, double eps, double output_scale, int64_t output_zero_point) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       switch(dispatchKeyToBackend(c10::impl::dispatchTypeId(c10::detail::multi_dispatch_key_set(input, weight, bias),
+                                   c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect)))) {
+           case Backend::QuantizedCPU:
+               return QuantizedCPUType::quantized_layer_norm(input, normalized_shape, weight, bias, eps, output_scale, output_zero_point);
+               break;
+           default:
+               AT_ERROR("quantized_layer_norm not implemented for ", at::toString(c10::detail::multi_dispatch_key_set(input, weight, bias)));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::quantized_layer_norm", "");
+       return op.callUnboxed<Tensor, const Tensor &, IntArrayRef, const Tensor &, const Tensor &, double, double, int64_t>(input, normalized_shape, weight, bias, eps, output_scale, output_zero_point);
    #endif
    }
    static inline Tensor linear(const Tensor & input, const Tensor & weight, const Tensor & bias) {
