@@ -450,13 +450,24 @@
 
   <span class="kt">uint32_t</span> <span class="n">attr_version</span><span class="p">;</span>
 
+  <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="p">(</span><span class="k">const</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;&gt;</span> <span class="n">view_fn_</span><span class="p">;</span>
+
   <span class="n">CreationMeta</span> <span class="n">creation_meta</span><span class="p">;</span>
 
   <span class="kt">bool</span> <span class="nf">requires_grad</span><span class="p">()</span> <span class="k">const</span> <span class="k">override</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">requires_grad_</span> <span class="o">||</span> <span class="n">grad_fn_</span> <span class="o">||</span> <span class="p">(</span><span class="n">is_view_</span> <span class="o">&amp;&amp;</span> <span class="n">base_</span><span class="p">.</span><span class="n">requires_grad</span><span class="p">());</span>
   <span class="p">}</span>
 
-  <span class="n">DifferentiableViewMeta</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="o">*</span> <span class="n">self_impl</span><span class="p">,</span> <span class="n">Variable</span> <span class="n">base</span><span class="p">,</span>
+  <span class="kt">bool</span> <span class="nf">has_view_fn</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">view_fn_</span><span class="p">.</span><span class="n">has_value</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="p">(</span><span class="k">const</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;</span> <span class="n">view_fn</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">has_view_fn</span><span class="p">(),</span> <span class="s">&quot;view_fn is not set.&quot;</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">view_fn_</span><span class="p">.</span><span class="n">value</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="n">DifferentiableViewMeta</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="o">*</span> <span class="n">self_impl</span><span class="p">,</span> <span class="n">Variable</span> <span class="n">base</span><span class="p">,</span> <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="p">(</span><span class="k">const</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;&gt;</span> <span class="n">view_fn</span><span class="p">,</span>
                          <span class="n">CreationMeta</span> <span class="n">creation_meta</span><span class="o">=</span><span class="n">CreationMeta</span><span class="o">::</span><span class="n">DEFAULT</span><span class="p">);</span>
   <span class="o">~</span><span class="n">DifferentiableViewMeta</span><span class="p">();</span>
 <span class="p">};</span>
@@ -475,16 +486,17 @@
 <span class="kr">inline</span> <span class="n">Variable</span> <span class="nf">make_variable_differentiable_view</span><span class="p">(</span>
     <span class="n">Variable</span> <span class="n">base</span><span class="p">,</span>
     <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">data</span><span class="p">,</span>
-    <span class="n">CreationMeta</span> <span class="n">creation_meta</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">CreationMeta</span> <span class="n">creation_meta</span><span class="p">,</span>
+    <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="p">(</span><span class="k">const</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;&gt;</span> <span class="n">view_func</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">)</span> <span class="p">{</span>
   <span class="k">if</span> <span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">defined</span><span class="p">())</span> <span class="p">{</span>
     <span class="k">auto</span> <span class="n">data_impl_copy</span> <span class="o">=</span> <span class="n">data</span><span class="p">.</span><span class="n">getIntrusivePtr</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">shallow_copy_and_detach</span><span class="p">(</span>
       <span class="cm">/*version_counter=*/</span><span class="mi">0</span><span class="p">,</span>
       <span class="cm">/*allow_tensor_metadata_change=*/</span><span class="nb">true</span><span class="p">);</span>
     <span class="n">data_impl_copy</span><span class="o">-&gt;</span><span class="n">set_autograd_meta</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">DifferentiableViewMeta</span><span class="o">&gt;</span><span class="p">(</span>
-      <span class="n">data_impl_copy</span><span class="p">.</span><span class="n">get</span><span class="p">(),</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">base</span><span class="p">),</span>
+      <span class="n">data_impl_copy</span><span class="p">.</span><span class="n">get</span><span class="p">(),</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">base</span><span class="p">),</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">view_func</span><span class="p">),</span>
       <span class="n">creation_meta</span><span class="p">));</span>
     <span class="k">return</span> <span class="n">Variable</span><span class="p">(</span><span class="n">data_impl_copy</span><span class="p">);</span>
-    <span class="p">}</span>
+  <span class="p">}</span>
   <span class="k">return</span> <span class="n">Variable</span><span class="p">();</span>
 <span class="p">}</span>
 
