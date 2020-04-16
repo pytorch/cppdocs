@@ -1222,6 +1222,7 @@ Program Listing for File Functions.h
    static inline Tensor im2col_backward(const Tensor & grad_output, IntArrayRef input_size, IntArrayRef kernel_size, IntArrayRef dilation, IntArrayRef padding, IntArrayRef stride);
    static inline Tensor isfinite(const Tensor & self);
    static inline Tensor isinf(const Tensor & self);
+   static inline Tensor _test_serialization_subcmul(const Tensor & self, const Tensor & other, Scalar alpha=1);
    
    inline Tensor from_blob(
        void* data,
@@ -20510,6 +20511,18 @@ Program Listing for File Functions.h
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::isinf", "");
        return op.callUnboxed<Tensor, const Tensor &>(self);
+   #endif
+   }
+   
+   // aten::_test_serialization_subcmul(Tensor self, Tensor other, Scalar alpha=1) -> Tensor
+   static inline Tensor _test_serialization_subcmul(const Tensor & self, const Tensor & other, Scalar alpha) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       return TypeDefault::_test_serialization_subcmul(self, other, alpha);
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::_test_serialization_subcmul", "");
+       return op.callUnboxed<Tensor, const Tensor &, const Tensor &, Scalar>(self, other, alpha);
    #endif
    }
    
