@@ -17090,7 +17090,16 @@ Program Listing for File Functions.h
    static inline Tensor hardsigmoid_backward(const Tensor & grad_output, const Tensor & self) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::hardsigmoid_backward(grad_output, self);
+       DispatchKeySet _dk_set = c10::detail::multi_dispatch_key_set(grad_output, self);
+       DispatchKeySet _dk_mask = c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect);
+       DispatchKey _dk = c10::impl::dispatchTypeId(_dk_set, _dk_mask);
+       switch (dispatchKeyToBackend(_dk)) {
+           case Backend::CPU:
+               return CPUType::hardsigmoid_backward(grad_output, self);
+               break;
+           default:
+               AT_ERROR("hardsigmoid_backward not implemented for ", at::toString(_dk));
+       }
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::hardsigmoid_backward", "");
@@ -17255,7 +17264,16 @@ Program Listing for File Functions.h
    static inline Tensor hardswish_backward(const Tensor & grad_output, const Tensor & self) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       return TypeDefault::hardswish_backward(grad_output, self);
+       DispatchKeySet _dk_set = c10::detail::multi_dispatch_key_set(grad_output, self);
+       DispatchKeySet _dk_mask = c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect);
+       DispatchKey _dk = c10::impl::dispatchTypeId(_dk_set, _dk_mask);
+       switch (dispatchKeyToBackend(_dk)) {
+           case Backend::CPU:
+               return CPUType::hardswish_backward(grad_output, self);
+               break;
+           default:
+               AT_ERROR("hardswish_backward not implemented for ", at::toString(_dk));
+       }
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::hardswish_backward", "");
