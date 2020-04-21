@@ -281,12 +281,12 @@
 <span class="cp">#include</span> <span class="cpf">&lt;ATen/core/ivalue.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;ATen/core/jit_type.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;ATen/core/op_registration/infer_schema.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;ATen/core/op_registration/op_registration.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;ATen/core/stack.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;c10/util/C++17.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;c10/util/Metaprogramming.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;c10/util/TypeList.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;c10/util/TypeTraits.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/library.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;torch/custom_class_detail.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;iostream&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;sstream&gt;</span><span class="cp"></span>
@@ -458,7 +458,17 @@
 
 <span class="p">}</span> <span class="c1">// namespace jit</span>
 
-<span class="p">}</span> <span class="c1">// namespace torch</span>
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">CurClass</span><span class="o">&gt;</span>
+<span class="kr">inline</span> <span class="n">class_</span><span class="o">&lt;</span><span class="n">CurClass</span><span class="o">&gt;</span> <span class="n">Library</span><span class="o">::</span><span class="n">class_</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">className</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">kind_</span> <span class="o">==</span> <span class="n">DEF</span> <span class="o">||</span> <span class="n">kind_</span> <span class="o">==</span> <span class="n">FRAGMENT</span><span class="p">,</span>
+    <span class="s">&quot;class_(</span><span class="se">\&quot;</span><span class="s">&quot;</span><span class="p">,</span> <span class="n">className</span><span class="p">,</span> <span class="s">&quot;</span><span class="se">\&quot;</span><span class="s">): Cannot define a class inside of a TORCH_LIBRARY_IMPL block.  &quot;</span>
+    <span class="s">&quot;All class_()s should be placed in the (unique) TORCH_LIBRARY block for their namespace.  &quot;</span>
+    <span class="s">&quot;(Error occurred at &quot;</span><span class="p">,</span> <span class="n">file_</span><span class="p">,</span> <span class="s">&quot;:&quot;</span><span class="p">,</span> <span class="n">line_</span><span class="p">,</span> <span class="s">&quot;)&quot;</span><span class="p">);</span>
+  <span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span><span class="n">ns_</span><span class="p">.</span><span class="n">has_value</span><span class="p">(),</span> <span class="n">file_</span><span class="p">,</span> <span class="s">&quot;:&quot;</span><span class="p">,</span> <span class="n">line_</span><span class="p">);</span>
+  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">class_</span><span class="o">&lt;</span><span class="n">CurClass</span><span class="o">&gt;</span><span class="p">(</span><span class="o">*</span><span class="n">ns_</span><span class="p">,</span> <span class="n">className</span><span class="p">);</span>
+<span class="p">}</span>
+
+<span class="p">}</span>
 </pre></div>
 </div>
 </div>
