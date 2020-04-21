@@ -69,6 +69,9 @@ Program Listing for File Functions.h
    static inline Tensor abs(const Tensor & self);
    static inline Tensor & abs_(Tensor & self);
    static inline Tensor & abs_out(Tensor & out, const Tensor & self);
+   static inline Tensor absolute(const Tensor & self);
+   static inline Tensor & absolute_(Tensor & self);
+   static inline Tensor & absolute_out(Tensor & out, const Tensor & self);
    static inline Tensor angle(const Tensor & self);
    static inline Tensor & angle_out(Tensor & out, const Tensor & self);
    static inline Tensor real(const Tensor & self);
@@ -1777,6 +1780,69 @@ Program Listing for File Functions.h
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::abs", "out");
+       return op.callUnboxed<Tensor &, Tensor &, const Tensor &>(out, self);
+   #endif
+   }
+   
+   // aten::absolute(Tensor self) -> Tensor
+   static inline Tensor absolute(const Tensor & self) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       DispatchKeySet _dk_set = c10::detail::multi_dispatch_key_set(self);
+       DispatchKeySet _dk_mask = c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect);
+       DispatchKey _dk = c10::impl::dispatchTypeId(_dk_set, _dk_mask);
+       switch (dispatchKeyToBackend(_dk)) {
+           case Backend::CPU:
+               return CPUType::absolute(self);
+               break;
+           default:
+               AT_ERROR("absolute not implemented for ", at::toString(_dk));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::absolute", "");
+       return op.callUnboxed<Tensor, const Tensor &>(self);
+   #endif
+   }
+   
+   // aten::absolute_(Tensor(a!) self) -> Tensor(a!)
+   static inline Tensor & absolute_(Tensor & self) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       DispatchKeySet _dk_set = c10::detail::multi_dispatch_key_set(self);
+       DispatchKeySet _dk_mask = c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect);
+       DispatchKey _dk = c10::impl::dispatchTypeId(_dk_set, _dk_mask);
+       switch (dispatchKeyToBackend(_dk)) {
+           case Backend::CPU:
+               return CPUType::absolute_(self);
+               break;
+           default:
+               AT_ERROR("absolute_ not implemented for ", at::toString(_dk));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::absolute_", "");
+       return op.callUnboxed<Tensor &, Tensor &>(self);
+   #endif
+   }
+   
+   // aten::absolute.out(Tensor self, *, Tensor(a!) out) -> Tensor(a!)
+   static inline Tensor & absolute_out(Tensor & out, const Tensor & self) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       DispatchKeySet _dk_set = c10::detail::multi_dispatch_key_set(out, self);
+       DispatchKeySet _dk_mask = c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect);
+       DispatchKey _dk = c10::impl::dispatchTypeId(_dk_set, _dk_mask);
+       switch (dispatchKeyToBackend(_dk)) {
+           case Backend::CPU:
+               return CPUType::absolute_out_out(out, self);
+               break;
+           default:
+               AT_ERROR("absolute_out not implemented for ", at::toString(_dk));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::absolute", "out");
        return op.callUnboxed<Tensor &, Tensor &, const Tensor &>(out, self);
    #endif
    }
