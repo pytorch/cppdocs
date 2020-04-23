@@ -676,6 +676,7 @@ Program Listing for File Functions.h
    static inline Tensor _dirichlet_grad(const Tensor & x, const Tensor & alpha, const Tensor & total);
    static inline Tensor _sample_dirichlet(const Tensor & self, c10::optional<Generator> generator=c10::nullopt);
    static inline Tensor poisson(const Tensor & self, c10::optional<Generator> generator=c10::nullopt);
+   static inline Tensor binomial(const Tensor & count, const Tensor & prob, c10::optional<Generator> generator=c10::nullopt);
    static inline Tensor native_norm(const Tensor & self, Scalar p=2);
    static inline Tensor _sparse_sum(const Tensor & self);
    static inline Tensor _sparse_sum(const Tensor & self, ScalarType dtype);
@@ -10743,6 +10744,27 @@ Program Listing for File Functions.h
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::poisson", "");
        return op.callUnboxed<Tensor, const Tensor &, c10::optional<Generator>>(self, generator);
+   #endif
+   }
+   
+   // aten::binomial(Tensor count, Tensor prob, Generator? generator=None) -> Tensor
+   static inline Tensor binomial(const Tensor & count, const Tensor & prob, c10::optional<Generator> generator) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       DispatchKeySet _dk_set = c10::detail::multi_dispatch_key_set(count, prob);
+       DispatchKeySet _dk_mask = c10::DispatchKeySet(c10::DispatchKeySet::FULL).remove(DispatchKey::BackendSelect);
+       DispatchKey _dk = c10::impl::dispatchTypeId(_dk_set, _dk_mask);
+       switch (dispatchKeyToBackend(_dk)) {
+           case Backend::CPU:
+               return CPUType::binomial(count, prob, generator);
+               break;
+           default:
+               AT_ERROR("binomial not implemented for ", at::toString(_dk));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::binomial", "");
+       return op.callUnboxed<Tensor, const Tensor &, const Tensor &, c10::optional<Generator>>(count, prob, generator);
    #endif
    }
    
