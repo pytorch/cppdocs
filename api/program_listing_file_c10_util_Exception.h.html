@@ -354,12 +354,28 @@
   <span class="k">virtual</span> <span class="o">~</span><span class="n">WarningHandler</span><span class="p">()</span> <span class="k">noexcept</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span> <span class="p">{}</span>
   <span class="k">virtual</span> <span class="kt">void</span> <span class="n">process</span><span class="p">(</span>
       <span class="k">const</span> <span class="n">SourceLocation</span><span class="o">&amp;</span> <span class="n">source_location</span><span class="p">,</span>
-      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">msg</span><span class="p">);</span>
+      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">msg</span><span class="p">,</span>
+      <span class="k">const</span> <span class="kt">bool</span> <span class="n">verbatim</span><span class="p">);</span>
 <span class="p">};</span>
 
 <span class="k">namespace</span> <span class="n">Warning</span> <span class="p">{</span>
 
-<span class="n">C10_API</span> <span class="kt">void</span> <span class="n">warn</span><span class="p">(</span><span class="n">SourceLocation</span> <span class="n">source_location</span><span class="p">,</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">msg</span><span class="p">);</span>
+<span class="c1">// Note: [Verbatim Warnings]</span>
+<span class="c1">// Warnings originating in C++ code can appear out-of-place to Python users:</span>
+<span class="c1">// a user runs a line in Python, but the warning references a line in C++.</span>
+<span class="c1">// Some parts of PyTorch, like the JIT, are cognizant of this mismatch</span>
+<span class="c1">// and take care to map warnings back to the user&#39;s program, but most</span>
+<span class="c1">// of PyTorch simply throws a context-free warning. To allow warning</span>
+<span class="c1">// handlers to add context where appropriate, warn takes the</span>
+<span class="c1">// &quot;verbatim&quot; flag. When this is false a warning handler might append</span>
+<span class="c1">// the C++ warning to a Python warning message that relates the warning</span>
+<span class="c1">// back to the user&#39;s program. Callers who have already accounted for</span>
+<span class="c1">// context in their warnings should set verbatim to true so their warnings</span>
+<span class="c1">// appear without modification.</span>
+
+<span class="n">C10_API</span> <span class="kt">void</span> <span class="n">warn</span><span class="p">(</span><span class="n">SourceLocation</span> <span class="n">source_location</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">msg</span><span class="p">,</span>
+    <span class="kt">bool</span> <span class="n">verbatim</span><span class="p">);</span>
 <span class="n">C10_API</span> <span class="kt">void</span> <span class="nf">set_warning_handler</span><span class="p">(</span><span class="n">WarningHandler</span><span class="o">*</span> <span class="n">handler</span><span class="p">)</span> <span class="k">noexcept</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>
 <span class="n">C10_API</span> <span class="n">WarningHandler</span><span class="o">*</span> <span class="nf">get_warning_handler</span><span class="p">()</span> <span class="k">noexcept</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>
 
@@ -606,14 +622,14 @@
 <span class="c1">// arguments which are concatenated into the warning message using operator&lt;&lt;</span>
 <span class="c1">//</span>
 <span class="cp">#define TORCH_WARN(...) \</span>
-<span class="cp">  ::c10::Warning::warn({__func__, __FILE__, static_cast&lt;uint32_t&gt;(__LINE__)}, ::c10::str(__VA_ARGS__))</span>
+<span class="cp">  ::c10::Warning::warn({__func__, __FILE__, static_cast&lt;uint32_t&gt;(__LINE__)}, ::c10::str(__VA_ARGS__), false)</span>
 
 <span class="c1">// Report a warning to the user only once.  Accepts an arbitrary number of extra</span>
 <span class="c1">// arguments which are concatenated into the warning message using operator&lt;&lt;</span>
 <span class="c1">//</span>
 <span class="cp">#define TORCH_WARN_ONCE(...) \</span>
 <span class="cp">  C10_UNUSED static const auto C10_ANONYMOUS_VARIABLE(torch_warn_once_) = [&amp;] { \</span>
-<span class="cp">    ::c10::Warning::warn({__func__, __FILE__, static_cast&lt;uint32_t&gt;(__LINE__)}, ::c10::str(__VA_ARGS__)); \</span>
+<span class="cp">    ::c10::Warning::warn({__func__, __FILE__, static_cast&lt;uint32_t&gt;(__LINE__)}, ::c10::str(__VA_ARGS__), false); \</span>
 <span class="cp">    return true; \</span>
 <span class="cp">  }()</span>
 

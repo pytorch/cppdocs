@@ -92,12 +92,28 @@ Program Listing for File Exception.h
      virtual ~WarningHandler() noexcept(false) {}
      virtual void process(
          const SourceLocation& source_location,
-         const std::string& msg);
+         const std::string& msg,
+         const bool verbatim);
    };
    
    namespace Warning {
    
-   C10_API void warn(SourceLocation source_location, const std::string& msg);
+   // Note: [Verbatim Warnings]
+   // Warnings originating in C++ code can appear out-of-place to Python users:
+   // a user runs a line in Python, but the warning references a line in C++.
+   // Some parts of PyTorch, like the JIT, are cognizant of this mismatch
+   // and take care to map warnings back to the user's program, but most
+   // of PyTorch simply throws a context-free warning. To allow warning
+   // handlers to add context where appropriate, warn takes the
+   // "verbatim" flag. When this is false a warning handler might append
+   // the C++ warning to a Python warning message that relates the warning
+   // back to the user's program. Callers who have already accounted for
+   // context in their warnings should set verbatim to true so their warnings
+   // appear without modification.
+   
+   C10_API void warn(SourceLocation source_location,
+       const std::string& msg,
+       bool verbatim);
    C10_API void set_warning_handler(WarningHandler* handler) noexcept(true);
    C10_API WarningHandler* get_warning_handler() noexcept(true);
    
@@ -344,14 +360,14 @@ Program Listing for File Exception.h
    // arguments which are concatenated into the warning message using operator<<
    //
    #define TORCH_WARN(...) \
-     ::c10::Warning::warn({__func__, __FILE__, static_cast<uint32_t>(__LINE__)}, ::c10::str(__VA_ARGS__))
+     ::c10::Warning::warn({__func__, __FILE__, static_cast<uint32_t>(__LINE__)}, ::c10::str(__VA_ARGS__), false)
    
    // Report a warning to the user only once.  Accepts an arbitrary number of extra
    // arguments which are concatenated into the warning message using operator<<
    //
    #define TORCH_WARN_ONCE(...) \
      C10_UNUSED static const auto C10_ANONYMOUS_VARIABLE(torch_warn_once_) = [&] { \
-       ::c10::Warning::warn({__func__, __FILE__, static_cast<uint32_t>(__LINE__)}, ::c10::str(__VA_ARGS__)); \
+       ::c10::Warning::warn({__func__, __FILE__, static_cast<uint32_t>(__LINE__)}, ::c10::str(__VA_ARGS__), false); \
        return true; \
      }()
    
