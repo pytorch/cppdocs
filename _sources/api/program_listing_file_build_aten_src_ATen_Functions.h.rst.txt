@@ -653,6 +653,7 @@ Program Listing for File Functions.h
    static inline std::tuple<Tensor,Tensor,Tensor> _unique2(const Tensor & self, bool sorted=true, bool return_inverse=false, bool return_counts=false);
    static inline Tensor _unsafe_view(const Tensor & self, IntArrayRef size);
    static inline Tensor unsqueeze(const Tensor & self, int64_t dim);
+   static inline Tensor vander(const Tensor & x, c10::optional<int64_t> N=c10::nullopt, bool increasing=false);
    static inline Tensor var(const Tensor & self, bool unbiased=true);
    static inline Tensor var(const Tensor & self, IntArrayRef dim, bool unbiased=true, bool keepdim=false);
    static inline Tensor & var_out(Tensor & out, const Tensor & self, IntArrayRef dim, bool unbiased=true, bool keepdim=false);
@@ -10362,6 +10363,18 @@ Program Listing for File Functions.h
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::unsqueeze", "");
        return op.callUnboxed<Tensor, const Tensor &, int64_t>(self, dim);
+   #endif
+   }
+   
+   // aten::vander(Tensor x, int? N=None, bool increasing=False) -> Tensor
+   static inline Tensor vander(const Tensor & x, c10::optional<int64_t> N, bool increasing) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       return TypeDefault::vander(x, N, increasing);
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::vander", "");
+       return op.callUnboxed<Tensor, const Tensor &, c10::optional<int64_t>, bool>(x, N, increasing);
    #endif
    }
    
