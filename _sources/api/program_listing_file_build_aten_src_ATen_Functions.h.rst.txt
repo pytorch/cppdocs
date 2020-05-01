@@ -492,6 +492,7 @@ Program Listing for File Functions.h
    static inline Tensor _pdist_backward(const Tensor & grad, const Tensor & self, double p, const Tensor & pdist);
    static inline Tensor cosine_similarity(const Tensor & x1, const Tensor & x2, int64_t dim=1, double eps=1e-08);
    static inline Tensor pixel_shuffle(const Tensor & self, int64_t upscale_factor);
+   static inline Tensor channel_shuffle(const Tensor & self, int64_t groups);
    static inline Tensor pinverse(const Tensor & self, double rcond=1e-15);
    static inline Tensor poisson_nll_loss(const Tensor & input, const Tensor & target, bool log_input, bool full, double eps, int64_t reduction);
    static inline Tensor scalar_tensor(Scalar s, const TensorOptions & options={});
@@ -8068,6 +8069,30 @@ Program Listing for File Functions.h
    #endif
    }
    
+   // aten::channel_shuffle(Tensor self, int groups) -> Tensor
+   static inline Tensor channel_shuffle(const Tensor & self, int64_t groups) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       DispatchKeySet _dk_set = c10::detail::multi_dispatch_key_set(self);
+       DispatchKeySet _dk_mask = c10::DispatchKeySet(DispatchKeySet::FULL_AFTER, DispatchKey::BackendSelect);
+       DispatchKey _dk = c10::impl::dispatchTypeId(_dk_set, _dk_mask);
+       switch (dispatchKeyToBackend(_dk)) {
+           case Backend::CPU:
+               return CPUType::channel_shuffle(self, groups);
+               break;
+           case Backend::QuantizedCPU:
+               return QuantizedCPUType::channel_shuffle(self, groups);
+               break;
+           default:
+               AT_ERROR("channel_shuffle not implemented for ", at::toString(_dk));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::channel_shuffle", "");
+       return op.callUnboxed<Tensor, const Tensor &, int64_t>(self, groups);
+   #endif
+   }
+   
    // aten::pinverse(Tensor self, float rcond=1e-15) -> Tensor
    static inline Tensor pinverse(const Tensor & self, double rcond) {
    #ifdef USE_STATIC_DISPATCH
@@ -9750,16 +9775,7 @@ Program Listing for File Functions.h
    static inline Tensor & tan_(Tensor & self) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       DispatchKeySet _dk_set = c10::detail::multi_dispatch_key_set(self);
-       DispatchKeySet _dk_mask = c10::DispatchKeySet(DispatchKeySet::FULL_AFTER, DispatchKey::BackendSelect);
-       DispatchKey _dk = c10::impl::dispatchTypeId(_dk_set, _dk_mask);
-       switch (dispatchKeyToBackend(_dk)) {
-           case Backend::CPU:
-               return CPUType::tan_(self);
-               break;
-           default:
-               AT_ERROR("tan_ not implemented for ", at::toString(_dk));
-       }
+       return TypeDefault::tan_(self);
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::tan_", "");
@@ -9771,16 +9787,7 @@ Program Listing for File Functions.h
    static inline Tensor & tan_out(Tensor & out, const Tensor & self) {
    #ifdef USE_STATIC_DISPATCH
        at::AutoNonVariableTypeMode _var_guard(true);
-       DispatchKeySet _dk_set = c10::detail::multi_dispatch_key_set(out, self);
-       DispatchKeySet _dk_mask = c10::DispatchKeySet(DispatchKeySet::FULL_AFTER, DispatchKey::BackendSelect);
-       DispatchKey _dk = c10::impl::dispatchTypeId(_dk_set, _dk_mask);
-       switch (dispatchKeyToBackend(_dk)) {
-           case Backend::CPU:
-               return CPUType::tan_out_out(out, self);
-               break;
-           default:
-               AT_ERROR("tan_out not implemented for ", at::toString(_dk));
-       }
+       return TypeDefault::tan_out_out(out, self);
    #else
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::tan", "out");
