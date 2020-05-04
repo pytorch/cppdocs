@@ -295,14 +295,26 @@
 <span class="k">namespace</span> <span class="n">c10</span> <span class="p">{</span>
 
 <span class="k">class</span> <span class="nc">C10_API</span> <span class="nl">Error</span> <span class="p">:</span> <span class="k">public</span> <span class="n">std</span><span class="o">::</span><span class="n">exception</span> <span class="p">{</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span> <span class="n">msg_stack_</span><span class="p">;</span>
+  <span class="c1">// The actual error message.</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">msg_</span><span class="p">;</span>
+
+  <span class="c1">// Context for the message (in order of decreasing specificity).  Context will</span>
+  <span class="c1">// be automatically formatted appropriately, so it is not necessary to add</span>
+  <span class="c1">// extra leading/trailing newlines to strings inside this vector</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span> <span class="n">context_</span><span class="p">;</span>
+
+  <span class="c1">// The C++ backtrace at the point when this exception was raised.  This</span>
+  <span class="c1">// may be empty if there is no valid backtrace.  (We don&#39;t use optional</span>
+  <span class="c1">// here to reduce the dependencies this file has.)</span>
   <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">backtrace_</span><span class="p">;</span>
 
   <span class="c1">// These two are derived fields from msg_stack_ and backtrace_, but we need</span>
   <span class="c1">// fields for the strings so that we can return a const char* (as the</span>
-  <span class="c1">// signature of std::exception requires).</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">msg_</span><span class="p">;</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">msg_without_backtrace_</span><span class="p">;</span>
+  <span class="c1">// signature of std::exception requires).  Currently, the invariant</span>
+  <span class="c1">// is that these fields are ALWAYS populated consistently with respect</span>
+  <span class="c1">// to msg_stack_ and backtrace_.</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">what_</span><span class="p">;</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">what_without_backtrace_</span><span class="p">;</span>
 
   <span class="c1">// This is a little debugging trick: you can stash a relevant pointer</span>
   <span class="c1">// in caller, and then when you catch the exception, you can compare</span>
@@ -312,11 +324,11 @@
   <span class="k">const</span> <span class="kt">void</span><span class="o">*</span> <span class="n">caller_</span><span class="p">;</span>
 
  <span class="k">public</span><span class="o">:</span>
-  <span class="n">Error</span><span class="p">(</span>
-      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">msg</span><span class="p">,</span>
-      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">backtrace</span><span class="p">,</span>
-      <span class="k">const</span> <span class="kt">void</span><span class="o">*</span> <span class="n">caller</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">);</span>
-  <span class="n">Error</span><span class="p">(</span><span class="n">SourceLocation</span> <span class="n">source_location</span><span class="p">,</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">msg</span><span class="p">);</span>
+  <span class="c1">// PyTorch-style Error constructor.  NB: the implementation of this</span>
+  <span class="c1">// is actually in Logging.cpp</span>
+  <span class="n">Error</span><span class="p">(</span><span class="n">SourceLocation</span> <span class="n">source_location</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">msg</span><span class="p">);</span>
+
+  <span class="c1">// Caffe2-style error message</span>
   <span class="n">Error</span><span class="p">(</span>
       <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">file</span><span class="p">,</span>
       <span class="k">const</span> <span class="kt">uint32_t</span> <span class="n">line</span><span class="p">,</span>
@@ -325,19 +337,32 @@
       <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">backtrace</span><span class="p">,</span>
       <span class="k">const</span> <span class="kt">void</span><span class="o">*</span> <span class="n">caller</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">);</span>
 
-  <span class="kt">void</span> <span class="nf">AppendMessage</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">msg</span><span class="p">);</span>
+  <span class="c1">// Base constructor</span>
+  <span class="n">Error</span><span class="p">(</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">msg</span><span class="p">,</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">backtrace</span><span class="p">,</span>
+      <span class="k">const</span> <span class="kt">void</span><span class="o">*</span> <span class="n">caller</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">);</span>
 
-  <span class="c1">// Compute the full message from msg_ and msg_without_backtrace_</span>
-  <span class="c1">// TODO: Maybe this should be private</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">msg</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">msg_without_backtrace</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+  <span class="c1">// Add some new context to the message stack.  The last added context</span>
+  <span class="c1">// will be formatted at the end of the context list upon printing.</span>
+  <span class="c1">// WARNING: This method is O(n) in the size of the stack, so don&#39;t go</span>
+  <span class="c1">// wild adding a ridiculous amount of context to error messages.</span>
+  <span class="kt">void</span> <span class="nf">add_context</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">msg</span><span class="p">);</span>
 
-  <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;&amp;</span> <span class="n">msg_stack</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">msg_stack_</span><span class="p">;</span>
+  <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">msg</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">msg_</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;&amp;</span> <span class="n">context</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">context_</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">backtrace</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">backtrace_</span><span class="p">;</span>
   <span class="p">}</span>
 
   <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">what</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="k">override</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">msg_</span><span class="p">.</span><span class="n">c_str</span><span class="p">();</span>
+    <span class="k">return</span> <span class="n">what_</span><span class="p">.</span><span class="n">c_str</span><span class="p">();</span>
   <span class="p">}</span>
 
   <span class="k">const</span> <span class="kt">void</span><span class="o">*</span> <span class="n">caller</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="p">{</span>
@@ -345,8 +370,12 @@
   <span class="p">}</span>
 
   <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">what_without_backtrace</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">msg_without_backtrace_</span><span class="p">.</span><span class="n">c_str</span><span class="p">();</span>
+    <span class="k">return</span> <span class="n">what_without_backtrace_</span><span class="p">.</span><span class="n">c_str</span><span class="p">();</span>
   <span class="p">}</span>
+
+ <span class="k">private</span><span class="o">:</span>
+  <span class="kt">void</span> <span class="n">refresh_what</span><span class="p">();</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">compute_what</span><span class="p">(</span><span class="kt">bool</span> <span class="n">include_backtrace</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
 <span class="p">};</span>
 
 <span class="k">class</span> <span class="nc">C10_API</span> <span class="n">WarningHandler</span> <span class="p">{</span>
@@ -461,6 +490,16 @@
 <span class="c1">// ----------------------------------------------------------------------------</span>
 <span class="c1">// Error reporting macros</span>
 <span class="c1">// ----------------------------------------------------------------------------</span>
+
+<span class="cp">#ifdef STRIP_ERROR_MESSAGES</span>
+<span class="cp">#define TORCH_RETHROW(e, ...) throw</span>
+<span class="cp">#else</span>
+<span class="cp">#define TORCH_RETHROW(e, ...)      \</span>
+<span class="cp">  do { \</span>
+<span class="cp">    e.add_context(::c10::str(__VA_ARGS__)); \</span>
+<span class="cp">    throw; \</span>
+<span class="cp">  } while (false)</span>
+<span class="cp">#endif</span>
 
 <span class="c1">// A utility macro to provide assert()-like functionality; that is, enforcement</span>
 <span class="c1">// of internal invariants in code.  It supports an arbitrary number of extra</span>
