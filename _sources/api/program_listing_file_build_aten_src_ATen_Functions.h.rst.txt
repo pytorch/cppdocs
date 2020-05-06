@@ -485,6 +485,7 @@ Program Listing for File Functions.h
    static inline Tensor ones_like(const Tensor & self, const TensorOptions & options={}, c10::optional<MemoryFormat> memory_format=c10::nullopt);
    static inline Tensor pairwise_distance(const Tensor & x1, const Tensor & x2, double p=2, double eps=1e-06, bool keepdim=false);
    static inline Tensor cdist(const Tensor & x1, const Tensor & x2, double p=2, c10::optional<int64_t> compute_mode=c10::nullopt);
+   static inline Tensor _euclidean_dist(const Tensor & x1, const Tensor & x2);
    static inline Tensor _cdist_forward(const Tensor & x1, const Tensor & x2, double p, c10::optional<int64_t> compute_mode);
    static inline Tensor _cdist_backward(const Tensor & grad, const Tensor & x1, const Tensor & x2, double p, const Tensor & cdist);
    static inline Tensor pdist(const Tensor & self, double p=2);
@@ -7910,6 +7911,18 @@ Program Listing for File Functions.h
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::cdist", "");
        return op.callUnboxed<Tensor, const Tensor &, const Tensor &, double, c10::optional<int64_t>>(x1, x2, p, compute_mode);
+   #endif
+   }
+   
+   // aten::_euclidean_dist(Tensor x1, Tensor x2) -> Tensor
+   static inline Tensor _euclidean_dist(const Tensor & x1, const Tensor & x2) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       return TypeDefault::_euclidean_dist(x1, x2);
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::_euclidean_dist", "");
+       return op.callUnboxed<Tensor, const Tensor &, const Tensor &>(x1, x2);
    #endif
    }
    
