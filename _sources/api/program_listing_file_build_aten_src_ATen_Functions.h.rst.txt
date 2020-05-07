@@ -322,6 +322,7 @@ Program Listing for File Functions.h
    static inline Tensor ger(const Tensor & self, const Tensor & vec2);
    static inline Tensor & ger_out(Tensor & out, const Tensor & self, const Tensor & vec2);
    static inline Tensor group_norm(const Tensor & input, int64_t num_groups, const Tensor & weight={}, const Tensor & bias={}, double eps=1e-05, bool cudnn_enabled=true);
+   static inline Tensor quantized_group_norm(const Tensor & input, int64_t num_groups, const Tensor & weight, const Tensor & bias, double eps, double output_scale, int64_t output_zero_point);
    static inline Tensor fft(const Tensor & self, int64_t signal_ndim, bool normalized=false);
    static inline Tensor ifft(const Tensor & self, int64_t signal_ndim, bool normalized=false);
    static inline Tensor rfft(const Tensor & self, int64_t signal_ndim, bool normalized=false, bool onesided=true);
@@ -338,6 +339,7 @@ Program Listing for File Functions.h
    static inline Tensor index_put(const Tensor & self, TensorList indices, const Tensor & values, bool accumulate=false);
    static inline Tensor & _index_put_impl_(Tensor & self, TensorList indices, const Tensor & values, bool accumulate=false, bool unsafe=false);
    static inline Tensor instance_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, const Tensor & running_mean, const Tensor & running_var, bool use_input_stats, double momentum, double eps, bool cudnn_enabled);
+   static inline Tensor quantized_instance_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, double eps, double output_scale, int64_t output_zero_point);
    static inline Tensor inverse(const Tensor & self);
    static inline Tensor & inverse_out(Tensor & out, const Tensor & self);
    static inline Tensor _inverse_helper(const Tensor & self);
@@ -5500,6 +5502,27 @@ Program Listing for File Functions.h
    #endif
    }
    
+   // aten::quantized_group_norm(Tensor input, int num_groups, Tensor? weight, Tensor? bias, float eps, float output_scale, int output_zero_point) -> Tensor
+   static inline Tensor quantized_group_norm(const Tensor & input, int64_t num_groups, const Tensor & weight, const Tensor & bias, double eps, double output_scale, int64_t output_zero_point) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       DispatchKeySet _dk_set = c10::detail::multi_dispatch_key_set(input, weight, bias);
+       DispatchKeySet _dk_mask = c10::DispatchKeySet(DispatchKeySet::FULL_AFTER, DispatchKey::BackendSelect);
+       DispatchKey _dk = c10::impl::dispatchTypeId(_dk_set, _dk_mask);
+       switch (dispatchKeyToBackend(_dk)) {
+           case Backend::QuantizedCPU:
+               return QuantizedCPUType::quantized_group_norm(input, num_groups, weight, bias, eps, output_scale, output_zero_point);
+               break;
+           default:
+               AT_ERROR("quantized_group_norm not implemented for ", at::toString(_dk));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::quantized_group_norm", "");
+       return op.callUnboxed<Tensor, const Tensor &, int64_t, const Tensor &, const Tensor &, double, double, int64_t>(input, num_groups, weight, bias, eps, output_scale, output_zero_point);
+   #endif
+   }
+   
    // aten::fft(Tensor self, int signal_ndim, bool normalized=False) -> Tensor
    static inline Tensor fft(const Tensor & self, int64_t signal_ndim, bool normalized) {
    #ifdef USE_STATIC_DISPATCH
@@ -5698,6 +5721,27 @@ Program Listing for File Functions.h
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::instance_norm", "");
        return op.callUnboxed<Tensor, const Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, bool, double, double, bool>(input, weight, bias, running_mean, running_var, use_input_stats, momentum, eps, cudnn_enabled);
+   #endif
+   }
+   
+   // aten::quantized_instance_norm(Tensor input, Tensor? weight, Tensor? bias, float eps, float output_scale, int output_zero_point) -> Tensor
+   static inline Tensor quantized_instance_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, double eps, double output_scale, int64_t output_zero_point) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       DispatchKeySet _dk_set = c10::detail::multi_dispatch_key_set(input, weight, bias);
+       DispatchKeySet _dk_mask = c10::DispatchKeySet(DispatchKeySet::FULL_AFTER, DispatchKey::BackendSelect);
+       DispatchKey _dk = c10::impl::dispatchTypeId(_dk_set, _dk_mask);
+       switch (dispatchKeyToBackend(_dk)) {
+           case Backend::QuantizedCPU:
+               return QuantizedCPUType::quantized_instance_norm(input, weight, bias, eps, output_scale, output_zero_point);
+               break;
+           default:
+               AT_ERROR("quantized_instance_norm not implemented for ", at::toString(_dk));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::quantized_instance_norm", "");
+       return op.callUnboxed<Tensor, const Tensor &, const Tensor &, const Tensor &, double, double, int64_t>(input, weight, bias, eps, output_scale, output_zero_point);
    #endif
    }
    
