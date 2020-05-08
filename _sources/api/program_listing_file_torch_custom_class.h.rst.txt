@@ -14,6 +14,7 @@ Program Listing for File custom_class.h
 
    #pragma once
    
+   #include <ATen/core/stack.h>
    #include <ATen/core/builtin_function.h>
    #include <ATen/core/function_schema.h>
    #include <ATen/core/ivalue.h>
@@ -77,6 +78,15 @@ Program Listing for File custom_class.h
      class_& def(std::string name, Func f) {
        auto wrapped_f = detail::wrap_func<CurClass, Func>(std::move(f));
        defineMethod(std::move(name), std::move(wrapped_f));
+       return *this;
+     }
+   
+     class_& _def_unboxed(std::string name, std::function<void(jit::Stack&)> func, c10::FunctionSchema schema) {
+       auto qualMethodName = qualClassName + "." + name;
+       auto method = std::make_unique<jit::BuiltinOpFunction>(
+           qualMethodName, std::move(schema), std::move(func));
+       classTypePtr->addMethod(method.get());
+       registerCustomClassMethod(std::move(method));
        return *this;
      }
    
