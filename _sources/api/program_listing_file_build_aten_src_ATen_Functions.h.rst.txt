@@ -392,6 +392,12 @@ Program Listing for File Functions.h
    static inline Tensor log_softmax(const Tensor & self, Dimname dim, c10::optional<ScalarType> dtype=c10::nullopt);
    static inline Tensor _log_softmax(const Tensor & self, int64_t dim, bool half_to_float);
    static inline Tensor _log_softmax_backward_data(const Tensor & grad_output, const Tensor & output, int64_t dim, const Tensor & self);
+   static inline Tensor _logcumsumexp(const Tensor & self, int64_t dim);
+   static inline Tensor & _logcumsumexp_out(Tensor & out, const Tensor & self, int64_t dim);
+   static inline Tensor logcumsumexp(const Tensor & self, int64_t dim);
+   static inline Tensor & logcumsumexp_out(Tensor & out, const Tensor & self, int64_t dim);
+   static inline Tensor logcumsumexp(const Tensor & self, Dimname dim);
+   static inline Tensor & logcumsumexp_out(Tensor & out, const Tensor & self, Dimname dim);
    static inline Tensor logsumexp(const Tensor & self, IntArrayRef dim, bool keepdim=false);
    static inline Tensor & logsumexp_out(Tensor & out, const Tensor & self, IntArrayRef dim, bool keepdim=false);
    static inline Tensor logsumexp(const Tensor & self, DimnameList dim, bool keepdim=false);
@@ -6474,6 +6480,96 @@ Program Listing for File Functions.h
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::_log_softmax_backward_data", "");
        return op.call<Tensor, const Tensor &, const Tensor &, int64_t, const Tensor &>(grad_output, output, dim, self);
+   #endif
+   }
+   
+   // aten::_logcumsumexp(Tensor self, int dim) -> Tensor
+   static inline Tensor _logcumsumexp(const Tensor & self, int64_t dim) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       DispatchKeySet _dk_set = c10::detail::multi_dispatch_key_set(self);
+       DispatchKeySet _dk_mask = c10::DispatchKeySet(DispatchKeySet::FULL_AFTER, DispatchKey::BackendSelect);
+       DispatchKey _dk = c10::impl::dispatchTypeId(_dk_set, _dk_mask);
+       switch (dispatchKeyToBackend(_dk)) {
+           case Backend::CPU:
+               return CPUType::_logcumsumexp(self, dim);
+               break;
+           default:
+               AT_ERROR("_logcumsumexp not implemented for ", at::toString(_dk));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::_logcumsumexp", "");
+       return op.call<Tensor, const Tensor &, int64_t>(self, dim);
+   #endif
+   }
+   
+   // aten::_logcumsumexp.out(Tensor self, int dim, *, Tensor(a!) out) -> Tensor(a!)
+   static inline Tensor & _logcumsumexp_out(Tensor & out, const Tensor & self, int64_t dim) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       DispatchKeySet _dk_set = c10::detail::multi_dispatch_key_set(out, self);
+       DispatchKeySet _dk_mask = c10::DispatchKeySet(DispatchKeySet::FULL_AFTER, DispatchKey::BackendSelect);
+       DispatchKey _dk = c10::impl::dispatchTypeId(_dk_set, _dk_mask);
+       switch (dispatchKeyToBackend(_dk)) {
+           case Backend::CPU:
+               return CPUType::_logcumsumexp_out_out(out, self, dim);
+               break;
+           default:
+               AT_ERROR("_logcumsumexp_out not implemented for ", at::toString(_dk));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::_logcumsumexp", "out");
+       return op.call<Tensor &, Tensor &, const Tensor &, int64_t>(out, self, dim);
+   #endif
+   }
+   
+   // aten::logcumsumexp(Tensor self, int dim) -> Tensor
+   static inline Tensor logcumsumexp(const Tensor & self, int64_t dim) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       return TypeDefault::logcumsumexp(self, dim);
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::logcumsumexp", "");
+       return op.call<Tensor, const Tensor &, int64_t>(self, dim);
+   #endif
+   }
+   
+   // aten::logcumsumexp.out(Tensor self, int dim, *, Tensor(a!) out) -> Tensor(a!)
+   static inline Tensor & logcumsumexp_out(Tensor & out, const Tensor & self, int64_t dim) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       return TypeDefault::logcumsumexp_out_out(out, self, dim);
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::logcumsumexp", "out");
+       return op.call<Tensor &, Tensor &, const Tensor &, int64_t>(out, self, dim);
+   #endif
+   }
+   
+   // aten::logcumsumexp.dimname(Tensor self, Dimname dim) -> Tensor
+   static inline Tensor logcumsumexp(const Tensor & self, Dimname dim) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       return TypeDefault::logcumsumexp_dimname(self, dim);
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::logcumsumexp", "dimname");
+       return op.call<Tensor, const Tensor &, Dimname>(self, dim);
+   #endif
+   }
+   
+   // aten::logcumsumexp.dimname_out(Tensor self, Dimname dim, *, Tensor(a!) out) -> Tensor(a!)
+   static inline Tensor & logcumsumexp_out(Tensor & out, const Tensor & self, Dimname dim) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       return TypeDefault::logcumsumexp_out_dimname_out(out, self, dim);
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::logcumsumexp", "dimname_out");
+       return op.call<Tensor &, Tensor &, const Tensor &, Dimname>(out, self, dim);
    #endif
    }
    
