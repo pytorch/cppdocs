@@ -482,6 +482,7 @@ Program Listing for File Functions.h
    static inline std::tuple<Tensor,Tensor,Tensor,Tensor> batch_norm_backward_reduce(const Tensor & grad_out, const Tensor & input, const Tensor & mean, const Tensor & invstd, const Tensor & weight, bool input_g, bool weight_g, bool bias_g);
    static inline Tensor batch_norm_backward_elemt(const Tensor & grad_out, const Tensor & input, const Tensor & mean, const Tensor & invstd, const Tensor & weight, const Tensor & mean_dy, const Tensor & mean_dy_xmu);
    static inline std::tuple<Tensor,Tensor> batch_norm_update_stats(const Tensor & input, const Tensor & running_mean, const Tensor & running_var, double momentum);
+   static inline bool is_vulkan_available();
    static inline bool _nnpack_available();
    static inline Tensor _nnpack_spatial_convolution(const Tensor & input, const Tensor & weight, const Tensor & bias, IntArrayRef padding, IntArrayRef stride=1);
    static inline std::tuple<Tensor,Tensor,Tensor> _nnpack_spatial_convolution_backward(const Tensor & input, const Tensor & grad_output, const Tensor & weight, IntArrayRef padding, std::array<bool,3> output_mask);
@@ -2068,6 +2069,11 @@ Program Listing for File Functions.h
            case Backend::CPU:
                return CPUType::add_Tensor(self, other, alpha);
                break;
+           #ifdef USE_VULKAN
+           case Backend::Vulkan:
+               return VulkanType::add_Tensor(self, other, alpha);
+               break;
+           #endif
            default:
                AT_ERROR("add not implemented for ", at::toString(_dk));
        }
@@ -3291,6 +3297,11 @@ Program Listing for File Functions.h
            case Backend::QuantizedCPU:
                return QuantizedCPUType::clamp(self, min, max);
                break;
+           #ifdef USE_VULKAN
+           case Backend::Vulkan:
+               return VulkanType::clamp(self, min, max);
+               break;
+           #endif
            default:
                AT_ERROR("clamp not implemented for ", at::toString(_dk));
        }
@@ -4653,6 +4664,11 @@ Program Listing for File Functions.h
            case Backend::CPU:
                return CPUType::empty_memory_format(size, options, memory_format);
                break;
+           #ifdef USE_VULKAN
+           case Backend::Vulkan:
+               return VulkanType::empty_memory_format(size, options, memory_format);
+               break;
+           #endif
            default:
                AT_ERROR("empty not implemented for ", at::toString(_dk));
        }
@@ -6887,6 +6903,11 @@ Program Listing for File Functions.h
            case Backend::QuantizedCPU:
                return QuantizedCPUType::mean_dim(self, dim, keepdim, dtype);
                break;
+           #ifdef USE_VULKAN
+           case Backend::Vulkan:
+               return VulkanType::mean_dim(self, dim, keepdim, dtype);
+               break;
+           #endif
            default:
                AT_ERROR("mean not implemented for ", at::toString(_dk));
        }
@@ -7873,6 +7894,18 @@ Program Listing for File Functions.h
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::batch_norm_update_stats", "");
        return op.call<std::tuple<Tensor,Tensor>, const Tensor &, const Tensor &, const Tensor &, double>(input, running_mean, running_var, momentum);
+   #endif
+   }
+   
+   // aten::is_vulkan_available() -> bool
+   static inline bool is_vulkan_available() {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       return TypeDefault::is_vulkan_available();
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::is_vulkan_available", "");
+       return op.call<bool>();
    #endif
    }
    
@@ -11417,6 +11450,11 @@ Program Listing for File Functions.h
            case Backend::CPU:
                return CPUType::addmm(self, mat1, mat2, beta, alpha);
                break;
+           #ifdef USE_VULKAN
+           case Backend::Vulkan:
+               return VulkanType::addmm(self, mat1, mat2, beta, alpha);
+               break;
+           #endif
            default:
                AT_ERROR("addmm not implemented for ", at::toString(_dk));
        }
@@ -17381,6 +17419,11 @@ Program Listing for File Functions.h
            case Backend::QuantizedCPU:
                return QuantizedCPUType::hardtanh_(self, min_val, max_val);
                break;
+           #ifdef USE_VULKAN
+           case Backend::Vulkan:
+               return VulkanType::hardtanh_(self, min_val, max_val);
+               break;
+           #endif
            default:
                AT_ERROR("hardtanh_ not implemented for ", at::toString(_dk));
        }
@@ -19737,6 +19780,11 @@ Program Listing for File Functions.h
            case Backend::QuantizedCPU:
                return QuantizedCPUType::upsample_nearest2d(self, output_size, scales_h, scales_w);
                break;
+           #ifdef USE_VULKAN
+           case Backend::Vulkan:
+               return VulkanType::upsample_nearest2d(self, output_size, scales_h, scales_w);
+               break;
+           #endif
            default:
                AT_ERROR("upsample_nearest2d not implemented for ", at::toString(_dk));
        }
