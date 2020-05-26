@@ -1015,8 +1015,6 @@ Program Listing for File Functions.h
    static inline std::tuple<Tensor &,Tensor &> _mode_out(Tensor & values, Tensor & indices, const Tensor & self, int64_t dim=-1, bool keepdim=false);
    static inline std::tuple<Tensor,Tensor> _max(const Tensor & self, int64_t dim, bool keepdim=false);
    static inline std::tuple<Tensor &,Tensor &> _max_out(Tensor & max, Tensor & max_indices, const Tensor & self, int64_t dim, bool keepdim=false);
-   static inline std::tuple<Tensor,Tensor> _min(const Tensor & self, int64_t dim, bool keepdim=false);
-   static inline std::tuple<Tensor &,Tensor &> _min_out(Tensor & min, Tensor & min_indices, const Tensor & self, int64_t dim, bool keepdim=false);
    static inline Tensor bucketize(const Tensor & self, const Tensor & boundaries, bool out_int32=false, bool right=false);
    static inline Tensor & bucketize_out(Tensor & out, const Tensor & self, const Tensor & boundaries, bool out_int32=false, bool right=false);
    static inline Tensor bucketize(Scalar self, const Tensor & boundaries, bool out_int32=false, bool right=false);
@@ -16256,48 +16254,6 @@ Program Listing for File Functions.h
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::_max", "max");
        return op.call<std::tuple<Tensor &,Tensor &>, Tensor &, Tensor &, const Tensor &, int64_t, bool>(max, max_indices, self, dim, keepdim);
-   #endif
-   }
-   
-   // aten::_min(Tensor self, int dim, bool keepdim=False) -> (Tensor, Tensor)
-   static inline std::tuple<Tensor,Tensor> _min(const Tensor & self, int64_t dim, bool keepdim) {
-   #ifdef USE_STATIC_DISPATCH
-       at::AutoNonVariableTypeMode _var_guard(true);
-       DispatchKeySet _dk_set = c10::detail::multi_dispatch_key_set(self);
-       DispatchKeySet _dk_mask = c10::DispatchKeySet(DispatchKeySet::FULL_AFTER, DispatchKey::BackendSelect);
-       DispatchKey _dk = c10::impl::dispatchTypeId(_dk_set, _dk_mask);
-       switch (dispatchKeyToBackend(_dk)) {
-           case Backend::CPU:
-               return CPUType::_min(self, dim, keepdim);
-               break;
-           default:
-               AT_ERROR("_min not implemented for ", at::toString(_dk));
-       }
-   #else
-       static c10::OperatorHandle op = c10::Dispatcher::singleton()
-           .findSchemaOrThrow("aten::_min", "");
-       return op.call<std::tuple<Tensor,Tensor>, const Tensor &, int64_t, bool>(self, dim, keepdim);
-   #endif
-   }
-   
-   // aten::_min.min(Tensor self, int dim, bool keepdim=False, *, Tensor(a!) min, Tensor(b!) min_indices) -> (Tensor(a!), Tensor(b!))
-   static inline std::tuple<Tensor &,Tensor &> _min_out(Tensor & min, Tensor & min_indices, const Tensor & self, int64_t dim, bool keepdim) {
-   #ifdef USE_STATIC_DISPATCH
-       at::AutoNonVariableTypeMode _var_guard(true);
-       DispatchKeySet _dk_set = c10::detail::multi_dispatch_key_set(min, min_indices, self);
-       DispatchKeySet _dk_mask = c10::DispatchKeySet(DispatchKeySet::FULL_AFTER, DispatchKey::BackendSelect);
-       DispatchKey _dk = c10::impl::dispatchTypeId(_dk_set, _dk_mask);
-       switch (dispatchKeyToBackend(_dk)) {
-           case Backend::CPU:
-               return CPUType::_min_out_min(min, min_indices, self, dim, keepdim);
-               break;
-           default:
-               AT_ERROR("_min_out not implemented for ", at::toString(_dk));
-       }
-   #else
-       static c10::OperatorHandle op = c10::Dispatcher::singleton()
-           .findSchemaOrThrow("aten::_min", "min");
-       return op.call<std::tuple<Tensor &,Tensor &>, Tensor &, Tensor &, const Tensor &, int64_t, bool>(min, min_indices, self, dim, keepdim);
    #endif
    }
    
