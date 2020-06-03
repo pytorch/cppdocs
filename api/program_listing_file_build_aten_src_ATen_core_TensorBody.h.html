@@ -293,6 +293,7 @@
 #include &lt;ATen/core/DeprecatedTypePropertiesRegistry.h&gt;
 #include &lt;ATen/core/DeprecatedTypeProperties.h&gt;
 #include &lt;ATen/core/NamedTensor.h&gt;
+#include &lt;torch/csrc/WindowsTorchApiMacro.h&gt;
 
 namespace caffe2 {
 class Tensor;
@@ -1309,6 +1310,24 @@ protected:
   void enforce_invariants();
   c10::intrusive_ptr&lt;TensorImpl, UndefinedTensorImpl&gt; impl_;
 };
+
+int64_t get_device(Tensor self);
+
+template &lt;typename T&gt;
+auto Tensor::register_hook(T&amp;&amp; hook) const -&gt; Tensor::hook_return_void_t&lt;T&gt; {
+  // Return the grad argument in case of a hook with void return type to have an
+  // std::function with Tensor return type
+  std::function&lt;void(Tensor)&gt; fn(hook);
+  return _register_hook([fn](const Tensor&amp; grad) {
+    fn(grad);
+    return Tensor();
+  });
+}
+
+template &lt;typename T&gt;
+auto Tensor::register_hook(T&amp;&amp; hook) const -&gt; Tensor::hook_return_var_t&lt;T&gt; {
+  return _register_hook(hook);
+}
 
 namespace detail {
 // Helper creator for Tensor class which doesn&#39;t requires the users to pass
