@@ -323,6 +323,8 @@ Program Listing for File Functions.h
    static inline Tensor ger(const Tensor & self, const Tensor & vec2);
    static inline Tensor & ger_out(Tensor & out, const Tensor & self, const Tensor & vec2);
    static inline Tensor group_norm(const Tensor & input, int64_t num_groups, const Tensor & weight={}, const Tensor & bias={}, double eps=1e-05, bool cudnn_enabled=true);
+   static inline std::tuple<Tensor,Tensor,Tensor> native_group_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, int64_t N, int64_t C, int64_t HxW, int64_t group, double eps);
+   static inline std::tuple<Tensor,Tensor,Tensor> native_group_norm_backward(const Tensor & grad_out, const Tensor & input, const Tensor & mean, const Tensor & rstd, const Tensor & weight, int64_t N, int64_t C, int64_t HxW, int64_t group, std::array<bool,3> output_mask);
    static inline Tensor quantized_group_norm(const Tensor & input, int64_t num_groups, const Tensor & weight, const Tensor & bias, double eps, double output_scale, int64_t output_zero_point);
    static inline Tensor fft(const Tensor & self, int64_t signal_ndim, bool normalized=false);
    static inline Tensor ifft(const Tensor & self, int64_t signal_ndim, bool normalized=false);
@@ -5440,6 +5442,48 @@ Program Listing for File Functions.h
        static c10::OperatorHandle op = c10::Dispatcher::singleton()
            .findSchemaOrThrow("aten::group_norm", "");
        return op.call<Tensor, const Tensor &, int64_t, const Tensor &, const Tensor &, double, bool>(input, num_groups, weight, bias, eps, cudnn_enabled);
+   #endif
+   }
+   
+   // aten::native_group_norm(Tensor input, Tensor? weight, Tensor? bias, int N, int C, int HxW, int group, float eps) -> (Tensor, Tensor, Tensor)
+   static inline std::tuple<Tensor,Tensor,Tensor> native_group_norm(const Tensor & input, const Tensor & weight, const Tensor & bias, int64_t N, int64_t C, int64_t HxW, int64_t group, double eps) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       DispatchKeySet _dk_set = c10::detail::multi_dispatch_key_set(input, weight, bias);
+       DispatchKeySet _dk_mask = c10::DispatchKeySet(DispatchKeySet::FULL_AFTER, DispatchKey::BackendSelect);
+       DispatchKey _dk = c10::impl::dispatchTypeId(_dk_set, _dk_mask);
+       switch (dispatchKeyToBackend(_dk)) {
+           case Backend::CPU:
+               return CPUType::native_group_norm(input, weight, bias, N, C, HxW, group, eps);
+               break;
+           default:
+               AT_ERROR("native_group_norm not implemented for ", at::toString(_dk));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::native_group_norm", "");
+       return op.call<std::tuple<Tensor,Tensor,Tensor>, const Tensor &, const Tensor &, const Tensor &, int64_t, int64_t, int64_t, int64_t, double>(input, weight, bias, N, C, HxW, group, eps);
+   #endif
+   }
+   
+   // aten::native_group_norm_backward(Tensor grad_out, Tensor input, Tensor mean, Tensor rstd, Tensor? weight, int N, int C, int HxW, int group, bool[3] output_mask) -> (Tensor, Tensor, Tensor)
+   static inline std::tuple<Tensor,Tensor,Tensor> native_group_norm_backward(const Tensor & grad_out, const Tensor & input, const Tensor & mean, const Tensor & rstd, const Tensor & weight, int64_t N, int64_t C, int64_t HxW, int64_t group, std::array<bool,3> output_mask) {
+   #ifdef USE_STATIC_DISPATCH
+       at::AutoNonVariableTypeMode _var_guard(true);
+       DispatchKeySet _dk_set = c10::detail::multi_dispatch_key_set(grad_out, input, mean, rstd, weight);
+       DispatchKeySet _dk_mask = c10::DispatchKeySet(DispatchKeySet::FULL_AFTER, DispatchKey::BackendSelect);
+       DispatchKey _dk = c10::impl::dispatchTypeId(_dk_set, _dk_mask);
+       switch (dispatchKeyToBackend(_dk)) {
+           case Backend::CPU:
+               return CPUType::native_group_norm_backward(grad_out, input, mean, rstd, weight, N, C, HxW, group, output_mask);
+               break;
+           default:
+               AT_ERROR("native_group_norm_backward not implemented for ", at::toString(_dk));
+       }
+   #else
+       static c10::OperatorHandle op = c10::Dispatcher::singleton()
+           .findSchemaOrThrow("aten::native_group_norm_backward", "");
+       return op.call<std::tuple<Tensor,Tensor,Tensor>, const Tensor &, const Tensor &, const Tensor &, const Tensor &, const Tensor &, int64_t, int64_t, int64_t, int64_t, std::array<bool,3>>(grad_out, input, mean, rstd, weight, N, C, HxW, group, output_mask);
    #endif
    }
    
