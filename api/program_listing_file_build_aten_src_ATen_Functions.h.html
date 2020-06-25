@@ -1529,7 +1529,26 @@
 <span class="n">CAFFE2_API</span> <span class="n">Tensor</span> <span class="nf">_remove_batch_dim</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span> <span class="o">&amp;</span> <span class="n">self</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">level</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">batch_size</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">out_dim</span><span class="p">);</span>
 <span class="n">CAFFE2_API</span> <span class="n">Tensor</span> <span class="nf">_test_serialization_subcmul</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span> <span class="o">&amp;</span> <span class="n">self</span><span class="p">,</span> <span class="k">const</span> <span class="n">Tensor</span> <span class="o">&amp;</span> <span class="n">other</span><span class="p">,</span> <span class="n">Scalar</span> <span class="n">alpha</span><span class="o">=</span><span class="mi">1</span><span class="p">);</span>
 
-<span class="kr">inline</span> <span class="n">Tensor</span> <span class="nf">from_blob</span><span class="p">(</span>
+<span class="c1">// Special C++ only overloads for std()-like functions (See gh-40287)</span>
+<span class="c1">// These are needed because int -&gt; bool conversion takes precedence over int -&gt; IntArrayRef</span>
+<span class="c1">// So, for example std(0) would select the std(unbiased=False) overload</span>
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="nf">var</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">self</span><span class="p">,</span> <span class="kt">int</span> <span class="n">dim</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">at</span><span class="o">::</span><span class="n">native</span><span class="o">::</span><span class="n">var</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">IntArrayRef</span><span class="p">{</span><span class="n">dim</span><span class="p">});</span>
+<span class="p">}</span>
+
+<span class="kr">inline</span> <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">,</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">var_mean</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">self</span><span class="p">,</span> <span class="kt">int</span> <span class="n">dim</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">at</span><span class="o">::</span><span class="n">native</span><span class="o">::</span><span class="n">var_mean</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">IntArrayRef</span><span class="p">{</span><span class="n">dim</span><span class="p">});</span>
+<span class="p">}</span>
+
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">std</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">self</span><span class="p">,</span> <span class="kt">int</span> <span class="n">dim</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">at</span><span class="o">::</span><span class="n">native</span><span class="o">::</span><span class="n">std</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">IntArrayRef</span><span class="p">{</span><span class="n">dim</span><span class="p">});</span>
+<span class="p">}</span>
+
+<span class="kr">inline</span> <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">,</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">std_mean</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">self</span><span class="p">,</span> <span class="kt">int</span> <span class="n">dim</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">at</span><span class="o">::</span><span class="n">native</span><span class="o">::</span><span class="n">std_mean</span><span class="p">(</span><span class="n">self</span><span class="p">,</span> <span class="n">IntArrayRef</span><span class="p">{</span><span class="n">dim</span><span class="p">});</span>
+<span class="p">}</span>
+
+<span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">from_blob</span><span class="p">(</span>
     <span class="kt">void</span><span class="o">*</span> <span class="n">data</span><span class="p">,</span>
     <span class="n">IntArrayRef</span> <span class="n">sizes</span><span class="p">,</span>
     <span class="n">IntArrayRef</span> <span class="n">strides</span><span class="p">,</span>
