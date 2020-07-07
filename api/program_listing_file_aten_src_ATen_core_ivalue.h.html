@@ -315,6 +315,36 @@
 <span class="k">struct</span> <span class="n">PyObjectHolder</span><span class="p">;</span>
 <span class="p">}</span>
 
+<span class="c1">// This is an owning wrapper for a c10::optional&lt;std::vector&lt;T&gt;&gt;</span>
+<span class="c1">// that can be implicitly converted to a (non-owning) optional&lt;ArrayRef&lt;T&gt;&gt;.</span>
+<span class="c1">// Its purpose is to be used in generated code to keep the vector alive</span>
+<span class="c1">// either until the end of a statement (as a temporary), or as a saved arg</span>
+<span class="c1">// in autograd.</span>
+<span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
+<span class="k">struct</span> <span class="n">OptionalArray</span> <span class="p">{</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;</span> <span class="n">list</span><span class="p">;</span>
+
+  <span class="n">OptionalArray</span><span class="p">()</span> <span class="p">{};</span>
+  <span class="n">OptionalArray</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">val</span><span class="p">)</span> <span class="o">:</span> <span class="n">list</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">val</span><span class="p">))</span> <span class="p">{}</span>
+
+  <span class="c1">// Used when saving an argument for the backwards pass.</span>
+  <span class="n">OptionalArray</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">ArrayRef</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;</span> <span class="n">ref</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">ref</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">list</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">ref</span><span class="o">-&gt;</span><span class="n">begin</span><span class="p">(),</span> <span class="n">ref</span><span class="o">-&gt;</span><span class="n">end</span><span class="p">());</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="n">list</span> <span class="o">=</span> <span class="n">nullopt</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="k">operator</span> <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">ArrayRef</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">list</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="n">nullopt</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="o">*</span><span class="n">list</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p">};</span>
+
 <span class="c1">// IValue is the generic tagged union used by the interpreter to hold</span>
 <span class="c1">// all value types.</span>
 <span class="c1">// It is a 16-byte object with an 8-byte payload and an 8-byte tag.</span>
@@ -770,6 +800,8 @@
   <span class="c1">// ToOptional: convert a IValue to the Optional obj that accepts both T and None</span>
   <span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="n">T</span><span class="o">&gt;</span>
   <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">toOptional</span><span class="p">();</span>
+
+  <span class="n">OptionalArray</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span> <span class="n">toOptionalIntArray</span><span class="p">();</span>
 
   <span class="kt">bool</span> <span class="nf">isSameIdentity</span><span class="p">(</span><span class="k">const</span> <span class="n">IValue</span><span class="o">&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
 
