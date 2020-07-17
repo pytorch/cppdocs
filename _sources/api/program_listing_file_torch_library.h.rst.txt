@@ -12,7 +12,39 @@ Program Listing for File library.h
 
 .. code-block:: cpp
 
+     // m is a torch::Library; methods on it will define
+     // operators in the myops namespace
+     m.def("add", add_impl);
+   }
+      m.fallback(xla_fallback);
+   }
+   // You must define all of the operators for this library in
+   // this namespace.
+   TORCH_LIBRARY(myops, m) {
+     // Define a operator with exactly one implementation for all backends.
+     m.def("add(Tensor self, Tensor other) -> Tensor", &add_impl);
+   
+     // Define a schema for an operator, but provide no implementation
+     // (use this syntax if you want to use the dispatcher)
+     m.def("mul(Tensor self, Tensor other) -> Tensor");
+   
+     // Provide an implementation for a defined operator (you can
+     // provide multiple; one per backend).  The dispatcher takes care of
+     // calling the correct implementation depending on if we get a CPU
+     // tensor or a CUDA tensor
+     m.impl("mul", torch::kCPU, &mul_cpu_impl);
+     m.impl("mul", torch::kCUDA, &mul_cuda_impl);
+   }
+   
+   // Define implementations for operators for a non-standard backend,
+   // e.g., XLA (valid values are entries of DispatchKey).  This can
+   // be used to define operators in a different file than the initial
+   // TORCH_LIBRARY definition (e.g., if it is in an external library)
+   TORCH_LIBRARY_IMPL(myops, XLA, m) {
+     m.impl("mul", &mul_xla_impl);
+   }
    #pragma once
+   
    
    #include <c10/core/DispatchKey.h>
    #include <ATen/core/dispatch/Dispatcher.h>
@@ -29,48 +61,11 @@ Program Listing for File library.h
    template <class CurClass>
    class class_;
    
-   // A quick tour of a few usage examples:
-   //
-   //  // Define a library whose operators live in the namespace 'aten'.
-   //  // You must define all of the operators for this library in
-   //  // this namespace.
-   //  TORCH_LIBRARY(aten, m) {
-   //    // Define a schema for an operator, but provide no implementation
-   //    m.def("mul(Tensor self, Tensor other) -> Tensor");
-   //
-   //    // Define a operator with exactly one implementation for all backends.
-   //    m.def("add(Tensor self, Tensor other) -> Tensor", &add_impl);
-   //
-   //    // Provide an implementation for a defined operator (you can
-   //    // provide multiple; one per backend).  We'll take care of calling
-   //    // the correct implementation depending on if we get a CPU
-   //    // tensor or a CUDA tensor
-   //    m.impl("mul", torch::kCPU, &mul_cpu_impl);
-   //    m.impl("mul", torch::kCUDA, &mul_cuda_impl);
-   //  }
-   //
-   //  // Define implementations for operators for a non-standard backend,
-   //  // e.g., XLA (valid values are entries of DispatchKey).  These
-   //  // operator names are not namespaced; you can define implementations
-   //  // for any namespace.
-   //  TORCH_LIBRARY_IMPL(aten, XLA, m) {
-   //    m.impl("mul", &mul_xla_impl);
-   //  }
-   
-   
-   // Represents a C++ function that implements an operator.  Most users won't
-   // interact directly with this class, except via error messages: the
-   // constructors this function define the set of permissible "function"-like
-   // things you can bind via the interface.
-   //
-   // This class erases the type of the passed in function, but durably records
-   // the type via an inferred schema for the function.
-   //
-   // TODO: This is morally the same thing as KernelRegistrationConfig, but it's
-   // opaque to the user.
    class CAFFE2_API CppFunction final {
+     // TODO: This is morally the same thing as KernelRegistrationConfig, but it's
+     // opaque to the user.
+   
    public:
-     // This overload accepts function pointers, e.g., CppFunction(&add_impl)
      template <typename Func>
      explicit CppFunction(Func* f, std::enable_if_t<c10::guts::is_function_type<Func>::value, std::nullptr_t> = nullptr)
        : func_(c10::KernelFunction::makeFromUnboxedRuntimeFunction(f))
@@ -80,7 +75,6 @@ Program Listing for File library.h
        , debug_()
        {}
    
-     // This overload accepts compile time function pointers, e.g., CppFunction(TORCH_FN(add_impl))
      template <typename FuncPtr>
      explicit CppFunction(FuncPtr f, std::enable_if_t<c10::is_compile_time_function_pointer<FuncPtr>::value, std::nullptr_t> = nullptr)
        : func_(c10::KernelFunction::makeFromUnboxedRuntimeFunction(f.func_ptr()))
@@ -90,7 +84,6 @@ Program Listing for File library.h
        , debug_()
        {}
    
-     // This overload accepts lambdas, e.g., CppFunction([](const Tensor& self) { ... })
      template <typename Lambda>
      explicit CppFunction(Lambda&& f, std::enable_if_t<c10::guts::is_functor<std::decay_t<Lambda>>::value, std::nullptr_t> = nullptr)
        : func_(c10::KernelFunction::makeFromUnboxedLambda(std::forward<Lambda>(f)))
@@ -100,13 +93,9 @@ Program Listing for File library.h
        , debug_()
        {}
    
-     // This static factory lets you create CppFunctions that (1) don't have boxing
-     // wrappers (because we don't support it yet) and (2) don't have schema
-     // inference (because some ops don't support it).
-     //
-     // TODO: Eliminate the necessity for this function entirely.
      template <typename Func>
      static CppFunction makeUnboxedOnly(Func* f) {
+       // TODO: Eliminate the necessity for this function entirely.
        return CppFunction(
          c10::KernelFunction::makeFromUnboxedOnlyRuntimeFunction(f),
          /* cpp_signature */ c10::impl::CppSignature::make<Func>(),
@@ -114,8 +103,8 @@ Program Listing for File library.h
        );
      }
    
-     // TODO: more user friendly API
      static CppFunction makeFallthrough() {
+       // TODO: more user friendly API
        return CppFunction(
          c10::KernelFunction::makeFallthrough(),
          /* cpp_signature */ c10::nullopt, // not known for fallthroughs
@@ -131,9 +120,9 @@ Program Listing for File library.h
        );
      }
    
-     // TODO: more user friendly API
      template<c10::KernelFunction::BoxedKernelFunction* func>
      static CppFunction makeFromBoxedFunction() {
+       // TODO: more user friendly API
        return CppFunction(
          c10::KernelFunction::makeFromBoxedFunction<func>(),
          /* cpp_signature */ c10::nullopt, // not known for boxed functions
@@ -165,10 +154,7 @@ Program Listing for File library.h
      CppFunction(c10::KernelFunction func, c10::optional<c10::impl::CppSignature> cpp_signature, std::unique_ptr<c10::FunctionSchema> schema);
    };
    
-   // Create a CppFunction which is associated with a specific dispatch key.
-   // CppFunctions that are tagged with a DispatchKey don't get invoked /unless/
-   // the dispatcher determines that the DispatchKey is the best choice for
-   // a function
+   
    template <typename Func>
    inline CppFunction dispatch(c10::DispatchKey k, Func&& raw_f) {
      CppFunction f(std::forward<Func>(raw_f));
@@ -180,7 +166,6 @@ Program Listing for File library.h
      return f;
    }
    
-   // Convenience overload of dispatch which accepts DeviceType
    template <typename Func>
    inline CppFunction dispatch(c10::DeviceType type, Func&& raw_f) {
      auto deviceTypeToDispatchKey = [](c10::DeviceType t){
@@ -205,14 +190,17 @@ Program Listing for File library.h
      return dispatch(deviceTypeToDispatchKey(type), std::forward<Func>(raw_f));
    }
    
+   
    inline c10::FunctionSchema schema(const char* str, c10::AliasAnalysisKind k) {
      c10::FunctionSchema s = torch::jit::parseSchema(str);
      s.setAliasAnalysis(k);
      return s;
    }
+   
    inline c10::FunctionSchema schema(const char* s) {
      return schema(s, c10::AliasAnalysisKind::FROM_SCHEMA);
    }
+   
    inline c10::FunctionSchema&& schema(c10::FunctionSchema&& s) { return std::move(s); }
    
    namespace detail {
@@ -235,42 +223,14 @@ Program Listing for File library.h
    
    }
    
-   // This is the "handle" by which functions defined in TORCH_LIBRARY
-   // and TORCH_LIBRARY_IMPL can define operators and override implementations
-   // at certain backends.
-   //
-   // Conventionally, you get access to it using those two macros:
-   //
-   // TORCH_LIBRARY(torchvision, m) {
-   //    // m is a torch::Library
-   //    m.def("roi_align", ...);
-   //    ...
-   // }
-   //
-   // TORCH_LIBRARY_IMPL(aten, XLA, m) {
-   //    // m is a torch::Library
-   //    m.impl("add", ...);
-   //    ...
-   // }
-   //
-   // In some cases, you need to define something that applies to all namespaces,
-   // not just one namespace (usually a fallback).  In that case, use the reserved
-   // namespace _, e.g.,
-   //
-   // TORCH_LIBRARY_IMPL(_, XLA, m) {
-   //    m.fallback(xla_fallback);
-   // }
-   //
    class CAFFE2_API Library final {
    public:
-     // Which type of macro produced this Library
      enum Kind {
        DEF, // from TORCH_LIBRARY (no qualifier)
        IMPL,
        FRAGMENT,
      };
    
-     // Use TORCH_LIBRARY/TORCH_LIBRARY_IMPL instead of these constructors directly
      Library(Kind kind, std::string ns, c10::optional<c10::DispatchKey> k, const char* file, uint32_t line);
    
      Library(const Library&) = delete;
@@ -300,19 +260,12 @@ Program Listing for File library.h
      // messages from overloads, but at the same time you only need to write the
      // overload for any given argument type once.
    
-     // Declare an operator with a schema, but don't provide any implementations
-     // for it.  You're expected to then provide implementations using the
-     // impl() method.
      template <typename Schema>
      Library& def(Schema&& raw_schema) & {
        c10::FunctionSchema s = schema(std::forward<Schema>(raw_schema));
        return _def(std::move(s));
      }
    
-     // Convenience method to define an operator for a schema and then register
-     // an implementation for it.  def(n, f) is almost equivalent to def(n).impl(f),
-     // except that if n is not a schema, then the schema is inferred from the
-     // static type of f.
      template <typename NameOrSchema, typename Func>
      Library& def(NameOrSchema&& raw_name_or_schema, Func&& raw_f) & {
        CppFunction f(std::forward<Func>(raw_f));
@@ -320,39 +273,26 @@ Program Listing for File library.h
        return _def(std::move(name_or_schema), std::move(f));
      }
    
-     // Register an implementation for an operator.  You may register multiple
-     // implementations for a single operator at different dispatch keys
-     // (see torch::dispatch).  Implementations must have a corresponding
-     // declaration (from def), otherwise they are invalid.
      template <typename Func>
      Library& impl(const char* name, Func&& raw_f) & {
+       // TODO: need to raise an error when you impl a function that has a
+       // catch all def
        CppFunction f(std::forward<Func>(raw_f));
        return _impl(name, std::move(f));
      }
    
-     // Convenience overload for directly specifying the dispatch key.  Dispatch
-     // can validly be either DeviceType or DispatchKey; check torch::dispatch for
-     // the canonical list of accepted overloads.
      template <typename Dispatch, typename Func>
      Library& impl(const char* name, Dispatch&& key, Func&& raw_f) & {
        return impl(name, dispatch(std::forward<Dispatch>(key), std::forward<Func>(raw_f)));
      }
    
-     // Convenience overload for unboxed only kernels.  These are quite common
-     // but will be eventually eliminated; this function makes it easy to grep for
-     // them.
-     //
-     // TODO: Remove this overload once the makeUnboxedOnly incidence rate
-     // goes way down
      template <typename Func>
      Library& impl_UNBOXED(const char* name, Func* raw_f) & {
+       // TODO: Remove this overload once the makeUnboxedOnly incidence rate
+       // goes way down
        return impl(name, CppFunction::makeUnboxedOnly(raw_f));
      }
    
-     // Register a fallback implementation for all operators which will be used
-     // if there is not a specific implementation for an operator available.
-     // Providing a DispatchKey is MANDATORY for fallback at the moment; e.g.,
-     // only call this from TORCH_LIBRARY_IMPL
      template <typename Func>
      Library& fallback(Func&& raw_f) & {
        CppFunction f((std::forward<Func>(raw_f)));
@@ -398,9 +338,11 @@ Program Listing for File library.h
    
    } // namespace torch
    
+   
    // NB: The EXACT NAMING of the initializer functions (e.g.,
    // TORCH_LIBRARY_init_aten) matters for the code analyzer;
    // see the regexes at tools/code_analyzer/run_analyzer.sh
+   
    
    #define TORCH_LIBRARY(ns, m) \
      static void TORCH_LIBRARY_init_ ## ns (torch::Library&); \
@@ -411,9 +353,6 @@ Program Listing for File library.h
      ); \
      void TORCH_LIBRARY_init_ ## ns (torch::Library& m)
    
-   // This macro is a version of TORCH_LIBRARY that doesn't enforce that there
-   // is only one library (it is a "fragment").  This should ONLY be used
-   // with PerOpRegistration (as its name suggests).
    #define TORCH_LIBRARY_FRAGMENT_THIS_API_IS_FOR_PER_OP_REGISTRATION_ONLY(ns, m) \
      static void TORCH_LIBRARY_FRAGMENT_init_ ## ns ## _ ## k (torch::Library&); \
      static torch::detail::TorchLibraryInit TORCH_LIBRARY_FRAGMENT_static_init_ ## ns ## _ ## k ( \
@@ -432,13 +371,18 @@ Program Listing for File library.h
      ); \
      void TORCH_LIBRARY_IMPL_init_ ## ns ## _ ## k (torch::Library& m)
    
+   
    // These are variants of the macros above which are to be used for testing (they
    // don't setup the static initializer, so you can control the visibility of
    // the allocated library yourself).
    //
    // DO NOT use these in production code, they are NOT understood by the
    // code analyzer and will be incorrectly analyzed in those situations.
+   
    #define MAKE_TORCH_LIBRARY(ns) torch::Library(torch::Library::DEF, #ns, c10::nullopt, __FILE__, __LINE__)
    #define MAKE_TORCH_LIBRARY_IMPL(ns, k) torch::Library(torch::Library::IMPL, #ns, c10::make_optional(c10::DispatchKey::k), __FILE__, __LINE__)
+   
+   // Make the custom class API visible, so it is available from
+   // torch::Library.
    
    #include <torch/custom_class.h>
