@@ -25,6 +25,7 @@ Program Listing for File function.h
    #include <torch/csrc/utils/variadic.h>
    
    #include <ATen/ATen.h>
+   #include <ATen/SequenceNumber.h>
    #include <c10/util/Exception.h>
    
    #include <algorithm>
@@ -111,7 +112,7 @@ Program Listing for File function.h
      }
    
      explicit Node(edge_list&& next_edges = edge_list())
-         : Node(get_next_sequence_nr()++, std::move(next_edges)) {}
+         : Node(at::sequence_number::get_and_increment(), std::move(next_edges)) {}
    
      Node(const Node& other) = delete;
      Node(Node&& other) = delete;
@@ -301,11 +302,7 @@ Program Listing for File function.h
        return false;
      }
    
-     static uint64_t peek_at_next_sequence_nr();
-   
     protected:
-     static uint64_t& get_next_sequence_nr();
-   
      virtual variable_list apply(variable_list&& inputs) = 0;
    
      variable_list traced_apply(variable_list inputs);
