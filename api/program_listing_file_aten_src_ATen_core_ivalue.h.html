@@ -313,6 +313,7 @@
 <span class="k">struct</span> <span class="n">GenericDict</span><span class="p">;</span>
 <span class="k">struct</span> <span class="n">Object</span><span class="p">;</span>
 <span class="k">struct</span> <span class="n">PyObjectHolder</span><span class="p">;</span>
+<span class="k">struct</span> <span class="n">EnumHolder</span><span class="p">;</span>
 <span class="p">}</span>
 
 <span class="c1">// This is an owning wrapper for a c10::optional&lt;std::vector&lt;T&gt;&gt;</span>
@@ -353,24 +354,25 @@
 <span class="c1">// retain/release calls.</span>
 
 <span class="cp">#define TORCH_FORALL_TAGS(_) \</span>
-<span class="cp">  _(None) \</span>
-<span class="cp">  _(Tensor) \</span>
-<span class="cp">  _(Double) \</span>
-<span class="cp">  _(Int) \</span>
-<span class="cp">  _(Bool) \</span>
-<span class="cp">  _(Tuple) \</span>
-<span class="cp">  _(String) \</span>
-<span class="cp">  _(Blob) \</span>
-<span class="cp">  _(GenericList) \</span>
-<span class="cp">  _(GenericDict) \</span>
-<span class="cp">  _(Future) \</span>
-<span class="cp">  _(Device) \</span>
-<span class="cp">  _(Object) \</span>
-<span class="cp">  _(PyObject) \</span>
-<span class="cp">  _(Uninitialized) \</span>
-<span class="cp">  _(Capsule) \</span>
-<span class="cp">  _(RRef) \</span>
-<span class="cp">  _(Generator) \</span>
+<span class="cp">  _(None)                    \</span>
+<span class="cp">  _(Tensor)                  \</span>
+<span class="cp">  _(Double)                  \</span>
+<span class="cp">  _(Int)                     \</span>
+<span class="cp">  _(Bool)                    \</span>
+<span class="cp">  _(Tuple)                   \</span>
+<span class="cp">  _(String)                  \</span>
+<span class="cp">  _(Blob)                    \</span>
+<span class="cp">  _(GenericList)             \</span>
+<span class="cp">  _(GenericDict)             \</span>
+<span class="cp">  _(Future)                  \</span>
+<span class="cp">  _(Device)                  \</span>
+<span class="cp">  _(Object)                  \</span>
+<span class="cp">  _(PyObject)                \</span>
+<span class="cp">  _(Uninitialized)           \</span>
+<span class="cp">  _(Capsule)                 \</span>
+<span class="cp">  _(RRef)                    \</span>
+<span class="cp">  _(Generator)               \</span>
+<span class="cp">  _(Enum)                    \</span>
 
 <span class="c1">// [doxygen private]</span>
 <span class="c1">// These methods are not actually private but we don&#39;t want to document them, so</span>
@@ -610,13 +612,13 @@
   <span class="n">c10</span><span class="o">::</span><span class="n">List</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;</span> <span class="n">toBoolList</span><span class="p">()</span> <span class="o">&amp;&amp;</span><span class="p">;</span>
   <span class="n">c10</span><span class="o">::</span><span class="n">List</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;</span> <span class="n">toBoolList</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span><span class="p">;</span>
 
-  <span class="c1">//TensorList</span>
+  <span class="c1">// TensorList</span>
   <span class="kt">bool</span> <span class="nf">isTensorList</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
   <span class="n">c10</span><span class="o">::</span><span class="n">List</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">toTensorList</span><span class="p">()</span> <span class="o">&amp;&amp;</span><span class="p">;</span>
   <span class="n">c10</span><span class="o">::</span><span class="n">List</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">toTensorList</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span><span class="p">;</span>
   <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">toTensorVector</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
 
-  <span class="c1">//GenericList</span>
+  <span class="c1">// GenericList</span>
   <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">List</span><span class="o">&lt;</span><span class="n">IValue</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
   <span class="kt">bool</span> <span class="nf">isList</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Tag</span><span class="o">::</span><span class="n">GenericList</span> <span class="o">==</span> <span class="n">tag</span><span class="p">;</span> <span class="p">}</span>
   <span class="n">c10</span><span class="o">::</span><span class="n">List</span><span class="o">&lt;</span><span class="n">IValue</span><span class="o">&gt;</span> <span class="n">toList</span><span class="p">()</span> <span class="o">&amp;&amp;</span><span class="p">;</span>
@@ -679,6 +681,12 @@
   <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">PyObjectHolder</span><span class="o">&gt;</span> <span class="n">toPyObjectHolder</span><span class="p">()</span> <span class="o">&amp;&amp;</span><span class="p">;</span>
   <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">PyObjectHolder</span><span class="o">&gt;</span> <span class="n">toPyObjectHolder</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span><span class="p">;</span>
   <span class="n">PyObject</span><span class="o">*</span> <span class="nf">toPyObject</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+
+  <span class="c1">// Enum</span>
+  <span class="k">explicit</span> <span class="nf">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">EnumHolder</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
+  <span class="kt">bool</span> <span class="nf">isEnum</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">tag</span> <span class="o">==</span> <span class="n">Tag</span><span class="o">::</span><span class="n">Enum</span><span class="p">;</span> <span class="p">}</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">EnumHolder</span><span class="o">&gt;</span> <span class="n">toEnumHolder</span><span class="p">()</span> <span class="o">&amp;&amp;</span><span class="p">;</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">EnumHolder</span><span class="o">&gt;</span> <span class="n">toEnumHolder</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span><span class="p">;</span>
 
   <span class="c1">// None</span>
   <span class="n">IValue</span><span class="p">()</span> <span class="o">:</span> <span class="n">payload</span><span class="p">{</span><span class="mi">0</span><span class="p">},</span> <span class="n">tag</span><span class="p">(</span><span class="n">Tag</span><span class="o">::</span><span class="n">None</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span> <span class="p">{}</span>
