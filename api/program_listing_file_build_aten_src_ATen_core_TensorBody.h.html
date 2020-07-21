@@ -440,6 +440,16 @@ class CAFFE2_API Tensor {
   //    multiple versions of a defaulted special member functions are not allowed
   // Tensor&amp; operator=(const Tensor&amp;) &amp; = default;
   // Tensor&amp; operator=(Tensor&amp;&amp;) &amp; = default;
+
+  // Also MSVC will wrongly issue the following warning with the aforementioned fix
+  //    warning C4522: &#39;at::Tensor&#39;: multiple assignment operators specified
+  // Let&#39;s just skip the warning.
+
+  #ifdef _MSC_VER
+  #pragma warning( push )
+  #pragma warning( disable : 4522 )
+  #endif
+
   Tensor&amp; operator=(const Tensor&amp; x) &amp; {
     impl_ = x.impl_;
     return *this;
@@ -452,6 +462,10 @@ class CAFFE2_API Tensor {
   Tensor&amp; operator=(Scalar v) &amp;&amp;;
   Tensor&amp; operator=(const Tensor&amp;) &amp;&amp;;
   Tensor&amp; operator=(Tensor&amp;&amp;) &amp;&amp;;
+
+  #ifdef _MSC_VER
+  #pragma warning( pop )
+  #endif
 
   bool is_same(const Tensor&amp; other) const noexcept {
     return impl_ == other.impl_;
