@@ -72,7 +72,6 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor & abs_(Tensor & self);
    CAFFE2_API Tensor & abs_out(Tensor & out, const Tensor & self);
    CAFFE2_API Tensor absolute(const Tensor & self);
-   CAFFE2_API Tensor & absolute_(Tensor & self);
    CAFFE2_API Tensor & absolute_out(Tensor & out, const Tensor & self);
    CAFFE2_API Tensor angle(const Tensor & self);
    CAFFE2_API Tensor & angle_out(Tensor & out, const Tensor & self);
@@ -199,6 +198,9 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor clamp_min(const Tensor & self, Scalar min);
    CAFFE2_API Tensor & clamp_min_(Tensor & self, Scalar min);
    CAFFE2_API Tensor & clamp_min_out(Tensor & out, const Tensor & self, Scalar min);
+   CAFFE2_API Tensor clip(const Tensor & self, c10::optional<Scalar> min=c10::nullopt, c10::optional<Scalar> max=c10::nullopt);
+   CAFFE2_API Tensor & clip_(Tensor & self, c10::optional<Scalar> min=c10::nullopt, c10::optional<Scalar> max=c10::nullopt);
+   CAFFE2_API Tensor & clip_out(Tensor & out, const Tensor & self, c10::optional<Scalar> min=c10::nullopt, c10::optional<Scalar> max=c10::nullopt);
    CAFFE2_API bool cudnn_is_acceptable(const Tensor & self);
    CAFFE2_API Tensor constant_pad_nd(const Tensor & self, IntArrayRef pad, Scalar value=0);
    CAFFE2_API Tensor convolution(const Tensor & input, const Tensor & weight, const c10::optional<Tensor>& bias, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation, bool transposed, IntArrayRef output_padding, int64_t groups);
@@ -340,6 +342,8 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor grid_sampler(const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode, bool align_corners);
    CAFFE2_API Tensor grid_sampler_2d(const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode, bool align_corners);
    CAFFE2_API std::tuple<Tensor,Tensor> grid_sampler_2d_backward(const Tensor & grad_output, const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode, bool align_corners);
+   CAFFE2_API Tensor _grid_sampler_2d_cpu_fallback(const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode, bool align_corners);
+   CAFFE2_API std::tuple<Tensor,Tensor> _grid_sampler_2d_cpu_fallback_backward(const Tensor & grad_output, const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode, bool align_corners);
    CAFFE2_API Tensor grid_sampler_3d(const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode, bool align_corners);
    CAFFE2_API std::tuple<Tensor,Tensor> grid_sampler_3d_backward(const Tensor & grad_output, const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode, bool align_corners);
    CAFFE2_API Tensor hann_window(int64_t window_length, const TensorOptions & options={});
@@ -349,11 +353,14 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor hamming_window(int64_t window_length, bool periodic, double alpha, const TensorOptions & options={});
    CAFFE2_API Tensor hamming_window(int64_t window_length, bool periodic, double alpha, double beta, const TensorOptions & options={});
    CAFFE2_API Tensor hinge_embedding_loss(const Tensor & self, const Tensor & target, double margin=1.0, int64_t reduction=at::Reduction::Mean);
+   CAFFE2_API Tensor linalg_outer(const Tensor & self, const Tensor & vec2);
+   CAFFE2_API Tensor & linalg_outer_out(Tensor & out, const Tensor & self, const Tensor & vec2);
    CAFFE2_API Tensor ger(const Tensor & self, const Tensor & vec2);
    CAFFE2_API Tensor & ger_out(Tensor & out, const Tensor & self, const Tensor & vec2);
    CAFFE2_API Tensor group_norm(const Tensor & input, int64_t num_groups, const c10::optional<Tensor>& weight={}, const c10::optional<Tensor>& bias={}, double eps=1e-05, bool cudnn_enabled=true);
    CAFFE2_API std::tuple<Tensor,Tensor,Tensor> native_group_norm(const Tensor & input, const c10::optional<Tensor>& weight, const c10::optional<Tensor>& bias, int64_t N, int64_t C, int64_t HxW, int64_t group, double eps);
    CAFFE2_API std::tuple<Tensor,Tensor,Tensor> native_group_norm_backward(const Tensor & grad_out, const Tensor & input, const Tensor & mean, const Tensor & rstd, const c10::optional<Tensor>& weight, int64_t N, int64_t C, int64_t HxW, int64_t group, std::array<bool,3> output_mask);
+   CAFFE2_API Tensor fft_fft(const Tensor & self);
    CAFFE2_API Tensor fft(const Tensor & self, int64_t signal_ndim, bool normalized=false);
    CAFFE2_API Tensor ifft(const Tensor & self, int64_t signal_ndim, bool normalized=false);
    CAFFE2_API Tensor rfft(const Tensor & self, int64_t signal_ndim, bool normalized=false, bool onesided=true);
@@ -1080,6 +1087,7 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor _amp_update_scale(Tensor & growth_tracker, const Tensor & current_scale, const Tensor & found_inf, double scale_growth_factor, double scale_backoff_factor, int64_t growth_interval);
    CAFFE2_API Tensor _cat(TensorList tensors, int64_t dim=0);
    CAFFE2_API Tensor & _cat_out(Tensor & out, TensorList tensors, int64_t dim=0);
+   CAFFE2_API std::vector<Tensor> _foreach_add(TensorList tensors, Scalar scalar);
    CAFFE2_API std::tuple<Tensor,Tensor> _mode(const Tensor & self, int64_t dim=-1, bool keepdim=false);
    CAFFE2_API std::tuple<Tensor &,Tensor &> _mode_out(Tensor & values, Tensor & indices, const Tensor & self, int64_t dim=-1, bool keepdim=false);
    CAFFE2_API Tensor bucketize(const Tensor & self, const Tensor & boundaries, bool out_int32=false, bool right=false);
