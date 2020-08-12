@@ -310,7 +310,7 @@
 <span class="p">};</span>
 
 <span class="k">struct</span> <span class="n">TORCH_API</span> <span class="n">AutogradContext</span> <span class="p">{</span>
-  <span class="n">AutogradContext</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
+  <span class="n">AutogradContext</span><span class="p">()</span> <span class="o">:</span> <span class="n">materialize_grads_</span><span class="p">(</span><span class="nb">true</span><span class="p">)</span> <span class="p">{}</span>
   <span class="n">AutogradContext</span><span class="p">(</span><span class="k">const</span> <span class="n">AutogradContext</span> <span class="o">&amp;</span><span class="n">other</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
   <span class="n">AutogradContext</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span> <span class="n">AutogradContext</span><span class="o">&amp;</span> <span class="n">other</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
 
@@ -319,6 +319,9 @@
   <span class="kt">void</span> <span class="nf">save_for_backward</span><span class="p">(</span><span class="n">variable_list</span> <span class="n">to_save</span><span class="p">);</span>
   <span class="kt">void</span> <span class="nf">mark_dirty</span><span class="p">(</span><span class="k">const</span> <span class="n">variable_list</span> <span class="o">&amp;</span><span class="n">inputs</span><span class="p">);</span>
   <span class="kt">void</span> <span class="nf">mark_non_differentiable</span><span class="p">(</span><span class="k">const</span> <span class="n">variable_list</span> <span class="o">&amp;</span><span class="n">outputs</span><span class="p">);</span>
+  <span class="c1">// Sets whether undefined output grad tensors should be expanded to tensors</span>
+  <span class="c1">// full of zeros before calling backward function. Default value is true.</span>
+  <span class="kt">void</span> <span class="nf">set_materialize_grads</span><span class="p">(</span><span class="kt">bool</span> <span class="n">value</span><span class="p">);</span>
 
   <span class="n">variable_list</span> <span class="nf">get_saved_variables</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
   <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">unordered_set</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="o">*&gt;&amp;</span> <span class="n">get_and_bump_dirty</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
@@ -329,6 +332,7 @@
   <span class="n">std</span><span class="o">::</span><span class="n">unordered_set</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="o">*&gt;</span> <span class="n">dirty_inputs_</span><span class="p">;</span>
   <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">torch</span><span class="o">::</span><span class="n">autograd</span><span class="o">::</span><span class="n">SavedVariable</span><span class="o">&gt;</span> <span class="n">saved_variables_</span><span class="p">;</span>
   <span class="n">variable_list</span> <span class="n">to_save_</span><span class="p">;</span>
+  <span class="kt">bool</span> <span class="n">materialize_grads_</span><span class="p">;</span>
 
   <span class="c1">// The CppNode in the autograd graph that owns this AutogradContext. We need a</span>
   <span class="c1">// weak_ptr to avoid a refcycle. Since grad_fn_ owns this AutogradContext, it</span>
@@ -462,7 +466,7 @@
   <span class="n">variable_list</span> <span class="n">backward_inputs</span><span class="p">;</span>
   <span class="n">backward_inputs</span><span class="p">.</span><span class="n">reserve</span><span class="p">(</span><span class="n">num_inputs</span><span class="p">);</span>
   <span class="k">for</span> <span class="p">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span> <span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">num_inputs</span><span class="p">;</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">inputs</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">defined</span><span class="p">())</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">inputs</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">defined</span><span class="p">()</span> <span class="o">||</span> <span class="o">!</span><span class="n">ctx_</span><span class="p">.</span><span class="n">materialize_grads_</span><span class="p">)</span> <span class="p">{</span>
       <span class="n">backward_inputs</span><span class="p">.</span><span class="n">emplace_back</span><span class="p">(</span><span class="n">inputs</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
     <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
       <span class="n">backward_inputs</span><span class="p">.</span><span class="n">emplace_back</span><span class="p">(</span><span class="n">output_info_</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">zeros</span><span class="p">(</span><span class="n">_device_guard</span><span class="p">));</span>

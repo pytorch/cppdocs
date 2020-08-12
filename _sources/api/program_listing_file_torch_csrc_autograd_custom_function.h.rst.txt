@@ -48,7 +48,7 @@ Program Listing for File custom_function.h
    };
    
    struct TORCH_API AutogradContext {
-     AutogradContext() = default;
+     AutogradContext() : materialize_grads_(true) {}
      AutogradContext(const AutogradContext &other) = delete;
      AutogradContext& operator=(const AutogradContext& other) = delete;
    
@@ -57,6 +57,9 @@ Program Listing for File custom_function.h
      void save_for_backward(variable_list to_save);
      void mark_dirty(const variable_list &inputs);
      void mark_non_differentiable(const variable_list &outputs);
+     // Sets whether undefined output grad tensors should be expanded to tensors
+     // full of zeros before calling backward function. Default value is true.
+     void set_materialize_grads(bool value);
    
      variable_list get_saved_variables() const;
      const std::unordered_set<at::TensorImpl*>& get_and_bump_dirty() const;
@@ -67,6 +70,7 @@ Program Listing for File custom_function.h
      std::unordered_set<at::TensorImpl*> dirty_inputs_;
      std::vector<torch::autograd::SavedVariable> saved_variables_;
      variable_list to_save_;
+     bool materialize_grads_;
    
      // The CppNode in the autograd graph that owns this AutogradContext. We need a
      // weak_ptr to avoid a refcycle. Since grad_fn_ owns this AutogradContext, it
@@ -200,7 +204,7 @@ Program Listing for File custom_function.h
      variable_list backward_inputs;
      backward_inputs.reserve(num_inputs);
      for (int i = 0 ; i < num_inputs; ++i) {
-       if (inputs[i].defined()) {
+       if (inputs[i].defined() || !ctx_.materialize_grads_) {
          backward_inputs.emplace_back(inputs[i]);
        } else {
          backward_inputs.emplace_back(output_info_[i].zeros(_device_guard));
