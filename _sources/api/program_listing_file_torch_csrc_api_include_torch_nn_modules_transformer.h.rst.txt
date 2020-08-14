@@ -72,5 +72,63 @@ Program Listing for File transformer.h
    
    TORCH_MODULE(TransformerEncoderLayer);
    
+   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ TransformerDecoderLayer ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   
+   class TORCH_API TransformerDecoderLayerImpl : public Cloneable<TransformerDecoderLayerImpl> {
+    public:
+     TransformerDecoderLayerImpl(int64_t d_model, int64_t nhead)
+       : TransformerDecoderLayerImpl(TransformerDecoderLayerOptions(d_model, nhead)) {}
+     explicit TransformerDecoderLayerImpl(const TransformerDecoderLayerOptions& options_);
+   
+     void reset() override;
+   
+     void reset_parameters();
+   
+     void pretty_print(std::ostream& stream) const override;
+   
+     Tensor forward(Tensor tgt,
+                    const Tensor& memory,
+                    const Tensor& tgt_mask = {},
+                    const Tensor& memory_mask = {},
+                    const Tensor& tgt_key_padding_mask = {},
+                    const Tensor& memory_key_padding_mask = {});
+   
+     TransformerDecoderLayerOptions options;
+   
+     MultiheadAttention self_attn{nullptr};
+   
+     Dropout dropout1{nullptr};
+   
+     LayerNorm norm1{nullptr};
+   
+     MultiheadAttention multihead_attn{nullptr};
+   
+     Dropout dropout2{nullptr};
+   
+     LayerNorm norm2{nullptr};
+   
+     Linear linear1{nullptr};
+   
+     Dropout dropout{nullptr};
+   
+     Linear linear2{nullptr};
+   
+     Dropout dropout3{nullptr};
+   
+     LayerNorm norm3{nullptr};
+   
+    protected:
+     FORWARD_HAS_DEFAULT_ARGS(
+         {2, AnyValue(Tensor())},
+         {3, AnyValue(Tensor())},
+         {4, AnyValue(Tensor())},
+         {5, AnyValue(Tensor())})
+   
+     Tensor activation(const Tensor& input);
+   
+     };
+   
+   TORCH_MODULE(TransformerDecoderLayer);
+   
    } // namespace nn
    } // namespace torch
