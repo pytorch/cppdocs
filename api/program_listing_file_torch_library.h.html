@@ -310,6 +310,7 @@
 
 <span class="cp">#include</span> <span class="cpf">&lt;c10/core/DispatchKey.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;ATen/core/dispatch/Dispatcher.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;ATen/core/op_registration/op_whitelist.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;ATen/core/op_registration/infer_schema.h&gt;</span><span class="cp"></span>
 <span class="cp">#if defined(EXPOSE_C2_OPS) || !defined(CAFFE2_IS_XPLAT_BUILD)</span>
 <span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/jit/frontend/function_schema_parser.h&gt;</span><span class="cp"></span>
@@ -483,6 +484,48 @@
 
   <span class="k">class</span> <span class="nc">TorchLibraryInit</span><span class="p">;</span>
 
+<span class="p">}</span> <span class="c1">// namespace detail</span>
+
+<span class="c1">// Note [Selective build]</span>
+<span class="c1">// ~~~~~~~~~~~~~~~~~~~~~~</span>
+<span class="c1">// In some settings, especially mobile, it is important to avoid compiling any</span>
+<span class="c1">// references to functions that you aren&#39;t actually going to use, so that they</span>
+<span class="c1">// can be eliminated by the linker.  We call this capability &quot;selective build&quot;.</span>
+<span class="c1">//</span>
+<span class="c1">// A very easy way to implement selective build which results in a lot of</span>
+<span class="c1">// boilerplate is to just add ifdef&#39;s around every registration call, but this</span>
+<span class="c1">// means you have to write a lot of extra lines of code at every registration</span>
+<span class="c1">// site, and it also means you have to define some munging scheme to map</span>
+<span class="c1">// operators to macros.</span>
+<span class="c1">//</span>
+<span class="c1">// Instead of doing this, we have a different mechanism centered around the</span>
+<span class="c1">// concept of a SelectiveStr.  A selective name is like a const char* string,</span>
+<span class="c1">// except it also carries at compile time a boolean saying whether or not a</span>
+<span class="c1">// registration should actually happen or not.  We then have extra overloads which</span>
+<span class="c1">// bypass registration entirely if a selective name is disabled.  We do a</span>
+<span class="c1">// constexpr test to see if a operator should be enabled or not; this is</span>
+<span class="c1">// currently implemented in ATen/core/op_registration/op_whitelist.h</span>
+
+<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
+
+  <span class="c1">// A SelectiveStr is like a const char*, except that it also comes</span>
+  <span class="c1">// with a type brand that says whether or not the name is enabled or</span>
+  <span class="c1">// not.  If the string is disabled, then (at compile time) we DON&#39;T generate</span>
+  <span class="c1">// a registration call for it.  This class is not intended to be called</span>
+  <span class="c1">// directly; use TORCH_SELECTIVE_NAME or TORCH_SELECTIVE_SCHEMA macros below</span>
+  <span class="c1">// to create it.</span>
+  <span class="k">template</span> <span class="o">&lt;</span><span class="kt">bool</span> <span class="n">enabled</span><span class="o">&gt;</span>
+  <span class="k">class</span> <span class="nc">SelectiveStr</span> <span class="p">{</span>
+  <span class="k">public</span><span class="o">:</span>
+    <span class="k">constexpr</span> <span class="n">SelectiveStr</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">name</span><span class="p">)</span> <span class="o">:</span> <span class="n">name_</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="p">{}</span>
+    <span class="k">constexpr</span> <span class="k">operator</span> <span class="k">const</span> <span class="kt">char</span><span class="o">*</span><span class="p">()</span> <span class="p">{</span> <span class="k">return</span> <span class="n">name_</span><span class="p">;</span> <span class="p">}</span>
+  <span class="k">private</span><span class="o">:</span>
+    <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">name_</span><span class="p">;</span>
+  <span class="p">};</span>
+
+<span class="cp">#define TORCH_SELECTIVE_NAME(n) torch::detail::SelectiveStr&lt;c10::impl::op_whitelist_check(n)&gt;(n)</span>
+<span class="cp">#define TORCH_SELECTIVE_SCHEMA(n) torch::detail::SelectiveStr&lt;c10::impl::schema_whitelist_check(n)&gt;(n)</span>
+
 <span class="p">}</span>
 
 <span class="k">class</span> <span class="nc">CAFFE2_API</span> <span class="n">Library</span> <span class="k">final</span> <span class="p">{</span>
@@ -535,25 +578,39 @@
     <span class="k">return</span> <span class="nf">_def</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">name_or_schema</span><span class="p">),</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">f</span><span class="p">));</span>
   <span class="p">}</span>
 
-  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Func</span><span class="o">&gt;</span>
-  <span class="n">Library</span><span class="o">&amp;</span> <span class="n">impl</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">name</span><span class="p">,</span> <span class="n">Func</span><span class="o">&amp;&amp;</span> <span class="n">raw_f</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">{</span>
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Name</span><span class="p">,</span> <span class="k">typename</span> <span class="n">Func</span><span class="o">&gt;</span>
+  <span class="n">Library</span><span class="o">&amp;</span> <span class="n">impl</span><span class="p">(</span><span class="n">Name</span> <span class="n">name</span><span class="p">,</span> <span class="n">Func</span><span class="o">&amp;&amp;</span> <span class="n">raw_f</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">{</span>
     <span class="c1">// TODO: need to raise an error when you impl a function that has a</span>
     <span class="c1">// catch all def</span>
     <span class="n">CppFunction</span> <span class="n">f</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">Func</span><span class="o">&gt;</span><span class="p">(</span><span class="n">raw_f</span><span class="p">));</span>
     <span class="k">return</span> <span class="nf">_impl</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">f</span><span class="p">));</span>
   <span class="p">}</span>
 
-  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Dispatch</span><span class="p">,</span> <span class="k">typename</span> <span class="n">Func</span><span class="o">&gt;</span>
-  <span class="n">Library</span><span class="o">&amp;</span> <span class="n">impl</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">name</span><span class="p">,</span> <span class="n">Dispatch</span><span class="o">&amp;&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="n">Func</span><span class="o">&amp;&amp;</span> <span class="n">raw_f</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">{</span>
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Name</span><span class="p">,</span> <span class="k">typename</span> <span class="n">Dispatch</span><span class="p">,</span> <span class="k">typename</span> <span class="n">Func</span><span class="o">&gt;</span>
+  <span class="n">Library</span><span class="o">&amp;</span> <span class="n">impl</span><span class="p">(</span><span class="n">Name</span> <span class="n">name</span><span class="p">,</span> <span class="n">Dispatch</span><span class="o">&amp;&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="n">Func</span><span class="o">&amp;&amp;</span> <span class="n">raw_f</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">impl</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">dispatch</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">Dispatch</span><span class="o">&gt;</span><span class="p">(</span><span class="n">key</span><span class="p">),</span> <span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">Func</span><span class="o">&gt;</span><span class="p">(</span><span class="n">raw_f</span><span class="p">)));</span>
   <span class="p">}</span>
 
-  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Func</span><span class="o">&gt;</span>
-  <span class="n">Library</span><span class="o">&amp;</span> <span class="n">impl_UNBOXED</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">name</span><span class="p">,</span> <span class="n">Func</span><span class="o">*</span> <span class="n">raw_f</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">{</span>
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Name</span><span class="p">,</span> <span class="k">typename</span> <span class="n">Func</span><span class="o">&gt;</span>
+  <span class="n">Library</span><span class="o">&amp;</span> <span class="n">impl_UNBOXED</span><span class="p">(</span><span class="n">Name</span> <span class="n">name</span><span class="p">,</span> <span class="n">Func</span><span class="o">*</span> <span class="n">raw_f</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">{</span>
     <span class="c1">// TODO: Remove this overload once the makeUnboxedOnly incidence rate</span>
     <span class="c1">// goes way down</span>
     <span class="k">return</span> <span class="n">impl</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">CppFunction</span><span class="o">::</span><span class="n">makeUnboxedOnly</span><span class="p">(</span><span class="n">raw_f</span><span class="p">));</span>
   <span class="p">}</span>
+
+  <span class="c1">// These overloads cover cases when a SelectiveStr (see Note [Selective build])</span>
+  <span class="c1">// has been disabled at compile time.  In that case, don&#39;t generate any code</span>
+  <span class="c1">// referencing the passed in functions at all.</span>
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Schema</span><span class="o">&gt;</span>
+  <span class="n">Library</span><span class="o">&amp;</span> <span class="n">def</span><span class="p">(</span><span class="n">detail</span><span class="o">::</span><span class="n">SelectiveStr</span><span class="o">&lt;</span><span class="nb">false</span><span class="o">&gt;</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">{</span> <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span> <span class="p">}</span>
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Func</span><span class="o">&gt;</span>
+  <span class="n">Library</span><span class="o">&amp;</span> <span class="n">def</span><span class="p">(</span><span class="n">detail</span><span class="o">::</span><span class="n">SelectiveStr</span><span class="o">&lt;</span><span class="nb">false</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">Func</span><span class="o">&amp;&amp;</span> <span class="n">raw_f</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">{</span> <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span> <span class="p">}</span>
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Func</span><span class="o">&gt;</span>
+  <span class="n">Library</span><span class="o">&amp;</span> <span class="n">impl</span><span class="p">(</span><span class="n">detail</span><span class="o">::</span><span class="n">SelectiveStr</span><span class="o">&lt;</span><span class="nb">false</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">Func</span><span class="o">&amp;&amp;</span> <span class="n">raw_f</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">{</span> <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span> <span class="p">}</span>
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Dispatch</span><span class="p">,</span> <span class="k">typename</span> <span class="n">Func</span><span class="o">&gt;</span>
+  <span class="n">Library</span><span class="o">&amp;</span> <span class="n">impl</span><span class="p">(</span><span class="n">detail</span><span class="o">::</span><span class="n">SelectiveStr</span><span class="o">&lt;</span><span class="nb">false</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">Dispatch</span><span class="o">&amp;&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="n">Func</span><span class="o">&amp;&amp;</span> <span class="n">raw_f</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">{</span> <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span> <span class="p">}</span>
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Func</span><span class="o">&gt;</span>
+  <span class="n">Library</span><span class="o">&amp;</span> <span class="n">impl_UNBOXED</span><span class="p">(</span><span class="n">detail</span><span class="o">::</span><span class="n">SelectiveStr</span><span class="o">&lt;</span><span class="nb">false</span><span class="o">&gt;</span> <span class="n">name</span><span class="p">,</span> <span class="n">Func</span><span class="o">*</span> <span class="n">raw_f</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">{</span> <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span> <span class="p">}</span>
 
   <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="n">Func</span><span class="o">&gt;</span>
   <span class="n">Library</span><span class="o">&amp;</span> <span class="n">fallback</span><span class="p">(</span><span class="n">Func</span><span class="o">&amp;&amp;</span> <span class="n">raw_f</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">{</span>
@@ -624,12 +681,18 @@
 <span class="cp">  ); \</span>
 <span class="cp">  void TORCH_LIBRARY_FRAGMENT_init_ ## ns ## _ ## k (torch::Library&amp; m)</span>
 
+<span class="c1">// NB: if the dispatch key is not whitelisted, we simply omit the Library</span>
+<span class="c1">// call entirely</span>
 <span class="cp">#define TORCH_LIBRARY_IMPL(ns, k, m) \</span>
 <span class="cp">  static void TORCH_LIBRARY_IMPL_init_ ## ns ## _ ## k (torch::Library&amp;); \</span>
 <span class="cp">  static torch::detail::TorchLibraryInit TORCH_LIBRARY_IMPL_static_init_ ## ns ## _ ## k ( \</span>
 <span class="cp">    torch::Library::IMPL, \</span>
-<span class="cp">    &amp; TORCH_LIBRARY_IMPL_init_ ## ns ## _ ## k, \</span>
-<span class="cp">    #ns, c10::make_optional(c10::DispatchKey::k), __FILE__, __LINE__ \</span>
+<span class="cp">    c10::guts::if_constexpr&lt;c10::impl::dispatch_key_whitelist_check(c10::DispatchKey::k)&gt;( \</span>
+<span class="cp">      []() { return &amp; TORCH_LIBRARY_IMPL_init_ ## ns ## _ ## k; }, \</span>
+<span class="cp">      []() { return [](torch::Library&amp;) -&gt; void {}; } \</span>
+<span class="cp">    ), \</span>
+<span class="cp">    #ns, c10::make_optional(c10::DispatchKey::k), \</span>
+<span class="cp">    __FILE__, __LINE__ \</span>
 <span class="cp">  ); \</span>
 <span class="cp">  void TORCH_LIBRARY_IMPL_init_ ## ns ## _ ## k (torch::Library&amp; m)</span>
 
