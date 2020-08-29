@@ -61,5 +61,41 @@ Program Listing for File transformercoder.h
    
    TORCH_MODULE(TransformerEncoder);
    
+   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ TransformerDecoder ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   
+   class TORCH_API TransformerDecoderImpl : public Cloneable<TransformerDecoderImpl> {
+    public:
+     TransformerDecoderImpl(TransformerDecoderLayer decoder_layer, int64_t num_layers)
+       : TransformerDecoderImpl(TransformerDecoderOptions(decoder_layer, num_layers)) {}
+     explicit TransformerDecoderImpl(TransformerDecoderOptions options_);
+   
+     void reset() override;
+   
+     void reset_parameters();
+   
+     Tensor forward(const Tensor& tgt,
+                    const Tensor& memory,
+                    const Tensor& tgt_mask = {},
+                    const Tensor& memory_mask = {},
+                    const Tensor& tgt_key_padding_mask = {},
+                    const Tensor& memory_key_padding_mask = {});
+   
+     TransformerDecoderOptions options;
+   
+     ModuleList layers{nullptr};
+   
+     AnyModule norm;
+   
+    protected:
+     FORWARD_HAS_DEFAULT_ARGS(
+         {2, AnyValue(Tensor())},
+         {3, AnyValue(Tensor())},
+         {4, AnyValue(Tensor())},
+         {5, AnyValue(Tensor())})
+   
+     };
+   
+   TORCH_MODULE(TransformerDecoder);
+   
    } // namespace nn
    } // namespace torch
