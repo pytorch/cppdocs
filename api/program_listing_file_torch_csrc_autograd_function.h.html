@@ -313,6 +313,16 @@
 <span class="c1">// Custom deleter to prevent stack overflows.</span>
 <span class="n">TORCH_API</span> <span class="kt">void</span> <span class="nf">deleteNode</span><span class="p">(</span><span class="n">Node</span><span class="o">*</span> <span class="n">function</span><span class="p">);</span>
 
+<span class="c1">// Guard that sets and restores the evaluating node</span>
+<span class="k">class</span> <span class="nc">NodeGuard</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="k">explicit</span> <span class="n">NodeGuard</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Node</span><span class="o">&gt;</span> <span class="n">node</span><span class="p">);</span>
+  <span class="o">~</span><span class="n">NodeGuard</span><span class="p">();</span>
+
+ <span class="k">private</span><span class="o">:</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Node</span><span class="o">&gt;</span> <span class="n">last_evaluating_node_</span><span class="p">;</span>
+<span class="p">};</span>
+
 <span class="c1">//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
 <span class="c1">//                               Node</span>
 <span class="c1">//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
@@ -370,6 +380,12 @@
       <span class="n">next_edges_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">next_edges</span><span class="p">))</span> <span class="p">{</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">AnomalyMode</span><span class="o">::</span><span class="n">is_enabled</span><span class="p">())</span> <span class="p">{</span>
       <span class="n">metadata</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">store_stack</span><span class="p">();</span>
+
+      <span class="c1">// If anomaly mode is enabled and graph is constructed, then assign the</span>
+      <span class="c1">// currently evaluating node as the parent of this node.</span>
+      <span class="c1">// A parent is a Node where this Node is created.</span>
+      <span class="c1">// We are tracking the parents to track multiple backward operations.</span>
+      <span class="n">assign_parent</span><span class="p">();</span>
     <span class="p">}</span>
   <span class="p">}</span>
 
@@ -478,6 +494,9 @@
   <span class="kt">uint64_t</span> <span class="n">sequence_nr</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">sequence_nr_</span><span class="p">;</span>
   <span class="p">}</span>
+
+  <span class="c1">// assigning a node as a parent to this node</span>
+  <span class="kt">void</span> <span class="n">assign_parent</span><span class="p">();</span>
 
   <span class="k">virtual</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">name</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
 
