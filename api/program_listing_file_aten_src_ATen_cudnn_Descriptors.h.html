@@ -440,7 +440,7 @@
                       <span class="o">&amp;</span><span class="n">cudnnCreateConvolutionDescriptor</span><span class="p">,</span>
                       <span class="o">&amp;</span><span class="n">cudnnDestroyConvolutionDescriptor</span><span class="o">&gt;</span>
 <span class="p">{</span>
-  <span class="kt">void</span> <span class="n">set</span><span class="p">(</span><span class="n">cudnnDataType_t</span> <span class="n">dataType</span><span class="p">,</span> <span class="kt">int</span> <span class="n">dim</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pad</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">stride</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span> <span class="n">upscale</span> <span class="cm">/* aka dilation */</span><span class="p">,</span> <span class="kt">int</span> <span class="n">groups</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kt">void</span> <span class="n">set</span><span class="p">(</span><span class="n">cudnnDataType_t</span> <span class="n">dataType</span><span class="p">,</span> <span class="kt">int</span> <span class="n">dim</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pad</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">stride</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span> <span class="n">upscale</span> <span class="cm">/* aka dilation */</span><span class="p">,</span> <span class="kt">int</span> <span class="n">groups</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">allow_tf32</span><span class="p">)</span> <span class="p">{</span>
     <span class="n">cudnnDataType_t</span> <span class="n">mathType</span> <span class="o">=</span> <span class="n">dataType</span><span class="p">;</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">dataType</span> <span class="o">==</span> <span class="n">CUDNN_DATA_HALF</span><span class="p">)</span> <span class="n">mathType</span> <span class="o">=</span> <span class="n">CUDNN_DATA_FLOAT</span><span class="p">;</span>
     <span class="n">AT_CUDNN_CHECK</span><span class="p">(</span><span class="n">cudnnSetConvolutionNdDescriptor</span><span class="p">(</span><span class="n">mut_desc</span><span class="p">(),</span> <span class="n">dim</span><span class="p">,</span> <span class="n">pad</span><span class="p">,</span> <span class="n">stride</span><span class="p">,</span> <span class="n">upscale</span><span class="p">,</span>
@@ -448,9 +448,13 @@
     <span class="n">AT_CUDNN_CHECK</span><span class="p">(</span><span class="n">cudnnSetConvolutionGroupCount</span><span class="p">(</span><span class="n">mut_desc</span><span class="p">(),</span> <span class="n">groups</span><span class="p">));</span>
     <span class="c1">// See Note [behavior of cudnnFind and cudnnGet]</span>
     <span class="n">AT_CUDNN_CHECK</span><span class="p">(</span><span class="n">cudnnSetConvolutionMathType</span><span class="p">(</span><span class="n">mut_desc</span><span class="p">(),</span> <span class="n">CUDNN_DEFAULT_MATH</span><span class="p">));</span>
-    <span class="k">if</span><span class="p">(</span><span class="n">dataType</span> <span class="o">==</span> <span class="n">CUDNN_DATA_HALF</span><span class="p">)</span>
+    <span class="k">if</span><span class="p">(</span><span class="n">dataType</span> <span class="o">==</span> <span class="n">CUDNN_DATA_HALF</span><span class="p">)</span> <span class="p">{</span>
       <span class="n">AT_CUDNN_CHECK</span><span class="p">(</span><span class="n">cudnnSetConvolutionMathType</span><span class="p">(</span><span class="n">mut_desc</span><span class="p">(),</span> <span class="n">CUDNN_TENSOR_OP_MATH</span><span class="p">));</span>
-
+    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">dataType</span> <span class="o">==</span> <span class="n">CUDNN_DATA_FLOAT</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">allow_tf32</span><span class="p">)</span> <span class="p">{</span>
+<span class="cp">#if defined(CUDNN_VERSION) &amp;&amp; CUDNN_VERSION &gt;= 8000</span>
+      <span class="n">AT_CUDNN_CHECK</span><span class="p">(</span><span class="n">cudnnSetConvolutionMathType</span><span class="p">(</span><span class="n">mut_desc</span><span class="p">(),</span> <span class="n">CUDNN_FMA_MATH</span><span class="p">));</span>
+<span class="cp">#endif</span>
+    <span class="p">}</span>
   <span class="p">}</span>
 <span class="p">};</span>
 
@@ -511,7 +515,7 @@
   <span class="n">DropoutDescriptor</span> <span class="n">dropout_desc_</span><span class="p">;</span>
   <span class="kt">void</span> <span class="nf">set</span><span class="p">(</span><span class="n">cudnnHandle_t</span> <span class="n">handle</span><span class="p">,</span> <span class="kt">int</span> <span class="n">hidden_size</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num_layers</span><span class="p">,</span> <span class="n">DropoutDescriptor</span><span class="o">&amp;&amp;</span> <span class="n">dropout_desc</span><span class="p">,</span>
            <span class="n">cudnnRNNInputMode_t</span> <span class="n">input_mode</span><span class="p">,</span> <span class="n">cudnnDirectionMode_t</span> <span class="n">bidirectional</span><span class="p">,</span>
-           <span class="n">cudnnRNNMode_t</span> <span class="n">mode</span><span class="p">,</span> <span class="n">cudnnDataType_t</span> <span class="n">datatype</span><span class="p">,</span> <span class="n">cudnnDataType_t</span> <span class="n">input_type</span><span class="p">,</span> <span class="n">cudnnRNNAlgo_t</span> <span class="n">algo</span><span class="p">)</span> <span class="p">{</span>
+           <span class="n">cudnnRNNMode_t</span> <span class="n">mode</span><span class="p">,</span> <span class="n">cudnnDataType_t</span> <span class="n">datatype</span><span class="p">,</span> <span class="n">cudnnDataType_t</span> <span class="n">input_type</span><span class="p">,</span> <span class="n">cudnnRNNAlgo_t</span> <span class="n">algo</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">allow_tf32</span><span class="p">)</span> <span class="p">{</span>
     <span class="n">dropout_desc_</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">dropout_desc</span><span class="p">);</span>
     <span class="n">AT_CUDNN_CHECK</span><span class="p">(</span><span class="n">cudnnSetRNNDescriptor_v6</span><span class="p">(</span>
           <span class="n">handle</span><span class="p">,</span>
@@ -528,7 +532,13 @@
     <span class="k">if</span> <span class="p">(</span><span class="n">prop</span><span class="o">-&gt;</span><span class="n">major</span> <span class="o">&gt;=</span> <span class="mi">7</span><span class="p">)</span> <span class="p">{</span>
       <span class="k">if</span> <span class="p">(</span><span class="n">input_type</span> <span class="o">==</span> <span class="n">CUDNN_DATA_HALF</span><span class="p">)</span> <span class="p">{</span>
         <span class="n">cudnnSetRNNMatrixMathType</span><span class="p">(</span><span class="n">mut_desc</span><span class="p">(),</span> <span class="n">CUDNN_TENSOR_OP_MATH</span><span class="p">);</span>
-      <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="p">}</span>
+<span class="cp">#if defined(CUDNN_VERSION) &amp;&amp; CUDNN_VERSION &gt;= 8000</span>
+      <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">input_type</span> <span class="o">==</span> <span class="n">CUDNN_DATA_FLOAT</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="n">allow_tf32</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">cudnnSetRNNMatrixMathType</span><span class="p">(</span><span class="n">mut_desc</span><span class="p">(),</span> <span class="n">CUDNN_FMA_MATH</span><span class="p">);</span>
+      <span class="p">}</span>
+<span class="cp">#endif</span>
+      <span class="k">else</span> <span class="p">{</span>
         <span class="c1">// Technically, as the default it&#39;s not necessary to explicitly</span>
         <span class="c1">// set this.</span>
         <span class="n">cudnnSetRNNMatrixMathType</span><span class="p">(</span><span class="n">mut_desc</span><span class="p">(),</span> <span class="n">CUDNN_DEFAULT_MATH</span><span class="p">);</span>
