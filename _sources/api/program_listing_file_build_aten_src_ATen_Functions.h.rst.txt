@@ -279,10 +279,12 @@ Program Listing for File Functions.h
    CAFFE2_API std::tuple<Tensor,Tensor> cummin(const Tensor & self, Dimname dim);
    CAFFE2_API std::tuple<Tensor &,Tensor &> cummin_out(Tensor & values, Tensor & indices, const Tensor & self, Dimname dim);
    CAFFE2_API void _cummin_helper(const Tensor & self, Tensor & values, Tensor & indices, int64_t dim);
+   CAFFE2_API Tensor cummaxmin_backward(const Tensor & grad, const Tensor & input, const Tensor & indices, int64_t dim);
    CAFFE2_API Tensor cumprod(const Tensor & self, int64_t dim, c10::optional<ScalarType> dtype=c10::nullopt);
    CAFFE2_API Tensor & cumprod_out(Tensor & out, const Tensor & self, int64_t dim, c10::optional<ScalarType> dtype=c10::nullopt);
    CAFFE2_API Tensor cumprod(const Tensor & self, Dimname dim, c10::optional<ScalarType> dtype=c10::nullopt);
    CAFFE2_API Tensor & cumprod_out(Tensor & out, const Tensor & self, Dimname dim, c10::optional<ScalarType> dtype=c10::nullopt);
+   CAFFE2_API Tensor cumprod_backward(const Tensor & grad, const Tensor & input, int64_t dim);
    CAFFE2_API Tensor cumsum(const Tensor & self, int64_t dim, c10::optional<ScalarType> dtype=c10::nullopt);
    CAFFE2_API Tensor & cumsum_out(Tensor & out, const Tensor & self, int64_t dim, c10::optional<ScalarType> dtype=c10::nullopt);
    CAFFE2_API Tensor cumsum(const Tensor & self, Dimname dim, c10::optional<ScalarType> dtype=c10::nullopt);
@@ -295,6 +297,7 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor diagflat(const Tensor & self, int64_t offset=0);
    CAFFE2_API Tensor diagonal(const Tensor & self, int64_t offset=0, int64_t dim1=0, int64_t dim2=1);
    CAFFE2_API Tensor diagonal(const Tensor & self, Dimname outdim, Dimname dim1, Dimname dim2, int64_t offset=0);
+   CAFFE2_API Tensor diagonal_backward(const Tensor & grad, IntArrayRef input_sizes, int64_t offset, int64_t dim1, int64_t dim2);
    CAFFE2_API Tensor div(const Tensor & self, const Tensor & other);
    CAFFE2_API Tensor & div_out(Tensor & out, const Tensor & self, const Tensor & other);
    CAFFE2_API Tensor div(const Tensor & self, Scalar other);
@@ -641,6 +644,7 @@ Program Listing for File Functions.h
    CAFFE2_API std::tuple<Tensor,Tensor> prelu_backward(const Tensor & grad_output, const Tensor & self, const Tensor & weight);
    CAFFE2_API Tensor gelu(const Tensor & self);
    CAFFE2_API Tensor gelu_backward(const Tensor & grad, const Tensor & self);
+   CAFFE2_API Tensor infinitely_differentiable_gelu_backward(const Tensor & grad, const Tensor & self);
    CAFFE2_API Tensor hardshrink(const Tensor & self, Scalar lambd=0.5);
    CAFFE2_API Tensor hardshrink_backward(const Tensor & grad_out, const Tensor & self, Scalar lambd);
    CAFFE2_API Tensor rsqrt(const Tensor & self);
@@ -966,6 +970,7 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor addbmm(const Tensor & self, const Tensor & batch1, const Tensor & batch2, Scalar beta=1, Scalar alpha=1);
    CAFFE2_API Tensor & diag_out(Tensor & out, const Tensor & self, int64_t diagonal=0);
    CAFFE2_API Tensor diag(const Tensor & self, int64_t diagonal=0);
+   CAFFE2_API Tensor diag_backward(const Tensor & grad, IntArrayRef input_sizes, int64_t diagonal);
    CAFFE2_API Tensor & cross_out(Tensor & out, const Tensor & self, const Tensor & other, c10::optional<int64_t> dim=c10::nullopt);
    CAFFE2_API Tensor cross(const Tensor & self, const Tensor & other, c10::optional<int64_t> dim=c10::nullopt);
    CAFFE2_API Tensor & triu_out(Tensor & out, const Tensor & self, int64_t diagonal=0);
@@ -975,6 +980,7 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor tril_indices(int64_t row, int64_t col, int64_t offset=0, const TensorOptions & options=at::kLong);
    CAFFE2_API Tensor triu_indices(int64_t row, int64_t col, int64_t offset=0, const TensorOptions & options=at::kLong);
    CAFFE2_API Tensor trace(const Tensor & self);
+   CAFFE2_API Tensor trace_backward(const Tensor & grad, IntArrayRef sizes);
    CAFFE2_API Tensor & ne_out(Tensor & out, const Tensor & self, Scalar other);
    CAFFE2_API Tensor ne(const Tensor & self, Scalar other);
    CAFFE2_API Tensor & ne_out(Tensor & out, const Tensor & self, const Tensor & other);
@@ -1021,6 +1027,7 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor less(const Tensor & self, const Tensor & other);
    CAFFE2_API Tensor & take_out(Tensor & out, const Tensor & self, const Tensor & index);
    CAFFE2_API Tensor take(const Tensor & self, const Tensor & index);
+   CAFFE2_API Tensor take_backward(const Tensor & grad, const Tensor & input, const Tensor & index);
    CAFFE2_API Tensor & index_select_out(Tensor & out, const Tensor & self, int64_t dim, const Tensor & index);
    CAFFE2_API Tensor index_select(const Tensor & self, int64_t dim, const Tensor & index);
    CAFFE2_API Tensor & index_select_out(Tensor & out, const Tensor & self, Dimname dim, const Tensor & index);
@@ -1028,6 +1035,7 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor index_select_backward(const Tensor & grad, IntArrayRef self_sizes, int64_t dim, const Tensor & index);
    CAFFE2_API Tensor & masked_select_out(Tensor & out, const Tensor & self, const Tensor & mask);
    CAFFE2_API Tensor masked_select(const Tensor & self, const Tensor & mask);
+   CAFFE2_API Tensor masked_select_backward(const Tensor & grad, const Tensor & input, const Tensor & mask);
    CAFFE2_API Tensor & nonzero_out(Tensor & out, const Tensor & self);
    CAFFE2_API Tensor nonzero(const Tensor & self);
    CAFFE2_API std::vector<Tensor> nonzero_numpy(const Tensor & self);
