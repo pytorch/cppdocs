@@ -18,6 +18,7 @@ Program Listing for File TensorBody.h
    #include <c10/core/Layout.h>
    #include <c10/core/MemoryFormat.h>
    #include <c10/core/QScheme.h>
+   #include <c10/core/Stream.h>
    #include <c10/core/Scalar.h>
    #include <c10/core/ScalarType.h>
    #include <c10/core/Storage.h>
@@ -62,6 +63,8 @@ Program Listing for File TensorBody.h
    
    class Tensor;
    using TensorList = ArrayRef<Tensor>;
+   
+   using Stream = c10::Stream;
    
    namespace impl {
    inline bool variable_excluded_from_dispatch() {
@@ -334,6 +337,8 @@ Program Listing for File TensorBody.h
    
      bool is_vulkan() const;
    
+     bool is_metal() const;
+   
      bool is_quantized() const;
    
      bool is_meta() const;
@@ -443,6 +448,7 @@ Program Listing for File TensorBody.h
      Tensor cuda() const;
      Tensor hip() const;
      Tensor vulkan() const;
+     Tensor metal() const;
    
      // ~~~~~ Autograd API ~~~~~
    
@@ -557,6 +563,8 @@ Program Listing for File TensorBody.h
      Tensor & ceil_() const;
      std::vector<Tensor> unsafe_chunk(int64_t chunks, int64_t dim=0) const;
      std::vector<Tensor> chunk(int64_t chunks, int64_t dim=0) const;
+     std::vector<Tensor> tensor_split(int64_t sections, int64_t dim=0) const;
+     std::vector<Tensor> tensor_split(IntArrayRef indices, int64_t dim=0) const;
      Tensor clamp(c10::optional<Scalar> min=c10::nullopt, c10::optional<Scalar> max=c10::nullopt) const;
      Tensor & clamp_(c10::optional<Scalar> min=c10::nullopt, c10::optional<Scalar> max=c10::nullopt) const;
      Tensor clamp_max(Scalar max) const;
@@ -601,8 +609,11 @@ Program Listing for File TensorBody.h
      Tensor dot(const Tensor & tensor) const;
      Tensor vdot(const Tensor & other) const;
      Tensor new_empty(IntArrayRef size, const TensorOptions & options={}) const;
+     Tensor new_empty(IntArrayRef size, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory) const;
      Tensor new_full(IntArrayRef size, Scalar fill_value, const TensorOptions & options={}) const;
+     Tensor new_full(IntArrayRef size, Scalar fill_value, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory) const;
      Tensor new_zeros(IntArrayRef size, const TensorOptions & options={}) const;
+     Tensor new_zeros(IntArrayRef size, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory) const;
      Tensor & resize_(IntArrayRef size, c10::optional<MemoryFormat> memory_format=c10::nullopt) const;
      Tensor erf() const;
      Tensor & erf_() const;
@@ -658,6 +669,8 @@ Program Listing for File TensorBody.h
      bool is_signed() const;
      std::tuple<Tensor,Tensor> kthvalue(int64_t k, int64_t dim=-1, bool keepdim=false) const;
      std::tuple<Tensor,Tensor> kthvalue(int64_t k, Dimname dim, bool keepdim=false) const;
+     Tensor nan_to_num(c10::optional<double> nan=c10::nullopt, c10::optional<double> posinf=c10::nullopt, c10::optional<double> neginf=c10::nullopt) const;
+     Tensor & nan_to_num_(c10::optional<double> nan=c10::nullopt, c10::optional<double> posinf=c10::nullopt, c10::optional<double> neginf=c10::nullopt) const;
      Tensor log() const;
      Tensor & log_() const;
      Tensor log10() const;
@@ -684,8 +697,12 @@ Program Listing for File TensorBody.h
      Tensor mean(c10::optional<ScalarType> dtype=c10::nullopt) const;
      Tensor mean(IntArrayRef dim, bool keepdim=false, c10::optional<ScalarType> dtype=c10::nullopt) const;
      Tensor mean(DimnameList dim, bool keepdim=false, c10::optional<ScalarType> dtype=c10::nullopt) const;
+     Tensor median() const;
      std::tuple<Tensor,Tensor> median(int64_t dim, bool keepdim=false) const;
      std::tuple<Tensor,Tensor> median(Dimname dim, bool keepdim=false) const;
+     Tensor nanmedian() const;
+     std::tuple<Tensor,Tensor> nanmedian(int64_t dim, bool keepdim=false) const;
+     std::tuple<Tensor,Tensor> nanmedian(Dimname dim, bool keepdim=false) const;
      std::tuple<Tensor,Tensor> min(int64_t dim, bool keepdim=false) const;
      std::tuple<Tensor,Tensor> min(Dimname dim, bool keepdim=false) const;
      Tensor amin(IntArrayRef dim={}, bool keepdim=false) const;
@@ -717,6 +734,7 @@ Program Listing for File TensorBody.h
      Tensor & rad2deg_() const;
      Tensor deg2rad() const;
      Tensor & deg2rad_() const;
+     Tensor ravel() const;
      Tensor reciprocal() const;
      Tensor & reciprocal_() const;
      Tensor neg() const;
@@ -865,6 +883,7 @@ Program Listing for File TensorBody.h
      Tensor int_repr() const;
      QScheme qscheme() const;
      Tensor to(const TensorOptions & options={}, bool non_blocking=false, bool copy=false, c10::optional<MemoryFormat> memory_format=c10::nullopt) const;
+     Tensor to(c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory, bool non_blocking, bool copy, c10::optional<MemoryFormat> memory_format) const;
      Tensor to(Device device, ScalarType dtype, bool non_blocking=false, bool copy=false, c10::optional<MemoryFormat> memory_format=c10::nullopt) const;
      Tensor to(ScalarType dtype, bool non_blocking=false, bool copy=false, c10::optional<MemoryFormat> memory_format=c10::nullopt) const;
      Tensor to(const Tensor & other, bool non_blocking=false, bool copy=false, c10::optional<MemoryFormat> memory_format=c10::nullopt) const;
@@ -1067,7 +1086,6 @@ Program Listing for File TensorBody.h
      Tensor max(const Tensor & other) const;
      Tensor minimum(const Tensor & other) const;
      Tensor min(const Tensor & other) const;
-     Tensor median() const;
      Tensor quantile(double q, c10::optional<int64_t> dim=c10::nullopt, bool keepdim=false) const;
      Tensor quantile(const Tensor & q, c10::optional<int64_t> dim=c10::nullopt, bool keepdim=false) const;
      Tensor nanquantile(double q, c10::optional<int64_t> dim=c10::nullopt, bool keepdim=false) const;
@@ -1088,6 +1106,7 @@ Program Listing for File TensorBody.h
      Tensor alias() const;
      Tensor isfinite() const;
      Tensor isinf() const;
+     void record_stream(Stream s) const;
      Tensor isposinf() const;
      Tensor isneginf() const;
      Tensor fft(int64_t signal_ndim, bool normalized=false) const;
