@@ -454,6 +454,18 @@ Program Listing for File TensorBody.h
      // ~~~~~ Autograd API ~~~~~
    
    
+     void backward(const Tensor & gradient={}, c10::optional<bool> retain_graph=c10::nullopt, bool create_graph=false, c10::optional<TensorList> inputs=c10::nullopt) const {
+       // NB: Adding this wrapper to _backward here because we'd like our
+       // 'backwards' api to accept the 'inputs' argument optionally. Since code gen
+       // currently does not support optional of TensorList our approach is to replace
+       // backward in native_functions.yaml with _backward and call it here instead.
+       if (inputs.has_value()) {
+         TORCH_CHECK(inputs.value().size() > 0, "'inputs' argument to backward cannot be empty")
+         this->_backward(inputs.value(), gradient, retain_graph, create_graph);
+       } else {
+         this->_backward({}, gradient, retain_graph, create_graph);
+       }
+     }
    
    
    
@@ -479,7 +491,7 @@ Program Listing for File TensorBody.h
    
      //example
      //Tensor * add(Tensor & b);
-     void backward(const c10::optional<Tensor>& gradient={}, c10::optional<bool> retain_graph=c10::nullopt, bool create_graph=false) const;
+     void _backward(TensorList inputs, const c10::optional<Tensor>& gradient={}, c10::optional<bool> retain_graph=c10::nullopt, bool create_graph=false) const;
      void set_data(const Tensor & new_data) const;
      Tensor data() const;
      bool is_leaf() const;
@@ -551,6 +563,10 @@ Program Listing for File TensorBody.h
      Tensor bincount(const c10::optional<Tensor>& weights={}, int64_t minlength=0) const;
      Tensor bitwise_not() const;
      Tensor & bitwise_not_() const;
+     Tensor copysign(const Tensor & other) const;
+     Tensor & copysign_(const Tensor & other) const;
+     Tensor copysign(Scalar other) const;
+     Tensor & copysign_(Scalar other) const;
      Tensor logical_not() const;
      Tensor & logical_not_() const;
      Tensor logical_xor(const Tensor & other) const;
