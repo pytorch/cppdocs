@@ -313,6 +313,8 @@
 <span class="cp">#include</span> <span class="cpf">&lt;type_traits&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;utility&gt;</span><span class="cp"></span>
 
+<span class="cp">#include</span> <span class="cpf">&lt;c10/util/Metaprogramming.h&gt;</span><span class="cp"></span>
+
 <span class="cp">#define TR2_OPTIONAL_REQUIRES(...) \</span>
 <span class="cp">  typename std::enable_if&lt;__VA_ARGS__::value, bool&gt;::type = false</span>
 
@@ -919,6 +921,22 @@
     <span class="n">clear</span><span class="p">();</span>
   <span class="p">}</span>
 <span class="p">};</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="p">,</span> <span class="k">class</span> <span class="nc">F</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="n">T</span> <span class="n">value_or_else</span><span class="p">(</span><span class="k">const</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">v</span><span class="p">,</span> <span class="n">F</span><span class="o">&amp;&amp;</span> <span class="n">func</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">static_assert</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">is_convertible</span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">guts</span><span class="o">::</span><span class="n">infer_function_traits_t</span><span class="o">&lt;</span><span class="n">F</span><span class="o">&gt;::</span><span class="n">return_type</span><span class="p">,</span> <span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span>
+    <span class="s">&quot;func parameters must be a callable that returns a type convertible to the value stored in the optional&quot;</span><span class="p">);</span>
+  <span class="k">return</span> <span class="n">v</span><span class="p">.</span><span class="n">has_value</span><span class="p">()</span> <span class="o">?</span> <span class="o">*</span><span class="nl">v</span> <span class="p">:</span> <span class="n">detail_</span><span class="o">::</span><span class="n">convert</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">F</span><span class="o">&gt;</span><span class="p">(</span><span class="n">func</span><span class="p">)());</span>
+<span class="p">}</span>
+
+<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="p">,</span> <span class="k">class</span> <span class="nc">F</span><span class="o">&gt;</span>
+<span class="k">constexpr</span> <span class="n">T</span> <span class="n">value_or_else</span><span class="p">(</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;&amp;</span> <span class="n">v</span><span class="p">,</span> <span class="n">F</span><span class="o">&amp;&amp;</span> <span class="n">func</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">static_assert</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">is_convertible</span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">guts</span><span class="o">::</span><span class="n">infer_function_traits_t</span><span class="o">&lt;</span><span class="n">F</span><span class="o">&gt;::</span><span class="n">return_type</span><span class="p">,</span> <span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span>
+    <span class="s">&quot;func parameters must be a callable that returns a type convertible to the value stored in the optional&quot;</span><span class="p">);</span>
+  <span class="k">return</span> <span class="n">v</span><span class="p">.</span><span class="n">has_value</span><span class="p">()</span>
+    <span class="o">?</span> <span class="n">constexpr_move</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">v</span><span class="p">).</span><span class="n">contained_val</span><span class="p">())</span>
+    <span class="o">:</span> <span class="n">detail_</span><span class="o">::</span><span class="n">convert</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">F</span><span class="o">&gt;</span><span class="p">(</span><span class="n">func</span><span class="p">)());</span>
+<span class="p">}</span>
 
 
 <span class="c1">// XXX: please refrain from using optional&lt;T&amp;&gt;, since it is being against with</span>
