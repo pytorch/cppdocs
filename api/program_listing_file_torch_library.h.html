@@ -693,7 +693,7 @@
 <span class="cp">  ); \</span>
 <span class="cp">  void TORCH_LIBRARY_init_ ## ns (torch::Library&amp; m)</span>
 
-<span class="cp">#define TORCH_LIBRARY_FRAGMENT_THIS_API_IS_FOR_PER_OP_REGISTRATION_ONLY(ns, m) \</span>
+<span class="cp">#define TORCH_LIBRARY_FRAGMENT(ns, m) \</span>
 <span class="cp">  static void TORCH_LIBRARY_FRAGMENT_init_ ## ns ## _ ## k (torch::Library&amp;); \</span>
 <span class="cp">  static torch::detail::TorchLibraryInit TORCH_LIBRARY_FRAGMENT_static_init_ ## ns ## _ ## k ( \</span>
 <span class="cp">    torch::Library::FRAGMENT, \</span>
@@ -701,6 +701,15 @@
 <span class="cp">    #ns, c10::nullopt, __FILE__, __LINE__ \</span>
 <span class="cp">  ); \</span>
 <span class="cp">  void TORCH_LIBRARY_FRAGMENT_init_ ## ns ## _ ## k (torch::Library&amp; m)</span>
+
+<span class="cp">#define TORCH_LIBRARY_FRAGMENT_UNIQUE(ns, m, uid) \</span>
+<span class="cp">  static void C10_CONCATENATE(TORCH_LIBRARY_FRAGMENT_init_ ## ns ## _, uid) (torch::Library&amp;); \</span>
+<span class="cp">  static torch::detail::TorchLibraryInit C10_CONCATENATE(TORCH_LIBRARY_FRAGMENT_static_init_ ## ns ## _, uid) ( \</span>
+<span class="cp">    torch::Library::FRAGMENT, \</span>
+<span class="cp">    &amp;C10_CONCATENATE(TORCH_LIBRARY_FRAGMENT_init_ ## ns ## _, uid), \</span>
+<span class="cp">    #ns, c10::nullopt, __FILE__, __LINE__ \</span>
+<span class="cp">  ); \</span>
+<span class="cp">  void C10_CONCATENATE(TORCH_LIBRARY_FRAGMENT_init_ ## ns ## _, uid) (torch::Library&amp; m)</span>
 
 <span class="c1">// NB: if the dispatch key is not whitelisted, we simply omit the Library</span>
 <span class="c1">// call entirely</span>
@@ -716,6 +725,19 @@
 <span class="cp">    __FILE__, __LINE__ \</span>
 <span class="cp">  ); \</span>
 <span class="cp">  void TORCH_LIBRARY_IMPL_init_ ## ns ## _ ## k (torch::Library&amp; m)</span>
+
+<span class="cp">#define TORCH_LIBRARY_IMPL_UNIQUE(ns, k, m, uid) \</span>
+<span class="cp">  static void C10_CONCATENATE(TORCH_LIBRARY_IMPL_init_ ## ns ## _ ## k, uid) (torch::Library&amp;); \</span>
+<span class="cp">  static torch::detail::TorchLibraryInit C10_CONCATENATE(TORCH_LIBRARY_IMPL_static_init_ ## ns ## _ ## k, uid) ( \</span>
+<span class="cp">    torch::Library::IMPL, \</span>
+<span class="cp">    c10::guts::if_constexpr&lt;c10::impl::dispatch_key_whitelist_check(c10::DispatchKey::k)&gt;( \</span>
+<span class="cp">      []() { return &amp; C10_CONCATENATE(TORCH_LIBRARY_IMPL_init_ ## ns ## _ ## k, uid); }, \</span>
+<span class="cp">      []() { return [](torch::Library&amp;) -&gt; void {}; } \</span>
+<span class="cp">    ), \</span>
+<span class="cp">    #ns, c10::make_optional(c10::DispatchKey::k), \</span>
+<span class="cp">    __FILE__, __LINE__ \</span>
+<span class="cp">  ); \</span>
+<span class="cp">  void C10_CONCATENATE(TORCH_LIBRARY_IMPL_init_ ## ns ## _ ## k, uid) (torch::Library&amp; m)</span>
 
 
 <span class="c1">// These are variants of the macros above which are to be used for testing (they</span>
