@@ -288,7 +288,7 @@
 
 <span class="k">namespace</span> <span class="n">c10</span> <span class="p">{</span>
 
-<span class="k">using</span> <span class="n">DeviceIndex</span> <span class="o">=</span> <span class="kt">int16_t</span><span class="p">;</span>
+<span class="k">using</span> <span class="n">DeviceIndex</span> <span class="o">=</span> <span class="kt">int8_t</span><span class="p">;</span>
 
 <span class="k">struct</span> <span class="nc">C10_API</span> <span class="n">Device</span> <span class="k">final</span> <span class="p">{</span>
   <span class="k">using</span> <span class="n">Type</span> <span class="o">=</span> <span class="n">DeviceType</span><span class="p">;</span>
@@ -339,9 +339,9 @@
   <span class="n">DeviceIndex</span> <span class="n">index_</span> <span class="o">=</span> <span class="mi">-1</span><span class="p">;</span>
   <span class="kt">void</span> <span class="nf">validate</span><span class="p">()</span> <span class="p">{</span>
     <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">index_</span> <span class="o">==</span> <span class="mi">-1</span> <span class="o">||</span> <span class="n">index_</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span>
-        <span class="s">&quot;Device index must be -1 or non-negative, got &quot;</span><span class="p">,</span> <span class="n">index_</span><span class="p">);</span>
+        <span class="s">&quot;Device index must be -1 or non-negative, got &quot;</span><span class="p">,</span> <span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="n">index_</span><span class="p">);</span>
     <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="o">!</span><span class="n">is_cpu</span><span class="p">()</span> <span class="o">||</span> <span class="n">index_</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">,</span>
-        <span class="s">&quot;CPU device index must be -1 or zero, got &quot;</span><span class="p">,</span> <span class="n">index_</span><span class="p">);</span>
+        <span class="s">&quot;CPU device index must be -1 or zero, got &quot;</span><span class="p">,</span> <span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="n">index_</span><span class="p">);</span>
   <span class="p">}</span>
 <span class="p">};</span>
 
@@ -357,8 +357,8 @@
   <span class="kt">size_t</span> <span class="nf">operator</span><span class="p">()(</span><span class="n">c10</span><span class="o">::</span><span class="n">Device</span> <span class="n">d</span><span class="p">)</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="p">{</span>
     <span class="c1">// Are you here because this static assert failed?  Make sure you ensure</span>
     <span class="c1">// that the bitmasking code below is updated accordingly!</span>
-    <span class="k">static_assert</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">DeviceType</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="s">&quot;DeviceType is not 16-bit&quot;</span><span class="p">);</span>
-    <span class="k">static_assert</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">DeviceIndex</span><span class="p">)</span> <span class="o">==</span> <span class="mi">2</span><span class="p">,</span> <span class="s">&quot;DeviceIndex is not 16-bit&quot;</span><span class="p">);</span>
+    <span class="k">static_assert</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">DeviceType</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&quot;DeviceType is not 8-bit&quot;</span><span class="p">);</span>
+    <span class="k">static_assert</span><span class="p">(</span><span class="k">sizeof</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">DeviceIndex</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">,</span> <span class="s">&quot;DeviceIndex is not 8-bit&quot;</span><span class="p">);</span>
     <span class="c1">// Note [Hazard when concatenating signed integers]</span>
     <span class="c1">// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
     <span class="c1">// We must first convert to a same-sized unsigned type, before promoting to</span>
@@ -369,8 +369,8 @@
     <span class="c1">// Technically, by C/C++ integer promotion rules, we only need one of the</span>
     <span class="c1">// uint32_t casts to the result type, but we put in both for explicitness&#39;s sake.</span>
     <span class="kt">uint32_t</span> <span class="n">bits</span> <span class="o">=</span>
-        <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint32_t</span><span class="o">&gt;</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint16_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">d</span><span class="p">.</span><span class="n">type</span><span class="p">()))</span> <span class="o">&lt;&lt;</span> <span class="mi">16</span>
-      <span class="o">|</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint32_t</span><span class="o">&gt;</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint16_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">d</span><span class="p">.</span><span class="n">index</span><span class="p">()));</span>
+        <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint32_t</span><span class="o">&gt;</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">d</span><span class="p">.</span><span class="n">type</span><span class="p">()))</span> <span class="o">&lt;&lt;</span> <span class="mi">16</span>
+      <span class="o">|</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint32_t</span><span class="o">&gt;</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint8_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">d</span><span class="p">.</span><span class="n">index</span><span class="p">()));</span>
     <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">hash</span><span class="o">&lt;</span><span class="kt">uint32_t</span><span class="o">&gt;</span><span class="p">{}(</span><span class="n">bits</span><span class="p">);</span>
   <span class="p">}</span>
 <span class="p">};</span>
