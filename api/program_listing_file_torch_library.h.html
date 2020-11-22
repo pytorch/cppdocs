@@ -193,7 +193,6 @@
 <li class="toctree-l1"><a class="reference internal" href="../notes/faq.html">FAQ</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../notes/tensor_basics.html">Tensor Basics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../notes/tensor_creation.html">Tensor Creation API</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../notes/tensor_cuda_stream.html">Tensor CUDA Stream API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../notes/tensor_indexing.html">Tensor Indexing API</a></li>
 </ul>
 
@@ -341,7 +340,7 @@
 
   <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">FuncPtr</span><span class="o">&gt;</span>
   <span class="k">explicit</span> <span class="n">CppFunction</span><span class="p">(</span><span class="n">FuncPtr</span> <span class="n">f</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">enable_if_t</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">is_compile_time_function_pointer</span><span class="o">&lt;</span><span class="n">FuncPtr</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">nullptr_t</span><span class="o">&gt;</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">)</span>
-    <span class="o">:</span> <span class="n">func_</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">KernelFunction</span><span class="o">::</span><span class="n">makeFromUnboxedFunction</span><span class="p">(</span><span class="n">f</span><span class="p">))</span>
+    <span class="o">:</span> <span class="n">func_</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">KernelFunction</span><span class="o">::</span><span class="n">makeFromUnboxedRuntimeFunction</span><span class="p">(</span><span class="n">f</span><span class="p">.</span><span class="n">func_ptr</span><span class="p">()))</span>
     <span class="p">,</span> <span class="n">cpp_signature_</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">impl</span><span class="o">::</span><span class="n">CppSignature</span><span class="o">::</span><span class="n">make</span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">FuncPtr</span><span class="o">::</span><span class="n">FuncType</span><span class="o">&gt;</span><span class="p">())</span>
     <span class="c1">// TODO: Don&#39;t go through WrapRuntimeKernelFunctor</span>
     <span class="p">,</span> <span class="n">schema_</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">detail</span><span class="o">::</span><span class="n">inferFunctionSchemaFromFunctor</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">impl</span><span class="o">::</span><span class="n">WrapFunctionIntoRuntimeFunctor</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">decay_t</span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">FuncPtr</span><span class="o">::</span><span class="n">FuncType</span><span class="o">&gt;&gt;&gt;</span><span class="p">())</span>
@@ -693,7 +692,7 @@
 <span class="cp">  ); \</span>
 <span class="cp">  void TORCH_LIBRARY_init_ ## ns (torch::Library&amp; m)</span>
 
-<span class="cp">#define TORCH_LIBRARY_FRAGMENT(ns, m) \</span>
+<span class="cp">#define TORCH_LIBRARY_FRAGMENT_THIS_API_IS_FOR_PER_OP_REGISTRATION_ONLY(ns, m) \</span>
 <span class="cp">  static void TORCH_LIBRARY_FRAGMENT_init_ ## ns ## _ ## k (torch::Library&amp;); \</span>
 <span class="cp">  static torch::detail::TorchLibraryInit TORCH_LIBRARY_FRAGMENT_static_init_ ## ns ## _ ## k ( \</span>
 <span class="cp">    torch::Library::FRAGMENT, \</span>
@@ -701,15 +700,6 @@
 <span class="cp">    #ns, c10::nullopt, __FILE__, __LINE__ \</span>
 <span class="cp">  ); \</span>
 <span class="cp">  void TORCH_LIBRARY_FRAGMENT_init_ ## ns ## _ ## k (torch::Library&amp; m)</span>
-
-<span class="cp">#define TORCH_LIBRARY_FRAGMENT_UNIQUE(ns, m, uid) \</span>
-<span class="cp">  static void C10_CONCATENATE(TORCH_LIBRARY_FRAGMENT_init_ ## ns ## _, uid) (torch::Library&amp;); \</span>
-<span class="cp">  static torch::detail::TorchLibraryInit C10_CONCATENATE(TORCH_LIBRARY_FRAGMENT_static_init_ ## ns ## _, uid) ( \</span>
-<span class="cp">    torch::Library::FRAGMENT, \</span>
-<span class="cp">    &amp;C10_CONCATENATE(TORCH_LIBRARY_FRAGMENT_init_ ## ns ## _, uid), \</span>
-<span class="cp">    #ns, c10::nullopt, __FILE__, __LINE__ \</span>
-<span class="cp">  ); \</span>
-<span class="cp">  void C10_CONCATENATE(TORCH_LIBRARY_FRAGMENT_init_ ## ns ## _, uid) (torch::Library&amp; m)</span>
 
 <span class="c1">// NB: if the dispatch key is not whitelisted, we simply omit the Library</span>
 <span class="c1">// call entirely</span>
@@ -725,19 +715,6 @@
 <span class="cp">    __FILE__, __LINE__ \</span>
 <span class="cp">  ); \</span>
 <span class="cp">  void TORCH_LIBRARY_IMPL_init_ ## ns ## _ ## k (torch::Library&amp; m)</span>
-
-<span class="cp">#define TORCH_LIBRARY_IMPL_UNIQUE(ns, k, m, uid) \</span>
-<span class="cp">  static void C10_CONCATENATE(TORCH_LIBRARY_IMPL_init_ ## ns ## _ ## k, uid) (torch::Library&amp;); \</span>
-<span class="cp">  static torch::detail::TorchLibraryInit C10_CONCATENATE(TORCH_LIBRARY_IMPL_static_init_ ## ns ## _ ## k, uid) ( \</span>
-<span class="cp">    torch::Library::IMPL, \</span>
-<span class="cp">    c10::guts::if_constexpr&lt;c10::impl::dispatch_key_whitelist_check(c10::DispatchKey::k)&gt;( \</span>
-<span class="cp">      []() { return &amp; C10_CONCATENATE(TORCH_LIBRARY_IMPL_init_ ## ns ## _ ## k, uid); }, \</span>
-<span class="cp">      []() { return [](torch::Library&amp;) -&gt; void {}; } \</span>
-<span class="cp">    ), \</span>
-<span class="cp">    #ns, c10::make_optional(c10::DispatchKey::k), \</span>
-<span class="cp">    __FILE__, __LINE__ \</span>
-<span class="cp">  ); \</span>
-<span class="cp">  void C10_CONCATENATE(TORCH_LIBRARY_IMPL_init_ ## ns ## _ ## k, uid) (torch::Library&amp; m)</span>
 
 
 <span class="c1">// These are variants of the macros above which are to be used for testing (they</span>
