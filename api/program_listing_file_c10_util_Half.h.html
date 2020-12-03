@@ -193,7 +193,6 @@
 <li class="toctree-l1"><a class="reference internal" href="../notes/faq.html">FAQ</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../notes/tensor_basics.html">Tensor Basics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../notes/tensor_creation.html">Tensor Creation API</a></li>
-<li class="toctree-l1"><a class="reference internal" href="../notes/tensor_cuda_stream.html">Tensor CUDA Stream API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../notes/tensor_indexing.html">Tensor Indexing API</a></li>
 </ul>
 
@@ -597,9 +596,7 @@
           <span class="k">const</span> <span class="kt">uint32_t</span> <span class="n">exp_bits</span> <span class="o">=</span> <span class="p">(</span><span class="n">bits</span> <span class="o">&gt;&gt;</span> <span class="mi">13</span><span class="p">)</span> <span class="o">&amp;</span> <span class="n">UINT32_C</span><span class="p">(</span><span class="mh">0x00007C00</span><span class="p">);</span>
           <span class="k">const</span> <span class="kt">uint32_t</span> <span class="n">mantissa_bits</span> <span class="o">=</span> <span class="n">bits</span> <span class="o">&amp;</span> <span class="n">UINT32_C</span><span class="p">(</span><span class="mh">0x00000FFF</span><span class="p">);</span>
           <span class="k">const</span> <span class="kt">uint32_t</span> <span class="n">nonsign</span> <span class="o">=</span> <span class="n">exp_bits</span> <span class="o">+</span> <span class="n">mantissa_bits</span><span class="p">;</span>
-          <span class="k">return</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint16_t</span><span class="o">&gt;</span><span class="p">(</span>
-            <span class="p">(</span><span class="n">sign</span> <span class="o">&gt;&gt;</span> <span class="mi">16</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">shl1_w</span> <span class="o">&gt;</span> <span class="n">UINT32_C</span><span class="p">(</span><span class="mh">0xFF000000</span><span class="p">)</span> <span class="o">?</span> <span class="n">UINT16_C</span><span class="p">(</span><span class="mh">0x7E00</span><span class="p">)</span> <span class="o">:</span> <span class="n">nonsign</span><span class="p">)</span>
-          <span class="p">);</span>
+          <span class="k">return</span> <span class="p">(</span><span class="n">sign</span> <span class="o">&gt;&gt;</span> <span class="mi">16</span><span class="p">)</span> <span class="o">|</span> <span class="p">(</span><span class="n">shl1_w</span> <span class="o">&gt;</span> <span class="n">UINT32_C</span><span class="p">(</span><span class="mh">0xFF000000</span><span class="p">)</span> <span class="o">?</span> <span class="n">UINT16_C</span><span class="p">(</span><span class="mh">0x7E00</span><span class="p">)</span> <span class="o">:</span> <span class="n">nonsign</span><span class="p">);</span>
   <span class="p">}</span>
 
 <span class="p">}</span> <span class="c1">// namespace detail</span>
@@ -643,11 +640,10 @@
   <span class="n">Half</span> <span class="nf">imag</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">imag_</span><span class="p">;</span>
   <span class="p">}</span>
-  <span class="k">explicit</span> <span class="kr">inline</span> <span class="n">complex</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span> <span class="n">value</span><span class="p">)</span>
+  <span class="kr">inline</span> <span class="nf">complex</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span> <span class="n">value</span><span class="p">)</span>
       <span class="o">:</span> <span class="n">real_</span><span class="p">(</span><span class="n">value</span><span class="p">.</span><span class="n">real</span><span class="p">()),</span> <span class="n">imag_</span><span class="p">(</span><span class="n">value</span><span class="p">.</span><span class="n">imag</span><span class="p">())</span> <span class="p">{}</span>
-  <span class="k">explicit</span> <span class="kr">inline</span> <span class="n">complex</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span> <span class="n">value</span><span class="p">)</span>
-      <span class="o">:</span> <span class="n">real_</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="n">value</span><span class="p">.</span><span class="n">real</span><span class="p">())),</span>
-        <span class="n">imag_</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="n">value</span><span class="p">.</span><span class="n">imag</span><span class="p">()))</span> <span class="p">{}</span>
+  <span class="kr">inline</span> <span class="nf">complex</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span> <span class="n">value</span><span class="p">)</span>
+      <span class="o">:</span> <span class="n">real_</span><span class="p">(</span><span class="n">value</span><span class="p">.</span><span class="n">real</span><span class="p">()),</span> <span class="n">imag_</span><span class="p">(</span><span class="n">value</span><span class="p">.</span><span class="n">imag</span><span class="p">())</span> <span class="p">{}</span>
   <span class="kr">inline</span> <span class="k">operator</span> <span class="n">c10</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">return</span> <span class="p">{</span><span class="n">real_</span><span class="p">,</span> <span class="n">imag_</span><span class="p">};</span>
   <span class="p">}</span>
