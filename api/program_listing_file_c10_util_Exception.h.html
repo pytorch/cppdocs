@@ -193,6 +193,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../notes/faq.html">FAQ</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../notes/tensor_basics.html">Tensor Basics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../notes/tensor_creation.html">Tensor Creation API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notes/tensor_cuda_stream.html">Tensor CUDA Stream API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../notes/tensor_indexing.html">Tensor Indexing API</a></li>
 </ul>
 
@@ -435,6 +436,12 @@
   <span class="k">using</span> <span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span>
 <span class="p">};</span>
 
+<span class="c1">// Used in Onnxifi backend lowering.  These turn into</span>
+<span class="c1">// ExitException when they cross to Python.</span>
+<span class="k">class</span> <span class="nc">C10_API</span> <span class="nl">OnnxfiBackendSystemError</span> <span class="p">:</span> <span class="k">public</span> <span class="n">Error</span> <span class="p">{</span>
+  <span class="k">using</span> <span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span>
+<span class="p">};</span>
+
 <span class="c1">// A utility function to return an exception std::string by prepending its</span>
 <span class="c1">// exception type before its what() content</span>
 <span class="n">C10_API</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">GetExceptionString</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">exception</span><span class="o">&amp;</span> <span class="n">e</span><span class="p">);</span>
@@ -635,18 +642,30 @@
 <span class="c1">// Report a warning to the user.  Accepts an arbitrary number of extra</span>
 <span class="c1">// arguments which are concatenated into the warning message using operator&lt;&lt;</span>
 <span class="c1">//</span>
+<span class="cp">#ifdef STRIP_ERROR_MESSAGES</span>
+<span class="cp">#define TORCH_WARN(...) \</span>
+<span class="cp">  ::c10::Warning::warn({__func__, __FILE__, static_cast&lt;uint32_t&gt;(__LINE__)}, {}, false)</span>
+<span class="cp">#else</span>
 <span class="cp">#define TORCH_WARN(...) \</span>
 <span class="cp">  ::c10::Warning::warn({__func__, __FILE__, static_cast&lt;uint32_t&gt;(__LINE__)}, ::c10::str(__VA_ARGS__), false)</span>
+<span class="cp">#endif</span>
 
 <span class="c1">// Report a warning to the user only once.  Accepts an arbitrary number of extra</span>
 <span class="c1">// arguments which are concatenated into the warning message using operator&lt;&lt;</span>
 <span class="c1">//</span>
+<span class="cp">#ifdef STRIP_ERROR_MESSAGES</span>
+<span class="cp">#define TORCH_WARN_ONCE(...) \</span>
+<span class="cp">  C10_UNUSED static const auto C10_ANONYMOUS_VARIABLE(torch_warn_once_) = [&amp;] { \</span>
+<span class="cp">    ::c10::Warning::warn({__func__, __FILE__, static_cast&lt;uint32_t&gt;(__LINE__)}, {}, false); \</span>
+<span class="cp">    return true; \</span>
+<span class="cp">  }()</span>
+<span class="cp">#else</span>
 <span class="cp">#define TORCH_WARN_ONCE(...) \</span>
 <span class="cp">  C10_UNUSED static const auto C10_ANONYMOUS_VARIABLE(torch_warn_once_) = [&amp;] { \</span>
 <span class="cp">    ::c10::Warning::warn({__func__, __FILE__, static_cast&lt;uint32_t&gt;(__LINE__)}, ::c10::str(__VA_ARGS__), false); \</span>
 <span class="cp">    return true; \</span>
 <span class="cp">  }()</span>
-
+<span class="cp">#endif</span>
 
 <span class="c1">// ----------------------------------------------------------------------------</span>
 <span class="c1">// Deprecated macros</span>
