@@ -37,37 +37,20 @@ Program Listing for File custom_class.h
      return detail::types<void, Types...>{};
    }
    
-   template <typename Func, typename... ParameterTypeList>
-   struct InitLambda {
-     Func f;
-   };
-   
-   template <typename Func>
-   decltype(auto) init(Func&& f) {
-     using InitTraits =
-         c10::guts::infer_function_traits_t<std::decay_t<Func>>;
-     using ParameterTypeList = typename InitTraits::parameter_types;
-   
-     InitLambda<Func, ParameterTypeList> init{std::forward<Func>(f)};
-     return init;
-   }
-   
    template <class CurClass>
    class class_ {
      static_assert(std::is_base_of<CustomClassHolder, CurClass>::value,
        "torch::class_<T> requires T to inherit from CustomClassHolder");
    
     public:
-     explicit class_(const std::string& namespaceName, const std::string& className, std::string doc_string = "") {
+     explicit class_(const std::string& namespaceName, const std::string& className) {
        detail::checkValidIdent(namespaceName, "Namespace name");
        detail::checkValidIdent(className, "Class name");
        qualClassName = std::string("__torch__.torch.classes.") + namespaceName + "." + className;
    
        classTypePtr = at::ClassType::create(
            c10::QualifiedName(qualClassName),
-           std::weak_ptr<jit::CompilationUnit>(),
-           /*is_module=*/false,
-           std::move(doc_string));
+           std::weak_ptr<jit::CompilationUnit>());
        classTypePtr->addAttribute("capsule", at::CapsuleType::get());
    
        c10::getCustomClassTypeMap().insert(
@@ -79,7 +62,7 @@ Program Listing for File custom_class.h
      }
    
      template <typename... Types>
-     class_& def(detail::types<void, Types...>, std::string doc_string = "") { // Used in combination with
+     class_& def(detail::types<void, Types...>) { // Used in combination with
                                                   // torch::init<...>()
        auto func = [](c10::tagged_capsule<CurClass> self, Types... args) {
          auto classObj = c10::make_intrusive<CurClass>(args...);
@@ -87,39 +70,21 @@ Program Listing for File custom_class.h
          object->setSlot(0, c10::IValue::make_capsule(std::move(classObj)));
        };
    
-       defineMethod("__init__", std::move(func), std::move(doc_string));
-       return *this;
-     }
-   
-     // Used in combination with torch::init([]lambda(){......})
-     template <typename Func, typename... ParameterTypes>
-     class_& def(
-         InitLambda<Func, c10::guts::typelist::typelist<ParameterTypes...>> init,
-         std::string doc_string = "") {
-       auto init_lambda_wrapper = [func = std::move(init.f)](
-                                      c10::tagged_capsule<CurClass> self,
-                                      ParameterTypes... arg) {
-         c10::intrusive_ptr<CurClass> classObj =
-             at::guts::invoke(func, std::forward<ParameterTypes>(arg)...);
-         auto object = self.ivalue.toObject();
-         object->setSlot(0, c10::IValue::make_capsule(classObj));
-       };
-       defineMethod("__init__", std::move(init_lambda_wrapper), std::move(doc_string));
-   
+       defineMethod("__init__", std::move(func));
        return *this;
      }
    
      template <typename Func>
-     class_& def(std::string name, Func f, std::string doc_string = "") {
+     class_& def(std::string name, Func f) {
        auto wrapped_f = detail::wrap_func<CurClass, Func>(std::move(f));
-       defineMethod(std::move(name), std::move(wrapped_f), std::move(doc_string));
+       defineMethod(std::move(name), std::move(wrapped_f));
        return *this;
      }
    
-     class_& _def_unboxed(std::string name, std::function<void(jit::Stack&)> func, c10::FunctionSchema schema, std::string doc_string = "") {
+     class_& _def_unboxed(std::string name, std::function<void(jit::Stack&)> func, c10::FunctionSchema schema) {
        auto qualMethodName = qualClassName + "." + name;
        auto method = std::make_unique<jit::BuiltinOpFunction>(
-           qualMethodName, std::move(schema), std::move(func), std::move(doc_string));
+           qualMethodName, std::move(schema), std::move(func));
        classTypePtr->addMethod(method.get());
        registerCustomClassMethod(std::move(method));
        return *this;
@@ -192,7 +157,7 @@ Program Listing for File custom_class.h
    
     private:
      template <typename Func>
-     void defineMethod(std::string name, Func func, std::string doc_string = "") {
+     void defineMethod(std::string name, Func func) {
        auto qualMethodName = qualClassName + "." + name;
        auto schema = c10::inferFunctionSchemaSingleReturn<Func>(std::move(name), "");
    
@@ -205,7 +170,7 @@ Program Listing for File custom_class.h
          detail::BoxedProxy<RetType, Func>()(stack, func);
        };
        auto method = std::make_unique<jit::BuiltinOpFunction>(
-           qualMethodName, std::move(schema), std::move(wrapped_func), std::move(doc_string));
+           qualMethodName, std::move(schema), std::move(wrapped_func));
    
        // Register the method here to keep the Method alive.
        // ClassTypes do not hold ownership of their methods (normally it
