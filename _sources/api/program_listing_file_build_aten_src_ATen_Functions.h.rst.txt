@@ -21,7 +21,6 @@ Program Listing for File Functions.h
    #include <c10/core/Storage.h>
    #include <ATen/core/Generator.h>
    #include <c10/util/Deprecated.h>
-   #include <ATen/NativeFunctions.h> // TODO: try to delete this
    #include <ATen/DeviceGuard.h>
    #include <c10/core/TensorOptions.h>
    #include <ATen/core/Reduction.h>
@@ -33,7 +32,28 @@ Program Listing for File Functions.h
    
    namespace at {
    
-   using native::tensor;
+   // These functions are defined in ATen/Utils.cpp.
+   #define TENSOR(T, S)                                                          \
+     CAFFE2_API Tensor tensor(ArrayRef<T> values, const TensorOptions& options); \
+     inline Tensor tensor(                                                       \
+         std::initializer_list<T> values, const TensorOptions& options) {        \
+       return at::tensor(ArrayRef<T>(values), options);                          \
+     }                                                                           \
+     inline Tensor tensor(T value, const TensorOptions& options) {               \
+       return at::tensor(ArrayRef<T>(value), options);                           \
+     }                                                                           \
+     inline Tensor tensor(ArrayRef<T> values) {                                  \
+       return at::tensor(std::move(values), at::dtype(k##S));                    \
+     }                                                                           \
+     inline Tensor tensor(std::initializer_list<T> values) {                     \
+       return at::tensor(ArrayRef<T>(values));                                   \
+     }                                                                           \
+     inline Tensor tensor(T value) {                                             \
+       return at::tensor(ArrayRef<T>(value));                                    \
+     }
+   AT_FORALL_SCALAR_TYPES_AND3(Bool, Half, BFloat16, TENSOR)
+   AT_FORALL_COMPLEX_TYPES(TENSOR)
+   #undef TENSOR
    
    CAFFE2_API Tensor _cast_Byte(const Tensor & self, bool non_blocking=false);
    CAFFE2_API Tensor _cast_Char(const Tensor & self, bool non_blocking=false);
@@ -51,6 +71,7 @@ Program Listing for File Functions.h
    CAFFE2_API std::tuple<Tensor,Tensor,Tensor,Tensor,Tensor> _cudnn_rnn(const Tensor & input, TensorList weight, int64_t weight_stride0, const c10::optional<Tensor>& weight_buf, const Tensor & hx, const c10::optional<Tensor>& cx, int64_t mode, int64_t hidden_size, int64_t num_layers, bool batch_first, double dropout, bool train, bool bidirectional, IntArrayRef batch_sizes, const c10::optional<Tensor>& dropout_state);
    CAFFE2_API std::tuple<Tensor,Tensor,Tensor,std::vector<Tensor>> _cudnn_rnn_backward(const Tensor & input, TensorList weight, int64_t weight_stride0, const Tensor & weight_buf, const Tensor & hx, const c10::optional<Tensor>& cx, const Tensor & output, const c10::optional<Tensor>& grad_output, const c10::optional<Tensor>& grad_hy, const c10::optional<Tensor>& grad_cy, int64_t mode, int64_t hidden_size, int64_t num_layers, bool batch_first, double dropout, bool train, bool bidirectional, IntArrayRef batch_sizes, const c10::optional<Tensor>& dropout_state, const Tensor & reserve, std::array<bool,4> output_mask);
    CAFFE2_API Tensor _cudnn_init_dropout_state(double dropout, bool train, int64_t dropout_seed, const TensorOptions & options);
+   CAFFE2_API Tensor _cudnn_init_dropout_state(double dropout, bool train, int64_t dropout_seed, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API int64_t _debug_has_internal_overlap(const Tensor & self);
    CAFFE2_API std::tuple<Tensor,Tensor> _fused_dropout(const Tensor & self, double p, c10::optional<Generator> generator=c10::nullopt);
    CAFFE2_API Tensor _masked_scale(const Tensor & self, const Tensor & mask, double scale);
@@ -117,13 +138,18 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor any(const Tensor & self, Dimname dim, bool keepdim=false);
    CAFFE2_API Tensor & any_out(Tensor & out, const Tensor & self, Dimname dim, bool keepdim=false);
    CAFFE2_API Tensor arange(Scalar end, const TensorOptions & options={});
+   CAFFE2_API Tensor arange(Scalar end, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor arange(Scalar start, Scalar end, const TensorOptions & options={});
+   CAFFE2_API Tensor arange(Scalar start, Scalar end, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor arange(Scalar start, Scalar end, Scalar step, const TensorOptions & options={});
+   CAFFE2_API Tensor arange(Scalar start, Scalar end, Scalar step, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor & arange_out(Tensor & out, Scalar end);
    CAFFE2_API Tensor & arange_out(Tensor & out, Scalar start, Scalar end, Scalar step=1);
    CAFFE2_API Tensor _dim_arange(const Tensor & like, int64_t dim);
    CAFFE2_API Tensor argmax(const Tensor & self, c10::optional<int64_t> dim=c10::nullopt, bool keepdim=false);
+   CAFFE2_API Tensor & argmax_out(Tensor & out, const Tensor & self, c10::optional<int64_t> dim=c10::nullopt, bool keepdim=false);
    CAFFE2_API Tensor argmin(const Tensor & self, c10::optional<int64_t> dim=c10::nullopt, bool keepdim=false);
+   CAFFE2_API Tensor & argmin_out(Tensor & out, const Tensor & self, c10::optional<int64_t> dim=c10::nullopt, bool keepdim=false);
    CAFFE2_API Tensor acosh(const Tensor & self);
    CAFFE2_API Tensor & acosh_(Tensor & self);
    CAFFE2_API Tensor & acosh_out(Tensor & out, const Tensor & self);
@@ -166,7 +192,9 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor & _baddbmm_mkl_(Tensor & self, const Tensor & batch1, const Tensor & batch2, Scalar beta=1, Scalar alpha=1);
    CAFFE2_API Tensor & baddbmm_out(Tensor & out, const Tensor & self, const Tensor & batch1, const Tensor & batch2, Scalar beta=1, Scalar alpha=1);
    CAFFE2_API Tensor bartlett_window(int64_t window_length, const TensorOptions & options={});
+   CAFFE2_API Tensor bartlett_window(int64_t window_length, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor bartlett_window(int64_t window_length, bool periodic, const TensorOptions & options={});
+   CAFFE2_API Tensor bartlett_window(int64_t window_length, bool periodic, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor batch_norm(const Tensor & input, const c10::optional<Tensor>& weight, const c10::optional<Tensor>& bias, const c10::optional<Tensor>& running_mean, const c10::optional<Tensor>& running_var, bool training, double momentum, double eps, bool cudnn_enabled);
    CAFFE2_API Tensor quantized_batch_norm(const Tensor & input, const c10::optional<Tensor>& weight, const c10::optional<Tensor>& bias, const Tensor & mean, const Tensor & var, double eps, double output_scale, int64_t output_zero_point);
    CAFFE2_API std::tuple<Tensor,Tensor,Tensor,Tensor,int64_t> _batch_norm_impl_index(const Tensor & input, const c10::optional<Tensor>& weight, const c10::optional<Tensor>& bias, const c10::optional<Tensor>& running_mean, const c10::optional<Tensor>& running_var, bool training, double momentum, double eps, bool cudnn_enabled);
@@ -184,6 +212,9 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor bincount(const Tensor & self, const c10::optional<Tensor>& weights={}, int64_t minlength=0);
    CAFFE2_API Tensor bitwise_not(const Tensor & self);
    CAFFE2_API Tensor & bitwise_not_out(Tensor & out, const Tensor & self);
+   CAFFE2_API Tensor copysign(const Tensor & self, const Tensor & other);
+   CAFFE2_API Tensor & copysign_out(Tensor & out, const Tensor & self, const Tensor & other);
+   CAFFE2_API Tensor copysign(const Tensor & self, Scalar other);
    CAFFE2_API Tensor logical_not(const Tensor & self);
    CAFFE2_API Tensor & logical_not_out(Tensor & out, const Tensor & self);
    CAFFE2_API Tensor logical_xor(const Tensor & self, const Tensor & other);
@@ -193,7 +224,9 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor logical_or(const Tensor & self, const Tensor & other);
    CAFFE2_API Tensor & logical_or_out(Tensor & out, const Tensor & self, const Tensor & other);
    CAFFE2_API Tensor blackman_window(int64_t window_length, const TensorOptions & options={});
+   CAFFE2_API Tensor blackman_window(int64_t window_length, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor blackman_window(int64_t window_length, bool periodic, const TensorOptions & options={});
+   CAFFE2_API Tensor blackman_window(int64_t window_length, bool periodic, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor bmm(const Tensor & self, const Tensor & mat2);
    CAFFE2_API Tensor _bmm(const Tensor & self, const Tensor & mat2, bool deterministic=false);
    CAFFE2_API Tensor & bmm_out(Tensor & out, const Tensor & self, const Tensor & mat2);
@@ -210,6 +243,8 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor chain_matmul(TensorList matrices);
    CAFFE2_API std::vector<Tensor> unsafe_chunk(const Tensor & self, int64_t chunks, int64_t dim=0);
    CAFFE2_API std::vector<Tensor> chunk(const Tensor & self, int64_t chunks, int64_t dim=0);
+   CAFFE2_API std::vector<Tensor> tensor_split(const Tensor & self, int64_t sections, int64_t dim=0);
+   CAFFE2_API std::vector<Tensor> tensor_split(const Tensor & self, IntArrayRef indices, int64_t dim=0);
    CAFFE2_API Tensor clamp(const Tensor & self, c10::optional<Scalar> min=c10::nullopt, c10::optional<Scalar> max=c10::nullopt);
    CAFFE2_API Tensor & clamp_(Tensor & self, c10::optional<Scalar> min=c10::nullopt, c10::optional<Scalar> max=c10::nullopt);
    CAFFE2_API Tensor & clamp_out(Tensor & out, const Tensor & self, c10::optional<Scalar> min=c10::nullopt, c10::optional<Scalar> max=c10::nullopt);
@@ -320,6 +355,9 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor & embedding_renorm_(Tensor & self, const Tensor & indices, double max_norm, double norm_type);
    CAFFE2_API Tensor embedding_sparse_backward(const Tensor & grad, const Tensor & indices, int64_t num_weights, int64_t padding_idx, bool scale_grad_by_freq);
    CAFFE2_API std::tuple<Tensor,Tensor,Tensor,Tensor> _embedding_bag_forward_only(const Tensor & weight, const Tensor & indices, const Tensor & offsets, bool scale_grad_by_freq=false, int64_t mode=0, bool sparse=false, const c10::optional<Tensor>& per_sample_weights={}, bool include_last_offset=false);
+   CAFFE2_API std::tuple<Tensor,Tensor> rowwise_prune(const Tensor & weight, const Tensor & mask, ScalarType compressed_indices_dtype);
+   CAFFE2_API Tensor row_stack(TensorList tensors);
+   CAFFE2_API Tensor & row_stack_out(Tensor & out, TensorList tensors);
    CAFFE2_API std::tuple<Tensor,Tensor,Tensor,Tensor> embedding_bag(const Tensor & weight, const Tensor & indices, const Tensor & offsets, bool scale_grad_by_freq=false, int64_t mode=0, bool sparse=false, const c10::optional<Tensor>& per_sample_weights={}, bool include_last_offset=false);
    CAFFE2_API std::tuple<Tensor,Tensor,Tensor,Tensor> _embedding_bag(const Tensor & weight, const Tensor & indices, const Tensor & offsets, bool scale_grad_by_freq=false, int64_t mode=0, bool sparse=false, const c10::optional<Tensor>& per_sample_weights={}, bool include_last_offset=false);
    CAFFE2_API Tensor _embedding_bag_backward(const Tensor & grad, const Tensor & indices, const Tensor & offsets, const Tensor & offset2bag, const Tensor & bag_size, const Tensor & maximum_indices, int64_t num_weights, bool scale_grad_by_freq, int64_t mode, bool sparse, const c10::optional<Tensor>& per_sample_weights);
@@ -327,14 +365,21 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor _embedding_bag_dense_backward(const Tensor & grad, const Tensor & indices, const Tensor & offsets, const Tensor & offset2bag, const Tensor & bag_size, const Tensor & maximum_indices, int64_t num_weights, bool scale_grad_by_freq, int64_t mode, const c10::optional<Tensor>& per_sample_weights);
    CAFFE2_API Tensor _embedding_bag_per_sample_weights_backward(const Tensor & grad, const Tensor & weight, const Tensor & indices, const Tensor & offsets, const Tensor & offset2bag, int64_t mode);
    CAFFE2_API Tensor empty_meta(IntArrayRef size, const TensorOptions & options={}, c10::optional<MemoryFormat> memory_format=c10::nullopt);
+   CAFFE2_API Tensor empty_meta(IntArrayRef size, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory, c10::optional<MemoryFormat> memory_format);
    CAFFE2_API Tensor empty(IntArrayRef size, c10::optional<DimnameList> names, const TensorOptions & options={}, c10::optional<MemoryFormat> memory_format=c10::nullopt);
+   CAFFE2_API Tensor empty(IntArrayRef size, c10::optional<DimnameList> names, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory, c10::optional<MemoryFormat> memory_format);
    CAFFE2_API Tensor empty(IntArrayRef size, const TensorOptions & options={}, c10::optional<MemoryFormat> memory_format=c10::nullopt);
+   CAFFE2_API Tensor empty(IntArrayRef size, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory, c10::optional<MemoryFormat> memory_format);
    CAFFE2_API Tensor _empty_affine_quantized(IntArrayRef size, const TensorOptions & options={}, double scale=1, int64_t zero_point=0, c10::optional<MemoryFormat> memory_format=MemoryFormat::Contiguous);
+   CAFFE2_API Tensor _empty_affine_quantized(IntArrayRef size, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory, double scale, int64_t zero_point, c10::optional<MemoryFormat> memory_format);
    CAFFE2_API Tensor _empty_per_channel_affine_quantized(IntArrayRef size, const Tensor & scales, const Tensor & zero_points, int64_t axis, const TensorOptions & options={}, c10::optional<MemoryFormat> memory_format=MemoryFormat::Contiguous);
+   CAFFE2_API Tensor _empty_per_channel_affine_quantized(IntArrayRef size, const Tensor & scales, const Tensor & zero_points, int64_t axis, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory, c10::optional<MemoryFormat> memory_format);
    CAFFE2_API Tensor empty_quantized(IntArrayRef size, const Tensor & qtensor);
    CAFFE2_API Tensor & empty_out(Tensor & out, IntArrayRef size, c10::optional<MemoryFormat> memory_format=c10::nullopt);
    CAFFE2_API Tensor empty_like(const Tensor & self, const TensorOptions & options={}, c10::optional<MemoryFormat> memory_format=c10::nullopt);
+   CAFFE2_API Tensor empty_like(const Tensor & self, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory, c10::optional<MemoryFormat> memory_format);
    CAFFE2_API Tensor empty_strided(IntArrayRef size, IntArrayRef stride, const TensorOptions & options={});
+   CAFFE2_API Tensor empty_strided(IntArrayRef size, IntArrayRef stride, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor erf(const Tensor & self);
    CAFFE2_API Tensor & erf_(Tensor & self);
    CAFFE2_API Tensor & erf_out(Tensor & out, const Tensor & self);
@@ -351,7 +396,9 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor & expm1_(Tensor & self);
    CAFFE2_API Tensor & expm1_out(Tensor & out, const Tensor & self);
    CAFFE2_API Tensor eye(int64_t n, const TensorOptions & options={});
+   CAFFE2_API Tensor eye(int64_t n, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor eye(int64_t n, int64_t m, const TensorOptions & options={});
+   CAFFE2_API Tensor eye(int64_t n, int64_t m, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor & eye_out(Tensor & out, int64_t n);
    CAFFE2_API Tensor & eye_out(Tensor & out, int64_t n, int64_t m);
    CAFFE2_API Tensor flatten(const Tensor & self, int64_t start_dim=0, int64_t end_dim=-1);
@@ -370,10 +417,14 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor & frac_(Tensor & self);
    CAFFE2_API Tensor & frac_out(Tensor & out, const Tensor & self);
    CAFFE2_API Tensor full(IntArrayRef size, Scalar fill_value, c10::optional<DimnameList> names, const TensorOptions & options={});
+   CAFFE2_API Tensor full(IntArrayRef size, Scalar fill_value, c10::optional<DimnameList> names, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor full(IntArrayRef size, Scalar fill_value, const TensorOptions & options={});
+   CAFFE2_API Tensor full(IntArrayRef size, Scalar fill_value, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor & full_out(Tensor & out, IntArrayRef size, Scalar fill_value);
    CAFFE2_API Tensor full_like(const Tensor & self, Scalar fill_value, const TensorOptions & options={}, c10::optional<MemoryFormat> memory_format=c10::nullopt);
+   CAFFE2_API Tensor full_like(const Tensor & self, Scalar fill_value, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory, c10::optional<MemoryFormat> memory_format);
    CAFFE2_API Tensor from_file(std::string filename, c10::optional<bool> shared=c10::nullopt, c10::optional<int64_t> size=0, const TensorOptions & options={});
+   CAFFE2_API Tensor from_file(std::string filename, c10::optional<bool> shared, c10::optional<int64_t> size, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor & gcd_out(Tensor & out, const Tensor & self, const Tensor & other);
    CAFFE2_API Tensor gcd(const Tensor & self, const Tensor & other);
    CAFFE2_API Tensor & gcd_(Tensor & self, const Tensor & other);
@@ -388,21 +439,27 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor grid_sampler_3d(const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode, bool align_corners);
    CAFFE2_API std::tuple<Tensor,Tensor> grid_sampler_3d_backward(const Tensor & grad_output, const Tensor & input, const Tensor & grid, int64_t interpolation_mode, int64_t padding_mode, bool align_corners);
    CAFFE2_API Tensor hann_window(int64_t window_length, const TensorOptions & options={});
+   CAFFE2_API Tensor hann_window(int64_t window_length, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor hann_window(int64_t window_length, bool periodic, const TensorOptions & options={});
+   CAFFE2_API Tensor hann_window(int64_t window_length, bool periodic, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor hamming_window(int64_t window_length, const TensorOptions & options={});
+   CAFFE2_API Tensor hamming_window(int64_t window_length, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor hamming_window(int64_t window_length, bool periodic, const TensorOptions & options={});
+   CAFFE2_API Tensor hamming_window(int64_t window_length, bool periodic, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor hamming_window(int64_t window_length, bool periodic, double alpha, const TensorOptions & options={});
+   CAFFE2_API Tensor hamming_window(int64_t window_length, bool periodic, double alpha, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor hamming_window(int64_t window_length, bool periodic, double alpha, double beta, const TensorOptions & options={});
+   CAFFE2_API Tensor hamming_window(int64_t window_length, bool periodic, double alpha, double beta, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor kaiser_window(int64_t window_length, const TensorOptions & options={});
+   CAFFE2_API Tensor kaiser_window(int64_t window_length, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor kaiser_window(int64_t window_length, bool periodic, const TensorOptions & options={});
+   CAFFE2_API Tensor kaiser_window(int64_t window_length, bool periodic, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor kaiser_window(int64_t window_length, bool periodic, double beta, const TensorOptions & options={});
+   CAFFE2_API Tensor kaiser_window(int64_t window_length, bool periodic, double beta, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor hinge_embedding_loss(const Tensor & self, const Tensor & target, double margin=1.0, int64_t reduction=at::Reduction::Mean);
    CAFFE2_API Tensor group_norm(const Tensor & input, int64_t num_groups, const c10::optional<Tensor>& weight={}, const c10::optional<Tensor>& bias={}, double eps=1e-05, bool cudnn_enabled=true);
    CAFFE2_API std::tuple<Tensor,Tensor,Tensor> native_group_norm(const Tensor & input, const c10::optional<Tensor>& weight, const c10::optional<Tensor>& bias, int64_t N, int64_t C, int64_t HxW, int64_t group, double eps);
    CAFFE2_API std::tuple<Tensor,Tensor,Tensor> native_group_norm_backward(const Tensor & grad_out, const Tensor & input, const Tensor & mean, const Tensor & rstd, const c10::optional<Tensor>& weight, int64_t N, int64_t C, int64_t HxW, int64_t group, std::array<bool,3> output_mask);
-   CAFFE2_API Tensor ifft(const Tensor & self, int64_t signal_ndim, bool normalized=false);
-   CAFFE2_API Tensor rfft(const Tensor & self, int64_t signal_ndim, bool normalized=false, bool onesided=true);
-   CAFFE2_API Tensor irfft(const Tensor & self, int64_t signal_ndim, bool normalized=false, bool onesided=true, IntArrayRef signal_sizes={});
    CAFFE2_API Tensor _fft_with_size(const Tensor & self, int64_t signal_ndim, bool complex_input, bool complex_output, bool inverse, IntArrayRef checked_signal_sizes, bool normalized, bool onesided, IntArrayRef output_sizes);
    CAFFE2_API Tensor _fft_with_size(const Tensor & self, int64_t signal_ndim, bool complex_input, bool complex_output, bool inverse, IntArrayRef checked_signal_sizes, int64_t normalization, bool onesided, IntArrayRef output_sizes);
    CAFFE2_API int64_t _cufft_get_plan_cache_size(int64_t device_index);
@@ -430,6 +487,8 @@ Program Listing for File Functions.h
    CAFFE2_API bool is_signed(const Tensor & self);
    CAFFE2_API Tensor kl_div(const Tensor & self, const Tensor & target, int64_t reduction=at::Reduction::Mean, bool log_target=false);
    CAFFE2_API Tensor kl_div_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction=at::Reduction::Mean, bool log_target=false);
+   CAFFE2_API Tensor kron(const Tensor & self, const Tensor & other);
+   CAFFE2_API Tensor & kron_out(Tensor & out, const Tensor & self, const Tensor & other);
    CAFFE2_API std::tuple<Tensor,Tensor> kthvalue(const Tensor & self, int64_t k, int64_t dim=-1, bool keepdim=false);
    CAFFE2_API std::tuple<Tensor &,Tensor &> kthvalue_out(Tensor & values, Tensor & indices, const Tensor & self, int64_t k, int64_t dim=-1, bool keepdim=false);
    CAFFE2_API std::tuple<Tensor,Tensor> kthvalue(const Tensor & self, int64_t k, Dimname dim, bool keepdim=false);
@@ -437,6 +496,9 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor layer_norm(const Tensor & input, IntArrayRef normalized_shape, const c10::optional<Tensor>& weight={}, const c10::optional<Tensor>& bias={}, double eps=1e-05, bool cudnn_enable=true);
    CAFFE2_API std::tuple<Tensor,Tensor,Tensor> native_layer_norm(const Tensor & input, const c10::optional<Tensor>& weight, const c10::optional<Tensor>& bias, int64_t M, int64_t N, double eps);
    CAFFE2_API std::tuple<Tensor,Tensor,Tensor> native_layer_norm_backward(const Tensor & grad_out, const Tensor & input, const Tensor & mean, const Tensor & rstd, const c10::optional<Tensor>& weight, int64_t M, int64_t N, std::array<bool,3> output_mask);
+   CAFFE2_API Tensor nan_to_num(const Tensor & self, c10::optional<double> nan=c10::nullopt, c10::optional<double> posinf=c10::nullopt, c10::optional<double> neginf=c10::nullopt);
+   CAFFE2_API Tensor & nan_to_num_(Tensor & self, c10::optional<double> nan=c10::nullopt, c10::optional<double> posinf=c10::nullopt, c10::optional<double> neginf=c10::nullopt);
+   CAFFE2_API Tensor & nan_to_num_out(Tensor & out, const Tensor & self, c10::optional<double> nan=c10::nullopt, c10::optional<double> posinf=c10::nullopt, c10::optional<double> neginf=c10::nullopt);
    CAFFE2_API Tensor linear(const Tensor & input, const Tensor & weight, const c10::optional<Tensor>& bias={});
    CAFFE2_API Tensor mkldnn_linear(const Tensor & input, const Tensor & weight, const c10::optional<Tensor>& bias={});
    CAFFE2_API Tensor fbgemm_linear_int8_weight_fp32_activation(const Tensor & input, const Tensor & weight, const Tensor & packed, const Tensor & col_offsets, Scalar weight_scale, Scalar weight_zero_point, const Tensor & bias);
@@ -447,7 +509,11 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor fbgemm_linear_fp16_weight(const Tensor & input, const Tensor & packed_weight, const Tensor & bias);
    CAFFE2_API Tensor fbgemm_pack_quantized_matrix(const Tensor & input);
    CAFFE2_API Tensor fbgemm_pack_quantized_matrix(const Tensor & input, int64_t K, int64_t N);
+   CAFFE2_API Tensor ldexp(const Tensor & self, const Tensor & other);
+   CAFFE2_API Tensor & ldexp_(Tensor & self, const Tensor & other);
+   CAFFE2_API Tensor & ldexp_out(Tensor & out, const Tensor & self, const Tensor & other);
    CAFFE2_API Tensor linspace(Scalar start, Scalar end, c10::optional<int64_t> steps=c10::nullopt, const TensorOptions & options={});
+   CAFFE2_API Tensor linspace(Scalar start, Scalar end, c10::optional<int64_t> steps, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor & linspace_out(Tensor & out, Scalar start, Scalar end, c10::optional<int64_t> steps=c10::nullopt);
    CAFFE2_API Tensor log(const Tensor & self);
    CAFFE2_API Tensor & log_(Tensor & self);
@@ -467,6 +533,7 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor logaddexp2(const Tensor & self, const Tensor & other);
    CAFFE2_API Tensor logdet(const Tensor & self);
    CAFFE2_API Tensor logspace(Scalar start, Scalar end, c10::optional<int64_t> steps=c10::nullopt, double base=10.0, const TensorOptions & options={});
+   CAFFE2_API Tensor logspace(Scalar start, Scalar end, c10::optional<int64_t> steps, double base, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor & logspace_out(Tensor & out, Scalar start, Scalar end, c10::optional<int64_t> steps=c10::nullopt, double base=10.0);
    CAFFE2_API Tensor log_softmax(const Tensor & self, int64_t dim, c10::optional<ScalarType> dtype=c10::nullopt);
    CAFFE2_API Tensor log_softmax(const Tensor & self, Dimname dim, c10::optional<ScalarType> dtype=c10::nullopt);
@@ -514,10 +581,16 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor & mean_out(Tensor & out, const Tensor & self, IntArrayRef dim, bool keepdim=false, c10::optional<ScalarType> dtype=c10::nullopt);
    CAFFE2_API Tensor mean(const Tensor & self, DimnameList dim, bool keepdim=false, c10::optional<ScalarType> dtype=c10::nullopt);
    CAFFE2_API Tensor & mean_out(Tensor & out, const Tensor & self, DimnameList dim, bool keepdim=false, c10::optional<ScalarType> dtype=c10::nullopt);
+   CAFFE2_API Tensor median(const Tensor & self);
    CAFFE2_API std::tuple<Tensor,Tensor> median(const Tensor & self, int64_t dim, bool keepdim=false);
    CAFFE2_API std::tuple<Tensor &,Tensor &> median_out(Tensor & values, Tensor & indices, const Tensor & self, int64_t dim, bool keepdim=false);
    CAFFE2_API std::tuple<Tensor,Tensor> median(const Tensor & self, Dimname dim, bool keepdim=false);
    CAFFE2_API std::tuple<Tensor &,Tensor &> median_out(Tensor & values, Tensor & indices, const Tensor & self, Dimname dim, bool keepdim=false);
+   CAFFE2_API Tensor nanmedian(const Tensor & self);
+   CAFFE2_API std::tuple<Tensor,Tensor> nanmedian(const Tensor & self, int64_t dim, bool keepdim=false);
+   CAFFE2_API std::tuple<Tensor &,Tensor &> nanmedian_out(Tensor & values, Tensor & indices, const Tensor & self, int64_t dim, bool keepdim=false);
+   CAFFE2_API std::tuple<Tensor,Tensor> nanmedian(const Tensor & self, Dimname dim, bool keepdim=false);
+   CAFFE2_API std::tuple<Tensor &,Tensor &> nanmedian_out(Tensor & values, Tensor & indices, const Tensor & self, Dimname dim, bool keepdim=false);
    CAFFE2_API std::tuple<Tensor,Tensor> min(const Tensor & self, int64_t dim, bool keepdim=false);
    CAFFE2_API std::tuple<Tensor &,Tensor &> min_out(Tensor & min, Tensor & min_indices, const Tensor & self, int64_t dim, bool keepdim=false);
    CAFFE2_API std::tuple<Tensor,Tensor> min(const Tensor & self, Dimname dim, bool keepdim=false);
@@ -581,9 +654,12 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor _nnpack_spatial_convolution_backward_input(const Tensor & input, const Tensor & grad_output, const Tensor & weight, IntArrayRef padding);
    CAFFE2_API Tensor _nnpack_spatial_convolution_backward_weight(const Tensor & input, IntArrayRef weightsize, const Tensor & grad_output, IntArrayRef padding);
    CAFFE2_API Tensor ones(IntArrayRef size, c10::optional<DimnameList> names, const TensorOptions & options={});
+   CAFFE2_API Tensor ones(IntArrayRef size, c10::optional<DimnameList> names, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor ones(IntArrayRef size, const TensorOptions & options={});
+   CAFFE2_API Tensor ones(IntArrayRef size, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor & ones_out(Tensor & out, IntArrayRef size);
    CAFFE2_API Tensor ones_like(const Tensor & self, const TensorOptions & options={}, c10::optional<MemoryFormat> memory_format=c10::nullopt);
+   CAFFE2_API Tensor ones_like(const Tensor & self, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory, c10::optional<MemoryFormat> memory_format);
    CAFFE2_API Tensor pairwise_distance(const Tensor & x1, const Tensor & x2, double p=2, double eps=1e-06, bool keepdim=false);
    CAFFE2_API Tensor cdist(const Tensor & x1, const Tensor & x2, double p=2, c10::optional<int64_t> compute_mode=c10::nullopt);
    CAFFE2_API Tensor _euclidean_dist(const Tensor & x1, const Tensor & x2);
@@ -595,6 +671,8 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor cosine_similarity(const Tensor & x1, const Tensor & x2, int64_t dim=1, double eps=1e-08);
    CAFFE2_API Tensor movedim(const Tensor & self, IntArrayRef source, IntArrayRef destination);
    CAFFE2_API Tensor movedim(const Tensor & self, int64_t source, int64_t destination);
+   CAFFE2_API Tensor moveaxis(const Tensor & self, IntArrayRef source, IntArrayRef destination);
+   CAFFE2_API Tensor moveaxis(const Tensor & self, int64_t source, int64_t destination);
    CAFFE2_API Tensor pixel_shuffle(const Tensor & self, int64_t upscale_factor);
    CAFFE2_API Tensor channel_shuffle(const Tensor & self, int64_t groups);
    CAFFE2_API Tensor pinverse(const Tensor & self, double rcond=1e-15);
@@ -606,37 +684,59 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor & deg2rad_(Tensor & self);
    CAFFE2_API Tensor & deg2rad_out(Tensor & out, const Tensor & self);
    CAFFE2_API Tensor scalar_tensor(Scalar s, const TensorOptions & options={});
+   CAFFE2_API Tensor scalar_tensor(Scalar s, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor rand(IntArrayRef size, c10::optional<DimnameList> names, const TensorOptions & options={});
+   CAFFE2_API Tensor rand(IntArrayRef size, c10::optional<DimnameList> names, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor rand(IntArrayRef size, c10::optional<Generator> generator, c10::optional<DimnameList> names, const TensorOptions & options={});
+   CAFFE2_API Tensor rand(IntArrayRef size, c10::optional<Generator> generator, c10::optional<DimnameList> names, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor rand(IntArrayRef size, const TensorOptions & options={});
+   CAFFE2_API Tensor rand(IntArrayRef size, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor rand(IntArrayRef size, c10::optional<Generator> generator, const TensorOptions & options={});
+   CAFFE2_API Tensor rand(IntArrayRef size, c10::optional<Generator> generator, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor & rand_out(Tensor & out, IntArrayRef size);
    CAFFE2_API Tensor & rand_out(Tensor & out, IntArrayRef size, c10::optional<Generator> generator);
    CAFFE2_API Tensor rand_like(const Tensor & self, const TensorOptions & options={}, c10::optional<MemoryFormat> memory_format=c10::nullopt);
+   CAFFE2_API Tensor rand_like(const Tensor & self, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory, c10::optional<MemoryFormat> memory_format);
    CAFFE2_API Tensor randint(int64_t high, IntArrayRef size, const TensorOptions & options={});
+   CAFFE2_API Tensor randint(int64_t high, IntArrayRef size, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor randint(int64_t high, IntArrayRef size, c10::optional<Generator> generator, const TensorOptions & options={});
+   CAFFE2_API Tensor randint(int64_t high, IntArrayRef size, c10::optional<Generator> generator, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor randint(int64_t low, int64_t high, IntArrayRef size, const TensorOptions & options={});
+   CAFFE2_API Tensor randint(int64_t low, int64_t high, IntArrayRef size, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor randint(int64_t low, int64_t high, IntArrayRef size, c10::optional<Generator> generator, const TensorOptions & options={});
+   CAFFE2_API Tensor randint(int64_t low, int64_t high, IntArrayRef size, c10::optional<Generator> generator, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor & randint_out(Tensor & out, int64_t high, IntArrayRef size);
    CAFFE2_API Tensor & randint_out(Tensor & out, int64_t high, IntArrayRef size, c10::optional<Generator> generator);
    CAFFE2_API Tensor & randint_out(Tensor & out, int64_t low, int64_t high, IntArrayRef size);
    CAFFE2_API Tensor & randint_out(Tensor & out, int64_t low, int64_t high, IntArrayRef size, c10::optional<Generator> generator);
    CAFFE2_API Tensor randint_like(const Tensor & self, int64_t high, const TensorOptions & options={}, c10::optional<MemoryFormat> memory_format=c10::nullopt);
+   CAFFE2_API Tensor randint_like(const Tensor & self, int64_t high, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory, c10::optional<MemoryFormat> memory_format);
    CAFFE2_API Tensor randint_like(const Tensor & self, int64_t low, int64_t high, const TensorOptions & options={}, c10::optional<MemoryFormat> memory_format=c10::nullopt);
+   CAFFE2_API Tensor randint_like(const Tensor & self, int64_t low, int64_t high, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory, c10::optional<MemoryFormat> memory_format);
    CAFFE2_API Tensor randn(IntArrayRef size, const TensorOptions & options={});
+   CAFFE2_API Tensor randn(IntArrayRef size, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor randn(IntArrayRef size, c10::optional<Generator> generator, const TensorOptions & options={});
+   CAFFE2_API Tensor randn(IntArrayRef size, c10::optional<Generator> generator, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor randn(IntArrayRef size, c10::optional<DimnameList> names, const TensorOptions & options={});
+   CAFFE2_API Tensor randn(IntArrayRef size, c10::optional<DimnameList> names, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor randn(IntArrayRef size, c10::optional<Generator> generator, c10::optional<DimnameList> names, const TensorOptions & options={});
+   CAFFE2_API Tensor randn(IntArrayRef size, c10::optional<Generator> generator, c10::optional<DimnameList> names, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor & randn_out(Tensor & out, IntArrayRef size);
    CAFFE2_API Tensor & randn_out(Tensor & out, IntArrayRef size, c10::optional<Generator> generator);
    CAFFE2_API Tensor randn_like(const Tensor & self, const TensorOptions & options={}, c10::optional<MemoryFormat> memory_format=c10::nullopt);
+   CAFFE2_API Tensor randn_like(const Tensor & self, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory, c10::optional<MemoryFormat> memory_format);
    CAFFE2_API Tensor randperm(int64_t n, const TensorOptions & options={});
+   CAFFE2_API Tensor randperm(int64_t n, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor randperm(int64_t n, c10::optional<Generator> generator, const TensorOptions & options={});
+   CAFFE2_API Tensor randperm(int64_t n, c10::optional<Generator> generator, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor & randperm_out(Tensor & out, int64_t n);
    CAFFE2_API Tensor & randperm_out(Tensor & out, int64_t n, c10::optional<Generator> generator);
    CAFFE2_API Tensor range(Scalar start, Scalar end, Scalar step=1, const TensorOptions & options={});
+   CAFFE2_API Tensor range(Scalar start, Scalar end, Scalar step, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor range(Scalar start, Scalar end, const TensorOptions & options={});
+   CAFFE2_API Tensor range(Scalar start, Scalar end, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor & range_out(Tensor & out, Scalar start, Scalar end, Scalar step=1);
+   CAFFE2_API Tensor ravel(const Tensor & self);
    CAFFE2_API Tensor reciprocal(const Tensor & self);
    CAFFE2_API Tensor & reciprocal_(Tensor & self);
    CAFFE2_API Tensor & reciprocal_out(Tensor & out, const Tensor & self);
@@ -758,10 +858,12 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor & tanh_(Tensor & self);
    CAFFE2_API Tensor & tanh_out(Tensor & out, const Tensor & self);
    CAFFE2_API Tensor tensordot(const Tensor & self, const Tensor & other, IntArrayRef dims_self, IntArrayRef dims_other);
+   CAFFE2_API Tensor & tensordot_out(Tensor & out, const Tensor & self, const Tensor & other, IntArrayRef dims_self, IntArrayRef dims_other);
    CAFFE2_API Tensor threshold(const Tensor & self, Scalar threshold, Scalar value);
    CAFFE2_API Tensor & threshold_(Tensor & self, Scalar threshold, Scalar value);
    CAFFE2_API Tensor & threshold_out(Tensor & out, const Tensor & self, Scalar threshold, Scalar value);
    CAFFE2_API Tensor threshold_backward(const Tensor & grad_output, const Tensor & self, Scalar threshold);
+   CAFFE2_API Tensor tile(const Tensor & self, IntArrayRef dims);
    CAFFE2_API Tensor transpose(const Tensor & self, int64_t dim0, int64_t dim1);
    CAFFE2_API Tensor transpose(const Tensor & self, Dimname dim0, Dimname dim1);
    CAFFE2_API Tensor _mkldnn_transpose(const Tensor & self, int64_t dim0, int64_t dim1);
@@ -811,9 +913,12 @@ Program Listing for File Functions.h
    CAFFE2_API std::tuple<Tensor,Tensor> _weight_norm_cuda_interface_backward(const Tensor & grad_w, const Tensor & saved_v, const Tensor & saved_g, const Tensor & saved_norms, int64_t dim);
    CAFFE2_API std::tuple<Tensor,Tensor> _weight_norm_differentiable_backward(const Tensor & grad_w, const Tensor & saved_v, const Tensor & saved_g, const Tensor & saved_norms, int64_t dim);
    CAFFE2_API Tensor zeros(IntArrayRef size, c10::optional<DimnameList> names, const TensorOptions & options={});
+   CAFFE2_API Tensor zeros(IntArrayRef size, c10::optional<DimnameList> names, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor zeros(IntArrayRef size, const TensorOptions & options={});
+   CAFFE2_API Tensor zeros(IntArrayRef size, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor & zeros_out(Tensor & out, IntArrayRef size);
    CAFFE2_API Tensor zeros_like(const Tensor & self, const TensorOptions & options={}, c10::optional<MemoryFormat> memory_format=c10::nullopt);
+   CAFFE2_API Tensor zeros_like(const Tensor & self, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory, c10::optional<MemoryFormat> memory_format);
    CAFFE2_API Tensor _standard_gamma_grad(const Tensor & self, const Tensor & output);
    CAFFE2_API Tensor _standard_gamma(const Tensor & self, c10::optional<Generator> generator=c10::nullopt);
    CAFFE2_API Tensor _dirichlet_grad(const Tensor & x, const Tensor & alpha, const Tensor & total);
@@ -869,12 +974,18 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor & addmm_out(Tensor & out, const Tensor & self, const Tensor & mat1, const Tensor & mat2, Scalar beta=1, Scalar alpha=1);
    CAFFE2_API Tensor addmm(const Tensor & self, const Tensor & mat1, const Tensor & mat2, Scalar beta=1, Scalar alpha=1);
    CAFFE2_API Tensor sparse_coo_tensor(IntArrayRef size, const TensorOptions & options);
+   CAFFE2_API Tensor sparse_coo_tensor(IntArrayRef size, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor sparse_coo_tensor(const Tensor & indices, const Tensor & values, const TensorOptions & options={});
+   CAFFE2_API Tensor sparse_coo_tensor(const Tensor & indices, const Tensor & values, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor sparse_coo_tensor(const Tensor & indices, const Tensor & values, IntArrayRef size, const TensorOptions & options={});
+   CAFFE2_API Tensor sparse_coo_tensor(const Tensor & indices, const Tensor & values, IntArrayRef size, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor _sparse_coo_tensor_unsafe(const Tensor & indices, const Tensor & values, IntArrayRef size, const TensorOptions & options={});
+   CAFFE2_API Tensor _sparse_coo_tensor_unsafe(const Tensor & indices, const Tensor & values, IntArrayRef size, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API void _validate_sparse_coo_tensor_args(const Tensor & indices, const Tensor & values, IntArrayRef size);
    CAFFE2_API Tensor _sparse_coo_tensor_with_dims(int64_t sparse_dim, int64_t dense_dim, IntArrayRef size, const TensorOptions & options);
+   CAFFE2_API Tensor _sparse_coo_tensor_with_dims(int64_t sparse_dim, int64_t dense_dim, IntArrayRef size, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor _sparse_coo_tensor_with_dims_and_tensors(int64_t sparse_dim, int64_t dense_dim, IntArrayRef size, const Tensor & indices, const Tensor & values, const TensorOptions & options);
+   CAFFE2_API Tensor _sparse_coo_tensor_with_dims_and_tensors(int64_t sparse_dim, int64_t dense_dim, IntArrayRef size, const Tensor & indices, const Tensor & values, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor to_dense_backward(const Tensor & grad, const Tensor & input);
    CAFFE2_API Tensor & hspmm_out(Tensor & out, const Tensor & mat1, const Tensor & mat2);
    CAFFE2_API Tensor hspmm(const Tensor & mat1, const Tensor & mat2);
@@ -907,7 +1018,7 @@ Program Listing for File Functions.h
    CAFFE2_API std::tuple<Tensor,Tensor,Tensor> _fake_quantize_learnable_per_channel_affine_backward(const Tensor & grad, const Tensor & self, const Tensor & scale, const Tensor & zero_point, int64_t axis, int64_t quant_min, int64_t quant_max);
    CAFFE2_API std::tuple<double,int64_t> _choose_qparams_per_tensor(const Tensor & self, bool reduce_range=false);
    CAFFE2_API Tensor _saturate_weight_to_fp16(const Tensor & weight);
-   CAFFE2_API std::tuple<double,double> choose_qparams_optimized(const Tensor & input, int64_t numel, int64_t n_bins, double ratio, int64_t bit_width);
+   CAFFE2_API std::tuple<Tensor,Tensor> choose_qparams_optimized(const Tensor & input, int64_t numel, int64_t n_bins, double ratio, int64_t bit_width);
    CAFFE2_API std::vector<Tensor> meshgrid(TensorList tensors);
    CAFFE2_API Tensor cartesian_prod(TensorList tensors);
    CAFFE2_API Tensor combinations(const Tensor & self, int64_t r=2, bool with_replacement=false);
@@ -992,7 +1103,9 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor & tril_out(Tensor & out, const Tensor & self, int64_t diagonal=0);
    CAFFE2_API Tensor tril(const Tensor & self, int64_t diagonal=0);
    CAFFE2_API Tensor tril_indices(int64_t row, int64_t col, int64_t offset=0, const TensorOptions & options=at::kLong);
+   CAFFE2_API Tensor tril_indices(int64_t row, int64_t col, int64_t offset, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor triu_indices(int64_t row, int64_t col, int64_t offset=0, const TensorOptions & options=at::kLong);
+   CAFFE2_API Tensor triu_indices(int64_t row, int64_t col, int64_t offset, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor trace(const Tensor & self);
    CAFFE2_API Tensor trace_backward(const Tensor & grad, IntArrayRef sizes);
    CAFFE2_API Tensor & ne_out(Tensor & out, const Tensor & self, Scalar other);
@@ -1076,6 +1189,8 @@ Program Listing for File Functions.h
    CAFFE2_API std::tuple<Tensor &,Tensor &,Tensor &> svd_out(Tensor & U, Tensor & S, Tensor & V, const Tensor & self, bool some=true, bool compute_uv=true);
    CAFFE2_API std::tuple<Tensor,Tensor,Tensor> svd(const Tensor & self, bool some=true, bool compute_uv=true);
    CAFFE2_API std::tuple<Tensor,Tensor,Tensor> _svd_helper(const Tensor & self, bool some, bool compute_uv);
+   CAFFE2_API Tensor swapaxes(const Tensor & self, int64_t axis0, int64_t axis1);
+   CAFFE2_API Tensor swapdims(const Tensor & self, int64_t dim0, int64_t dim1);
    CAFFE2_API Tensor & cholesky_out(Tensor & out, const Tensor & self, bool upper=false);
    CAFFE2_API Tensor cholesky(const Tensor & self, bool upper=false);
    CAFFE2_API Tensor _cholesky_helper(const Tensor & self, bool upper);
@@ -1134,6 +1249,10 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor fmod(const Tensor & self, const Tensor & other);
    CAFFE2_API Tensor & hypot_out(Tensor & out, const Tensor & self, const Tensor & other);
    CAFFE2_API Tensor hypot(const Tensor & self, const Tensor & other);
+   CAFFE2_API Tensor & igamma_out(Tensor & out, const Tensor & self, const Tensor & other);
+   CAFFE2_API Tensor igamma(const Tensor & self, const Tensor & other);
+   CAFFE2_API Tensor & igammac_out(Tensor & out, const Tensor & self, const Tensor & other);
+   CAFFE2_API Tensor igammac(const Tensor & self, const Tensor & other);
    CAFFE2_API Tensor & nextafter_out(Tensor & out, const Tensor & self, const Tensor & other);
    CAFFE2_API Tensor nextafter(const Tensor & self, const Tensor & other);
    CAFFE2_API Tensor & remainder_out(Tensor & out, const Tensor & self, Scalar other);
@@ -1150,7 +1269,6 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor & minimum_out(Tensor & out, const Tensor & self, const Tensor & other);
    CAFFE2_API Tensor & min_out(Tensor & out, const Tensor & self, const Tensor & other);
    CAFFE2_API Tensor min(const Tensor & self, const Tensor & other);
-   CAFFE2_API Tensor median(const Tensor & self);
    CAFFE2_API Tensor & quantile_out(Tensor & out, const Tensor & self, double q, c10::optional<int64_t> dim=c10::nullopt, bool keepdim=false);
    CAFFE2_API Tensor quantile(const Tensor & self, double q, c10::optional<int64_t> dim=c10::nullopt, bool keepdim=false);
    CAFFE2_API Tensor & quantile_out(Tensor & out, const Tensor & self, const Tensor & q, c10::optional<int64_t> dim=c10::nullopt, bool keepdim=false);
@@ -1163,6 +1281,8 @@ Program Listing for File Functions.h
    CAFFE2_API std::tuple<Tensor,Tensor> sort(const Tensor & self, int64_t dim=-1, bool descending=false);
    CAFFE2_API std::tuple<Tensor &,Tensor &> sort_out(Tensor & values, Tensor & indices, const Tensor & self, Dimname dim, bool descending=false);
    CAFFE2_API std::tuple<Tensor,Tensor> sort(const Tensor & self, Dimname dim, bool descending=false);
+   CAFFE2_API Tensor & msort_out(Tensor & out, const Tensor & self);
+   CAFFE2_API Tensor msort(const Tensor & self);
    CAFFE2_API Tensor argsort(const Tensor & self, int64_t dim=-1, bool descending=false);
    CAFFE2_API Tensor argsort(const Tensor & self, Dimname dim, bool descending=false);
    CAFFE2_API std::tuple<Tensor &,Tensor &> topk_out(Tensor & values, Tensor & indices, const Tensor & self, int64_t k, int64_t dim=-1, bool largest=true, bool sorted=true);
@@ -1179,6 +1299,12 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor pow(Scalar self, const Tensor & exponent);
    CAFFE2_API Tensor & pow_out(Tensor & out, const Tensor & self, Scalar exponent);
    CAFFE2_API Tensor pow(const Tensor & self, Scalar exponent);
+   CAFFE2_API Tensor & float_power_out(Tensor & out, const Tensor & self, const Tensor & exponent);
+   CAFFE2_API Tensor float_power(const Tensor & self, const Tensor & exponent);
+   CAFFE2_API Tensor & float_power_out(Tensor & out, Scalar self, const Tensor & exponent);
+   CAFFE2_API Tensor float_power(Scalar self, const Tensor & exponent);
+   CAFFE2_API Tensor & float_power_out(Tensor & out, const Tensor & self, Scalar exponent);
+   CAFFE2_API Tensor float_power(const Tensor & self, Scalar exponent);
    CAFFE2_API Tensor & normal_out(Tensor & out, const Tensor & mean, double std=1, c10::optional<Generator> generator=c10::nullopt);
    CAFFE2_API Tensor normal(const Tensor & mean, double std=1, c10::optional<Generator> generator=c10::nullopt);
    CAFFE2_API Tensor & normal_out(Tensor & out, double mean, const Tensor & std, c10::optional<Generator> generator=c10::nullopt);
@@ -1186,6 +1312,7 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor & normal_out(Tensor & out, const Tensor & mean, const Tensor & std, c10::optional<Generator> generator=c10::nullopt);
    CAFFE2_API Tensor normal(const Tensor & mean, const Tensor & std, c10::optional<Generator> generator=c10::nullopt);
    CAFFE2_API Tensor normal(double mean, double std, IntArrayRef size, c10::optional<Generator> generator=c10::nullopt, const TensorOptions & options={});
+   CAFFE2_API Tensor normal(double mean, double std, IntArrayRef size, c10::optional<Generator> generator, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
    CAFFE2_API Tensor & normal_out(Tensor & out, double mean, double std, IntArrayRef size, c10::optional<Generator> generator=c10::nullopt);
    CAFFE2_API Tensor alias(const Tensor & self);
    CAFFE2_API Tensor & _index_copy_(Tensor & self, int64_t dim, const Tensor & index, const Tensor & source);
@@ -1195,7 +1322,7 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor & _cumprod_out(Tensor & out, const Tensor & self, int64_t dim);
    CAFFE2_API Tensor _var(const Tensor & self, bool unbiased=true);
    CAFFE2_API Tensor _std(const Tensor & self, bool unbiased=true);
-   CAFFE2_API void _amp_non_finite_check_and_unscale_(Tensor & self, Tensor & found_inf, const Tensor & inv_scale);
+   CAFFE2_API void _amp_foreach_non_finite_check_and_unscale_(TensorList self, Tensor & found_inf, const Tensor & inv_scale);
    CAFFE2_API Tensor _amp_update_scale(Tensor & growth_tracker, const Tensor & current_scale, const Tensor & found_inf, double scale_growth_factor, double scale_backoff_factor, int64_t growth_interval);
    CAFFE2_API Tensor _cat(TensorList tensors, int64_t dim=0);
    CAFFE2_API Tensor & _cat_out(Tensor & out, TensorList tensors, int64_t dim=0);
@@ -1215,22 +1342,80 @@ Program Listing for File Functions.h
    CAFFE2_API void _foreach_mul_(TensorList self, TensorList other);
    CAFFE2_API std::vector<Tensor> _foreach_div(TensorList tensors1, TensorList tensors2);
    CAFFE2_API void _foreach_div_(TensorList self, TensorList other);
-   CAFFE2_API std::vector<Tensor> _foreach_add_scalar_list(TensorList tensors, ArrayRef<double> scalars);
-   CAFFE2_API void _foreach_add_scalar_list_(TensorList self, ArrayRef<double> scalars);
-   CAFFE2_API std::vector<Tensor> _foreach_sub_scalar_list(TensorList tensors, ArrayRef<double> scalars);
-   CAFFE2_API void _foreach_sub_scalar_list_(TensorList self, ArrayRef<double> scalars);
-   CAFFE2_API std::vector<Tensor> _foreach_div_scalar_list(TensorList tensors, ArrayRef<double> scalars);
-   CAFFE2_API void _foreach_div_scalar_list_(TensorList self, ArrayRef<double> scalars);
-   CAFFE2_API std::vector<Tensor> _foreach_mul_scalar_list(TensorList tensors, ArrayRef<double> scalars);
-   CAFFE2_API void _foreach_mul_scalar_list_(TensorList self, ArrayRef<double> scalars);
+   CAFFE2_API std::vector<Tensor> _foreach_add(TensorList tensors, ArrayRef<double> scalars);
+   CAFFE2_API void _foreach_add_(TensorList self, ArrayRef<double> scalars);
+   CAFFE2_API std::vector<Tensor> _foreach_sub(TensorList tensors, ArrayRef<double> scalars);
+   CAFFE2_API void _foreach_sub_(TensorList self, ArrayRef<double> scalars);
+   CAFFE2_API std::vector<Tensor> _foreach_div(TensorList tensors, ArrayRef<double> scalars);
+   CAFFE2_API void _foreach_div_(TensorList self, ArrayRef<double> scalars);
+   CAFFE2_API std::vector<Tensor> _foreach_mul(TensorList tensors, ArrayRef<double> scalars);
+   CAFFE2_API void _foreach_mul_(TensorList self, ArrayRef<double> scalars);
    CAFFE2_API std::vector<Tensor> _foreach_exp(TensorList tensors);
    CAFFE2_API void _foreach_exp_(TensorList self);
    CAFFE2_API std::vector<Tensor> _foreach_sqrt(TensorList tensors);
    CAFFE2_API void _foreach_sqrt_(TensorList self);
+   CAFFE2_API std::vector<Tensor> _foreach_abs(TensorList tensors);
+   CAFFE2_API void _foreach_abs_(TensorList self);
+   CAFFE2_API std::vector<Tensor> _foreach_acos(TensorList tensors);
+   CAFFE2_API void _foreach_acos_(TensorList self);
+   CAFFE2_API std::vector<Tensor> _foreach_asin(TensorList tensors);
+   CAFFE2_API void _foreach_asin_(TensorList self);
+   CAFFE2_API std::vector<Tensor> _foreach_atan(TensorList tensors);
+   CAFFE2_API void _foreach_atan_(TensorList self);
+   CAFFE2_API std::vector<Tensor> _foreach_ceil(TensorList tensors);
+   CAFFE2_API void _foreach_ceil_(TensorList self);
+   CAFFE2_API std::vector<Tensor> _foreach_cos(TensorList tensors);
+   CAFFE2_API void _foreach_cos_(TensorList self);
+   CAFFE2_API std::vector<Tensor> _foreach_cosh(TensorList tensors);
+   CAFFE2_API void _foreach_cosh_(TensorList self);
+   CAFFE2_API std::vector<Tensor> _foreach_erf(TensorList tensors);
+   CAFFE2_API void _foreach_erf_(TensorList self);
+   CAFFE2_API std::vector<Tensor> _foreach_erfc(TensorList tensors);
+   CAFFE2_API void _foreach_erfc_(TensorList self);
+   CAFFE2_API std::vector<Tensor> _foreach_expm1(TensorList tensors);
+   CAFFE2_API void _foreach_expm1_(TensorList self);
+   CAFFE2_API std::vector<Tensor> _foreach_floor(TensorList tensors);
+   CAFFE2_API void _foreach_floor_(TensorList self);
+   CAFFE2_API std::vector<Tensor> _foreach_log(TensorList tensors);
+   CAFFE2_API void _foreach_log_(TensorList self);
+   CAFFE2_API std::vector<Tensor> _foreach_log10(TensorList tensors);
+   CAFFE2_API void _foreach_log10_(TensorList self);
+   CAFFE2_API std::vector<Tensor> _foreach_log1p(TensorList tensors);
+   CAFFE2_API void _foreach_log1p_(TensorList self);
+   CAFFE2_API std::vector<Tensor> _foreach_log2(TensorList tensors);
+   CAFFE2_API void _foreach_log2_(TensorList self);
+   CAFFE2_API std::vector<Tensor> _foreach_neg(TensorList tensors);
+   CAFFE2_API void _foreach_neg_(TensorList self);
+   CAFFE2_API std::vector<Tensor> _foreach_tan(TensorList tensors);
+   CAFFE2_API void _foreach_tan_(TensorList self);
+   CAFFE2_API std::vector<Tensor> _foreach_tanh(TensorList tensors);
+   CAFFE2_API void _foreach_tanh_(TensorList self);
+   CAFFE2_API std::vector<Tensor> _foreach_sin(TensorList tensors);
+   CAFFE2_API void _foreach_sin_(TensorList self);
+   CAFFE2_API std::vector<Tensor> _foreach_sinh(TensorList tensors);
+   CAFFE2_API void _foreach_sinh_(TensorList self);
+   CAFFE2_API std::vector<Tensor> _foreach_round(TensorList tensors);
+   CAFFE2_API void _foreach_round_(TensorList self);
+   CAFFE2_API std::vector<Tensor> _foreach_lgamma(TensorList tensors);
+   CAFFE2_API void _foreach_lgamma_(TensorList self);
+   CAFFE2_API std::vector<Tensor> _foreach_frac(TensorList tensors);
+   CAFFE2_API void _foreach_frac_(TensorList self);
+   CAFFE2_API std::vector<Tensor> _foreach_reciprocal(TensorList tensors);
+   CAFFE2_API void _foreach_reciprocal_(TensorList self);
+   CAFFE2_API std::vector<Tensor> _foreach_sigmoid(TensorList tensors);
+   CAFFE2_API void _foreach_sigmoid_(TensorList self);
+   CAFFE2_API std::vector<Tensor> _foreach_trunc(TensorList tensors);
+   CAFFE2_API void _foreach_trunc_(TensorList self);
    CAFFE2_API void _foreach_addcdiv_(TensorList self, TensorList tensor1, TensorList tensor2, Scalar value=1);
    CAFFE2_API void _foreach_addcmul_(TensorList self, TensorList tensor1, TensorList tensor2, Scalar value=1);
+   CAFFE2_API void _foreach_addcdiv_(TensorList self, TensorList tensor1, TensorList tensor2, ArrayRef<double> scalars);
+   CAFFE2_API void _foreach_addcmul_(TensorList self, TensorList tensor1, TensorList tensor2, ArrayRef<double> scalars);
    CAFFE2_API std::vector<Tensor> _foreach_addcdiv(TensorList input, TensorList tensor1, TensorList tensor2, Scalar value=1);
    CAFFE2_API std::vector<Tensor> _foreach_addcmul(TensorList input, TensorList tensor1, TensorList tensor2, Scalar value=1);
+   CAFFE2_API std::vector<Tensor> _foreach_addcdiv(TensorList input, TensorList tensor1, TensorList tensor2, ArrayRef<double> scalars);
+   CAFFE2_API std::vector<Tensor> _foreach_addcmul(TensorList input, TensorList tensor1, TensorList tensor2, ArrayRef<double> scalars);
+   CAFFE2_API std::vector<Tensor> _foreach_maximum(TensorList tensors1, TensorList tensors2);
+   CAFFE2_API std::vector<Tensor> _foreach_minimum(TensorList tensors1, TensorList tensors2);
    CAFFE2_API std::tuple<Tensor,Tensor> _mode(const Tensor & self, int64_t dim=-1, bool keepdim=false);
    CAFFE2_API std::tuple<Tensor &,Tensor &> _mode_out(Tensor & values, Tensor & indices, const Tensor & self, int64_t dim=-1, bool keepdim=false);
    CAFFE2_API Tensor bucketize(const Tensor & self, const Tensor & boundaries, bool out_int32=false, bool right=false);
@@ -1472,6 +1657,8 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor col2im(const Tensor & self, IntArrayRef output_size, IntArrayRef kernel_size, IntArrayRef dilation, IntArrayRef padding, IntArrayRef stride);
    CAFFE2_API Tensor & col2im_backward_out(Tensor & grad_input, const Tensor & grad_output, IntArrayRef kernel_size, IntArrayRef dilation, IntArrayRef padding, IntArrayRef stride);
    CAFFE2_API Tensor col2im_backward(const Tensor & grad_output, IntArrayRef kernel_size, IntArrayRef dilation, IntArrayRef padding, IntArrayRef stride);
+   CAFFE2_API Tensor column_stack(TensorList tensors);
+   CAFFE2_API Tensor & column_stack_out(Tensor & out, TensorList tensors);
    CAFFE2_API Tensor & im2col_out(Tensor & out, const Tensor & self, IntArrayRef kernel_size, IntArrayRef dilation, IntArrayRef padding, IntArrayRef stride);
    CAFFE2_API Tensor im2col(const Tensor & self, IntArrayRef kernel_size, IntArrayRef dilation, IntArrayRef padding, IntArrayRef stride);
    CAFFE2_API Tensor & im2col_backward_out(Tensor & grad_input, const Tensor & grad_output, IntArrayRef input_size, IntArrayRef kernel_size, IntArrayRef dilation, IntArrayRef padding, IntArrayRef stride);
@@ -1490,13 +1677,31 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor fft_irfft(const Tensor & self, c10::optional<int64_t> n=c10::nullopt, int64_t dim=-1, c10::optional<std::string> norm=c10::nullopt);
    CAFFE2_API Tensor fft_hfft(const Tensor & self, c10::optional<int64_t> n=c10::nullopt, int64_t dim=-1, c10::optional<std::string> norm=c10::nullopt);
    CAFFE2_API Tensor fft_ihfft(const Tensor & self, c10::optional<int64_t> n=c10::nullopt, int64_t dim=-1, c10::optional<std::string> norm=c10::nullopt);
+   CAFFE2_API Tensor fft_fft2(const Tensor & self, c10::optional<IntArrayRef> s=c10::nullopt, IntArrayRef dim={-2,-1}, c10::optional<std::string> norm=c10::nullopt);
+   CAFFE2_API Tensor fft_ifft2(const Tensor & self, c10::optional<IntArrayRef> s=c10::nullopt, IntArrayRef dim={-2,-1}, c10::optional<std::string> norm=c10::nullopt);
+   CAFFE2_API Tensor fft_rfft2(const Tensor & self, c10::optional<IntArrayRef> s=c10::nullopt, IntArrayRef dim={-2,-1}, c10::optional<std::string> norm=c10::nullopt);
+   CAFFE2_API Tensor fft_irfft2(const Tensor & self, c10::optional<IntArrayRef> s=c10::nullopt, IntArrayRef dim={-2,-1}, c10::optional<std::string> norm=c10::nullopt);
    CAFFE2_API Tensor fft_fftn(const Tensor & self, c10::optional<IntArrayRef> s=c10::nullopt, c10::optional<IntArrayRef> dim=c10::nullopt, c10::optional<std::string> norm=c10::nullopt);
    CAFFE2_API Tensor fft_ifftn(const Tensor & self, c10::optional<IntArrayRef> s=c10::nullopt, c10::optional<IntArrayRef> dim=c10::nullopt, c10::optional<std::string> norm=c10::nullopt);
    CAFFE2_API Tensor fft_rfftn(const Tensor & self, c10::optional<IntArrayRef> s=c10::nullopt, c10::optional<IntArrayRef> dim=c10::nullopt, c10::optional<std::string> norm=c10::nullopt);
    CAFFE2_API Tensor fft_irfftn(const Tensor & self, c10::optional<IntArrayRef> s=c10::nullopt, c10::optional<IntArrayRef> dim=c10::nullopt, c10::optional<std::string> norm=c10::nullopt);
-   CAFFE2_API Tensor fft(const Tensor & self, int64_t signal_ndim, bool normalized=false);
+   CAFFE2_API Tensor fft_fftfreq(int64_t n, double d=1.0, const TensorOptions & options={});
+   CAFFE2_API Tensor fft_fftfreq(int64_t n, double d, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
+   CAFFE2_API Tensor fft_rfftfreq(int64_t n, double d=1.0, const TensorOptions & options={});
+   CAFFE2_API Tensor fft_rfftfreq(int64_t n, double d, c10::optional<ScalarType> dtype, c10::optional<Layout> layout, c10::optional<Device> device, c10::optional<bool> pin_memory);
+   CAFFE2_API Tensor fft_fftshift(const Tensor & self, c10::optional<IntArrayRef> dim=c10::nullopt);
+   CAFFE2_API Tensor fft_ifftshift(const Tensor & self, c10::optional<IntArrayRef> dim=c10::nullopt);
+   CAFFE2_API Tensor linalg_cholesky(const Tensor & self);
+   CAFFE2_API Tensor & linalg_cholesky_out(Tensor & out, const Tensor & self);
    CAFFE2_API Tensor linalg_det(const Tensor & self);
    CAFFE2_API Tensor det(const Tensor & self);
+   CAFFE2_API std::tuple<Tensor,Tensor> _syevd_helper(const Tensor & self, bool compute_eigenvectors, std::string uplo);
+   CAFFE2_API std::tuple<Tensor,Tensor> linalg_eigh(const Tensor & self, std::string UPLO="L");
+   CAFFE2_API std::tuple<Tensor &,Tensor &> linalg_eigh_out(Tensor & eigvals, Tensor & eigvecs, const Tensor & self, std::string UPLO="L");
+   CAFFE2_API Tensor linalg_eigvalsh(const Tensor & self, std::string UPLO="L");
+   CAFFE2_API Tensor & linalg_eigvalsh_out(Tensor & out, const Tensor & self, std::string UPLO="L");
+   CAFFE2_API Tensor inner(const Tensor & self, const Tensor & other);
+   CAFFE2_API Tensor & inner_out(Tensor & out, const Tensor & self, const Tensor & other);
    CAFFE2_API Tensor outer(const Tensor & self, const Tensor & vec2);
    CAFFE2_API Tensor & outer_out(Tensor & out, const Tensor & self, const Tensor & vec2);
    CAFFE2_API Tensor ger(const Tensor & self, const Tensor & vec2);
@@ -1505,29 +1710,29 @@ Program Listing for File Functions.h
    CAFFE2_API Tensor linalg_norm(const Tensor & self, std::string ord, c10::optional<IntArrayRef> dim=c10::nullopt, bool keepdim=false, c10::optional<ScalarType> dtype=c10::nullopt);
    CAFFE2_API Tensor & linalg_norm_out(Tensor & out, const Tensor & self, c10::optional<Scalar> ord=c10::nullopt, c10::optional<IntArrayRef> dim=c10::nullopt, bool keepdim=false, c10::optional<ScalarType> dtype=c10::nullopt);
    CAFFE2_API Tensor & linalg_norm_out(Tensor & out, const Tensor & self, std::string ord, c10::optional<IntArrayRef> dim=c10::nullopt, bool keepdim=false, c10::optional<ScalarType> dtype=c10::nullopt);
+   CAFFE2_API Tensor linalg_cond(const Tensor & self, c10::optional<Scalar> p=c10::nullopt);
+   CAFFE2_API Tensor & linalg_cond_out(Tensor & out, const Tensor & self, c10::optional<Scalar> p=c10::nullopt);
+   CAFFE2_API Tensor linalg_cond(const Tensor & self, std::string p);
+   CAFFE2_API Tensor & linalg_cond_out(Tensor & out, const Tensor & self, std::string p);
+   CAFFE2_API Tensor linalg_tensorinv(const Tensor & self, int64_t ind=2);
+   CAFFE2_API Tensor & linalg_tensorinv_out(Tensor & out, const Tensor & self, int64_t ind=2);
+   CAFFE2_API Tensor linalg_tensorsolve(const Tensor & self, const Tensor & other, c10::optional<IntArrayRef> dims=c10::nullopt);
+   CAFFE2_API Tensor & linalg_tensorsolve_out(Tensor & out, const Tensor & self, const Tensor & other, c10::optional<IntArrayRef> dims=c10::nullopt);
+   CAFFE2_API Tensor linalg_matrix_rank(const Tensor & self, c10::optional<double> tol=c10::nullopt, bool hermitian=false);
+   CAFFE2_API Tensor & linalg_matrix_rank_out(Tensor & out, const Tensor & self, c10::optional<double> tol=c10::nullopt, bool hermitian=false);
    CAFFE2_API Tensor _test_serialization_subcmul(const Tensor & self, const Tensor & other, Scalar alpha=1);
    CAFFE2_API Tensor _test_optional_intlist(const Tensor & values, c10::optional<IntArrayRef> addends);
    CAFFE2_API Tensor _test_optional_filled_intlist(const Tensor & values, c10::optional<IntArrayRef> addends);
    CAFFE2_API Tensor _test_optional_floatlist(const Tensor & values, c10::optional<ArrayRef<double>> addends);
+   CAFFE2_API Tensor _test_string_default(const Tensor & dummy, std::string a="\"'\\", std::string b="\"'\\");
    
    // Special C++ only overloads for std()-like functions (See gh-40287)
    // These are needed because int -> bool conversion takes precedence over int -> IntArrayRef
    // So, for example std(0) would select the std(unbiased=False) overload
-   inline Tensor var(const Tensor& self, int dim) {
-     return at::native::var(self, IntArrayRef{dim});
-   }
-   
-   inline std::tuple<Tensor,Tensor> var_mean(const Tensor& self, int dim) {
-     return at::native::var_mean(self, IntArrayRef{dim});
-   }
-   
-   inline Tensor std(const Tensor& self, int dim) {
-     return at::native::std(self, IntArrayRef{dim});
-   }
-   
-   inline std::tuple<Tensor,Tensor> std_mean(const Tensor& self, int dim) {
-     return at::native::std_mean(self, IntArrayRef{dim});
-   }
+   CAFFE2_API Tensor var(const Tensor& self, int dim);
+   CAFFE2_API std::tuple<Tensor,Tensor> var_mean(const Tensor& self, int dim);
+   CAFFE2_API Tensor std(const Tensor& self, int dim);
+   CAFFE2_API std::tuple<Tensor,Tensor> std_mean(const Tensor& self, int dim);
    
    namespace {
      inline std::vector<int64_t> zero_sizes(const TensorOptions& options) {

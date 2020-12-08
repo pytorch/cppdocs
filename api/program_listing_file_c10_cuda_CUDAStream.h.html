@@ -222,6 +222,7 @@
 <li class="toctree-l1"><a class="reference internal" href="../notes/faq.html">FAQ</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../notes/tensor_basics.html">Tensor Basics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../notes/tensor_creation.html">Tensor Creation API</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notes/tensor_cuda_stream.html">Tensor CUDA Stream API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../notes/tensor_indexing.html">Tensor Indexing API</a></li>
 </ul>
 
@@ -413,14 +414,10 @@
   <span class="p">}</span>
 
   <span class="kt">int</span> <span class="n">priority</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="cp">#ifndef __HIP_PLATFORM_HCC__</span>
       <span class="n">DeviceGuard</span> <span class="n">guard</span><span class="p">{</span><span class="n">stream_</span><span class="p">.</span><span class="n">device</span><span class="p">()};</span>
       <span class="kt">int</span> <span class="n">priority</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
       <span class="n">C10_CUDA_CHECK</span><span class="p">(</span><span class="n">cudaStreamGetPriority</span><span class="p">(</span><span class="n">stream</span><span class="p">(),</span> <span class="o">&amp;</span><span class="n">priority</span><span class="p">));</span>
       <span class="k">return</span> <span class="n">priority</span><span class="p">;</span>
-    <span class="cp">#else</span>
-      <span class="n">AT_ERROR</span><span class="p">(</span><span class="s">&quot;cuStreamGetPriority with HIP is not supported&quot;</span><span class="p">);</span>
-    <span class="cp">#endif</span>
   <span class="p">}</span>
 
   <span class="n">cudaStream_t</span> <span class="n">stream</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
@@ -437,7 +434,6 @@
   <span class="p">}</span>
 
   <span class="k">static</span> <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span> <span class="kt">int</span><span class="o">&gt;</span> <span class="n">priority_range</span><span class="p">()</span> <span class="p">{</span>
-    <span class="cp">#ifndef __HIP_PLATFORM_HCC__</span>
       <span class="c1">// Note: this returns the range of priority **supported by PyTorch**, not</span>
       <span class="c1">// the range of priority **supported by CUDA**. The former is a subset of</span>
       <span class="c1">// the latter. Curently PyTorch only supports 0 and -1, which are &quot;low&quot; and</span>
@@ -448,9 +444,6 @@
       <span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span><span class="n">least_priority</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&quot;Unexpected CUDA stream priority range&quot;</span><span class="p">);</span>
       <span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span><span class="n">greatest_priority</span> <span class="o">&lt;=</span> <span class="mi">-1</span><span class="p">,</span> <span class="s">&quot;Unexpected CUDA stream priority range&quot;</span><span class="p">);</span>
       <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">make_tuple</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">-1</span><span class="p">);</span>
-    <span class="cp">#else</span>
-      <span class="n">AT_ERROR</span><span class="p">(</span><span class="s">&quot;cuDeviceGetStreamPriorityRange with HIP is not supported&quot;</span><span class="p">);</span>
-    <span class="cp">#endif</span>
   <span class="p">}</span>
 
   <span class="c1">// Deleted for now; use CUDAEvent::block instead</span>
