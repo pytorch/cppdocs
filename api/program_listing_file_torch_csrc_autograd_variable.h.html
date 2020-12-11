@@ -519,17 +519,28 @@
 <span class="c1">// Differentiable view. Track history with DifferentiableViewMeta.</span>
 <span class="kr">inline</span> <span class="n">Variable</span> <span class="n">make_variable_differentiable_view</span><span class="p">(</span>
     <span class="n">Variable</span> <span class="n">base</span><span class="p">,</span>
-    <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">data</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">data</span><span class="p">,</span>
     <span class="n">CreationMeta</span> <span class="n">creation_meta</span><span class="p">,</span>
     <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="p">(</span><span class="k">const</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;&gt;</span> <span class="n">view_func</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">)</span> <span class="p">{</span>
   <span class="k">if</span> <span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">defined</span><span class="p">())</span> <span class="p">{</span>
-    <span class="k">auto</span> <span class="n">data_impl_copy</span> <span class="o">=</span> <span class="n">data</span><span class="p">.</span><span class="n">getIntrusivePtr</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">shallow_copy_and_detach</span><span class="p">(</span>
-      <span class="cm">/*version_counter=*/</span><span class="mi">0</span><span class="p">,</span>
-      <span class="cm">/*allow_tensor_metadata_change=*/</span><span class="nb">true</span><span class="p">);</span>
-    <span class="n">data_impl_copy</span><span class="o">-&gt;</span><span class="n">set_autograd_meta</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">DifferentiableViewMeta</span><span class="o">&gt;</span><span class="p">(</span>
-      <span class="n">data_impl_copy</span><span class="p">.</span><span class="n">get</span><span class="p">(),</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">base</span><span class="p">),</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">view_func</span><span class="p">),</span>
-      <span class="n">creation_meta</span><span class="p">));</span>
-    <span class="k">return</span> <span class="nf">Variable</span><span class="p">(</span><span class="n">data_impl_copy</span><span class="p">);</span>
+    <span class="c1">// If we already did a TensorImpl allocation for data, just reuse it.</span>
+    <span class="c1">// Otherwise(e.g tensor.swapdim(0, 0) when we return the same tensor as input),</span>
+    <span class="c1">// we have to use shallow_copy_and_detach to create a new TensorImpl to avoid</span>
+    <span class="c1">// moving leaf node into graph interior. This guarantees only 1 TensorImpl</span>
+    <span class="c1">// allocation happens in view ops.</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">getIntrusivePtr</span><span class="p">().</span><span class="n">unique</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">data</span><span class="p">.</span><span class="n">getIntrusivePtr</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">unique_version</span><span class="p">())</span> <span class="p">{</span>
+      <span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="o">*</span> <span class="n">data_impl</span> <span class="o">=</span> <span class="n">data</span><span class="p">.</span><span class="n">unsafeGetTensorImpl</span><span class="p">();</span>
+      <span class="n">data_impl</span><span class="o">-&gt;</span><span class="n">set_autograd_meta</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">DifferentiableViewMeta</span><span class="o">&gt;</span><span class="p">(</span>
+        <span class="n">data_impl</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">base</span><span class="p">),</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">view_func</span><span class="p">),</span> <span class="n">creation_meta</span><span class="p">));</span>
+      <span class="k">return</span> <span class="n">data</span><span class="p">;</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="o">&gt;</span> <span class="n">data_impl_copy</span> <span class="o">=</span> <span class="n">data</span><span class="p">.</span><span class="n">getIntrusivePtr</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">shallow_copy_and_detach</span><span class="p">(</span>
+        <span class="cm">/*version_counter=*/</span><span class="mi">0</span><span class="p">,</span>
+        <span class="cm">/*allow_tensor_metadata_change=*/</span><span class="nb">true</span><span class="p">);</span>
+      <span class="n">data_impl_copy</span><span class="o">-&gt;</span><span class="n">set_autograd_meta</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">DifferentiableViewMeta</span><span class="o">&gt;</span><span class="p">(</span>
+        <span class="n">data_impl_copy</span><span class="p">.</span><span class="n">get</span><span class="p">(),</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">base</span><span class="p">),</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">view_func</span><span class="p">),</span> <span class="n">creation_meta</span><span class="p">));</span>
+      <span class="k">return</span> <span class="nf">Variable</span><span class="p">(</span><span class="n">data_impl_copy</span><span class="p">);</span>
+    <span class="p">}</span>
   <span class="p">}</span>
   <span class="k">return</span> <span class="n">Variable</span><span class="p">();</span>
 <span class="p">}</span>
@@ -538,9 +549,12 @@
 <span class="c1">// Non-differentiable view. Just share version counter.</span>
 <span class="kr">inline</span> <span class="n">Variable</span> <span class="n">make_variable_non_differentiable_view</span><span class="p">(</span>
     <span class="n">Variable</span> <span class="n">base</span><span class="p">,</span>
-    <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">data</span><span class="p">,</span>
+    <span class="k">const</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">data</span><span class="p">,</span>
     <span class="kt">bool</span> <span class="n">allow_tensor_metadata_change</span> <span class="o">=</span> <span class="nb">true</span><span class="p">)</span> <span class="p">{</span>
   <span class="k">if</span> <span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">defined</span><span class="p">())</span> <span class="p">{</span>
+    <span class="c1">// Currently all of non-differentiable view ops(detach/_indices/_values)</span>
+    <span class="c1">// share the same TensorImpl as their base Tensor. Thus a new TensorImpl</span>
+    <span class="c1">// allocation here is required.</span>
     <span class="k">auto</span> <span class="n">data_impl_copy</span> <span class="o">=</span> <span class="n">data</span><span class="p">.</span><span class="n">getIntrusivePtr</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">shallow_copy_and_detach</span><span class="p">(</span>
       <span class="cm">/*version_counter=*/</span><span class="n">impl</span><span class="o">::</span><span class="n">version_counter</span><span class="p">(</span><span class="n">base</span><span class="p">),</span>
       <span class="cm">/*allow_tensor_metadata_change=*/</span><span class="n">allow_tensor_metadata_change</span><span class="p">);</span>
