@@ -1158,8 +1158,8 @@
 <span class="n">getCustomClassTypeMap</span><span class="p">();</span>
 
 <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="o">&gt;</span>
-<span class="n">c10</span><span class="o">::</span><span class="n">ClassTypePtr</span> <span class="n">getCustomClassType</span><span class="p">()</span> <span class="p">{</span>
-  <span class="k">auto</span> <span class="n">tmap</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">getCustomClassTypeMap</span><span class="p">();</span>
+<span class="n">c10</span><span class="o">::</span><span class="n">ClassTypePtr</span> <span class="n">getCustomClassTypeImpl</span><span class="p">()</span> <span class="p">{</span>
+  <span class="k">auto</span><span class="o">&amp;</span> <span class="n">tmap</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">getCustomClassTypeMap</span><span class="p">();</span>
   <span class="k">auto</span> <span class="n">res</span> <span class="o">=</span> <span class="n">tmap</span><span class="p">.</span><span class="n">find</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">type_index</span><span class="p">(</span><span class="k">typeid</span><span class="p">(</span><span class="n">T</span><span class="p">)));</span>
   <span class="k">if</span> <span class="p">(</span><span class="n">res</span> <span class="o">==</span> <span class="n">tmap</span><span class="p">.</span><span class="n">end</span><span class="p">())</span> <span class="p">{</span>
     <span class="k">throw</span> <span class="n">c10</span><span class="o">::</span><span class="n">Error</span><span class="p">(</span><span class="s">&quot;Can&#39;t find class id in custom class type map&quot;</span><span class="p">,</span> <span class="s">&quot;&quot;</span><span class="p">);</span>
@@ -1168,9 +1168,13 @@
 <span class="p">}</span>
 
 <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="o">&gt;</span>
-<span class="kr">inline</span> <span class="kt">bool</span> <span class="n">isCustomClassRegistered</span><span class="p">()</span> <span class="p">{</span>
-  <span class="k">auto</span> <span class="n">tmap</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">getCustomClassTypeMap</span><span class="p">();</span>
-  <span class="k">return</span> <span class="n">tmap</span><span class="p">.</span><span class="n">find</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">type_index</span><span class="p">(</span><span class="k">typeid</span><span class="p">(</span><span class="n">T</span><span class="p">)))</span> <span class="o">!=</span> <span class="n">tmap</span><span class="p">.</span><span class="n">end</span><span class="p">();</span>
+<span class="k">const</span> <span class="n">c10</span><span class="o">::</span><span class="n">ClassTypePtr</span><span class="o">&amp;</span> <span class="n">getCustomClassType</span><span class="p">()</span> <span class="p">{</span>
+  <span class="c1">// Classes are never unregistered from getCustomClassTypeMap and the</span>
+  <span class="c1">// hash lookup can be a hot path, so just cache.</span>
+  <span class="c1">// For the same reason, it&#39;s fine If this ends up getting duplicated across</span>
+  <span class="c1">// DSO boundaries for whatever reason.</span>
+  <span class="k">static</span> <span class="n">c10</span><span class="o">::</span><span class="n">ClassTypePtr</span> <span class="n">cache</span> <span class="o">=</span> <span class="n">getCustomClassTypeImpl</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">();</span>
+  <span class="k">return</span> <span class="n">cache</span><span class="p">;</span>
 <span class="p">}</span>
 
 <span class="n">TORCH_API</span> <span class="n">std</span><span class="o">::</span><span class="n">unordered_map</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">PyObject</span><span class="o">*</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="p">)</span><span class="o">&gt;&gt;&amp;</span>

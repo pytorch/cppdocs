@@ -433,26 +433,33 @@
   <span class="k">virtual</span> <span class="o">~</span><span class="n">Node</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
 
   <span class="n">variable_list</span> <span class="nf">operator</span><span class="p">()(</span><span class="n">variable_list</span><span class="o">&amp;&amp;</span> <span class="n">inputs</span><span class="p">)</span> <span class="p">{</span>
-    <span class="c1">// Using RecordFunction to trogger observers in the backward pass</span>
-    <span class="n">at</span><span class="o">::</span><span class="n">RecordFunction</span> <span class="n">guard</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">RecordScope</span><span class="o">::</span><span class="n">BACKWARD_FUNCTION</span><span class="p">);</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">guard</span><span class="p">.</span><span class="n">isActive</span><span class="p">())</span> <span class="p">{</span>
-      <span class="c1">// Using sequence number and thread id to correlate with</span>
-      <span class="c1">// the forward pass function</span>
-      <span class="n">guard</span><span class="p">.</span><span class="n">setForwardThreadId</span><span class="p">(</span><span class="n">thread_id_</span><span class="p">);</span>
-      <span class="k">if</span> <span class="p">(</span><span class="n">guard</span><span class="p">.</span><span class="n">needsInputs</span><span class="p">())</span> <span class="p">{</span>
-        <span class="n">guard</span><span class="p">.</span><span class="n">before</span><span class="p">(</span>
-          <span class="n">name</span><span class="p">(),</span>
-          <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">IValue</span><span class="o">&gt;</span><span class="p">(</span><span class="n">inputs</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span> <span class="n">inputs</span><span class="p">.</span><span class="n">end</span><span class="p">()),</span>
-          <span class="n">sequence_nr</span><span class="p">());</span>
-      <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-        <span class="n">guard</span><span class="p">.</span><span class="n">before</span><span class="p">(</span><span class="n">name</span><span class="p">(),</span> <span class="n">sequence_nr</span><span class="p">());</span>
-      <span class="p">}</span>
-    <span class="p">}</span>
     <span class="c1">// In the first iteration of named tensors, autograd ignores names and</span>
     <span class="c1">// operates on unnamed tensors. In the long term, autograd should</span>
     <span class="c1">// probably operate with names.</span>
     <span class="n">at</span><span class="o">::</span><span class="n">NoNamesGuard</span> <span class="n">no_names_guard</span><span class="p">;</span>
-    <span class="k">return</span> <span class="n">apply</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">inputs</span><span class="p">));</span>
+
+    <span class="kt">bool</span> <span class="n">pre_sampled</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">shouldRunRecordFunction</span><span class="p">(</span><span class="o">&amp;</span><span class="n">pre_sampled</span><span class="p">))</span> <span class="p">{</span>
+      <span class="c1">// Using RecordFunction to trogger observers in the backward pass</span>
+      <span class="n">at</span><span class="o">::</span><span class="n">RecordFunction</span> <span class="n">guard</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">RecordScope</span><span class="o">::</span><span class="n">BACKWARD_FUNCTION</span><span class="p">,</span> <span class="n">pre_sampled</span><span class="p">);</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">guard</span><span class="p">.</span><span class="n">isActive</span><span class="p">())</span> <span class="p">{</span>
+        <span class="c1">// Using sequence number and thread id to correlate with</span>
+        <span class="c1">// the forward pass function</span>
+        <span class="n">guard</span><span class="p">.</span><span class="n">setForwardThreadId</span><span class="p">(</span><span class="n">thread_id_</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">guard</span><span class="p">.</span><span class="n">needsInputs</span><span class="p">())</span> <span class="p">{</span>
+          <span class="n">guard</span><span class="p">.</span><span class="n">before</span><span class="p">(</span>
+            <span class="n">name</span><span class="p">(),</span>
+            <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">IValue</span><span class="o">&gt;</span><span class="p">(</span><span class="n">inputs</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span> <span class="n">inputs</span><span class="p">.</span><span class="n">end</span><span class="p">()),</span>
+            <span class="n">sequence_nr</span><span class="p">());</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+          <span class="n">guard</span><span class="p">.</span><span class="n">before</span><span class="p">(</span><span class="n">name</span><span class="p">(),</span> <span class="n">sequence_nr</span><span class="p">());</span>
+        <span class="p">}</span>
+      <span class="p">}</span>
+      <span class="c1">// keeping stack guard object alive during the call</span>
+      <span class="k">return</span> <span class="n">apply</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">inputs</span><span class="p">));</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="n">apply</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">inputs</span><span class="p">));</span>
+    <span class="p">}</span>
   <span class="p">}</span>
 
   <span class="c1">// Graph Connectivity API</span>
