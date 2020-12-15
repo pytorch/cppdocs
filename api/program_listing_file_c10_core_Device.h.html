@@ -367,9 +367,13 @@
   <span class="n">DeviceType</span> <span class="n">type_</span><span class="p">;</span>
   <span class="n">DeviceIndex</span> <span class="n">index_</span> <span class="o">=</span> <span class="mi">-1</span><span class="p">;</span>
   <span class="kt">void</span> <span class="nf">validate</span><span class="p">()</span> <span class="p">{</span>
-    <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">index_</span> <span class="o">==</span> <span class="mi">-1</span> <span class="o">||</span> <span class="n">index_</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="c1">// Removing these checks in release builds noticeably improves</span>
+    <span class="c1">// performance in micro-benchmarks.</span>
+    <span class="c1">// This is safe to do, because backends that use the DeviceIndex</span>
+    <span class="c1">// have a later check when we actually try to switch to that device.</span>
+    <span class="n">TORCH_INTERNAL_ASSERT_DEBUG_ONLY</span><span class="p">(</span><span class="n">index_</span> <span class="o">==</span> <span class="mi">-1</span> <span class="o">||</span> <span class="n">index_</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="s">&quot;Device index must be -1 or non-negative, got &quot;</span><span class="p">,</span> <span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="n">index_</span><span class="p">);</span>
-    <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="o">!</span><span class="n">is_cpu</span><span class="p">()</span> <span class="o">||</span> <span class="n">index_</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="n">TORCH_INTERNAL_ASSERT_DEBUG_ONLY</span><span class="p">(</span><span class="o">!</span><span class="n">is_cpu</span><span class="p">()</span> <span class="o">||</span> <span class="n">index_</span> <span class="o">&lt;=</span> <span class="mi">0</span><span class="p">,</span>
         <span class="s">&quot;CPU device index must be -1 or zero, got &quot;</span><span class="p">,</span> <span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="n">index_</span><span class="p">);</span>
   <span class="p">}</span>
 <span class="p">};</span>
