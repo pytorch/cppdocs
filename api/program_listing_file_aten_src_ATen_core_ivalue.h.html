@@ -411,6 +411,7 @@
 <span class="cp">#define TORCH_FORALL_TAGS(_) \</span>
 <span class="cp">  _(None)                    \</span>
 <span class="cp">  _(Tensor)                  \</span>
+<span class="cp">  _(Storage)                 \</span>
 <span class="cp">  _(Double)                  \</span>
 <span class="cp">  _(Int)                     \</span>
 <span class="cp">  _(Bool)                    \</span>
@@ -536,6 +537,20 @@
   <span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="o">*</span> <span class="n">unsafeToTensorImpl</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">return</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">);</span>
   <span class="p">}</span>
+
+  <span class="n">IValue</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">Storage</span> <span class="n">s</span><span class="p">)</span> <span class="o">:</span> <span class="n">tag</span><span class="p">(</span><span class="n">Tag</span><span class="o">::</span><span class="n">Storage</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;</span><span class="p">(</span><span class="n">s</span><span class="p">))</span> <span class="p">{</span>
+    <span class="c1">// Note: the undefined tensor is not refcounted, so while it</span>
+    <span class="c1">// is tagged as a tensor, is_intrusive_ptr is set to false.</span>
+    <span class="c1">// This is not an optional optimization: our incref call</span>
+    <span class="c1">// *will not* do the right thing when called on an</span>
+    <span class="c1">// undefined tensor.</span>
+    <span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">unsafeReleaseStorageImpl</span><span class="p">();</span>
+  <span class="p">}</span>
+  <span class="kt">bool</span> <span class="n">isStorage</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">Tag</span><span class="o">::</span><span class="n">Storage</span> <span class="o">==</span> <span class="n">tag</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">Storage</span> <span class="n">toStorage</span><span class="p">()</span> <span class="o">&amp;&amp;</span><span class="p">;</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">Storage</span> <span class="n">toStorage</span><span class="p">()</span> <span class="k">const</span><span class="o">&amp;</span><span class="p">;</span>
 
   <span class="k">const</span> <span class="n">IValue</span><span class="o">&amp;</span> <span class="n">toIValue</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
@@ -920,10 +935,6 @@
   <span class="c1">// None</span>
   <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="o">&gt;</span>
   <span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">toOptional</span><span class="p">();</span>
-
-  <span class="n">OptionalArray</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span> <span class="n">toOptionalIntArray</span><span class="p">();</span>
-
-  <span class="n">OptionalArray</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span> <span class="n">toOptionalDoubleArray</span><span class="p">();</span>
 
   <span class="kt">bool</span> <span class="nf">isSameIdentity</span><span class="p">(</span><span class="k">const</span> <span class="n">IValue</span><span class="o">&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
 

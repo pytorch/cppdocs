@@ -550,10 +550,11 @@
                       <span class="o">&amp;</span><span class="n">cudnnDestroyRNNDescriptor</span><span class="o">&gt;</span>
 <span class="p">{</span>
   <span class="n">DropoutDescriptor</span> <span class="n">dropout_desc_</span><span class="p">;</span>
-  <span class="kt">void</span> <span class="nf">set</span><span class="p">(</span><span class="n">cudnnHandle_t</span> <span class="n">handle</span><span class="p">,</span> <span class="kt">int</span> <span class="n">hidden_size</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num_layers</span><span class="p">,</span> <span class="n">DropoutDescriptor</span><span class="o">&amp;&amp;</span> <span class="n">dropout_desc</span><span class="p">,</span>
+  <span class="kt">void</span> <span class="nf">set</span><span class="p">(</span><span class="n">cudnnHandle_t</span> <span class="n">handle</span><span class="p">,</span> <span class="kt">int</span> <span class="n">hidden_size</span><span class="p">,</span> <span class="kt">int</span> <span class="n">proj_size</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num_layers</span><span class="p">,</span> <span class="n">DropoutDescriptor</span><span class="o">&amp;&amp;</span> <span class="n">dropout_desc</span><span class="p">,</span>
            <span class="n">cudnnRNNInputMode_t</span> <span class="n">input_mode</span><span class="p">,</span> <span class="n">cudnnDirectionMode_t</span> <span class="n">bidirectional</span><span class="p">,</span>
            <span class="n">cudnnRNNMode_t</span> <span class="n">mode</span><span class="p">,</span> <span class="n">cudnnDataType_t</span> <span class="n">datatype</span><span class="p">,</span> <span class="n">cudnnDataType_t</span> <span class="n">input_type</span><span class="p">,</span> <span class="n">cudnnRNNAlgo_t</span> <span class="n">algo</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">allow_tf32</span><span class="p">)</span> <span class="p">{</span>
     <span class="n">dropout_desc_</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">dropout_desc</span><span class="p">);</span>
+
     <span class="n">AT_CUDNN_CHECK</span><span class="p">(</span><span class="n">cudnnSetRNNDescriptor_v6</span><span class="p">(</span>
           <span class="n">handle</span><span class="p">,</span>
           <span class="n">mut_desc</span><span class="p">(),</span>
@@ -565,6 +566,13 @@
           <span class="n">mode</span><span class="p">,</span>
           <span class="n">algo</span><span class="p">,</span>
           <span class="n">datatype</span><span class="p">));</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">proj_size</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">AT_CUDNN_CHECK</span><span class="p">(</span><span class="n">cudnnSetRNNProjectionLayers</span><span class="p">(</span>
+            <span class="n">handle</span><span class="p">,</span>
+            <span class="cm">/*rnnDesc=*/</span><span class="n">mut_desc</span><span class="p">(),</span>
+            <span class="cm">/*recProjSize=*/</span><span class="n">proj_size</span><span class="p">,</span>
+            <span class="cm">/*outProjSize=*/</span><span class="mi">0</span><span class="p">));</span>
+    <span class="p">}</span>
     <span class="n">cudaDeviceProp</span><span class="o">*</span> <span class="n">prop</span> <span class="o">=</span> <span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">getCurrentDeviceProperties</span><span class="p">();</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">prop</span><span class="o">-&gt;</span><span class="n">major</span> <span class="o">&gt;=</span> <span class="mi">7</span><span class="p">)</span> <span class="p">{</span>
       <span class="k">if</span> <span class="p">(</span><span class="n">input_type</span> <span class="o">==</span> <span class="n">CUDNN_DATA_HALF</span><span class="p">)</span> <span class="p">{</span>
