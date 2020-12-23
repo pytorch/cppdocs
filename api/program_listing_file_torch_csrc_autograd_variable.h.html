@@ -312,6 +312,7 @@
 <span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/autograd/edge.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/autograd/function_hook.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/autograd/cpp_hook.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/autograd/forward_grad.h&gt;</span><span class="cp"></span>
 
 <span class="cp">#include</span> <span class="cpf">&lt;ATen/ATen.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;ATen/NamedTensorUtils.h&gt;</span><span class="cp"></span>
@@ -408,6 +409,17 @@
   <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Node</span><span class="o">&gt;</span> <span class="n">grad_fn_</span><span class="p">;</span>
   <span class="n">std</span><span class="o">::</span><span class="n">weak_ptr</span><span class="o">&lt;</span><span class="n">Node</span><span class="o">&gt;</span> <span class="n">grad_accumulator_</span><span class="p">;</span>
 
+  <span class="c1">// This field is used to store all the forward AD gradients</span>
+  <span class="c1">// associated with this AutogradMeta (and the Tensor it corresponds to)</span>
+  <span class="c1">// There is a semantic 1:1 correspondence between AutogradMeta and</span>
+  <span class="c1">// ForwardGrad but:</span>
+  <span class="c1">//   - This field is lazily populated.</span>
+  <span class="c1">//   - This field is a shared_ptr but it must never be</span>
+  <span class="c1">//     shared by multiple Tensors. See Note [ Using ForwardGrad ]</span>
+  <span class="c1">// Any transition from not_initialized to initialized</span>
+  <span class="c1">// must be protected by mutex_</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ForwardGrad</span><span class="o">&gt;</span> <span class="n">fw_grad_</span><span class="p">;</span>
+
   <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">FunctionPreHook</span><span class="o">&gt;&gt;</span> <span class="n">hooks_</span><span class="p">;</span>
   <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">hooks_list</span><span class="o">&gt;</span> <span class="n">cpp_hooks_list</span><span class="p">;</span>
 
@@ -426,9 +438,11 @@
   <span class="kt">uint32_t</span> <span class="n">output_nr_</span><span class="p">;</span>
 
   <span class="c1">// Mutex to ensure that concurrent read operations that modify internal</span>
-  <span class="c1">// state are still thread-safe. Used by grad_fn() and</span>
-  <span class="c1">// grad_accumulator().</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">mutex</span> <span class="n">mutex_</span><span class="p">;</span>
+  <span class="c1">// state are still thread-safe. Used by grad_fn(), grad_accumulator(),</span>
+  <span class="c1">// fw_grad() and set_fw_grad()</span>
+  <span class="c1">// This is mutable because we need to be able to acquire this from const</span>
+  <span class="c1">// version of this class for the functions above</span>
+  <span class="k">mutable</span> <span class="n">std</span><span class="o">::</span><span class="n">mutex</span> <span class="n">mutex_</span><span class="p">;</span>
 
   <span class="kt">void</span> <span class="nf">set_requires_grad</span><span class="p">(</span><span class="kt">bool</span> <span class="n">requires_grad</span><span class="p">,</span> <span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="o">*</span> <span class="n">self_impl</span><span class="p">)</span> <span class="k">override</span> <span class="p">{</span>
     <span class="n">TORCH_CHECK</span><span class="p">(</span>
@@ -449,6 +463,10 @@
     <span class="k">return</span> <span class="n">grad_</span><span class="p">;</span>
   <span class="p">}</span>
 
+  <span class="k">const</span> <span class="n">Variable</span><span class="o">&amp;</span> <span class="n">fw_grad</span><span class="p">(</span><span class="kt">uint64_t</span> <span class="n">level</span><span class="p">,</span> <span class="k">const</span> <span class="n">Variable</span><span class="o">&amp;</span> <span class="n">self</span><span class="p">)</span> <span class="k">const</span> <span class="k">override</span><span class="p">;</span>
+
+  <span class="kt">void</span> <span class="nf">set_fw_grad</span><span class="p">(</span><span class="k">const</span> <span class="n">Variable</span><span class="o">&amp;</span> <span class="n">new_grad</span><span class="p">,</span> <span class="k">const</span> <span class="n">Variable</span><span class="o">&amp;</span> <span class="n">self</span><span class="p">,</span> <span class="kt">uint64_t</span> <span class="n">level</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">is_inplace_op</span><span class="p">)</span> <span class="k">override</span><span class="p">;</span>
+
   <span class="n">AutogradMeta</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="o">*</span> <span class="n">self_impl</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">requires_grad</span> <span class="o">=</span> <span class="nb">false</span><span class="p">,</span> <span class="n">Edge</span> <span class="n">gradient_edge</span> <span class="o">=</span> <span class="n">Edge</span><span class="p">()</span> <span class="p">)</span> <span class="p">{</span>
     <span class="n">grad_fn_</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">gradient_edge</span><span class="p">.</span><span class="n">function</span><span class="p">);</span>
     <span class="n">requires_grad_</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
@@ -465,6 +483,40 @@
         <span class="o">!</span><span class="n">grad_fn_</span> <span class="o">||</span> <span class="o">!</span><span class="n">requires_grad_</span><span class="p">,</span>
         <span class="s">&quot;requires_grad should be false if grad_fn is set&quot;</span><span class="p">);</span>
   <span class="p">}</span>
+
+  <span class="o">~</span><span class="n">AutogradMeta</span><span class="p">()</span> <span class="k">override</span> <span class="p">{</span>
+    <span class="c1">// If AutogradMeta is being destroyed, it means that there is no other reference to its</span>
+    <span class="c1">// corresponding Tensor. It implies that no other thread can be using this object and so there is</span>
+    <span class="c1">// no need to lock mutex_ here to guard the check if fw_grad_ is populated.</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">fw_grad_</span><span class="p">)</span> <span class="p">{</span>
+      <span class="c1">// See note [ Using ForwardGrad ]</span>
+      <span class="n">fw_grad_</span><span class="o">-&gt;</span><span class="n">clear</span><span class="p">();</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+<span class="p">};</span>
+
+<span class="k">struct</span> <span class="nc">TORCH_API</span> <span class="n">ViewInfo</span> <span class="p">{</span>
+  <span class="n">Variable</span> <span class="n">base_</span><span class="p">;</span>
+
+  <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">Variable</span><span class="p">(</span><span class="k">const</span> <span class="n">Variable</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;&gt;</span> <span class="n">view_fn_</span><span class="p">;</span>
+
+  <span class="kt">bool</span> <span class="nf">has_view_fn</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">view_fn_</span><span class="p">.</span><span class="n">has_value</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">Variable</span><span class="p">(</span><span class="k">const</span> <span class="n">Variable</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;</span> <span class="n">view_fn</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">has_view_fn</span><span class="p">(),</span> <span class="s">&quot;Can only access the view function if it exists.&quot;</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">view_fn_</span><span class="p">.</span><span class="n">value</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="n">ViewInfo</span> <span class="n">chain</span><span class="p">(</span><span class="k">const</span> <span class="n">Variable</span> <span class="o">&amp;</span> <span class="n">base</span><span class="p">,</span> <span class="k">const</span> <span class="n">Variable</span> <span class="o">&amp;</span> <span class="n">tensor</span><span class="p">,</span>
+    <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">Variable</span><span class="p">(</span><span class="k">const</span> <span class="n">Variable</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;&gt;</span> <span class="n">view_func</span><span class="o">=</span><span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
+
+  <span class="n">ViewInfo</span><span class="p">(</span><span class="n">Variable</span> <span class="n">base</span><span class="p">,</span> <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">Variable</span><span class="p">(</span><span class="k">const</span> <span class="n">Variable</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;&gt;</span> <span class="n">view_fn</span><span class="p">)</span> <span class="o">:</span>
+    <span class="n">base_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">base</span><span class="p">)),</span>
+    <span class="n">view_fn_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">view_fn</span><span class="p">))</span> <span class="p">{</span>
+    <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">base_</span><span class="p">.</span><span class="n">defined</span><span class="p">(),</span> <span class="s">&quot;base is undefined&quot;</span><span class="p">);</span>
+  <span class="p">}</span>
 <span class="p">};</span>
 
 <span class="c1">//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
@@ -480,30 +532,59 @@
 <span class="n">TORCH_API</span> <span class="kt">void</span> <span class="n">handle_view_on_rebase</span><span class="p">(</span><span class="n">DifferentiableViewMeta</span><span class="o">*</span> <span class="n">diff_view_meta</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">indirect</span><span class="o">=</span><span class="nb">false</span><span class="p">);</span>
 
 <span class="k">struct</span> <span class="nc">TORCH_API</span> <span class="nl">DifferentiableViewMeta</span> <span class="p">:</span> <span class="k">public</span> <span class="n">AutogradMeta</span> <span class="p">{</span>
-  <span class="n">Variable</span> <span class="n">base_</span><span class="p">;</span>
+<span class="k">private</span><span class="o">:</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">ViewInfo</span><span class="o">&gt;</span> <span class="n">backward_info_</span><span class="p">;</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">ViewInfo</span><span class="o">&gt;</span> <span class="n">forward_info_</span><span class="p">;</span>
+
 
   <span class="kt">uint32_t</span> <span class="n">attr_version</span><span class="p">;</span>
-
-  <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="p">(</span><span class="k">const</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;&gt;</span> <span class="n">view_fn_</span><span class="p">;</span>
-
   <span class="n">CreationMeta</span> <span class="n">creation_meta</span><span class="p">;</span>
 
-  <span class="kt">bool</span> <span class="nf">requires_grad</span><span class="p">()</span> <span class="k">const</span> <span class="k">override</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">requires_grad_</span> <span class="o">||</span> <span class="n">grad_fn_</span> <span class="o">||</span> <span class="p">(</span><span class="n">is_view_</span> <span class="o">&amp;&amp;</span> <span class="n">base_</span><span class="p">.</span><span class="n">requires_grad</span><span class="p">());</span>
+<span class="k">public</span><span class="o">:</span>
+  <span class="kt">bool</span> <span class="n">requires_grad</span><span class="p">()</span> <span class="k">const</span> <span class="k">override</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">requires_grad_</span> <span class="o">||</span> <span class="n">grad_fn_</span> <span class="o">||</span> <span class="p">(</span><span class="n">has_bw_view</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">get_backward_view</span><span class="p">().</span><span class="n">base_</span><span class="p">.</span><span class="n">requires_grad</span><span class="p">());</span>
   <span class="p">}</span>
 
-  <span class="kt">bool</span> <span class="nf">has_view_fn</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">view_fn_</span><span class="p">.</span><span class="n">has_value</span><span class="p">();</span>
+  <span class="kt">bool</span> <span class="n">has_bw_view</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">backward_info_</span><span class="p">.</span><span class="n">has_value</span><span class="p">();</span>
   <span class="p">}</span>
 
-  <span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="p">(</span><span class="k">const</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;</span> <span class="n">view_fn</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">has_view_fn</span><span class="p">(),</span> <span class="s">&quot;view_fn is not set.&quot;</span><span class="p">);</span>
-    <span class="k">return</span> <span class="n">view_fn_</span><span class="p">.</span><span class="n">value</span><span class="p">();</span>
+  <span class="k">const</span> <span class="n">ViewInfo</span><span class="o">&amp;</span> <span class="n">get_backward_view</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">has_bw_view</span><span class="p">(),</span> <span class="s">&quot;backward view info can only exist for backward views.&quot;</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">backward_info_</span><span class="p">.</span><span class="n">value</span><span class="p">();</span>
   <span class="p">}</span>
 
-  <span class="n">DifferentiableViewMeta</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="o">*</span> <span class="n">self_impl</span><span class="p">,</span> <span class="n">Variable</span> <span class="n">base</span><span class="p">,</span> <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="p">(</span><span class="k">const</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;&gt;</span> <span class="n">view_fn</span><span class="p">,</span>
-                         <span class="n">CreationMeta</span> <span class="n">creation_meta</span><span class="o">=</span><span class="n">CreationMeta</span><span class="o">::</span><span class="n">DEFAULT</span><span class="p">);</span>
-  <span class="o">~</span><span class="n">DifferentiableViewMeta</span><span class="p">();</span>
+  <span class="kt">uint32_t</span> <span class="n">get_attr_version</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">has_bw_view</span><span class="p">(),</span> <span class="s">&quot;attr_version can only exist for backward views.&quot;</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">attr_version</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="kt">void</span> <span class="n">set_attr_version</span><span class="p">(</span><span class="kt">uint32_t</span> <span class="n">new_attr_version</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">has_bw_view</span><span class="p">(),</span> <span class="s">&quot;attr_version can only exist for backward views.&quot;</span><span class="p">);</span>
+    <span class="n">attr_version</span> <span class="o">=</span> <span class="n">new_attr_version</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="n">CreationMeta</span> <span class="n">get_creation_meta</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">has_bw_view</span><span class="p">(),</span> <span class="s">&quot;creation_meta can only exist for backward views.&quot;</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">creation_meta</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="kt">void</span> <span class="n">set_creation_meta</span><span class="p">(</span><span class="n">CreationMeta</span> <span class="n">new_creation_meta</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">has_bw_view</span><span class="p">(),</span> <span class="s">&quot;creation_meta can only exist for backward views.&quot;</span><span class="p">);</span>
+    <span class="n">creation_meta</span> <span class="o">=</span> <span class="n">new_creation_meta</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="kt">bool</span> <span class="n">has_fw_view</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">forward_info_</span><span class="p">.</span><span class="n">has_value</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="k">const</span> <span class="n">ViewInfo</span><span class="o">&amp;</span> <span class="n">get_forward_view</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">has_fw_view</span><span class="p">(),</span> <span class="s">&quot;forward view info can only exist for forward views.&quot;</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">forward_info_</span><span class="p">.</span><span class="n">value</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="n">DifferentiableViewMeta</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="o">*</span> <span class="n">self_impl</span><span class="p">,</span> <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">ViewInfo</span><span class="o">&gt;</span> <span class="n">backward_info</span><span class="p">,</span>
+    <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">ViewInfo</span><span class="o">&gt;</span> <span class="n">forward_info</span><span class="p">,</span> <span class="n">CreationMeta</span> <span class="n">creation_meta</span><span class="o">=</span><span class="n">CreationMeta</span><span class="o">::</span><span class="n">DEFAULT</span><span class="p">);</span>
 <span class="p">};</span>
 
 <span class="c1">//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
@@ -518,10 +599,11 @@
 <span class="c1">// See NOTE [ Autograd View Variables ] for details.</span>
 <span class="c1">// Differentiable view. Track history with DifferentiableViewMeta.</span>
 <span class="kr">inline</span> <span class="n">Variable</span> <span class="n">make_variable_differentiable_view</span><span class="p">(</span>
-    <span class="n">Variable</span> <span class="n">base</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">data</span><span class="p">,</span>
+    <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">ViewInfo</span><span class="o">&gt;</span> <span class="n">backward_info</span><span class="p">,</span>
+    <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">ViewInfo</span><span class="o">&gt;</span> <span class="n">forward_info</span><span class="p">,</span>
     <span class="n">CreationMeta</span> <span class="n">creation_meta</span><span class="p">,</span>
-    <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="p">(</span><span class="k">const</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;&gt;</span> <span class="n">view_func</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kt">bool</span> <span class="n">allow_tensor_metadata_change</span> <span class="o">=</span> <span class="nb">true</span><span class="p">)</span> <span class="p">{</span>
   <span class="k">if</span> <span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">defined</span><span class="p">())</span> <span class="p">{</span>
     <span class="c1">// If we already did a TensorImpl allocation for data, just reuse it.</span>
     <span class="c1">// Otherwise(e.g tensor.swapdim(0, 0) when we return the same tensor as input),</span>
@@ -531,14 +613,16 @@
     <span class="k">if</span> <span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">getIntrusivePtr</span><span class="p">().</span><span class="n">unique</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">data</span><span class="p">.</span><span class="n">getIntrusivePtr</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">unique_version</span><span class="p">())</span> <span class="p">{</span>
       <span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="o">*</span> <span class="n">data_impl</span> <span class="o">=</span> <span class="n">data</span><span class="p">.</span><span class="n">unsafeGetTensorImpl</span><span class="p">();</span>
       <span class="n">data_impl</span><span class="o">-&gt;</span><span class="n">set_autograd_meta</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">DifferentiableViewMeta</span><span class="o">&gt;</span><span class="p">(</span>
-        <span class="n">data_impl</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">base</span><span class="p">),</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">view_func</span><span class="p">),</span> <span class="n">creation_meta</span><span class="p">));</span>
+      <span class="n">data_impl</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">backward_info</span><span class="p">),</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">forward_info</span><span class="p">),</span>
+      <span class="n">creation_meta</span><span class="p">));</span>
       <span class="k">return</span> <span class="n">data</span><span class="p">;</span>
     <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
       <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="o">&gt;</span> <span class="n">data_impl_copy</span> <span class="o">=</span> <span class="n">data</span><span class="p">.</span><span class="n">getIntrusivePtr</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">shallow_copy_and_detach</span><span class="p">(</span>
         <span class="cm">/*version_counter=*/</span><span class="mi">0</span><span class="p">,</span>
         <span class="cm">/*allow_tensor_metadata_change=*/</span><span class="nb">true</span><span class="p">);</span>
       <span class="n">data_impl_copy</span><span class="o">-&gt;</span><span class="n">set_autograd_meta</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">DifferentiableViewMeta</span><span class="o">&gt;</span><span class="p">(</span>
-        <span class="n">data_impl_copy</span><span class="p">.</span><span class="n">get</span><span class="p">(),</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">base</span><span class="p">),</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">view_func</span><span class="p">),</span> <span class="n">creation_meta</span><span class="p">));</span>
+      <span class="n">data_impl_copy</span><span class="p">.</span><span class="n">get</span><span class="p">(),</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">backward_info</span><span class="p">),</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">forward_info</span><span class="p">),</span>
+      <span class="n">creation_meta</span><span class="p">));</span>
       <span class="k">return</span> <span class="nf">Variable</span><span class="p">(</span><span class="n">data_impl_copy</span><span class="p">);</span>
     <span class="p">}</span>
   <span class="p">}</span>

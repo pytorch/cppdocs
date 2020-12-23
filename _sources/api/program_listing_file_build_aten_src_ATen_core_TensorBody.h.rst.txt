@@ -507,6 +507,18 @@ Program Listing for File TensorBody.h
        return impl_->grad();
      }
    
+     // The Forward AD API functions below are low level and are not to be used by end
+     // users who should use the API provided in torch/csrc/autograd.h
+   
+     const Tensor& fw_grad(uint64_t level) const {
+       return impl_->fw_grad(level, *this);
+     }
+   
+     void set_fw_grad(const Tensor& new_grad, uint64_t level, bool is_inplace_op) {
+       impl_->set_fw_grad(new_grad, *this, level, is_inplace_op);
+     }
+   
+   
      // STOP.  Thinking of adding a method here, which only makes use
      // of other ATen methods?  Define it in native_functions.yaml.
    
@@ -520,6 +532,7 @@ Program Listing for File TensorBody.h
      int64_t _version() const;
      Tensor & requires_grad_(bool requires_grad=true) const;
      void retain_grad() const;
+     Tensor _fw_primal(int64_t level) const;
      Tensor & rename_(c10::optional<DimnameList> names) const;
      Tensor rename(c10::optional<DimnameList> names) const;
      Tensor align_to(DimnameList names) const;
@@ -727,6 +740,10 @@ Program Listing for File TensorBody.h
      Tensor & log2_() const;
      Tensor logaddexp(const Tensor & other) const;
      Tensor logaddexp2(const Tensor & other) const;
+     Tensor xlogy(const Tensor & other) const;
+     Tensor xlogy(Scalar other) const;
+     Tensor & xlogy_(const Tensor & other) const;
+     Tensor & xlogy_(Scalar other) const;
      Tensor logdet() const;
      Tensor log_softmax(int64_t dim, c10::optional<ScalarType> dtype=c10::nullopt) const;
      Tensor log_softmax(Dimname dim, c10::optional<ScalarType> dtype=c10::nullopt) const;
