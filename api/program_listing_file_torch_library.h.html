@@ -386,16 +386,6 @@
     <span class="p">,</span> <span class="n">debug_</span><span class="p">()</span>
     <span class="p">{}</span>
 
-  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">Func</span><span class="o">&gt;</span>
-  <span class="k">static</span> <span class="n">CppFunction</span> <span class="n">makeUnboxedOnly</span><span class="p">(</span><span class="n">Func</span><span class="o">*</span> <span class="n">f</span><span class="p">)</span> <span class="p">{</span>
-    <span class="c1">// TODO: Eliminate the necessity for this function entirely.</span>
-    <span class="k">return</span> <span class="nf">CppFunction</span><span class="p">(</span>
-      <span class="n">c10</span><span class="o">::</span><span class="n">KernelFunction</span><span class="o">::</span><span class="n">makeFromUnboxedOnlyRuntimeFunction</span><span class="p">(</span><span class="n">f</span><span class="p">),</span>
-      <span class="cm">/* cpp_signature */</span> <span class="n">c10</span><span class="o">::</span><span class="n">impl</span><span class="o">::</span><span class="n">CppSignature</span><span class="o">::</span><span class="n">make</span><span class="o">&lt;</span><span class="n">Func</span><span class="o">&gt;</span><span class="p">(),</span>
-      <span class="cm">/* schema */</span> <span class="k">nullptr</span>
-    <span class="p">);</span>
-  <span class="p">}</span>
-
   <span class="k">static</span> <span class="n">CppFunction</span> <span class="n">makeFallthrough</span><span class="p">()</span> <span class="p">{</span>
     <span class="c1">// TODO: more user friendly API</span>
     <span class="k">return</span> <span class="nf">CppFunction</span><span class="p">(</span>
@@ -421,6 +411,16 @@
       <span class="cm">/* cpp_signature */</span> <span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">,</span> <span class="c1">// not known for boxed functions</span>
       <span class="cm">/* schema */</span> <span class="k">nullptr</span>
     <span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">FuncPtr</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">enable_if_t</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">guts</span><span class="o">::</span><span class="n">is_function_type</span><span class="o">&lt;</span><span class="n">FuncPtr</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">nullptr_t</span><span class="o">&gt;</span> <span class="o">=</span> <span class="k">nullptr</span><span class="o">&gt;</span>
+  <span class="k">static</span> <span class="n">CppFunction</span> <span class="n">makeFromUnboxedFunction</span><span class="p">(</span><span class="n">FuncPtr</span><span class="o">*</span> <span class="n">f</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nf">CppFunction</span><span class="p">(</span><span class="n">f</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">FuncPtr</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">enable_if_t</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">is_compile_time_function_pointer</span><span class="o">&lt;</span><span class="n">FuncPtr</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">nullptr_t</span><span class="o">&gt;</span> <span class="o">=</span> <span class="k">nullptr</span><span class="o">&gt;</span>
+  <span class="k">static</span> <span class="n">CppFunction</span> <span class="n">makeFromUnboxedFunction</span><span class="p">(</span><span class="n">FuncPtr</span> <span class="n">f</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nf">CppFunction</span><span class="p">(</span><span class="n">f</span><span class="p">);</span>
   <span class="p">}</span>
 
   <span class="n">CppFunction</span><span class="o">&amp;&amp;</span> <span class="n">debug</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">d</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="p">{</span>
@@ -623,9 +623,8 @@
 
   <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">Name</span><span class="p">,</span> <span class="k">typename</span> <span class="nc">Func</span><span class="o">&gt;</span>
   <span class="n">Library</span><span class="o">&amp;</span> <span class="n">impl_UNBOXED</span><span class="p">(</span><span class="n">Name</span> <span class="n">name</span><span class="p">,</span> <span class="n">Func</span><span class="o">*</span> <span class="n">raw_f</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">{</span>
-    <span class="c1">// TODO: Remove this overload once the makeUnboxedOnly incidence rate</span>
-    <span class="c1">// goes way down</span>
-    <span class="k">return</span> <span class="nf">impl</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">CppFunction</span><span class="o">::</span><span class="n">makeUnboxedOnly</span><span class="p">(</span><span class="n">raw_f</span><span class="p">));</span>
+    <span class="k">static_assert</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">guts</span><span class="o">::</span><span class="n">false_t</span><span class="o">&lt;</span><span class="n">Func</span><span class="o">&gt;</span><span class="p">(),</span> <span class="s">&quot;.impl_UNBOXED(...) was removed. Please use .impl(...) instead.&quot;</span><span class="p">);</span>
+    <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
   <span class="p">}</span>
 
   <span class="c1">// These overloads cover cases when a SelectiveStr (see Note [Selective build])</span>
@@ -647,7 +646,10 @@
   <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">Dispatch</span><span class="p">,</span> <span class="k">typename</span> <span class="nc">Func</span><span class="o">&gt;</span>
   <span class="n">Library</span><span class="o">&amp;</span> <span class="n">impl</span><span class="p">(</span><span class="n">detail</span><span class="o">::</span><span class="n">SelectiveStr</span><span class="o">&lt;</span><span class="nb">false</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">Dispatch</span><span class="o">&amp;&amp;</span> <span class="n">key</span><span class="p">,</span> <span class="n">Func</span><span class="o">&amp;&amp;</span> <span class="n">raw_f</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">{</span> <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span> <span class="p">}</span>
   <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">Func</span><span class="o">&gt;</span>
-  <span class="n">Library</span><span class="o">&amp;</span> <span class="n">impl_UNBOXED</span><span class="p">(</span><span class="n">detail</span><span class="o">::</span><span class="n">SelectiveStr</span><span class="o">&lt;</span><span class="nb">false</span><span class="o">&gt;</span> <span class="n">name</span><span class="p">,</span> <span class="n">Func</span><span class="o">*</span> <span class="n">raw_f</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">{</span> <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span> <span class="p">}</span>
+  <span class="n">Library</span><span class="o">&amp;</span> <span class="n">impl_UNBOXED</span><span class="p">(</span><span class="n">detail</span><span class="o">::</span><span class="n">SelectiveStr</span><span class="o">&lt;</span><span class="nb">false</span><span class="o">&gt;</span> <span class="n">name</span><span class="p">,</span> <span class="n">Func</span><span class="o">*</span> <span class="n">raw_f</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">{</span>
+    <span class="k">static_assert</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">guts</span><span class="o">::</span><span class="n">false_t</span><span class="o">&lt;</span><span class="n">Func</span><span class="o">&gt;</span><span class="p">(),</span> <span class="s">&quot;.impl_UNBOXED(...) was removed. Please use .impl(...) instead.&quot;</span><span class="p">);</span>
+    <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
+  <span class="p">}</span>
 
   <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">Func</span><span class="o">&gt;</span>
   <span class="n">Library</span><span class="o">&amp;</span> <span class="n">impl</span><span class="p">(</span><span class="n">detail</span><span class="o">::</span><span class="n">SelectiveStr</span><span class="o">&lt;</span><span class="nb">true</span><span class="o">&gt;</span> <span class="n">name</span><span class="p">,</span> <span class="n">Func</span><span class="o">&amp;&amp;</span> <span class="n">raw_f</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">{</span>
@@ -659,7 +661,8 @@
   <span class="p">}</span>
   <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">Func</span><span class="o">&gt;</span>
   <span class="n">Library</span><span class="o">&amp;</span> <span class="n">impl_UNBOXED</span><span class="p">(</span><span class="n">detail</span><span class="o">::</span><span class="n">SelectiveStr</span><span class="o">&lt;</span><span class="nb">true</span><span class="o">&gt;</span> <span class="n">name</span><span class="p">,</span> <span class="n">Func</span><span class="o">*</span> <span class="n">raw_f</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nf">impl</span><span class="p">(</span><span class="n">name</span><span class="p">.</span><span class="k">operator</span> <span class="k">const</span> <span class="kt">char</span><span class="o">*</span><span class="p">(),</span> <span class="n">CppFunction</span><span class="o">::</span><span class="n">makeUnboxedOnly</span><span class="p">(</span><span class="n">raw_f</span><span class="p">));</span>
+    <span class="k">static_assert</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">guts</span><span class="o">::</span><span class="n">false_t</span><span class="o">&lt;</span><span class="n">Func</span><span class="o">&gt;</span><span class="p">(),</span> <span class="s">&quot;.impl_UNBOXED(...) was removed. Please use .impl(...) instead.&quot;</span><span class="p">);</span>
+    <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
   <span class="p">}</span>
 
   <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">Func</span><span class="o">&gt;</span>

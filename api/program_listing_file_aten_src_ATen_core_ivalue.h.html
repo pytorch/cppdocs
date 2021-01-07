@@ -440,26 +440,34 @@
 <span class="k">struct</span> <span class="nc">TORCH_API</span> <span class="n">IValue</span> <span class="k">final</span> <span class="p">{</span>
   <span class="n">IValue</span><span class="p">(</span><span class="k">const</span> <span class="n">IValue</span><span class="o">&amp;</span> <span class="n">rhs</span><span class="p">)</span>
       <span class="o">:</span> <span class="n">IValue</span><span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">payload</span><span class="p">,</span> <span class="n">rhs</span><span class="p">.</span><span class="n">tag</span><span class="p">,</span> <span class="n">rhs</span><span class="p">.</span><span class="n">is_intrusive_ptr</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">is_intrusive_ptr</span><span class="p">)</span> <span class="p">{</span>
-      <span class="n">c10</span><span class="o">::</span><span class="n">raw</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">::</span><span class="n">incref</span><span class="p">(</span><span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">is_intrusive_ptr</span> <span class="o">&amp;&amp;</span> <span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">!=</span> <span class="n">c10</span><span class="o">::</span><span class="n">UndefinedTensorImpl</span><span class="o">::</span><span class="n">singleton</span><span class="p">())</span> <span class="p">{</span>
+      <span class="n">c10</span><span class="o">::</span><span class="n">raw</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">::</span><span class="n">incref</span><span class="p">(</span><span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">);</span>
     <span class="p">}</span>
   <span class="p">}</span>
-  <span class="n">IValue</span><span class="p">(</span><span class="n">IValue</span><span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="k">noexcept</span> <span class="o">:</span> <span class="n">IValue</span><span class="p">()</span> <span class="p">{</span>
-    <span class="n">swap</span><span class="p">(</span><span class="n">rhs</span><span class="p">);</span>
+
+  <span class="n">IValue</span><span class="p">(</span><span class="n">IValue</span><span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="k">noexcept</span> <span class="o">:</span> <span class="n">tag</span><span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">tag</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">is_intrusive_ptr</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">moveFrom</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">rhs</span><span class="p">));</span>
   <span class="p">}</span>
+
   <span class="o">~</span><span class="n">IValue</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">is_intrusive_ptr</span><span class="p">)</span> <span class="p">{</span>
-      <span class="n">c10</span><span class="o">::</span><span class="n">raw</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">::</span><span class="n">decref</span><span class="p">(</span><span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">);</span>
-    <span class="p">}</span>
+    <span class="n">destroy</span><span class="p">();</span>
   <span class="p">}</span>
-  <span class="n">IValue</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">IValue</span><span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="o">&amp;</span> <span class="k">noexcept</span> <span class="p">{</span>
-    <span class="n">IValue</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">rhs</span><span class="p">)).</span><span class="n">swap</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">);</span> <span class="c1">// this also sets rhs to None</span>
+
+  <span class="n">C10_ALWAYS_INLINE</span> <span class="n">IValue</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">IValue</span><span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="o">&amp;</span> <span class="k">noexcept</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">&amp;</span><span class="n">rhs</span> <span class="o">==</span> <span class="k">this</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
+    <span class="p">}</span>
+
+    <span class="n">destroy</span><span class="p">();</span>
+    <span class="n">moveFrom</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">rhs</span><span class="p">));</span>
     <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
   <span class="p">}</span>
+
   <span class="n">IValue</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">IValue</span> <span class="k">const</span><span class="o">&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="o">&amp;</span> <span class="p">{</span>
     <span class="n">IValue</span><span class="p">(</span><span class="n">rhs</span><span class="p">).</span><span class="n">swap</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">);</span>
     <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
   <span class="p">}</span>
+
   <span class="kt">void</span> <span class="n">dump</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
 
   <span class="n">IValue</span> <span class="nf">equals</span><span class="p">(</span><span class="k">const</span> <span class="n">IValue</span><span class="o">&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
@@ -485,6 +493,13 @@
       <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
     <span class="p">}</span>
 
+    <span class="c1">// Tensors should be compared based on internal storage</span>
+    <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">isTensor</span><span class="p">())</span> <span class="p">{</span>
+      <span class="k">const</span> <span class="k">auto</span><span class="o">&amp;</span> <span class="n">thisTensor</span> <span class="o">=</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">toTensor</span><span class="p">();</span>
+      <span class="k">const</span> <span class="k">auto</span><span class="o">&amp;</span> <span class="n">rhsTensor</span> <span class="o">=</span> <span class="n">rhs</span><span class="p">.</span><span class="n">toTensor</span><span class="p">();</span>
+      <span class="k">return</span> <span class="n">thisTensor</span><span class="p">.</span><span class="n">is_alias_of</span><span class="p">(</span><span class="n">rhsTensor</span><span class="p">);</span>
+    <span class="p">}</span>
+
     <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">is_intrusive_ptr</span><span class="p">)</span> <span class="p">{</span>
       <span class="c1">// Primitive types don&#39;t alias anything</span>
       <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
@@ -492,27 +507,47 @@
 
     <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">is_intrusive_ptr</span><span class="p">);</span>
 
-    <span class="c1">// Tensors should be compared based on internal storage</span>
-    <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">isTensor</span><span class="p">())</span> <span class="p">{</span>
-      <span class="k">const</span> <span class="k">auto</span> <span class="n">thisTensor</span> <span class="o">=</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">toTensor</span><span class="p">();</span>
-      <span class="k">const</span> <span class="k">auto</span> <span class="n">rhsTensor</span> <span class="o">=</span> <span class="n">rhs</span><span class="p">.</span><span class="n">toTensor</span><span class="p">();</span>
-      <span class="k">return</span> <span class="n">thisTensor</span><span class="p">.</span><span class="n">is_alias_of</span><span class="p">(</span><span class="n">rhsTensor</span><span class="p">);</span>
-    <span class="p">}</span>
-
     <span class="c1">// Other types can be compared by their ptr value</span>
-    <span class="k">return</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">==</span> <span class="n">rhs</span><span class="p">.</span><span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">;</span>
+    <span class="k">return</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">==</span> <span class="n">rhs</span><span class="p">.</span><span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">;</span>
   <span class="p">}</span>
 
   <span class="kt">size_t</span> <span class="nf">use_count</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">isTensor</span><span class="p">())</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="n">payload</span><span class="p">.</span><span class="n">as_tensor</span><span class="p">.</span><span class="n">use_count</span><span class="p">();</span>
+    <span class="p">}</span>
+
     <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">is_intrusive_ptr</span><span class="p">)</span> <span class="p">{</span>
       <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
     <span class="p">}</span>
 
-    <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">raw</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">::</span><span class="n">use_count</span><span class="p">(</span><span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">==</span> <span class="n">c10</span><span class="o">::</span><span class="n">UndefinedTensorImpl</span><span class="o">::</span><span class="n">singleton</span><span class="p">())</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">raw</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">::</span><span class="n">use_count</span><span class="p">(</span><span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">);</span>
   <span class="p">}</span>
 
   <span class="kt">void</span> <span class="nf">swap</span><span class="p">(</span><span class="n">IValue</span><span class="o">&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
-    <span class="n">std</span><span class="o">::</span><span class="n">swap</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="n">rhs</span><span class="p">.</span><span class="n">payload</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">isTensor</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">.</span><span class="n">isTensor</span><span class="p">())</span> <span class="p">{</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">swap</span><span class="p">(</span><span class="n">payload</span><span class="p">.</span><span class="n">as_tensor</span><span class="p">,</span> <span class="n">rhs</span><span class="p">.</span><span class="n">payload</span><span class="p">.</span><span class="n">as_tensor</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">isTensor</span><span class="p">())</span> <span class="p">{</span>
+      <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">t</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">payload</span><span class="p">.</span><span class="n">as_tensor</span><span class="p">);</span>
+      <span class="c1">// As far as I can tell, omitting the usual explicit destructor call</span>
+      <span class="c1">// is not UB in and of itself, and it&#39;s a slight perf win. The</span>
+      <span class="c1">// destructor is a no-op, because the moved-from Tensor is</span>
+      <span class="c1">// effectively an intrusive_ptr in the null state, so we don&#39;t need</span>
+      <span class="c1">// the behavior for correctness reasons either. Leaving this</span>
+      <span class="c1">// explanatory comment, including commented-out destructor call, to</span>
+      <span class="c1">// make this abundantly clear.</span>
+      <span class="c1">//</span>
+      <span class="c1">// payload.as_tensor.~Tensor();</span>
+      <span class="n">payload</span><span class="p">.</span><span class="n">u</span> <span class="o">=</span> <span class="n">rhs</span><span class="p">.</span><span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">;</span>
+      <span class="k">new</span> <span class="p">(</span><span class="o">&amp;</span><span class="n">rhs</span><span class="p">.</span><span class="n">payload</span><span class="p">.</span><span class="n">as_tensor</span><span class="p">)</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">t</span><span class="p">));</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">isTensor</span><span class="p">())</span> <span class="p">{</span>
+      <span class="n">rhs</span><span class="p">.</span><span class="n">swap</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">);</span>
+      <span class="k">return</span><span class="p">;</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">swap</span><span class="p">(</span><span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">,</span> <span class="n">rhs</span><span class="p">.</span><span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">);</span>
+    <span class="p">}</span>
     <span class="n">std</span><span class="o">::</span><span class="n">swap</span><span class="p">(</span><span class="n">is_intrusive_ptr</span><span class="p">,</span> <span class="n">rhs</span><span class="p">.</span><span class="n">is_intrusive_ptr</span><span class="p">);</span>
     <span class="n">std</span><span class="o">::</span><span class="n">swap</span><span class="p">(</span><span class="n">tag</span><span class="p">,</span> <span class="n">rhs</span><span class="p">.</span><span class="n">tag</span><span class="p">);</span>
   <span class="p">}</span>
@@ -521,21 +556,17 @@
   <span class="c1">// While some of these accessors could be generated through templates,</span>
   <span class="c1">// we prefer to write them manually for clarity</span>
 
-  <span class="n">IValue</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">t</span><span class="p">)</span> <span class="o">:</span> <span class="n">tag</span><span class="p">(</span><span class="n">Tag</span><span class="o">::</span><span class="n">Tensor</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="n">defined</span><span class="p">())</span> <span class="p">{</span>
-    <span class="c1">// Note: the undefined tensor is not refcounted, so while it</span>
-    <span class="c1">// is tagged as a tensor, is_intrusive_ptr is set to false.</span>
-    <span class="c1">// This is not an optional optimization: our incref call</span>
-    <span class="c1">// *will not* do the right thing when called on an</span>
-    <span class="c1">// undefined tensor.</span>
-    <span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">=</span> <span class="n">t</span><span class="p">.</span><span class="n">unsafeReleaseTensorImpl</span><span class="p">();</span>
+  <span class="n">IValue</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">t</span><span class="p">)</span> <span class="o">:</span> <span class="n">tag</span><span class="p">(</span><span class="n">Tag</span><span class="o">::</span><span class="n">Tensor</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">new</span> <span class="p">(</span><span class="o">&amp;</span><span class="n">payload</span><span class="p">.</span><span class="n">as_tensor</span><span class="p">)</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">t</span><span class="p">));</span>
   <span class="p">}</span>
   <span class="kt">bool</span> <span class="n">isTensor</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">Tag</span><span class="o">::</span><span class="n">Tensor</span> <span class="o">==</span> <span class="n">tag</span><span class="p">;</span>
   <span class="p">}</span>
   <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">toTensor</span><span class="p">()</span> <span class="o">&amp;&amp;</span><span class="p">;</span>
-  <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">toTensor</span><span class="p">()</span> <span class="k">const</span><span class="o">&amp;</span><span class="p">;</span>
+  <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">toTensor</span><span class="p">()</span> <span class="o">&amp;</span><span class="p">;</span>
+  <span class="k">const</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">toTensor</span><span class="p">()</span> <span class="k">const</span><span class="o">&amp;</span><span class="p">;</span>
   <span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="o">*</span> <span class="n">unsafeToTensorImpl</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">payload</span><span class="p">.</span><span class="n">as_tensor</span><span class="p">.</span><span class="n">unsafeGetTensorImpl</span><span class="p">();</span>
   <span class="p">}</span>
 
   <span class="n">IValue</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">Storage</span> <span class="n">s</span><span class="p">)</span> <span class="o">:</span> <span class="n">tag</span><span class="p">(</span><span class="n">Tag</span><span class="o">::</span><span class="n">Storage</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;</span><span class="p">(</span><span class="n">s</span><span class="p">))</span> <span class="p">{</span>
@@ -544,7 +575,7 @@
     <span class="c1">// This is not an optional optimization: our incref call</span>
     <span class="c1">// *will not* do the right thing when called on an</span>
     <span class="c1">// undefined tensor.</span>
-    <span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">unsafeReleaseStorageImpl</span><span class="p">();</span>
+    <span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">=</span> <span class="n">null_to_undefined_tensor</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">unsafeReleaseStorageImpl</span><span class="p">());</span>
   <span class="p">}</span>
   <span class="kt">bool</span> <span class="n">isStorage</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">Tag</span><span class="o">::</span><span class="n">Storage</span> <span class="o">==</span> <span class="n">tag</span><span class="p">;</span>
@@ -563,7 +594,7 @@
       <span class="o">:</span> <span class="n">tag</span><span class="p">(</span><span class="n">Tag</span><span class="o">::</span><span class="n">Blob</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="nb">true</span><span class="p">)</span> <span class="p">{</span>
     <span class="c1">// TODO (after Tensor merge) If we pass in a Blob holding a Tensor, extract</span>
     <span class="c1">// and store it as a Tensor instead.</span>
-    <span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">=</span> <span class="n">blob</span><span class="p">.</span><span class="n">release</span><span class="p">();</span>
+    <span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">=</span> <span class="n">null_to_undefined_tensor</span><span class="p">(</span><span class="n">blob</span><span class="p">.</span><span class="n">release</span><span class="p">());</span>
   <span class="p">}</span>
 
   <span class="kt">bool</span> <span class="n">isBlob</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
@@ -616,14 +647,14 @@
 
   <span class="c1">// Double</span>
   <span class="n">IValue</span><span class="p">(</span><span class="kt">double</span> <span class="n">d</span><span class="p">)</span> <span class="o">:</span> <span class="n">tag</span><span class="p">(</span><span class="n">Tag</span><span class="o">::</span><span class="n">Double</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">payload</span><span class="p">.</span><span class="n">as_double</span> <span class="o">=</span> <span class="n">d</span><span class="p">;</span>
+    <span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_double</span> <span class="o">=</span> <span class="n">d</span><span class="p">;</span>
   <span class="p">}</span>
   <span class="kt">bool</span> <span class="n">isDouble</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">Tag</span><span class="o">::</span><span class="n">Double</span> <span class="o">==</span> <span class="n">tag</span><span class="p">;</span>
   <span class="p">}</span>
   <span class="kt">double</span> <span class="n">toDouble</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">isDouble</span><span class="p">());</span>
-    <span class="k">return</span> <span class="n">payload</span><span class="p">.</span><span class="n">as_double</span><span class="p">;</span>
+    <span class="k">return</span> <span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_double</span><span class="p">;</span>
   <span class="p">}</span>
 
   <span class="c1">// Future</span>
@@ -652,7 +683,7 @@
 
   <span class="c1">// Int</span>
   <span class="n">IValue</span><span class="p">(</span><span class="kt">int64_t</span> <span class="n">i</span><span class="p">)</span> <span class="o">:</span> <span class="n">tag</span><span class="p">(</span><span class="n">Tag</span><span class="o">::</span><span class="n">Int</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">payload</span><span class="p">.</span><span class="n">as_int</span> <span class="o">=</span> <span class="n">i</span><span class="p">;</span>
+    <span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_int</span> <span class="o">=</span> <span class="n">i</span><span class="p">;</span>
   <span class="p">}</span>
 
   <span class="c1">// allow you to pass literals (3, 4) without ambiguity</span>
@@ -664,7 +695,7 @@
 
   <span class="kt">int64_t</span> <span class="n">toInt</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">isInt</span><span class="p">());</span>
-    <span class="k">return</span> <span class="n">payload</span><span class="p">.</span><span class="n">as_int</span><span class="p">;</span>
+    <span class="k">return</span> <span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_int</span><span class="p">;</span>
   <span class="p">}</span>
 
   <span class="c1">// Bool</span>
@@ -673,9 +704,9 @@
     <span class="c1">// Initializing entire payload stops valgrind&#39;s from reporting</span>
     <span class="c1">// &quot;jump or move depends on uninitialised value&quot; in IValue copy constructor</span>
     <span class="c1">// See https://github.com/pytorch/pytorch/issues/37117</span>
-    <span class="n">payload</span><span class="p">.</span><span class="n">as_int</span> <span class="o">=</span> <span class="n">b</span><span class="p">;</span>
+    <span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_int</span> <span class="o">=</span> <span class="n">b</span><span class="p">;</span>
 <span class="cp">#else</span>
-    <span class="n">payload</span><span class="p">.</span><span class="n">as_bool</span> <span class="o">=</span> <span class="n">b</span><span class="p">;</span>
+    <span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_bool</span> <span class="o">=</span> <span class="n">b</span><span class="p">;</span>
 <span class="cp">#endif</span>
   <span class="p">}</span>
   <span class="kt">bool</span> <span class="n">isBool</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
@@ -683,7 +714,7 @@
   <span class="p">}</span>
   <span class="kt">bool</span> <span class="n">toBool</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">isBool</span><span class="p">());</span>
-    <span class="k">return</span> <span class="n">payload</span><span class="p">.</span><span class="n">as_bool</span><span class="p">;</span>
+    <span class="k">return</span> <span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_bool</span><span class="p">;</span>
   <span class="p">}</span>
 
   <span class="c1">// IntList</span>
@@ -796,7 +827,7 @@
   <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">EnumHolder</span><span class="o">&gt;</span> <span class="n">toEnumHolder</span><span class="p">()</span> <span class="k">const</span><span class="o">&amp;</span><span class="p">;</span>
 
   <span class="c1">// None</span>
-  <span class="n">IValue</span><span class="p">()</span> <span class="o">:</span> <span class="n">payload</span><span class="p">{</span><span class="mi">0</span><span class="p">},</span> <span class="n">tag</span><span class="p">(</span><span class="n">Tag</span><span class="o">::</span><span class="n">None</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span> <span class="p">{}</span>
+  <span class="n">IValue</span><span class="p">()</span> <span class="o">:</span> <span class="n">tag</span><span class="p">(</span><span class="n">Tag</span><span class="o">::</span><span class="n">None</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span> <span class="p">{}</span>
   <span class="kt">bool</span> <span class="n">isNone</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">Tag</span><span class="o">::</span><span class="n">None</span> <span class="o">==</span> <span class="n">tag</span><span class="p">;</span>
   <span class="p">}</span>
@@ -832,21 +863,21 @@
 
   <span class="c1">// Device</span>
   <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">Device</span> <span class="n">d</span><span class="p">)</span> <span class="o">:</span> <span class="n">tag</span><span class="p">(</span><span class="n">Tag</span><span class="o">::</span><span class="n">Device</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">payload</span><span class="p">.</span><span class="n">as_device</span><span class="p">.</span><span class="n">type</span> <span class="o">=</span> <span class="n">d</span><span class="p">.</span><span class="n">type</span><span class="p">();</span>
-    <span class="n">payload</span><span class="p">.</span><span class="n">as_device</span><span class="p">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">d</span><span class="p">.</span><span class="n">index</span><span class="p">();</span>
+    <span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_device</span><span class="p">.</span><span class="n">type</span> <span class="o">=</span> <span class="n">d</span><span class="p">.</span><span class="n">type</span><span class="p">();</span>
+    <span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_device</span><span class="p">.</span><span class="n">index</span> <span class="o">=</span> <span class="n">d</span><span class="p">.</span><span class="n">index</span><span class="p">();</span>
   <span class="p">}</span>
   <span class="kt">bool</span> <span class="n">isDevice</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">Tag</span><span class="o">::</span><span class="n">Device</span> <span class="o">==</span> <span class="n">tag</span><span class="p">;</span>
   <span class="p">}</span>
   <span class="n">c10</span><span class="o">::</span><span class="n">Device</span> <span class="n">toDevice</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">isDevice</span><span class="p">());</span>
-    <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">Device</span><span class="p">(</span><span class="n">payload</span><span class="p">.</span><span class="n">as_device</span><span class="p">.</span><span class="n">type</span><span class="p">,</span> <span class="n">payload</span><span class="p">.</span><span class="n">as_device</span><span class="p">.</span><span class="n">index</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">Device</span><span class="p">(</span><span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_device</span><span class="p">.</span><span class="n">type</span><span class="p">,</span> <span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_device</span><span class="p">.</span><span class="n">index</span><span class="p">);</span>
   <span class="p">}</span>
 
   <span class="c1">//Stream</span>
   <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">Stream</span> <span class="n">stream</span><span class="p">)</span>
     <span class="o">:</span> <span class="n">tag</span><span class="p">(</span><span class="n">Tag</span><span class="o">::</span><span class="n">Stream</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">payload</span><span class="p">.</span><span class="n">as_int</span> <span class="o">=</span> <span class="n">stream</span><span class="p">.</span><span class="n">pack</span><span class="p">();</span>
+    <span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_int</span> <span class="o">=</span> <span class="n">stream</span><span class="p">.</span><span class="n">pack</span><span class="p">();</span>
   <span class="p">}</span>
   <span class="n">c10</span><span class="o">::</span><span class="n">Stream</span> <span class="n">toStream</span><span class="p">()</span> <span class="o">&amp;&amp;</span><span class="p">;</span>
   <span class="n">c10</span><span class="o">::</span><span class="n">Stream</span> <span class="n">toStream</span><span class="p">()</span> <span class="k">const</span> <span class="o">&amp;</span><span class="p">;</span>
@@ -875,7 +906,7 @@
 
   <span class="c1">// QScheme</span>
   <span class="n">IValue</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">QScheme</span> <span class="n">qscheme</span><span class="p">)</span> <span class="o">:</span> <span class="n">tag</span><span class="p">(</span><span class="n">Tag</span><span class="o">::</span><span class="n">Int</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">payload</span><span class="p">.</span><span class="n">as_int</span> <span class="o">=</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">qscheme</span><span class="p">);</span>
+    <span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_int</span> <span class="o">=</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">qscheme</span><span class="p">);</span>
   <span class="p">}</span>
 
   <span class="n">at</span><span class="o">::</span><span class="n">QScheme</span> <span class="n">toQScheme</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
@@ -896,7 +927,7 @@
     <span class="c1">// This is not an optional optimization: our incref call</span>
     <span class="c1">// *will not* do the right thing when called on an</span>
     <span class="c1">// undefined generator.</span>
-    <span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">=</span> <span class="n">g</span><span class="p">.</span><span class="n">unsafeReleaseGeneratorImpl</span><span class="p">();</span>
+    <span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">=</span> <span class="n">null_to_undefined_tensor</span><span class="p">(</span><span class="n">g</span><span class="p">.</span><span class="n">unsafeReleaseGeneratorImpl</span><span class="p">());</span>
   <span class="p">}</span>
   <span class="kt">bool</span> <span class="n">isGenerator</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">Tag</span><span class="o">::</span><span class="n">Generator</span> <span class="o">==</span> <span class="n">tag</span><span class="p">;</span>
@@ -963,13 +994,18 @@
       <span class="k">const</span> <span class="n">IValue</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">);</span>
 
   <span class="kt">bool</span> <span class="nf">isPtrType</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">is_intrusive_ptr</span><span class="p">;</span>
+    <span class="k">return</span> <span class="p">(</span><span class="n">isTensor</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">payload</span><span class="p">.</span><span class="n">as_tensor</span><span class="p">.</span><span class="n">defined</span><span class="p">())</span> <span class="o">||</span> <span class="n">is_intrusive_ptr</span><span class="p">;</span>
   <span class="p">}</span>
 
   <span class="k">const</span> <span class="kt">void</span><span class="o">*</span> <span class="n">internalToPointer</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span>
         <span class="n">isPtrType</span><span class="p">(),</span> <span class="s">&quot;Can only call internalToPointer() for pointer types&quot;</span><span class="p">);</span>
-    <span class="k">return</span> <span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">isTensor</span><span class="p">())</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="n">payload</span><span class="p">.</span><span class="n">as_tensor</span><span class="p">.</span><span class="n">unsafeGetTensorImpl</span><span class="p">();</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">!=</span> <span class="n">c10</span><span class="o">::</span><span class="n">UndefinedTensorImpl</span><span class="o">::</span><span class="n">singleton</span><span class="p">()</span>
+        <span class="o">?</span> <span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="nl">as_intrusive_ptr</span> <span class="p">:</span> <span class="k">nullptr</span><span class="p">;</span>
+    <span class="p">}</span>
   <span class="p">}</span>
 
   <span class="n">TypePtr</span> <span class="n">type</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
@@ -983,7 +1019,7 @@
       <span class="p">}</span>
       <span class="c1">// If it is not a Tensor, then two mutable IValues alias each other only</span>
       <span class="c1">// if they are the same pointer.</span>
-      <span class="k">return</span> <span class="n">val</span><span class="p">.</span><span class="n">payload</span><span class="p">.</span><span class="n">as_int</span><span class="p">;</span>
+      <span class="k">return</span> <span class="n">val</span><span class="p">.</span><span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_int</span><span class="p">;</span>
     <span class="p">}</span>
   <span class="p">};</span>
 
@@ -1013,6 +1049,10 @@
   <span class="n">IValue</span> <span class="nf">deepcopy</span><span class="p">(</span><span class="n">HashAliasedIValueMap</span><span class="o">&amp;</span> <span class="n">memo</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
 
  <span class="k">private</span><span class="o">:</span>
+  <span class="k">static</span> <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr_target</span><span class="o">*</span> <span class="n">null_to_undefined_tensor</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr_target</span><span class="o">*</span> <span class="n">p</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">p</span> <span class="o">?</span> <span class="nl">p</span> <span class="p">:</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr_target</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">UndefinedTensorImpl</span><span class="o">::</span><span class="n">singleton</span><span class="p">());</span>
+  <span class="p">}</span>
+
   <span class="k">static</span> <span class="kt">bool</span> <span class="n">ptrEqual</span><span class="p">(</span><span class="k">const</span> <span class="n">IValue</span><span class="o">&amp;</span> <span class="n">lhs</span><span class="p">,</span> <span class="k">const</span> <span class="n">IValue</span><span class="o">&amp;</span> <span class="n">rhs</span><span class="p">);</span>
   <span class="c1">// NOTE: IValue tags are intentionally private. In the future we may encode</span>
   <span class="c1">// this value different (e.g. using NaN boxing), and this would make it more</span>
@@ -1035,24 +1075,77 @@
       <span class="k">class</span> <span class="nc">NullType</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">detail</span><span class="o">::</span><span class="n">intrusive_target_default_null_type</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;</span>
   <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span> <span class="n">NullType</span><span class="o">&gt;</span> <span class="n">toIntrusivePtr</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
 
-  <span class="kt">void</span> <span class="nf">clearToNone</span><span class="p">()</span> <span class="p">{</span>
-    <span class="n">payload</span><span class="p">.</span><span class="n">as_int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="kt">void</span> <span class="nf">destroy</span><span class="p">()</span> <span class="p">{</span>
+    <span class="c1">// We carefully construct this call to both 1) avoid UB by using</span>
+    <span class="c1">// the &quot;wrong&quot; one of as_tensor and as_intrusive_ptr and 2) enable</span>
+    <span class="c1">// the compiler to generate the same code for each case. It is</span>
+    <span class="c1">// surprisingly difficult to get this right.</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">isTensor</span><span class="p">()</span> <span class="o">||</span> <span class="n">is_intrusive_ptr</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr_target</span><span class="o">*</span> <span class="n">p</span> <span class="o">=</span> <span class="n">isTensor</span><span class="p">()</span> <span class="o">?</span> <span class="n">payload</span><span class="p">.</span><span class="n">as_tensor</span><span class="p">.</span><span class="n">unsafeGetTensorImpl</span><span class="p">()</span> <span class="o">:</span> <span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">;</span>
+      <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">intrusive_ptr_target</span><span class="p">,</span> <span class="n">c10</span><span class="o">::</span><span class="n">UndefinedTensorImpl</span><span class="o">&gt;::</span><span class="n">reclaim</span><span class="p">(</span><span class="n">p</span><span class="p">);</span>
+      <span class="c1">// No need to make this destructor call!</span>
+      <span class="c1">// payload.as_tensor.~Tensor();</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="n">C10_ALWAYS_INLINE</span> <span class="kt">void</span> <span class="n">moveFrom</span><span class="p">(</span><span class="n">IValue</span><span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">isTensor</span><span class="p">())</span> <span class="p">{</span>
+      <span class="k">new</span> <span class="p">(</span><span class="o">&amp;</span><span class="n">payload</span><span class="p">.</span><span class="n">as_tensor</span><span class="p">)</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">payload</span><span class="p">.</span><span class="n">as_tensor</span><span class="p">));</span>
+      <span class="c1">// As far as I can tell, omitting the usual explicit destructor call</span>
+      <span class="c1">// is not UB in and of itself, and it&#39;s a slight perf win. The</span>
+      <span class="c1">// destructor is a no-op, because the moved-from Tensor is</span>
+      <span class="c1">// effectively an intrusive_ptr in the null state, so we don&#39;t need</span>
+      <span class="c1">// the behavior for correctness reasons either. Leaving this</span>
+      <span class="c1">// explanatory comment, including commented-out destructor call, to</span>
+      <span class="c1">// make this abundantly clear.</span>
+      <span class="c1">//</span>
+      <span class="c1">// rhs.payload.as_tensor.~Tensor();</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="n">payload</span><span class="p">.</span><span class="n">u</span> <span class="o">=</span> <span class="n">rhs</span><span class="p">.</span><span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="n">tag</span> <span class="o">=</span> <span class="n">rhs</span><span class="p">.</span><span class="n">tag</span><span class="p">;</span>
+    <span class="n">is_intrusive_ptr</span> <span class="o">=</span> <span class="n">rhs</span><span class="p">.</span><span class="n">is_intrusive_ptr</span><span class="p">;</span>
+    <span class="n">rhs</span><span class="p">.</span><span class="n">clearToNone</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="kt">void</span> <span class="n">clearToNone</span><span class="p">()</span> <span class="k">noexcept</span> <span class="p">{</span>
+    <span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
     <span class="n">tag</span> <span class="o">=</span> <span class="n">Tag</span><span class="o">::</span><span class="n">None</span><span class="p">;</span>
     <span class="n">is_intrusive_ptr</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
   <span class="p">}</span>
 
   <span class="k">union</span> <span class="nc">Payload</span> <span class="p">{</span>
-    <span class="kt">int64_t</span> <span class="n">as_int</span><span class="p">;</span>
-    <span class="kt">double</span> <span class="n">as_double</span><span class="p">;</span>
-    <span class="kt">bool</span> <span class="n">as_bool</span><span class="p">;</span>
-    <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr_target</span><span class="o">*</span> <span class="n">as_intrusive_ptr</span><span class="p">;</span>
-    <span class="k">struct</span> <span class="p">{</span>
-      <span class="n">DeviceType</span> <span class="n">type</span><span class="p">;</span>
-      <span class="n">DeviceIndex</span> <span class="n">index</span><span class="p">;</span>
-    <span class="p">}</span> <span class="n">as_device</span><span class="p">;</span>
+    <span class="c1">// We use a nested union here so that we can make the copy easy</span>
+    <span class="c1">// and efficient in the non-tensor (i.e., trivially copyable)</span>
+    <span class="c1">// case. Specifically, we do not have to do a switch-on-tag to</span>
+    <span class="c1">// figure out which union member to assign; we can just use</span>
+    <span class="c1">// TriviallyCopyablePayload::operator=.</span>
+    <span class="k">union</span> <span class="nc">TriviallyCopyablePayload</span> <span class="p">{</span>
+      <span class="n">TriviallyCopyablePayload</span><span class="p">()</span> <span class="o">:</span> <span class="n">as_int</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="p">{}</span>
+      <span class="kt">int64_t</span> <span class="n">as_int</span><span class="p">;</span>
+      <span class="kt">double</span> <span class="n">as_double</span><span class="p">;</span>
+      <span class="kt">bool</span> <span class="n">as_bool</span><span class="p">;</span>
+      <span class="c1">// Invariant: never nullptr; null state is represented as</span>
+      <span class="c1">// c10::UndefinedTensorImpl::singleton() for consistency of</span>
+      <span class="c1">// representation with Tensor.</span>
+      <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr_target</span><span class="o">*</span> <span class="n">as_intrusive_ptr</span><span class="p">;</span>
+      <span class="k">struct</span> <span class="p">{</span>
+        <span class="n">DeviceType</span> <span class="n">type</span><span class="p">;</span>
+        <span class="n">DeviceIndex</span> <span class="n">index</span><span class="p">;</span>
+      <span class="p">}</span> <span class="n">as_device</span><span class="p">;</span>
+    <span class="p">}</span> <span class="n">u</span><span class="p">;</span>
+    <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">as_tensor</span><span class="p">;</span>
+    <span class="n">Payload</span><span class="p">()</span> <span class="o">:</span> <span class="n">u</span><span class="p">()</span> <span class="p">{}</span>
+    <span class="o">~</span><span class="n">Payload</span><span class="p">()</span> <span class="p">{}</span>
   <span class="p">};</span>
 
-  <span class="n">IValue</span><span class="p">(</span><span class="n">Payload</span> <span class="n">p</span><span class="p">,</span> <span class="n">Tag</span> <span class="n">t</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">i</span><span class="p">)</span> <span class="o">:</span> <span class="n">payload</span><span class="p">(</span><span class="n">p</span><span class="p">),</span> <span class="n">tag</span><span class="p">(</span><span class="n">t</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="p">{}</span>
+  <span class="n">IValue</span><span class="p">(</span><span class="k">const</span> <span class="n">Payload</span><span class="o">&amp;</span> <span class="n">p</span><span class="p">,</span> <span class="n">Tag</span> <span class="n">t</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">i</span><span class="p">)</span> <span class="o">:</span> <span class="n">tag</span><span class="p">(</span><span class="n">t</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">isTensor</span><span class="p">())</span> <span class="p">{</span>
+      <span class="k">new</span> <span class="p">(</span><span class="o">&amp;</span><span class="n">payload</span><span class="p">.</span><span class="n">as_tensor</span><span class="p">)</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="p">(</span><span class="n">p</span><span class="p">.</span><span class="n">as_tensor</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="n">payload</span><span class="p">.</span><span class="n">u</span> <span class="o">=</span> <span class="n">p</span><span class="p">.</span><span class="n">u</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
 
   <span class="n">Payload</span> <span class="n">payload</span><span class="p">;</span>
   <span class="n">Tag</span> <span class="n">tag</span><span class="p">;</span>
@@ -1061,29 +1154,36 @@
 <span class="p">};</span>
 
 <span class="k">struct</span> <span class="nc">TORCH_API</span> <span class="n">WeakIValue</span> <span class="k">final</span> <span class="p">{</span>
-  <span class="n">WeakIValue</span><span class="p">()</span> <span class="o">:</span> <span class="n">payload</span><span class="p">{</span><span class="mi">0</span><span class="p">},</span> <span class="n">tag</span><span class="p">(</span><span class="n">IValue</span><span class="o">::</span><span class="n">Tag</span><span class="o">::</span><span class="n">None</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span> <span class="p">{}</span>
+  <span class="n">WeakIValue</span><span class="p">()</span> <span class="o">:</span> <span class="n">tag</span><span class="p">(</span><span class="n">IValue</span><span class="o">::</span><span class="n">Tag</span><span class="o">::</span><span class="n">None</span><span class="p">),</span> <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span> <span class="p">{}</span>
 
   <span class="n">WeakIValue</span><span class="p">(</span><span class="k">const</span> <span class="n">WeakIValue</span><span class="o">&amp;</span> <span class="n">rhs</span><span class="p">)</span>
       <span class="o">:</span> <span class="n">payload</span><span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">payload</span><span class="p">),</span>
         <span class="n">tag</span><span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">tag</span><span class="p">),</span>
         <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">is_intrusive_ptr</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">is_intrusive_ptr</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">is_intrusive_ptr</span> <span class="o">&amp;&amp;</span> <span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">!=</span> <span class="n">c10</span><span class="o">::</span><span class="n">UndefinedTensorImpl</span><span class="o">::</span><span class="n">singleton</span><span class="p">())</span> <span class="p">{</span>
       <span class="n">c10</span><span class="o">::</span><span class="n">raw</span><span class="o">::</span><span class="n">weak_intrusive_ptr</span><span class="o">::</span><span class="n">incref</span><span class="p">(</span><span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">);</span>
     <span class="p">}</span>
   <span class="p">}</span>
   <span class="n">WeakIValue</span><span class="p">(</span><span class="k">const</span> <span class="n">IValue</span><span class="o">&amp;</span> <span class="n">rhs</span><span class="p">)</span>
-      <span class="o">:</span> <span class="n">payload</span><span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">payload</span><span class="p">),</span>
-        <span class="n">tag</span><span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">tag</span><span class="p">),</span>
+      <span class="o">:</span> <span class="n">tag</span><span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">tag</span><span class="p">),</span>
         <span class="n">is_intrusive_ptr</span><span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">is_intrusive_ptr</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">isTensor</span><span class="p">())</span> <span class="p">{</span>
+      <span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">=</span> <span class="n">rhs</span><span class="p">.</span><span class="n">unsafeToTensorImpl</span><span class="p">();</span>
+      <span class="n">is_intrusive_ptr</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="n">payload</span> <span class="o">=</span> <span class="n">rhs</span><span class="p">.</span><span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">;</span>
+    <span class="p">}</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">is_intrusive_ptr</span><span class="p">)</span> <span class="p">{</span>
-      <span class="n">c10</span><span class="o">::</span><span class="n">raw</span><span class="o">::</span><span class="n">weak_intrusive_ptr</span><span class="o">::</span><span class="n">incref</span><span class="p">(</span><span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">);</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">!=</span> <span class="n">c10</span><span class="o">::</span><span class="n">UndefinedTensorImpl</span><span class="o">::</span><span class="n">singleton</span><span class="p">())</span> <span class="p">{</span>
+        <span class="n">c10</span><span class="o">::</span><span class="n">raw</span><span class="o">::</span><span class="n">weak_intrusive_ptr</span><span class="o">::</span><span class="n">incref</span><span class="p">(</span><span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">);</span>
+      <span class="p">}</span>
     <span class="p">}</span>
   <span class="p">}</span>
   <span class="n">WeakIValue</span><span class="p">(</span><span class="n">WeakIValue</span><span class="o">&amp;&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="k">noexcept</span> <span class="o">:</span> <span class="n">WeakIValue</span><span class="p">()</span> <span class="p">{</span>
     <span class="n">swap</span><span class="p">(</span><span class="n">rhs</span><span class="p">);</span>
   <span class="p">}</span>
   <span class="o">~</span><span class="n">WeakIValue</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">is_intrusive_ptr</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">is_intrusive_ptr</span> <span class="o">&amp;&amp;</span> <span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">!=</span> <span class="n">c10</span><span class="o">::</span><span class="n">UndefinedTensorImpl</span><span class="o">::</span><span class="n">singleton</span><span class="p">())</span> <span class="p">{</span>
       <span class="n">c10</span><span class="o">::</span><span class="n">raw</span><span class="o">::</span><span class="n">weak_intrusive_ptr</span><span class="o">::</span><span class="n">decref</span><span class="p">(</span><span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">);</span>
     <span class="p">}</span>
   <span class="p">}</span>
@@ -1108,17 +1208,33 @@
 
   <span class="n">IValue</span> <span class="n">lock</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">is_intrusive_ptr</span><span class="p">)</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="nf">IValue</span><span class="p">(</span><span class="n">payload</span><span class="p">,</span> <span class="n">tag</span><span class="p">,</span> <span class="nb">false</span><span class="p">);</span>
+      <span class="n">IValue</span><span class="o">::</span><span class="n">Payload</span> <span class="n">newPayload</span><span class="p">;</span>
+      <span class="n">newPayload</span><span class="p">.</span><span class="n">u</span> <span class="o">=</span> <span class="n">payload</span><span class="p">;</span>
+      <span class="k">return</span> <span class="nf">IValue</span><span class="p">(</span><span class="n">newPayload</span><span class="p">,</span> <span class="n">tag</span><span class="p">,</span> <span class="nb">false</span><span class="p">);</span>
     <span class="p">}</span>
-    <span class="k">auto</span> <span class="n">temp</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">weak_intrusive_ptr</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr_target</span><span class="o">&gt;::</span><span class="n">reclaim</span><span class="p">(</span>
-        <span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">);</span>
-    <span class="n">IValue</span><span class="o">::</span><span class="n">Payload</span> <span class="n">pl</span><span class="p">;</span>
-    <span class="n">pl</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">=</span> <span class="n">temp</span><span class="p">.</span><span class="n">lock</span><span class="p">().</span><span class="n">release</span><span class="p">();</span>
-    <span class="n">temp</span><span class="p">.</span><span class="n">release</span><span class="p">();</span>
-    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">pl</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">)</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="nf">IValue</span><span class="p">();</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">IValue</span><span class="o">::</span><span class="n">Tag</span><span class="o">::</span><span class="n">Tensor</span> <span class="o">==</span> <span class="n">tag</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">auto</span> <span class="n">temp</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">weak_intrusive_ptr</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="p">,</span> <span class="n">c10</span><span class="o">::</span><span class="n">UndefinedTensorImpl</span><span class="o">&gt;::</span><span class="n">reclaim</span><span class="p">(</span>
+          <span class="k">static_cast</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">));</span>
+      <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="p">,</span> <span class="n">c10</span><span class="o">::</span><span class="n">UndefinedTensorImpl</span><span class="o">&gt;</span> <span class="n">ip</span><span class="p">(</span><span class="n">temp</span><span class="p">.</span><span class="n">lock</span><span class="p">());</span>
+      <span class="n">temp</span><span class="p">.</span><span class="n">release</span><span class="p">();</span>
+      <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">ip</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nf">IValue</span><span class="p">();</span>
+      <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nf">IValue</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">ip</span><span class="p">)));</span>
+      <span class="p">}</span>
     <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="nf">IValue</span><span class="p">(</span><span class="n">pl</span><span class="p">,</span> <span class="n">tag</span><span class="p">,</span> <span class="nb">true</span><span class="p">);</span>
+      <span class="k">auto</span> <span class="n">temp</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">weak_intrusive_ptr</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr_target</span><span class="o">&gt;::</span><span class="n">reclaim</span><span class="p">(</span>
+          <span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">==</span> <span class="n">c10</span><span class="o">::</span><span class="n">UndefinedTensorImpl</span><span class="o">::</span><span class="n">singleton</span><span class="p">()</span>
+          <span class="o">?</span> <span class="k">nullptr</span>
+          <span class="o">:</span> <span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">);</span>
+      <span class="n">IValue</span><span class="o">::</span><span class="n">Payload</span> <span class="n">pl</span><span class="p">;</span>
+      <span class="n">pl</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_intrusive_ptr</span> <span class="o">=</span> <span class="n">temp</span><span class="p">.</span><span class="n">lock</span><span class="p">().</span><span class="n">release</span><span class="p">();</span>
+      <span class="n">temp</span><span class="p">.</span><span class="n">release</span><span class="p">();</span>
+      <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">pl</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nf">IValue</span><span class="p">();</span>
+      <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="nf">IValue</span><span class="p">(</span><span class="n">pl</span><span class="p">,</span> <span class="n">tag</span><span class="p">,</span> <span class="nb">true</span><span class="p">);</span>
+      <span class="p">}</span>
     <span class="p">}</span>
   <span class="p">}</span>
 
@@ -1126,7 +1242,7 @@
     <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">is_intrusive_ptr</span><span class="p">)</span> <span class="p">{</span>
       <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
     <span class="p">}</span>
-    <span class="k">auto</span> <span class="n">temp</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">weak_intrusive_ptr</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr_target</span><span class="o">&gt;::</span><span class="n">reclaim</span><span class="p">(</span>
+    <span class="k">auto</span> <span class="n">temp</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">weak_intrusive_ptr</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr_target</span><span class="p">,</span> <span class="n">c10</span><span class="o">::</span><span class="n">UndefinedTensorImpl</span><span class="o">&gt;::</span><span class="n">reclaim</span><span class="p">(</span>
         <span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">);</span>
     <span class="kt">size_t</span> <span class="n">result</span> <span class="o">=</span> <span class="n">temp</span><span class="p">.</span><span class="n">use_count</span><span class="p">();</span>
     <span class="n">temp</span><span class="p">.</span><span class="n">release</span><span class="p">();</span>
@@ -1137,7 +1253,7 @@
     <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">is_intrusive_ptr</span><span class="p">)</span> <span class="p">{</span>
       <span class="k">return</span> <span class="mi">1</span><span class="p">;</span>
     <span class="p">}</span>
-    <span class="k">auto</span> <span class="n">temp</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">weak_intrusive_ptr</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr_target</span><span class="o">&gt;::</span><span class="n">reclaim</span><span class="p">(</span>
+    <span class="k">auto</span> <span class="n">temp</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">weak_intrusive_ptr</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr_target</span><span class="p">,</span> <span class="n">c10</span><span class="o">::</span><span class="n">UndefinedTensorImpl</span><span class="o">&gt;::</span><span class="n">reclaim</span><span class="p">(</span>
         <span class="n">payload</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="p">);</span>
     <span class="kt">size_t</span> <span class="n">result</span> <span class="o">=</span> <span class="n">temp</span><span class="p">.</span><span class="n">weak_use_count</span><span class="p">();</span>
     <span class="n">temp</span><span class="p">.</span><span class="n">release</span><span class="p">();</span>
@@ -1148,7 +1264,8 @@
   <span class="p">}</span>
 
  <span class="k">private</span><span class="o">:</span>
-  <span class="n">IValue</span><span class="o">::</span><span class="n">Payload</span> <span class="n">payload</span><span class="p">;</span>
+  <span class="k">using</span> <span class="n">Payload</span> <span class="o">=</span> <span class="n">IValue</span><span class="o">::</span><span class="n">Payload</span><span class="o">::</span><span class="n">TriviallyCopyablePayload</span><span class="p">;</span>
+  <span class="n">Payload</span> <span class="n">payload</span><span class="p">;</span>
   <span class="n">IValue</span><span class="o">::</span><span class="n">Tag</span> <span class="n">tag</span><span class="p">;</span>
   <span class="kt">bool</span> <span class="n">is_intrusive_ptr</span><span class="p">;</span>
 <span class="p">};</span>
