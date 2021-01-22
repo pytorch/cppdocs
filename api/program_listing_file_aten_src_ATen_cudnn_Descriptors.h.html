@@ -386,9 +386,8 @@
 <span class="c1">// initialized the first time you call set() or any other initializing</span>
 <span class="c1">// function.</span>
 <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="p">,</span> <span class="n">cudnnStatus_t</span> <span class="p">(</span><span class="o">*</span><span class="n">ctor</span><span class="p">)(</span><span class="n">T</span><span class="o">**</span><span class="p">),</span> <span class="n">cudnnStatus_t</span> <span class="p">(</span><span class="o">*</span><span class="n">dtor</span><span class="p">)(</span><span class="n">T</span><span class="o">*</span><span class="p">)</span><span class="o">&gt;</span>
-<span class="k">class</span> <span class="nc">TORCH_CUDA_API</span> <span class="n">Descriptor</span>
-<span class="p">{</span>
-<span class="k">public</span><span class="o">:</span>
+<span class="k">class</span> <span class="nc">TORCH_CUDA_CU_API</span> <span class="n">Descriptor</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
   <span class="c1">// TODO: Figure out why const-correctness doesn&#39;t work here</span>
 
   <span class="c1">// Use desc() to access the underlying descriptor pointer in</span>
@@ -415,12 +414,11 @@
   <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span> <span class="n">DescriptorDeleter</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span> <span class="n">dtor</span><span class="o">&gt;&gt;</span> <span class="n">desc_</span><span class="p">;</span>
 <span class="p">};</span>
 
-<span class="k">class</span> <span class="nc">TORCH_CUDA_API</span> <span class="nl">TensorDescriptor</span>
-  <span class="p">:</span> <span class="k">public</span> <span class="n">Descriptor</span><span class="o">&lt;</span><span class="n">cudnnTensorStruct</span><span class="p">,</span>
-                      <span class="o">&amp;</span><span class="n">cudnnCreateTensorDescriptor</span><span class="p">,</span>
-                      <span class="o">&amp;</span><span class="n">cudnnDestroyTensorDescriptor</span><span class="o">&gt;</span>
-<span class="p">{</span>
-<span class="k">public</span><span class="o">:</span>
+<span class="k">class</span> <span class="nc">TORCH_CUDA_CU_API</span> <span class="nl">TensorDescriptor</span> <span class="p">:</span> <span class="k">public</span> <span class="n">Descriptor</span><span class="o">&lt;</span>
+                                               <span class="n">cudnnTensorStruct</span><span class="p">,</span>
+                                               <span class="o">&amp;</span><span class="n">cudnnCreateTensorDescriptor</span><span class="p">,</span>
+                                               <span class="o">&amp;</span><span class="n">cudnnDestroyTensorDescriptor</span><span class="o">&gt;</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
   <span class="n">TensorDescriptor</span><span class="p">()</span> <span class="p">{}</span>
   <span class="k">explicit</span> <span class="n">TensorDescriptor</span><span class="p">(</span><span class="k">const</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="o">&amp;</span><span class="n">t</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">pad</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
     <span class="n">set</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="n">pad</span><span class="p">);</span>
@@ -455,12 +453,11 @@
 
 <span class="n">std</span><span class="o">::</span><span class="n">ostream</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">&lt;&lt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">ostream</span> <span class="o">&amp;</span> <span class="n">out</span><span class="p">,</span> <span class="k">const</span> <span class="n">TensorDescriptor</span><span class="o">&amp;</span> <span class="n">d</span><span class="p">);</span>
 
-<span class="k">class</span> <span class="nc">TORCH_CUDA_API</span> <span class="nl">FilterDescriptor</span>
-  <span class="p">:</span> <span class="k">public</span> <span class="n">Descriptor</span><span class="o">&lt;</span><span class="n">cudnnFilterStruct</span><span class="p">,</span>
-                      <span class="o">&amp;</span><span class="n">cudnnCreateFilterDescriptor</span><span class="p">,</span>
-                      <span class="o">&amp;</span><span class="n">cudnnDestroyFilterDescriptor</span><span class="o">&gt;</span>
-<span class="p">{</span>
-<span class="k">public</span><span class="o">:</span>
+<span class="k">class</span> <span class="nc">TORCH_CUDA_CU_API</span> <span class="nl">FilterDescriptor</span> <span class="p">:</span> <span class="k">public</span> <span class="n">Descriptor</span><span class="o">&lt;</span>
+                                               <span class="n">cudnnFilterStruct</span><span class="p">,</span>
+                                               <span class="o">&amp;</span><span class="n">cudnnCreateFilterDescriptor</span><span class="p">,</span>
+                                               <span class="o">&amp;</span><span class="n">cudnnDestroyFilterDescriptor</span><span class="o">&gt;</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
   <span class="kt">void</span> <span class="n">set</span><span class="p">(</span><span class="k">const</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="o">&amp;</span><span class="n">t</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">pad</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">force_nhwc</span> <span class="o">=</span> <span class="nb">false</span><span class="p">);</span>
 
   <span class="kt">void</span> <span class="nf">print</span><span class="p">();</span>
@@ -472,11 +469,11 @@
 
 <span class="n">std</span><span class="o">::</span><span class="n">ostream</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">&lt;&lt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">ostream</span> <span class="o">&amp;</span> <span class="n">out</span><span class="p">,</span> <span class="k">const</span> <span class="n">FilterDescriptor</span><span class="o">&amp;</span> <span class="n">d</span><span class="p">);</span>
 
-<span class="k">struct</span> <span class="nc">TORCH_CUDA_API</span> <span class="nl">ConvolutionDescriptor</span>
-  <span class="p">:</span> <span class="k">public</span> <span class="n">Descriptor</span><span class="o">&lt;</span><span class="n">cudnnConvolutionStruct</span><span class="p">,</span>
-                      <span class="o">&amp;</span><span class="n">cudnnCreateConvolutionDescriptor</span><span class="p">,</span>
-                      <span class="o">&amp;</span><span class="n">cudnnDestroyConvolutionDescriptor</span><span class="o">&gt;</span>
-<span class="p">{</span>
+<span class="k">struct</span> <span class="nc">TORCH_CUDA_CU_API</span> <span class="nl">ConvolutionDescriptor</span>
+    <span class="p">:</span> <span class="k">public</span> <span class="n">Descriptor</span><span class="o">&lt;</span>
+          <span class="n">cudnnConvolutionStruct</span><span class="p">,</span>
+          <span class="o">&amp;</span><span class="n">cudnnCreateConvolutionDescriptor</span><span class="p">,</span>
+          <span class="o">&amp;</span><span class="n">cudnnDestroyConvolutionDescriptor</span><span class="o">&gt;</span> <span class="p">{</span>
   <span class="kt">void</span> <span class="nf">set</span><span class="p">(</span><span class="n">cudnnDataType_t</span> <span class="n">dataType</span><span class="p">,</span> <span class="kt">int</span> <span class="n">dim</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">pad</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">stride</span><span class="p">,</span> <span class="kt">int</span> <span class="o">*</span> <span class="n">upscale</span> <span class="cm">/* aka dilation */</span><span class="p">,</span> <span class="kt">int</span> <span class="n">groups</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">allow_tf32</span><span class="p">)</span> <span class="p">{</span>
     <span class="n">cudnnDataType_t</span> <span class="n">mathType</span> <span class="o">=</span> <span class="n">dataType</span><span class="p">;</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">dataType</span> <span class="o">==</span> <span class="n">CUDNN_DATA_HALF</span><span class="p">)</span> <span class="n">mathType</span> <span class="o">=</span> <span class="n">CUDNN_DATA_FLOAT</span><span class="p">;</span>
@@ -495,21 +492,21 @@
   <span class="p">}</span>
 <span class="p">};</span>
 
-<span class="k">struct</span> <span class="nc">TORCH_CUDA_API</span> <span class="nl">SpatialTransformerDescriptor</span>
-  <span class="p">:</span> <span class="k">public</span> <span class="n">Descriptor</span><span class="o">&lt;</span><span class="n">cudnnSpatialTransformerStruct</span><span class="p">,</span>
-                      <span class="o">&amp;</span><span class="n">cudnnCreateSpatialTransformerDescriptor</span><span class="p">,</span>
-                      <span class="o">&amp;</span><span class="n">cudnnDestroySpatialTransformerDescriptor</span><span class="o">&gt;</span>
-<span class="p">{</span>
+<span class="k">struct</span> <span class="nc">TORCH_CUDA_CU_API</span> <span class="nl">SpatialTransformerDescriptor</span>
+    <span class="p">:</span> <span class="k">public</span> <span class="n">Descriptor</span><span class="o">&lt;</span>
+          <span class="n">cudnnSpatialTransformerStruct</span><span class="p">,</span>
+          <span class="o">&amp;</span><span class="n">cudnnCreateSpatialTransformerDescriptor</span><span class="p">,</span>
+          <span class="o">&amp;</span><span class="n">cudnnDestroySpatialTransformerDescriptor</span><span class="o">&gt;</span> <span class="p">{</span>
   <span class="kt">void</span> <span class="nf">set</span><span class="p">(</span><span class="n">cudnnDataType_t</span> <span class="n">dataType</span><span class="p">,</span> <span class="kt">int</span> <span class="n">dim</span><span class="p">,</span> <span class="kt">int</span><span class="o">*</span> <span class="n">size</span><span class="p">)</span> <span class="p">{</span>
     <span class="n">AT_CUDNN_CHECK</span><span class="p">(</span><span class="n">cudnnSetSpatialTransformerNdDescriptor</span><span class="p">(</span><span class="n">mut_desc</span><span class="p">(),</span> <span class="n">CUDNN_SAMPLER_BILINEAR</span><span class="p">,</span> <span class="n">dataType</span><span class="p">,</span> <span class="n">dim</span><span class="p">,</span> <span class="n">size</span><span class="p">));</span>
   <span class="p">}</span>
 <span class="p">};</span>
 
-<span class="k">struct</span> <span class="nc">TORCH_CUDA_API</span> <span class="nl">DropoutDescriptor</span>
-  <span class="p">:</span> <span class="k">public</span> <span class="n">Descriptor</span><span class="o">&lt;</span><span class="n">cudnnDropoutStruct</span><span class="p">,</span>
-                      <span class="o">&amp;</span><span class="n">cudnnCreateDropoutDescriptor</span><span class="p">,</span>
-                      <span class="o">&amp;</span><span class="n">cudnnDestroyDropoutDescriptor</span><span class="o">&gt;</span>
-<span class="p">{</span>
+<span class="k">struct</span> <span class="nc">TORCH_CUDA_CU_API</span> <span class="nl">DropoutDescriptor</span>
+    <span class="p">:</span> <span class="k">public</span> <span class="n">Descriptor</span><span class="o">&lt;</span>
+          <span class="n">cudnnDropoutStruct</span><span class="p">,</span>
+          <span class="o">&amp;</span><span class="n">cudnnCreateDropoutDescriptor</span><span class="p">,</span>
+          <span class="o">&amp;</span><span class="n">cudnnDestroyDropoutDescriptor</span><span class="o">&gt;</span> <span class="p">{</span>
   <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">state</span><span class="p">;</span>
 
   <span class="c1">// Initialize a dropout descriptor&#39;s RNG state.</span>
@@ -544,11 +541,10 @@
   <span class="p">}</span>
 <span class="p">};</span>
 
-<span class="k">struct</span> <span class="nc">TORCH_CUDA_API</span> <span class="nl">RNNDescriptor</span>
-  <span class="p">:</span> <span class="k">public</span> <span class="n">Descriptor</span><span class="o">&lt;</span><span class="n">cudnnRNNStruct</span><span class="p">,</span>
-                      <span class="o">&amp;</span><span class="n">cudnnCreateRNNDescriptor</span><span class="p">,</span>
-                      <span class="o">&amp;</span><span class="n">cudnnDestroyRNNDescriptor</span><span class="o">&gt;</span>
-<span class="p">{</span>
+<span class="k">struct</span> <span class="nc">TORCH_CUDA_CU_API</span> <span class="nl">RNNDescriptor</span> <span class="p">:</span> <span class="k">public</span> <span class="n">Descriptor</span><span class="o">&lt;</span>
+                                             <span class="n">cudnnRNNStruct</span><span class="p">,</span>
+                                             <span class="o">&amp;</span><span class="n">cudnnCreateRNNDescriptor</span><span class="p">,</span>
+                                             <span class="o">&amp;</span><span class="n">cudnnDestroyRNNDescriptor</span><span class="o">&gt;</span> <span class="p">{</span>
   <span class="n">DropoutDescriptor</span> <span class="n">dropout_desc_</span><span class="p">;</span>
   <span class="kt">void</span> <span class="nf">set</span><span class="p">(</span><span class="n">cudnnHandle_t</span> <span class="n">handle</span><span class="p">,</span> <span class="kt">int</span> <span class="n">hidden_size</span><span class="p">,</span> <span class="kt">int</span> <span class="n">proj_size</span><span class="p">,</span> <span class="kt">int</span> <span class="n">num_layers</span><span class="p">,</span> <span class="n">DropoutDescriptor</span><span class="o">&amp;&amp;</span> <span class="n">dropout_desc</span><span class="p">,</span>
            <span class="n">cudnnRNNInputMode_t</span> <span class="n">input_mode</span><span class="p">,</span> <span class="n">cudnnDirectionMode_t</span> <span class="n">bidirectional</span><span class="p">,</span>
@@ -592,11 +588,11 @@
   <span class="p">}</span>
 <span class="p">};</span>
 
-<span class="k">struct</span> <span class="nc">TORCH_CUDA_API</span> <span class="nl">CTCLossDescriptor</span>
-  <span class="p">:</span> <span class="k">public</span> <span class="n">Descriptor</span><span class="o">&lt;</span><span class="n">cudnnCTCLossStruct</span><span class="p">,</span>
-                      <span class="o">&amp;</span><span class="n">cudnnCreateCTCLossDescriptor</span><span class="p">,</span>
-                      <span class="o">&amp;</span><span class="n">cudnnDestroyCTCLossDescriptor</span><span class="o">&gt;</span>
-<span class="p">{</span>
+<span class="k">struct</span> <span class="nc">TORCH_CUDA_CU_API</span> <span class="nl">CTCLossDescriptor</span>
+    <span class="p">:</span> <span class="k">public</span> <span class="n">Descriptor</span><span class="o">&lt;</span>
+          <span class="n">cudnnCTCLossStruct</span><span class="p">,</span>
+          <span class="o">&amp;</span><span class="n">cudnnCreateCTCLossDescriptor</span><span class="p">,</span>
+          <span class="o">&amp;</span><span class="n">cudnnDestroyCTCLossDescriptor</span><span class="o">&gt;</span> <span class="p">{</span>
   <span class="kt">void</span> <span class="nf">set</span><span class="p">(</span><span class="n">cudnnDataType_t</span> <span class="n">datatype</span><span class="p">)</span> <span class="p">{</span>
     <span class="n">AT_CUDNN_CHECK</span><span class="p">(</span><span class="n">cudnnSetCTCLossDescriptor</span><span class="p">(</span><span class="n">mut_desc</span><span class="p">(),</span> <span class="n">datatype</span><span class="p">));</span>
   <span class="p">}</span>
