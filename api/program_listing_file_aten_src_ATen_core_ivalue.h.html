@@ -356,6 +356,19 @@
 <span class="k">struct</span> <span class="nc">Object</span><span class="p">;</span>
 <span class="k">struct</span> <span class="nc">PyObjectHolder</span><span class="p">;</span>
 <span class="k">struct</span> <span class="nc">EnumHolder</span><span class="p">;</span>
+<span class="c1">// We need a ComplexHolder because currently the payloads in the Union</span>
+<span class="c1">// only take 64 bits. Since ComplexDouble takes up 128 bits, and is too big</span>
+<span class="c1">// to fit in the IValue directly, we indirect complex numbers through an intrusive</span>
+<span class="c1">// pointer to ComplexHolder (which contains a c10::complex).</span>
+<span class="k">struct</span> <span class="nc">ComplexHolder</span> <span class="o">:</span> <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr_target</span> <span class="p">{</span>
+  <span class="k">public</span><span class="o">:</span>
+    <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="o">&gt;</span>
+    <span class="n">ComplexHolder</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">c</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">val</span> <span class="o">=</span> <span class="n">convert</span><span class="o">&lt;</span><span class="k">decltype</span><span class="p">(</span><span class="n">val</span><span class="p">),</span> <span class="n">c10</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="n">c</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="n">ComplexHolder</span><span class="p">()</span> <span class="p">{}</span>
+    <span class="n">c10</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span> <span class="n">val</span><span class="p">;</span>
+<span class="p">};</span>
 <span class="p">}</span> <span class="c1">// namespace ivalue</span>
 
 <span class="c1">// This is an owning wrapper for a c10::optional&lt;std::vector&lt;T&gt;&gt;</span>
@@ -413,6 +426,7 @@
 <span class="cp">  _(Tensor)                  \</span>
 <span class="cp">  _(Storage)                 \</span>
 <span class="cp">  _(Double)                  \</span>
+<span class="cp">  _(ComplexDouble)           \</span>
 <span class="cp">  _(Int)                     \</span>
 <span class="cp">  _(Bool)                    \</span>
 <span class="cp">  _(Tuple)                   \</span>
@@ -657,6 +671,12 @@
     <span class="k">return</span> <span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_double</span><span class="p">;</span>
   <span class="p">}</span>
 
+  <span class="c1">// ComplexDouble</span>
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="o">&gt;</span>
+  <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span> <span class="n">c</span><span class="p">);</span>
+  <span class="kt">bool</span> <span class="nf">isComplexDouble</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">Tag</span><span class="o">::</span><span class="n">ComplexDouble</span> <span class="o">==</span> <span class="n">tag</span><span class="p">;</span> <span class="p">}</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span> <span class="n">toComplexDouble</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+
   <span class="c1">// Future</span>
   <span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Future</span><span class="o">&gt;</span> <span class="n">v</span><span class="p">);</span>
   <span class="kt">bool</span> <span class="nf">isFuture</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
@@ -842,22 +862,28 @@
     <span class="k">return</span> <span class="n">i</span><span class="p">;</span>
   <span class="p">}</span>
 
-  <span class="c1">// Scalar, which gets encoded as either an Int or a Double</span>
+  <span class="c1">// Scalar, which gets encoded as either an Int, a Double or a ComplexDouble</span>
   <span class="n">IValue</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">Scalar</span> <span class="n">s</span><span class="p">)</span> <span class="o">:</span> <span class="n">IValue</span><span class="p">()</span> <span class="p">{</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">isFloatingPoint</span><span class="p">())</span> <span class="p">{</span>
       <span class="o">*</span><span class="k">this</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">toDouble</span><span class="p">();</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">isComplex</span><span class="p">())</span> <span class="p">{</span>
+      <span class="o">*</span><span class="k">this</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">toComplexDouble</span><span class="p">();</span>
     <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
       <span class="o">*</span><span class="k">this</span> <span class="o">=</span> <span class="n">s</span><span class="p">.</span><span class="n">toLong</span><span class="p">();</span>
     <span class="p">}</span>
   <span class="p">}</span>
+
   <span class="kt">bool</span> <span class="n">isScalar</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="nf">isDouble</span><span class="p">()</span> <span class="o">||</span> <span class="n">isInt</span><span class="p">();</span>
+    <span class="k">return</span> <span class="nf">isDouble</span><span class="p">()</span> <span class="o">||</span> <span class="n">isInt</span><span class="p">()</span> <span class="o">||</span> <span class="n">isComplexDouble</span><span class="p">();</span>
   <span class="p">}</span>
+
   <span class="n">at</span><span class="o">::</span><span class="n">Scalar</span> <span class="n">toScalar</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">isDouble</span><span class="p">())</span>
       <span class="k">return</span> <span class="n">toDouble</span><span class="p">();</span>
     <span class="k">else</span> <span class="nf">if</span> <span class="p">(</span><span class="n">isInt</span><span class="p">())</span>
       <span class="k">return</span> <span class="n">toInt</span><span class="p">();</span>
+    <span class="k">else</span> <span class="nf">if</span> <span class="p">(</span><span class="n">isComplexDouble</span><span class="p">())</span>
+      <span class="k">return</span> <span class="n">toComplexDouble</span><span class="p">();</span>
     <span class="k">throw</span> <span class="n">std</span><span class="o">::</span><span class="n">runtime_error</span><span class="p">(</span><span class="s">&quot;IValue is not a Scalar&quot;</span><span class="p">);</span>
   <span class="p">}</span>
 
