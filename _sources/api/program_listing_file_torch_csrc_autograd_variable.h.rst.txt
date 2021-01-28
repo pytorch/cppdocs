@@ -237,6 +237,10 @@ Program Listing for File variable.h
    enum class CreationMeta: uint8_t { DEFAULT, IN_CUSTOM_FUNCTION, MULTI_OUTPUT_NODE,
                                       NO_GRAD_MODE, MULTI_OUTPUT_SAFE };
    
+   inline CreationMeta propagate_creation_meta(CreationMeta prev_view_creation_meta, CreationMeta new_view_creation_meta) {
+     return (new_view_creation_meta == CreationMeta::DEFAULT) ? prev_view_creation_meta : new_view_creation_meta;
+   }
+   
    TORCH_API void handle_view_on_rebase(DifferentiableViewMeta* diff_view_meta, bool indirect=false);
    
    struct TORCH_API DifferentiableViewMeta : public AutogradMeta {
@@ -362,7 +366,7 @@ Program Listing for File variable.h
        bool allow_tensor_metadata_change = true) {
      if (data.defined()) {
        if (data.getIntrusivePtr().use_count() == 1 && data.getIntrusivePtr()->unique_version()) {
-         auto data_impl = data.getIntrusivePtr();
+         auto data_impl = data.unsafeReleaseIntrusivePtr();
          data_impl->set_allow_tensor_metadata_change(allow_tensor_metadata_change);
          if (requires_grad) {
            data_impl->set_autograd_meta(std::make_unique<AutogradMeta>(data_impl.get(), requires_grad));
