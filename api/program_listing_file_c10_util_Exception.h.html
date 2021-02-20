@@ -440,9 +440,6 @@
 <span class="n">C10_API</span> <span class="kt">void</span> <span class="n">set_warning_handler</span><span class="p">(</span><span class="n">WarningHandler</span><span class="o">*</span> <span class="n">handler</span><span class="p">)</span> <span class="k">noexcept</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>
 <span class="n">C10_API</span> <span class="n">WarningHandler</span><span class="o">*</span> <span class="n">get_warning_handler</span><span class="p">()</span> <span class="k">noexcept</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>
 
-<span class="n">C10_API</span> <span class="kt">void</span> <span class="n">set_warnAlways</span><span class="p">(</span><span class="kt">bool</span><span class="p">)</span> <span class="k">noexcept</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>
-<span class="n">C10_API</span> <span class="kt">bool</span> <span class="n">get_warnAlways</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span> <span class="k">noexcept</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>
-
 <span class="p">}</span> <span class="c1">// namespace Warning</span>
 
 <span class="c1">// Used in ATen for out-of-bound indices that can reasonably only be detected</span>
@@ -479,6 +476,20 @@
 <span class="c1">// A utility function to return an exception std::string by prepending its</span>
 <span class="c1">// exception type before its what() content</span>
 <span class="n">C10_API</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">GetExceptionString</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">exception</span><span class="o">&amp;</span> <span class="n">e</span><span class="p">);</span>
+
+<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
+
+<span class="c1">// Return x if it is non-empty; otherwise return y.</span>
+<span class="kr">inline</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">if_empty_then</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">x</span><span class="p">,</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">y</span><span class="p">)</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">x</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">y</span><span class="p">;</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">x</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p">}</span>
+
+<span class="p">}</span>
+
 
 <span class="p">}</span> <span class="c1">// namespace c10</span>
 
@@ -554,25 +565,24 @@
 <span class="c1">// (unlike assert()).</span>
 <span class="c1">//</span>
 <span class="cp">#ifdef STRIP_ERROR_MESSAGES</span>
-<span class="cp">#define TORCH_INTERNAL_ASSERT(cond, ...)                            \</span>
-<span class="cp">  if (C10_UNLIKELY_OR_CONST(!(cond))) {                             \</span>
-<span class="cp">    ::c10::detail::torchCheckFail(                                  \</span>
-<span class="cp">        __func__, __FILE__, static_cast&lt;uint32_t&gt;(__LINE__),        \</span>
-<span class="cp">        #cond &quot;INTERNAL ASSERT FAILED at&quot; C10_STRINGIZE(__FILE__)); \</span>
+<span class="cp">#define TORCH_INTERNAL_ASSERT(cond, ...)      \</span>
+<span class="cp">  if (C10_UNLIKELY_OR_CONST(!(cond))) {       \</span>
+<span class="cp">    C10_THROW_ERROR(Error,                    \</span>
+<span class="cp">        #cond &quot; INTERNAL ASSERT FAILED at&quot;    \</span>
+<span class="cp">        C10_STRINGIZE(__FILE__)               \</span>
+<span class="cp">    );                                        \</span>
 <span class="cp">  }</span>
 <span class="cp">#else</span>
-<span class="cp">#define TORCH_INTERNAL_ASSERT(cond, ...)                        \</span>
-<span class="cp">  if (C10_UNLIKELY_OR_CONST(!(cond))) {                         \</span>
-<span class="cp">    ::c10::detail::torchCheckFail(                              \</span>
-<span class="cp">        __func__, __FILE__, static_cast&lt;uint32_t&gt;(__LINE__),    \</span>
-<span class="cp">        ::c10::str(                                             \</span>
-<span class="cp">            #cond &quot; INTERNAL ASSERT FAILED at &quot;                 \</span>
-<span class="cp">            C10_STRINGIZE(__FILE__)                             \</span>
-<span class="cp">            &quot;:&quot;                                                 \</span>
-<span class="cp">            C10_STRINGIZE(__LINE__)                             \</span>
-<span class="cp">            &quot;, please report a bug to PyTorch. &quot;,               \</span>
-<span class="cp">            ::c10::str(__VA_ARGS__)                             \</span>
-<span class="cp">        ));                                                     \</span>
+<span class="cp">#define TORCH_INTERNAL_ASSERT(cond, ...)      \</span>
+<span class="cp">  if (C10_UNLIKELY_OR_CONST(!(cond))) {       \</span>
+<span class="cp">    C10_THROW_ERROR(Error, ::c10::str(        \</span>
+<span class="cp">        #cond &quot; INTERNAL ASSERT FAILED at &quot;   \</span>
+<span class="cp">        C10_STRINGIZE(__FILE__)               \</span>
+<span class="cp">        &quot;:&quot;                                   \</span>
+<span class="cp">        C10_STRINGIZE(__LINE__)               \</span>
+<span class="cp">        &quot;, please report a bug to PyTorch. &quot;, \</span>
+<span class="cp">        ::c10::str(__VA_ARGS__)               \</span>
+<span class="cp">    ));                                       \</span>
 <span class="cp">  }</span>
 <span class="cp">#endif</span>
 
@@ -610,27 +620,13 @@
 <span class="cp">    );                                                     \</span>
 <span class="cp">  }</span>
 <span class="cp">#else</span>
-<span class="k">namespace</span> <span class="n">c10</span> <span class="p">{</span>
-<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
-<span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span><span class="p">...</span> <span class="n">Args</span><span class="o">&gt;</span>
-<span class="k">decltype</span><span class="p">(</span><span class="k">auto</span><span class="p">)</span> <span class="n">torchCheckMsgImpl</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">msg</span><span class="p">,</span> <span class="k">const</span> <span class="n">Args</span><span class="o">&amp;</span><span class="p">...</span> <span class="n">args</span><span class="p">)</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="o">::</span><span class="n">c10</span><span class="o">::</span><span class="n">str</span><span class="p">(</span><span class="n">args</span><span class="p">...);</span>
-<span class="p">}</span>
-<span class="kr">inline</span> <span class="n">C10_API</span> <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">torchCheckMsgImpl</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">msg</span><span class="p">)</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="n">msg</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="c1">// If there is just 1 user-provided C-string argument, use it.</span>
-<span class="kr">inline</span> <span class="n">C10_API</span> <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">torchCheckMsgImpl</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">msg</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">args</span><span class="p">)</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="n">args</span><span class="p">;</span>
-<span class="p">}</span>
-<span class="p">}</span> <span class="c1">// namespace detail</span>
-<span class="p">}</span> <span class="c1">// namespace c10</span>
-
-<span class="cp">#define TORCH_CHECK_MSG(cond, type, ...)                                \</span>
-<span class="cp">  (::c10::detail::torchCheckMsgImpl(                                    \</span>
-<span class="cp">      &quot;Expected &quot; #cond &quot; to be true, but got false.  &quot;                 \</span>
-<span class="cp">      &quot;(Could this error message be improved?  If so, &quot;                 \</span>
-<span class="cp">      &quot;please report an enhancement request to PyTorch.)&quot;, ##__VA_ARGS__))</span>
+<span class="cp">#define TORCH_CHECK_MSG(cond, type, ...)                              \</span>
+<span class="cp">  ::c10::detail::if_empty_then(                                       \</span>
+<span class="cp">      ::c10::str(__VA_ARGS__),                                        \</span>
+<span class="cp">      &quot;Expected &quot; #cond &quot; to be true, but got false.  &quot;               \</span>
+<span class="cp">      &quot;(Could this error message be improved?  If so, &quot;               \</span>
+<span class="cp">      &quot;please report an enhancement request to PyTorch.)&quot;             \</span>
+<span class="cp">  )</span>
 <span class="cp">#define TORCH_CHECK_WITH_MSG(error_t, cond, type, ...)                \</span>
 <span class="cp">  if (C10_UNLIKELY_OR_CONST(!(cond))) {                               \</span>
 <span class="cp">    C10_THROW_ERROR(error_t,                                          \</span>
@@ -646,23 +642,14 @@
 <span class="p">[[</span><span class="n">noreturn</span><span class="p">]]</span> <span class="n">C10_API</span> <span class="kt">void</span> <span class="n">torchCheckFail</span><span class="p">(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">func</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="n">file</span><span class="p">,</span> <span class="kt">uint32_t</span> <span class="n">line</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span><span class="o">*</span> <span class="n">msg</span><span class="p">);</span>
 
 <span class="p">}</span> <span class="c1">// namespace detail</span>
-<span class="p">}</span> <span class="c1">// namespace c10</span>
+<span class="p">}</span> <span class="c1">// namespace 10</span>
 
-<span class="cp">#ifdef STRIP_ERROR_MESSAGES</span>
 <span class="cp">#define TORCH_CHECK(cond, ...)                                          \</span>
 <span class="cp">  if (C10_UNLIKELY_OR_CONST(!(cond))) {                                 \</span>
 <span class="cp">    ::c10::detail::torchCheckFail(                                      \</span>
 <span class="cp">        __func__, __FILE__, static_cast&lt;uint32_t&gt;(__LINE__),            \</span>
 <span class="cp">        TORCH_CHECK_MSG(cond, &quot;&quot;, __VA_ARGS__));                        \</span>
 <span class="cp">  }</span>
-<span class="cp">#else</span>
-<span class="cp">#define TORCH_CHECK(cond, ...)                                          \</span>
-<span class="cp">  if (C10_UNLIKELY_OR_CONST(!(cond))) {                                 \</span>
-<span class="cp">    ::c10::detail::torchCheckFail(                                      \</span>
-<span class="cp">        __func__, __FILE__, static_cast&lt;uint32_t&gt;(__LINE__),            \</span>
-<span class="cp">        TORCH_CHECK_MSG(cond, &quot;&quot;, ##__VA_ARGS__));                      \</span>
-<span class="cp">  }</span>
-<span class="cp">#endif</span>
 
 <span class="c1">// An utility macro that does what `TORCH_CHECK` does if compiled in the host code,</span>
 <span class="c1">// otherwise does nothing. Supposed to be used in the code shared between host and</span>
@@ -670,7 +657,7 @@
 <span class="cp">#if defined(__CUDACC__) || defined(__HIPCC__)</span>
 <span class="cp">#define TORCH_CHECK_IF_NOT_ON_CUDA(cond, ...)</span>
 <span class="cp">#else</span>
-<span class="cp">#define TORCH_CHECK_IF_NOT_ON_CUDA(cond, ...) TORCH_CHECK(cond, ##__VA_ARGS__)</span>
+<span class="cp">#define TORCH_CHECK_IF_NOT_ON_CUDA(cond, ...) TORCH_CHECK(cond, __VA_ARGS__)</span>
 <span class="cp">#endif</span>
 
 <span class="c1">// Debug only version of TORCH_INTERNAL_ASSERT. This macro only checks in debug</span>
@@ -717,25 +704,18 @@
 <span class="c1">// arguments which are concatenated into the warning message using operator&lt;&lt;</span>
 <span class="c1">//</span>
 <span class="cp">#ifdef STRIP_ERROR_MESSAGES</span>
-<span class="cp">#define _TORCH_WARN_ONCE(...) \</span>
+<span class="cp">#define TORCH_WARN_ONCE(...) \</span>
 <span class="cp">  C10_UNUSED static const auto C10_ANONYMOUS_VARIABLE(torch_warn_once_) = [&amp;] { \</span>
 <span class="cp">    ::c10::Warning::warn({__func__, __FILE__, static_cast&lt;uint32_t&gt;(__LINE__)}, {}, false); \</span>
 <span class="cp">    return true; \</span>
 <span class="cp">  }()</span>
 <span class="cp">#else</span>
-<span class="cp">#define _TORCH_WARN_ONCE(...) \</span>
+<span class="cp">#define TORCH_WARN_ONCE(...) \</span>
 <span class="cp">  C10_UNUSED static const auto C10_ANONYMOUS_VARIABLE(torch_warn_once_) = [&amp;] { \</span>
 <span class="cp">    ::c10::Warning::warn({__func__, __FILE__, static_cast&lt;uint32_t&gt;(__LINE__)}, ::c10::str(__VA_ARGS__), false); \</span>
 <span class="cp">    return true; \</span>
 <span class="cp">  }()</span>
 <span class="cp">#endif</span>
-
-<span class="cp">#define TORCH_WARN_ONCE(...) \</span>
-<span class="cp">  if (::c10::Warning::get_warnAlways()) { \</span>
-<span class="cp">    TORCH_WARN(__VA_ARGS__); \</span>
-<span class="cp">  } else { \</span>
-<span class="cp">    _TORCH_WARN_ONCE(__VA_ARGS__); \</span>
-<span class="cp">  }</span>
 
 <span class="c1">// ----------------------------------------------------------------------------</span>
 <span class="c1">// Deprecated macros</span>
