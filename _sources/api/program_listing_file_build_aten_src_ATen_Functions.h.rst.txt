@@ -583,7 +583,7 @@ Program Listing for File Functions.h
    TORCH_API Tensor isnan(const Tensor & self);
    TORCH_API bool is_distributed(const Tensor & self);
    TORCH_API bool is_floating_point(const Tensor & self);
-   TORCH_API bool is_complex(const Tensor & self);
+   TORCH_API bool __dispatch_is_complex(const Tensor & self);
    TORCH_API Tensor isreal(const Tensor & self);
    TORCH_API bool is_nonzero(const Tensor & self);
    TORCH_API bool is_same_size(const Tensor & self, const Tensor & other);
@@ -772,7 +772,7 @@ Program Listing for File Functions.h
    TORCH_API Tensor & mm_outf(const Tensor & self, const Tensor & mat2, Tensor & out);
    TORCH_API Tensor _sparse_mm(const Tensor & sparse, const Tensor & dense);
    TORCH_API Tensor _sparse_sparse_matmul(const Tensor & self, const Tensor & other);
-   TORCH_API Tensor _sparse_matrix_mask_helper(const Tensor & t, const Tensor & mask_indices);
+   TORCH_API Tensor _sparse_mask_helper(const Tensor & t, const Tensor & mask_indices);
    TORCH_API std::tuple<Tensor,Tensor> mode(const Tensor & self, int64_t dim=-1, bool keepdim=false);
    TORCH_API std::tuple<Tensor &,Tensor &> mode_out(Tensor & values, Tensor & indices, const Tensor & self, int64_t dim=-1, bool keepdim=false);
    TORCH_API std::tuple<Tensor &,Tensor &> mode_outf(const Tensor & self, int64_t dim, bool keepdim, Tensor & values, Tensor & indices);
@@ -1596,10 +1596,16 @@ Program Listing for File Functions.h
    TORCH_API Tensor nanquantile(const Tensor & self, const Tensor & q, c10::optional<int64_t> dim=c10::nullopt, bool keepdim=false);
    TORCH_API std::tuple<Tensor &,Tensor &> sort_out(Tensor & values, Tensor & indices, const Tensor & self, int64_t dim=-1, bool descending=false);
    TORCH_API std::tuple<Tensor &,Tensor &> sort_outf(const Tensor & self, int64_t dim, bool descending, Tensor & values, Tensor & indices);
+   TORCH_API std::tuple<Tensor &,Tensor &> sort_out(Tensor & values, Tensor & indices, const Tensor & self, c10::optional<bool> stable, int64_t dim=-1, bool descending=false);
+   TORCH_API std::tuple<Tensor &,Tensor &> sort_outf(const Tensor & self, c10::optional<bool> stable, int64_t dim, bool descending, Tensor & values, Tensor & indices);
    TORCH_API std::tuple<Tensor,Tensor> sort(const Tensor & self, int64_t dim=-1, bool descending=false);
+   TORCH_API std::tuple<Tensor,Tensor> sort(const Tensor & self, c10::optional<bool> stable, int64_t dim=-1, bool descending=false);
    TORCH_API std::tuple<Tensor &,Tensor &> sort_out(Tensor & values, Tensor & indices, const Tensor & self, Dimname dim, bool descending=false);
    TORCH_API std::tuple<Tensor &,Tensor &> sort_outf(const Tensor & self, Dimname dim, bool descending, Tensor & values, Tensor & indices);
+   TORCH_API std::tuple<Tensor &,Tensor &> sort_out(Tensor & values, Tensor & indices, const Tensor & self, c10::optional<bool> stable, Dimname dim, bool descending=false);
+   TORCH_API std::tuple<Tensor &,Tensor &> sort_outf(const Tensor & self, c10::optional<bool> stable, Dimname dim, bool descending, Tensor & values, Tensor & indices);
    TORCH_API std::tuple<Tensor,Tensor> sort(const Tensor & self, Dimname dim, bool descending=false);
+   TORCH_API std::tuple<Tensor,Tensor> sort(const Tensor & self, c10::optional<bool> stable, Dimname dim, bool descending=false);
    TORCH_API Tensor & msort_out(Tensor & out, const Tensor & self);
    TORCH_API Tensor & msort_outf(const Tensor & self, Tensor & out);
    TORCH_API Tensor msort(const Tensor & self);
@@ -2076,6 +2082,10 @@ Program Listing for File Functions.h
    TORCH_API std::tuple<Tensor &,Tensor &> thnn_conv_depthwise2d_backward_out(Tensor & grad_input, Tensor & grad_weight, const Tensor & grad_output, const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation);
    TORCH_API std::tuple<Tensor &,Tensor &> thnn_conv_depthwise2d_backward_outf(const Tensor & grad_output, const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation, Tensor & grad_input, Tensor & grad_weight);
    TORCH_API std::tuple<Tensor,Tensor> thnn_conv_depthwise2d_backward(const Tensor & grad_output, const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation, std::array<bool,2> output_mask);
+   TORCH_API Tensor conv_depthwise3d(const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, const c10::optional<Tensor> & bias, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation);
+   TORCH_API std::tuple<Tensor &,Tensor &,Tensor &> conv_depthwise3d_backward_out(Tensor & grad_input, Tensor & grad_weight, Tensor & grad_bias, const Tensor & grad_output, const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation);
+   TORCH_API std::tuple<Tensor &,Tensor &,Tensor &> conv_depthwise3d_backward_outf(const Tensor & grad_output, const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation, Tensor & grad_input, Tensor & grad_weight, Tensor & grad_bias);
+   TORCH_API std::tuple<Tensor,Tensor,Tensor> conv_depthwise3d_backward(const Tensor & grad_output, const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation, std::array<bool,3> output_mask);
    TORCH_API Tensor & slow_conv3d_out(Tensor & out, const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, const c10::optional<Tensor> & bias={}, IntArrayRef stride=1, IntArrayRef padding=0);
    TORCH_API Tensor & slow_conv3d_outf(const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, const c10::optional<Tensor> & bias, IntArrayRef stride, IntArrayRef padding, Tensor & out);
    TORCH_API Tensor slow_conv3d(const Tensor & self, const Tensor & weight, IntArrayRef kernel_size, const c10::optional<Tensor> & bias={}, IntArrayRef stride=1, IntArrayRef padding=0);
@@ -2337,6 +2347,10 @@ Program Listing for File Functions.h
    
    inline int64_t stride(const Tensor& tensor, int64_t dim) {
      return tensor.stride(dim);
+   }
+   
+   inline bool is_complex(const Tensor& tensor) {
+     return tensor.is_complex();
    }
    
    }
