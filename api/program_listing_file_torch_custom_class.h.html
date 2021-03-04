@@ -482,6 +482,70 @@
     <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
   <span class="p">}</span>
 
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">GetterFunc</span><span class="p">,</span> <span class="k">typename</span> <span class="nc">SetterFunc</span><span class="o">&gt;</span>
+  <span class="n">class_</span><span class="o">&amp;</span> <span class="n">def_property</span><span class="p">(</span>
+      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span>
+      <span class="n">GetterFunc</span> <span class="n">getter_func</span><span class="p">,</span>
+      <span class="n">SetterFunc</span> <span class="n">setter_func</span><span class="p">,</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">doc_string</span> <span class="o">=</span> <span class="s">&quot;&quot;</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">torch</span><span class="o">::</span><span class="n">jit</span><span class="o">::</span><span class="n">Function</span><span class="o">*</span> <span class="n">getter</span><span class="p">;</span>
+    <span class="n">torch</span><span class="o">::</span><span class="n">jit</span><span class="o">::</span><span class="n">Function</span><span class="o">*</span> <span class="n">setter</span><span class="p">;</span>
+
+    <span class="k">auto</span> <span class="n">getter_name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s">&quot;_getter&quot;</span><span class="p">;</span>
+    <span class="k">auto</span> <span class="n">wrapped_getter</span> <span class="o">=</span>
+        <span class="n">detail</span><span class="o">::</span><span class="n">wrap_func</span><span class="o">&lt;</span><span class="n">CurClass</span><span class="p">,</span> <span class="n">GetterFunc</span><span class="o">&gt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">getter_func</span><span class="p">));</span>
+    <span class="n">getter</span> <span class="o">=</span> <span class="n">defineMethod</span><span class="p">(</span><span class="n">getter_name</span><span class="p">,</span> <span class="n">wrapped_getter</span><span class="p">,</span> <span class="n">doc_string</span><span class="p">);</span>
+
+    <span class="k">auto</span> <span class="n">setter_name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s">&quot;_setter&quot;</span><span class="p">;</span>
+    <span class="k">auto</span> <span class="n">wrapped_setter</span> <span class="o">=</span>
+        <span class="n">detail</span><span class="o">::</span><span class="n">wrap_func</span><span class="o">&lt;</span><span class="n">CurClass</span><span class="p">,</span> <span class="n">SetterFunc</span><span class="o">&gt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">setter_func</span><span class="p">));</span>
+    <span class="n">setter</span> <span class="o">=</span> <span class="n">defineMethod</span><span class="p">(</span><span class="n">setter_name</span><span class="p">,</span> <span class="n">wrapped_setter</span><span class="p">,</span> <span class="n">doc_string</span><span class="p">);</span>
+
+    <span class="n">classTypePtr</span><span class="o">-&gt;</span><span class="n">addProperty</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">getter</span><span class="p">,</span> <span class="n">setter</span><span class="p">);</span>
+    <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">GetterFunc</span><span class="o">&gt;</span>
+  <span class="n">class_</span><span class="o">&amp;</span> <span class="n">def_property</span><span class="p">(</span>
+      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span>
+      <span class="n">GetterFunc</span> <span class="n">getter_func</span><span class="p">,</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">doc_string</span> <span class="o">=</span> <span class="s">&quot;&quot;</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">torch</span><span class="o">::</span><span class="n">jit</span><span class="o">::</span><span class="n">Function</span><span class="o">*</span> <span class="n">getter</span><span class="p">;</span>
+
+    <span class="k">auto</span> <span class="n">getter_name</span> <span class="o">=</span> <span class="n">name</span> <span class="o">+</span> <span class="s">&quot;_getter&quot;</span><span class="p">;</span>
+    <span class="k">auto</span> <span class="n">wrapped_getter</span> <span class="o">=</span>
+        <span class="n">detail</span><span class="o">::</span><span class="n">wrap_func</span><span class="o">&lt;</span><span class="n">CurClass</span><span class="p">,</span> <span class="n">GetterFunc</span><span class="o">&gt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">getter_func</span><span class="p">));</span>
+    <span class="n">getter</span> <span class="o">=</span> <span class="n">defineMethod</span><span class="p">(</span><span class="n">getter_name</span><span class="p">,</span> <span class="n">wrapped_getter</span><span class="p">,</span> <span class="n">doc_string</span><span class="p">);</span>
+
+    <span class="n">classTypePtr</span><span class="o">-&gt;</span><span class="n">addProperty</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">getter</span><span class="p">,</span> <span class="k">nullptr</span><span class="p">);</span>
+    <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="o">&gt;</span>
+  <span class="n">class_</span><span class="o">&amp;</span> <span class="n">def_readwrite</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span> <span class="n">T</span> <span class="n">CurClass</span><span class="o">::*</span><span class="n">field</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">auto</span> <span class="n">getter_func</span> <span class="o">=</span>
+        <span class="p">[</span><span class="n">field</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">field</span><span class="p">)](</span><span class="k">const</span> <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">CurClass</span><span class="o">&gt;&amp;</span> <span class="n">self</span><span class="p">)</span> <span class="p">{</span>
+          <span class="k">return</span> <span class="n">self</span><span class="p">.</span><span class="n">get</span><span class="p">()</span><span class="o">-&gt;*</span><span class="n">field</span><span class="p">;</span>
+        <span class="p">};</span>
+
+    <span class="k">auto</span> <span class="n">setter_func</span> <span class="o">=</span> <span class="p">[</span><span class="n">field</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">field</span><span class="p">)](</span>
+                           <span class="k">const</span> <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">CurClass</span><span class="o">&gt;&amp;</span> <span class="n">self</span><span class="p">,</span> <span class="n">T</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">self</span><span class="p">.</span><span class="n">get</span><span class="p">()</span><span class="o">-&gt;*</span><span class="n">field</span> <span class="o">=</span> <span class="n">value</span><span class="p">;</span>
+    <span class="p">};</span>
+
+    <span class="k">return</span> <span class="nf">def_property</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">getter_func</span><span class="p">,</span> <span class="n">setter_func</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="o">&gt;</span>
+  <span class="n">class_</span><span class="o">&amp;</span> <span class="n">def_readonly</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span> <span class="n">T</span> <span class="n">CurClass</span><span class="o">::*</span><span class="n">field</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">auto</span> <span class="n">getter_func</span> <span class="o">=</span>
+        <span class="p">[</span><span class="n">field</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">field</span><span class="p">)](</span><span class="k">const</span> <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">CurClass</span><span class="o">&gt;&amp;</span> <span class="n">self</span><span class="p">)</span> <span class="p">{</span>
+          <span class="k">return</span> <span class="n">self</span><span class="p">.</span><span class="n">get</span><span class="p">()</span><span class="o">-&gt;*</span><span class="n">field</span><span class="p">;</span>
+        <span class="p">};</span>
+
+    <span class="k">return</span> <span class="nf">def_property</span><span class="p">(</span><span class="n">name</span><span class="p">,</span> <span class="n">getter_func</span><span class="p">);</span>
+  <span class="p">}</span>
+
   <span class="n">class_</span><span class="o">&amp;</span> <span class="n">_def_unboxed</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">name</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">(</span><span class="n">jit</span><span class="o">::</span><span class="n">Stack</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;</span> <span class="n">func</span><span class="p">,</span> <span class="n">c10</span><span class="o">::</span><span class="n">FunctionSchema</span> <span class="n">schema</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">doc_string</span> <span class="o">=</span> <span class="s">&quot;&quot;</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">auto</span> <span class="n">qualMethodName</span> <span class="o">=</span> <span class="n">qualClassName</span> <span class="o">+</span> <span class="s">&quot;.&quot;</span> <span class="o">+</span> <span class="n">name</span><span class="p">;</span>
     <span class="k">auto</span> <span class="n">method</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">jit</span><span class="o">::</span><span class="n">BuiltinOpFunction</span><span class="o">&gt;</span><span class="p">(</span>
@@ -558,7 +622,7 @@
 
  <span class="k">private</span><span class="o">:</span>
   <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">Func</span><span class="o">&gt;</span>
-  <span class="kt">void</span> <span class="n">defineMethod</span><span class="p">(</span>
+  <span class="n">torch</span><span class="o">::</span><span class="n">jit</span><span class="o">::</span><span class="n">Function</span><span class="o">*</span> <span class="n">defineMethod</span><span class="p">(</span>
       <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">name</span><span class="p">,</span>
       <span class="n">Func</span> <span class="n">func</span><span class="p">,</span>
       <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">doc_string</span> <span class="o">=</span> <span class="s">&quot;&quot;</span><span class="p">,</span>
@@ -615,8 +679,10 @@
     <span class="c1">// ClassTypes do not hold ownership of their methods (normally it</span>
     <span class="c1">// those are held by the CompilationUnit), so we need a proxy for</span>
     <span class="c1">// that behavior here.</span>
-    <span class="n">classTypePtr</span><span class="o">-&gt;</span><span class="n">addMethod</span><span class="p">(</span><span class="n">method</span><span class="p">.</span><span class="n">get</span><span class="p">());</span>
+    <span class="k">auto</span> <span class="n">method_val</span> <span class="o">=</span> <span class="n">method</span><span class="p">.</span><span class="n">get</span><span class="p">();</span>
+    <span class="n">classTypePtr</span><span class="o">-&gt;</span><span class="n">addMethod</span><span class="p">(</span><span class="n">method_val</span><span class="p">);</span>
     <span class="n">registerCustomClassMethod</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">method</span><span class="p">));</span>
+    <span class="k">return</span> <span class="n">method_val</span><span class="p">;</span>
   <span class="p">}</span>
 
   <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">qualClassName</span><span class="p">;</span>
