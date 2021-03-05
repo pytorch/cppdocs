@@ -402,6 +402,7 @@
 <span class="c1">// sequence numbers will be ordered `A` &lt; `B` &lt; `C`. If, however, `A` and `B`</span>
 <span class="c1">// are created in one thread and `C` is created in a new thread, there are *no</span>
 <span class="c1">// guarantees* w.r.t. the ordering of `C` relative to `A` or `B`.</span>
+<span class="c1">// See NOTE [ Sequence Number] for more details on the usages of sequence number.</span>
 <span class="c1">//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
 <span class="k">struct</span> <span class="nc">TORCH_API</span> <span class="nl">Node</span> <span class="p">:</span> <span class="n">std</span><span class="o">::</span><span class="n">enable_shared_from_this</span><span class="o">&lt;</span><span class="n">Node</span><span class="o">&gt;</span> <span class="p">{</span>
  <span class="k">public</span><span class="o">:</span>
@@ -410,6 +411,11 @@
       <span class="n">edge_list</span><span class="o">&amp;&amp;</span> <span class="n">next_edges</span> <span class="o">=</span> <span class="n">edge_list</span><span class="p">())</span>
       <span class="o">:</span> <span class="n">sequence_nr_</span><span class="p">(</span><span class="n">sequence_nr</span><span class="p">),</span>
       <span class="n">next_edges_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">next_edges</span><span class="p">))</span> <span class="p">{</span>
+
+    <span class="k">for</span> <span class="p">(</span><span class="k">const</span> <span class="n">Edge</span><span class="o">&amp;</span> <span class="nl">edge</span><span class="p">:</span> <span class="n">next_edges_</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">update_topological_nr</span><span class="p">(</span><span class="n">edge</span><span class="p">);</span>
+    <span class="p">}</span>
+
     <span class="k">if</span> <span class="p">(</span><span class="n">AnomalyMode</span><span class="o">::</span><span class="n">is_enabled</span><span class="p">())</span> <span class="p">{</span>
       <span class="n">metadata</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">store_stack</span><span class="p">();</span>
 
@@ -421,12 +427,15 @@
     <span class="p">}</span>
 
     <span class="k">if</span> <span class="p">(</span><span class="n">profiler</span><span class="o">::</span><span class="n">profilerEnabled</span><span class="p">())</span> <span class="p">{</span>
+      <span class="c1">// If profiler is enabled, thread_id is stored.</span>
+      <span class="c1">// See NOTE [ Sequence Numbers ]</span>
       <span class="n">thread_id_</span> <span class="o">=</span> <span class="n">at</span><span class="o">::</span><span class="n">RecordFunction</span><span class="o">::</span><span class="n">currentThreadId</span><span class="p">();</span>
     <span class="p">}</span>
   <span class="p">}</span>
 
   <span class="k">explicit</span> <span class="n">Node</span><span class="p">(</span><span class="n">edge_list</span><span class="o">&amp;&amp;</span> <span class="n">next_edges</span> <span class="o">=</span> <span class="n">edge_list</span><span class="p">())</span>
-      <span class="o">:</span> <span class="n">Node</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">sequence_number</span><span class="o">::</span><span class="n">get_and_increment</span><span class="p">(),</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">next_edges</span><span class="p">))</span> <span class="p">{}</span>
+    <span class="o">:</span> <span class="n">Node</span><span class="p">(</span><span class="cm">/*sequence_nr=*/</span><span class="n">at</span><span class="o">::</span><span class="n">sequence_number</span><span class="o">::</span><span class="n">get_and_increment</span><span class="p">(),</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">next_edges</span><span class="p">))</span> <span class="p">{}</span>
 
   <span class="n">Node</span><span class="p">(</span><span class="k">const</span> <span class="n">Node</span><span class="o">&amp;</span> <span class="n">other</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
   <span class="n">Node</span><span class="p">(</span><span class="n">Node</span><span class="o">&amp;&amp;</span> <span class="n">other</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
@@ -442,7 +451,7 @@
 
     <span class="kt">bool</span> <span class="n">pre_sampled</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">shouldRunRecordFunction</span><span class="p">(</span><span class="o">&amp;</span><span class="n">pre_sampled</span><span class="p">))</span> <span class="p">{</span>
-      <span class="c1">// Using RecordFunction to trogger observers in the backward pass</span>
+      <span class="c1">// Using RecordFunction to trigger observers in the backward pass</span>
       <span class="n">at</span><span class="o">::</span><span class="n">RecordFunction</span> <span class="n">guard</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">RecordScope</span><span class="o">::</span><span class="n">BACKWARD_FUNCTION</span><span class="p">,</span> <span class="n">pre_sampled</span><span class="p">);</span>
       <span class="k">if</span> <span class="p">(</span><span class="n">guard</span><span class="p">.</span><span class="n">isActive</span><span class="p">())</span> <span class="p">{</span>
         <span class="c1">// Using sequence number and thread id to correlate with</span>
@@ -516,20 +525,39 @@
 
   <span class="c1">// Outputs (&quot;Next Edges&quot;)</span>
 
-  <span class="k">const</span> <span class="n">Edge</span><span class="o">&amp;</span> <span class="n">next_edge</span><span class="p">(</span><span class="kt">size_t</span> <span class="n">index</span><span class="p">)</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">next_edges_</span><span class="p">[</span><span class="n">index</span><span class="p">];</span>
+  <span class="kt">void</span> <span class="n">update_topological_nr</span><span class="p">(</span><span class="k">const</span> <span class="n">Edge</span><span class="o">&amp;</span> <span class="n">edge</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span><span class="o">!</span><span class="n">has_parent_</span><span class="p">,</span>
+      <span class="s">&quot;Cannot update a node&#39;s topological_nr after it already has a parent.&quot;</span>
+      <span class="s">&quot; If we allow this, we can no longer guarantee that a parent&#39;s&quot;</span>
+      <span class="s">&quot; topo_nr is always greater than those of all its children&quot;</span><span class="p">)</span>
+    <span class="n">Node</span><span class="o">*</span> <span class="n">node</span> <span class="o">=</span> <span class="n">edge</span><span class="p">.</span><span class="n">function</span><span class="p">.</span><span class="n">get</span><span class="p">();</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">node</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">auto</span> <span class="n">topo_nr</span> <span class="o">=</span> <span class="n">node</span><span class="o">-&gt;</span><span class="n">topological_nr</span><span class="p">();</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">topological_nr_</span> <span class="o">&lt;=</span> <span class="n">topo_nr</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">topological_nr_</span> <span class="o">=</span> <span class="n">topo_nr</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>
+      <span class="p">}</span>
+    <span class="p">}</span>
   <span class="p">}</span>
 
   <span class="kt">void</span> <span class="n">set_next_edge</span><span class="p">(</span><span class="kt">size_t</span> <span class="n">index</span><span class="p">,</span> <span class="n">Edge</span> <span class="n">edge</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">update_topological_nr</span><span class="p">(</span><span class="n">edge</span><span class="p">);</span>
     <span class="n">next_edges_</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">edge</span><span class="p">);</span>
   <span class="p">}</span>
 
   <span class="kt">void</span> <span class="n">add_next_edge</span><span class="p">(</span><span class="n">Edge</span> <span class="n">edge</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">update_topological_nr</span><span class="p">(</span><span class="n">edge</span><span class="p">);</span>
     <span class="n">next_edges_</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">edge</span><span class="p">));</span>
   <span class="p">}</span>
 
   <span class="kt">void</span> <span class="n">set_next_edges</span><span class="p">(</span><span class="n">edge_list</span><span class="o">&amp;&amp;</span> <span class="n">next_edges</span><span class="p">)</span> <span class="p">{</span>
     <span class="n">next_edges_</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">next_edges</span><span class="p">);</span>
+    <span class="k">for</span><span class="p">(</span><span class="k">const</span> <span class="k">auto</span><span class="o">&amp;</span> <span class="nl">next_edge</span> <span class="p">:</span> <span class="n">next_edges_</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">update_topological_nr</span><span class="p">(</span><span class="n">next_edge</span><span class="p">);</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="k">const</span> <span class="n">Edge</span><span class="o">&amp;</span> <span class="n">next_edge</span><span class="p">(</span><span class="kt">size_t</span> <span class="n">index</span><span class="p">)</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">next_edges_</span><span class="p">[</span><span class="n">index</span><span class="p">];</span>
   <span class="p">}</span>
 
   <span class="k">const</span> <span class="n">edge_list</span><span class="o">&amp;</span> <span class="n">next_edges</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="p">{</span>
@@ -549,6 +577,41 @@
 
   <span class="kt">uint64_t</span> <span class="n">sequence_nr</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">sequence_nr_</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="c1">// NOTE [ Topological Number ]</span>
+  <span class="c1">//</span>
+  <span class="c1">// topological_nr is used to prune branches in the DAG during autograd discovery as</span>
+  <span class="c1">// maintaining topological_nr helps us check in O(1) if there does NOT exist</span>
+  <span class="c1">// a directed path between two nodes.</span>
+  <span class="c1">//</span>
+  <span class="c1">// The topological order number of this `Node` representing the length of the</span>
+  <span class="c1">// longest possible path from this Node to any leaf node. If you are leaf node,</span>
+  <span class="c1">// aka AccumulateGrad, this will be zero. This value has the property that</span>
+  <span class="c1">// For every pair of nodes X, Y in G, existence of a directed path from X to Y</span>
+  <span class="c1">// implies topo_nr(X) &gt; topo_nr(Y). The converse is not true, however, so we</span>
+  <span class="c1">// cannot prove existence of a path from X to Y, only non-existence.</span>
+  <span class="c1">//</span>
+  <span class="c1">// One assumption we make when using topo_nr is that once a node</span>
+  <span class="c1">// has been used, i.e., has a parent node, its own topo_nr does not change</span>
+  <span class="c1">// we have added some checks with the `has_parent_` field to enforce this.</span>
+  <span class="c1">//</span>
+  <span class="c1">// What NOT to do:</span>
+  <span class="c1">//</span>
+  <span class="c1">//   1) 2 -&gt; 1 -&gt; 0               In this diagram we label nodes with their topo_nr.</span>
+  <span class="c1">//      2 -&gt; 1 -&gt; 0               We have two simple graphs that can each arise from</span>
+  <span class="c1">//                                `t.exp().exp()`, for example.</span>
+  <span class="c1">//   2)        2 -&gt; 1 -&gt; 0</span>
+  <span class="c1">//            /</span>
+  <span class="c1">//      2 -&gt; 1 -&gt; 0               We add 2 as a next edge to 1 even though 1 already</span>
+  <span class="c1">//                                has a parent.</span>
+  <span class="c1">//   3)        2 -&gt; 1 -&gt; 0</span>
+  <span class="c1">//            /</span>
+  <span class="c1">//      2 -&gt; 3 -&gt; 0               2 &lt; 3, yet there exists a path from 2 to 3!</span>
+  <span class="c1">//</span>
+  <span class="kt">uint64_t</span> <span class="n">topological_nr</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="p">{</span>
+    <span class="n">has_parent_</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
+    <span class="k">return</span> <span class="n">topological_nr_</span><span class="p">;</span>
   <span class="p">}</span>
 
   <span class="c1">// assigning a node as a parent to this node</span>
@@ -648,9 +711,17 @@
 
   <span class="n">variable_list</span> <span class="nf">traced_apply</span><span class="p">(</span><span class="n">variable_list</span> <span class="n">inputs</span><span class="p">);</span>
 
-  <span class="c1">// Since `Node`s are neither copyable nor moveable, we can have const</span>
-  <span class="c1">// fields.</span>
+  <span class="c1">// Sequence number used to correlate backward nodes with forward ops in the</span>
+  <span class="c1">// profiler and provide determinisim in the engine.</span>
   <span class="k">const</span> <span class="kt">uint64_t</span> <span class="n">sequence_nr_</span><span class="p">;</span>
+
+  <span class="c1">// See NOTE [ Topological Number ]</span>
+  <span class="kt">uint64_t</span> <span class="n">topological_nr_</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+
+  <span class="c1">// Tracks whether this node has been added as the next_edge of another node</span>
+  <span class="c1">// via set_next_edge(s), which always calls topological_nr() of all its children</span>
+  <span class="c1">// See NOTE [ Topological Number ] for why we need this.</span>
+  <span class="k">mutable</span> <span class="kt">bool</span> <span class="n">has_parent_</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
 
   <span class="c1">// Id of the thread that created the instance</span>
   <span class="kt">uint64_t</span> <span class="n">thread_id_</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
