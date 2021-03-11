@@ -323,6 +323,7 @@
 <span class="cp">#include</span> <span class="cpf">&lt;c10/core/WrapDimMinimal.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;c10/util/Exception.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;c10/util/Deprecated.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;c10/util/MaybeOwned.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;c10/util/Optional.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;c10/util/intrusive_ptr.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;ATen/core/DeprecatedTypePropertiesRegistry.h&gt;</span><span class="cp"></span>
@@ -433,26 +434,38 @@
     <span class="p">}</span>
   <span class="p">}</span>
 
-  <span class="kt">bool</span> <span class="n">is_complex</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">MaybeOwned</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">expect_contiguous</span><span class="p">(</span><span class="n">MemoryFormat</span> <span class="n">memory_format</span><span class="o">=</span><span class="n">MemoryFormat</span><span class="o">::</span><span class="n">Contiguous</span><span class="p">)</span> <span class="k">const</span> <span class="o">&amp;</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">is_contiguous</span><span class="p">(</span><span class="n">memory_format</span><span class="p">))</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">MaybeOwned</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;::</span><span class="n">borrowed</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">MaybeOwned</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;::</span><span class="n">owned</span><span class="p">(</span><span class="n">__dispatch_contiguous</span><span class="p">(</span><span class="n">memory_format</span><span class="p">));</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="c1">// Use .contiguous() instead. Trying to borrow from a prvalue Tensor</span>
+  <span class="c1">// will only lead to trouble and dangling references.</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">MaybeOwned</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">expect_contiguous</span><span class="p">(</span><span class="n">MemoryFormat</span> <span class="n">memory_format</span><span class="o">=</span><span class="n">MemoryFormat</span><span class="o">::</span><span class="n">Contiguous</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+
+  <span class="kt">bool</span> <span class="nf">is_complex</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">at</span><span class="o">::</span><span class="n">isComplexType</span><span class="p">(</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">scalar_type</span><span class="p">());</span>
   <span class="p">}</span>
 
-  <span class="kt">int64_t</span> <span class="n">size</span><span class="p">(</span><span class="kt">int64_t</span> <span class="n">dim</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+  <span class="kt">int64_t</span> <span class="nf">size</span><span class="p">(</span><span class="kt">int64_t</span> <span class="n">dim</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
     <span class="c1">// false is passed to maybe_wrap_dim so behavior is identical to array access (but with wrapping)</span>
     <span class="n">dim</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">maybe_wrap_dim</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">dim</span><span class="p">(),</span> <span class="nb">false</span><span class="p">);</span>
-    <span class="k">return</span> <span class="nf">sizes</span><span class="p">()[</span><span class="n">dim</span><span class="p">];</span>
+    <span class="k">return</span> <span class="n">sizes</span><span class="p">()[</span><span class="n">dim</span><span class="p">];</span>
   <span class="p">}</span>
 
-  <span class="kt">int64_t</span> <span class="n">stride</span><span class="p">(</span><span class="kt">int64_t</span> <span class="n">dim</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+  <span class="kt">int64_t</span> <span class="nf">stride</span><span class="p">(</span><span class="kt">int64_t</span> <span class="n">dim</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
     <span class="c1">// false is passed to maybe_wrap_dim so behavior is identical to array access (but with wrapping)</span>
     <span class="n">dim</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">maybe_wrap_dim</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">dim</span><span class="p">(),</span> <span class="nb">false</span><span class="p">);</span>
-    <span class="k">return</span> <span class="nf">strides</span><span class="p">()[</span><span class="n">dim</span><span class="p">];</span>
+    <span class="k">return</span> <span class="n">strides</span><span class="p">()[</span><span class="n">dim</span><span class="p">];</span>
   <span class="p">}</span>
 
-  <span class="n">TensorImpl</span> <span class="o">*</span> <span class="n">unsafeGetTensorImpl</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+  <span class="n">TensorImpl</span> <span class="o">*</span> <span class="nf">unsafeGetTensorImpl</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">impl_</span><span class="p">.</span><span class="n">get</span><span class="p">();</span>
   <span class="p">}</span>
-  <span class="n">TensorImpl</span> <span class="o">*</span> <span class="n">unsafeReleaseTensorImpl</span><span class="p">()</span> <span class="p">{</span>
+  <span class="n">TensorImpl</span> <span class="o">*</span> <span class="nf">unsafeReleaseTensorImpl</span><span class="p">()</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">impl_</span><span class="p">.</span><span class="n">release</span><span class="p">();</span>
   <span class="p">}</span>
   <span class="k">const</span> <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">TensorImpl</span><span class="p">,</span> <span class="n">UndefinedTensorImpl</span><span class="o">&gt;&amp;</span> <span class="n">getIntrusivePtr</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
