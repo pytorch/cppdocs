@@ -581,12 +581,12 @@ Program Listing for File Functions.h
    TORCH_API Tensor isclose(const Tensor & self, const Tensor & other, double rtol=1e-05, double atol=1e-08, bool equal_nan=false);
    TORCH_API Tensor isnan(const Tensor & self);
    TORCH_API bool is_distributed(const Tensor & self);
-   TORCH_API bool is_floating_point(const Tensor & self);
+   TORCH_API bool __dispatch_is_floating_point(const Tensor & self);
    TORCH_API bool __dispatch_is_complex(const Tensor & self);
    TORCH_API Tensor isreal(const Tensor & self);
    TORCH_API bool is_nonzero(const Tensor & self);
    TORCH_API bool is_same_size(const Tensor & self, const Tensor & other);
-   TORCH_API bool is_signed(const Tensor & self);
+   TORCH_API bool __dispatch_is_signed(const Tensor & self);
    TORCH_API Tensor kl_div(const Tensor & self, const Tensor & target, int64_t reduction=at::Reduction::Mean, bool log_target=false);
    TORCH_API Tensor kl_div_backward(const Tensor & grad_output, const Tensor & self, const Tensor & target, int64_t reduction=at::Reduction::Mean, bool log_target=false);
    TORCH_API Tensor kron(const Tensor & self, const Tensor & other);
@@ -1457,7 +1457,6 @@ Program Listing for File Functions.h
    TORCH_API std::tuple<Tensor &,Tensor &> triangular_solve_out(Tensor & X, Tensor & M, const Tensor & self, const Tensor & A, bool upper=true, bool transpose=false, bool unitriangular=false);
    TORCH_API std::tuple<Tensor &,Tensor &> triangular_solve_outf(const Tensor & self, const Tensor & A, bool upper, bool transpose, bool unitriangular, Tensor & X, Tensor & M);
    TORCH_API std::tuple<Tensor,Tensor> triangular_solve(const Tensor & self, const Tensor & A, bool upper=true, bool transpose=false, bool unitriangular=false);
-   TORCH_API std::tuple<Tensor,Tensor> _triangular_solve_helper(const Tensor & self, const Tensor & A, bool upper, bool transpose, bool unitriangular);
    TORCH_API std::tuple<Tensor &,Tensor &> symeig_out(Tensor & e, Tensor & V, const Tensor & self, bool eigenvectors=false, bool upper=true);
    TORCH_API std::tuple<Tensor &,Tensor &> symeig_outf(const Tensor & self, bool eigenvectors, bool upper, Tensor & e, Tensor & V);
    TORCH_API std::tuple<Tensor,Tensor> symeig(const Tensor & self, bool eigenvectors=false, bool upper=true);
@@ -2194,6 +2193,8 @@ Program Listing for File Functions.h
    TORCH_API Tensor & linalg_cholesky_outf(const Tensor & self, Tensor & out);
    TORCH_API Tensor linalg_det(const Tensor & self);
    TORCH_API Tensor det(const Tensor & self);
+   TORCH_API std::tuple<Tensor,Tensor,Tensor,Tensor> linalg_lstsq(const Tensor & self, const Tensor & b, c10::optional<double> cond=c10::nullopt, c10::optional<std::string> driver=c10::nullopt);
+   TORCH_API std::tuple<Tensor,Tensor,Tensor> _lstsq_helper(const Tensor & a, const Tensor & b, double cond, c10::optional<std::string> driver_name);
    TORCH_API std::tuple<Tensor,Tensor> linalg_slogdet(const Tensor & self);
    TORCH_API std::tuple<Tensor &,Tensor &> linalg_slogdet_out(Tensor & sign, Tensor & logabsdet, const Tensor & self);
    TORCH_API std::tuple<Tensor &,Tensor &> linalg_slogdet_outf(const Tensor & self, Tensor & sign, Tensor & logabsdet);
@@ -2364,6 +2365,14 @@ Program Listing for File Functions.h
    
    inline bool is_complex(const Tensor& tensor) {
      return tensor.is_complex();
+   }
+   
+   inline bool is_floating_point(const Tensor& tensor) {
+     return tensor.is_floating_point();
+   }
+   
+   inline bool is_signed(const Tensor& tensor) {
+     return tensor.is_signed();
    }
    
    }
