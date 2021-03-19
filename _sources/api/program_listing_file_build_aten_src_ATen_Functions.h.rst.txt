@@ -323,11 +323,15 @@ Program Listing for File Functions.h
    TORCH_API std::tuple<Tensor,Tensor,Tensor> convolution_backward_overrideable(const Tensor & grad_output, const Tensor & input, const Tensor & weight, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation, bool transposed, IntArrayRef output_padding, int64_t groups, std::array<bool,3> output_mask);
    TORCH_API Tensor _convolution(const Tensor & input, const Tensor & weight, const c10::optional<Tensor> & bias, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation, bool transposed, IntArrayRef output_padding, int64_t groups, bool benchmark, bool deterministic, bool cudnn_enabled, bool allow_tf32);
    TORCH_API Tensor _convolution(const Tensor & input, const Tensor & weight, const c10::optional<Tensor> & bias, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation, bool transposed, IntArrayRef output_padding, int64_t groups, bool benchmark, bool deterministic, bool cudnn_enabled);
+   TORCH_API Tensor _convolution_mode(const Tensor & input, const Tensor & weight, const c10::optional<Tensor> & bias, IntArrayRef stride, std::string padding, IntArrayRef dilation, int64_t groups);
    TORCH_API Tensor _convolution_nogroup(const Tensor & input, const Tensor & weight, const c10::optional<Tensor> & bias, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation, bool transposed, IntArrayRef output_padding);
    TORCH_API std::tuple<Tensor,Tensor,Tensor> _convolution_double_backward(const c10::optional<Tensor> & ggI, const c10::optional<Tensor> & ggW, const c10::optional<Tensor> & ggb, const Tensor & gO, const Tensor & weight, const Tensor & self, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation, bool transposed, IntArrayRef output_padding, int64_t groups, bool benchmark, bool deterministic, bool cudnn_enabled, bool allow_tf32, std::array<bool,3> output_mask);
    TORCH_API Tensor conv1d(const Tensor & input, const Tensor & weight, const c10::optional<Tensor> & bias={}, IntArrayRef stride=1, IntArrayRef padding=0, IntArrayRef dilation=1, int64_t groups=1);
    TORCH_API Tensor conv2d(const Tensor & input, const Tensor & weight, const c10::optional<Tensor> & bias={}, IntArrayRef stride=1, IntArrayRef padding=0, IntArrayRef dilation=1, int64_t groups=1);
    TORCH_API Tensor conv3d(const Tensor & input, const Tensor & weight, const c10::optional<Tensor> & bias={}, IntArrayRef stride=1, IntArrayRef padding=0, IntArrayRef dilation=1, int64_t groups=1);
+   TORCH_API Tensor conv1d(const Tensor & input, const Tensor & weight, const c10::optional<Tensor> & bias, IntArrayRef stride, std::string padding, IntArrayRef dilation=1, int64_t groups=1);
+   TORCH_API Tensor conv2d(const Tensor & input, const Tensor & weight, const c10::optional<Tensor> & bias, IntArrayRef stride, std::string padding, IntArrayRef dilation=1, int64_t groups=1);
+   TORCH_API Tensor conv3d(const Tensor & input, const Tensor & weight, const c10::optional<Tensor> & bias, IntArrayRef stride, std::string padding, IntArrayRef dilation=1, int64_t groups=1);
    TORCH_API Tensor conv_tbc(const Tensor & self, const Tensor & weight, const Tensor & bias, int64_t pad=0);
    TORCH_API std::tuple<Tensor,Tensor,Tensor> conv_tbc_backward(const Tensor & self, const Tensor & input, const Tensor & weight, const Tensor & bias, int64_t pad);
    TORCH_API Tensor conv_transpose1d(const Tensor & input, const Tensor & weight, const c10::optional<Tensor> & bias={}, IntArrayRef stride=1, IntArrayRef padding=0, IntArrayRef output_padding=0, int64_t groups=1, IntArrayRef dilation=1);
@@ -361,6 +365,8 @@ Program Listing for File Functions.h
    TORCH_API std::tuple<Tensor,Tensor> cudnn_convolution_transpose_backward(const Tensor & self, const Tensor & grad_output, const Tensor & weight, IntArrayRef padding, IntArrayRef output_padding, IntArrayRef stride, IntArrayRef dilation, int64_t groups, bool benchmark, bool deterministic, bool allow_tf32, std::array<bool,2> output_mask);
    TORCH_API Tensor cudnn_convolution_transpose_backward_input(const Tensor & grad_output, const Tensor & weight, IntArrayRef padding, IntArrayRef stride, IntArrayRef dilation, int64_t groups, bool benchmark, bool deterministic, bool allow_tf32);
    TORCH_API Tensor cudnn_convolution_transpose_backward_weight(IntArrayRef weight_size, const Tensor & grad_output, const Tensor & self, IntArrayRef padding, IntArrayRef stride, IntArrayRef dilation, int64_t groups, bool benchmark, bool deterministic, bool allow_tf32);
+   TORCH_API Tensor cudnn_convolution_relu(const Tensor & self, const Tensor & weight, const c10::optional<Tensor> & bias, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation, int64_t groups);
+   TORCH_API Tensor cudnn_convolution_add_relu(const Tensor & self, const Tensor & weight, const Tensor & z, const c10::optional<Scalar> & alpha, const c10::optional<Tensor> & bias, IntArrayRef stride, IntArrayRef padding, IntArrayRef dilation, int64_t groups);
    TORCH_API Tensor cudnn_grid_sampler(const Tensor & self, const Tensor & grid);
    TORCH_API std::tuple<Tensor,Tensor> cudnn_grid_sampler_backward(const Tensor & self, const Tensor & grid, const Tensor & grad_output);
    TORCH_API std::tuple<Tensor,Tensor> cummax(const Tensor & self, int64_t dim);
@@ -1494,9 +1500,9 @@ Program Listing for File Functions.h
    TORCH_API std::tuple<Tensor &,Tensor &> geqrf_out(Tensor & a, Tensor & tau, const Tensor & self);
    TORCH_API std::tuple<Tensor &,Tensor &> geqrf_outf(const Tensor & self, Tensor & a, Tensor & tau);
    TORCH_API std::tuple<Tensor,Tensor> geqrf(const Tensor & self);
+   TORCH_API Tensor orgqr(const Tensor & self, const Tensor & input2);
    TORCH_API Tensor & orgqr_out(Tensor & out, const Tensor & self, const Tensor & input2);
    TORCH_API Tensor & orgqr_outf(const Tensor & self, const Tensor & input2, Tensor & out);
-   TORCH_API Tensor orgqr(const Tensor & self, const Tensor & input2);
    TORCH_API Tensor & ormqr_out(Tensor & out, const Tensor & self, const Tensor & input2, const Tensor & input3, bool left=true, bool transpose=false);
    TORCH_API Tensor & ormqr_outf(const Tensor & self, const Tensor & input2, const Tensor & input3, bool left, bool transpose, Tensor & out);
    TORCH_API Tensor ormqr(const Tensor & self, const Tensor & input2, const Tensor & input3, bool left=true, bool transpose=false);
@@ -2208,6 +2214,9 @@ Program Listing for File Functions.h
    TORCH_API Tensor linalg_eigvalsh(const Tensor & self, std::string UPLO="L");
    TORCH_API Tensor & linalg_eigvalsh_out(Tensor & out, const Tensor & self, std::string UPLO="L");
    TORCH_API Tensor & linalg_eigvalsh_outf(const Tensor & self, std::string UPLO, Tensor & out);
+   TORCH_API Tensor linalg_householder_product(const Tensor & input, const Tensor & tau);
+   TORCH_API Tensor & linalg_householder_product_out(Tensor & out, const Tensor & input, const Tensor & tau);
+   TORCH_API Tensor & linalg_householder_product_outf(const Tensor & input, const Tensor & tau, Tensor & out);
    TORCH_API Tensor & _linalg_inv_out_helper_(Tensor & self, Tensor & infos_lu, Tensor & infos_getri);
    TORCH_API Tensor linalg_inv(const Tensor & self);
    TORCH_API Tensor & linalg_inv_out(Tensor & out, const Tensor & self);
@@ -2227,6 +2236,9 @@ Program Listing for File Functions.h
    TORCH_API Tensor & linalg_norm_outf(const Tensor & self, const c10::optional<Scalar> & ord, c10::optional<IntArrayRef> dim, bool keepdim, c10::optional<ScalarType> dtype, Tensor & out);
    TORCH_API Tensor & linalg_norm_out(Tensor & out, const Tensor & self, std::string ord, c10::optional<IntArrayRef> dim=c10::nullopt, bool keepdim=false, c10::optional<ScalarType> dtype=c10::nullopt);
    TORCH_API Tensor & linalg_norm_outf(const Tensor & self, std::string ord, c10::optional<IntArrayRef> dim, bool keepdim, c10::optional<ScalarType> dtype, Tensor & out);
+   TORCH_API Tensor linalg_vector_norm(const Tensor & self, const c10::optional<Scalar> & ord=c10::nullopt, c10::optional<IntArrayRef> dim=c10::nullopt, bool keepdim=false, c10::optional<ScalarType> dtype=c10::nullopt);
+   TORCH_API Tensor & linalg_vector_norm_out(Tensor & out, const Tensor & self, const c10::optional<Scalar> & ord=c10::nullopt, c10::optional<IntArrayRef> dim=c10::nullopt, bool keepdim=false, c10::optional<ScalarType> dtype=c10::nullopt);
+   TORCH_API Tensor & linalg_vector_norm_outf(const Tensor & self, const c10::optional<Scalar> & ord, c10::optional<IntArrayRef> dim, bool keepdim, c10::optional<ScalarType> dtype, Tensor & out);
    TORCH_API std::tuple<Tensor &,Tensor &,Tensor &> linalg_svd_out(Tensor & U, Tensor & S, Tensor & V, const Tensor & self, bool full_matrices=true, bool compute_uv=true);
    TORCH_API std::tuple<Tensor &,Tensor &,Tensor &> linalg_svd_outf(const Tensor & self, bool full_matrices, bool compute_uv, Tensor & U, Tensor & S, Tensor & V);
    TORCH_API std::tuple<Tensor,Tensor,Tensor> linalg_svd(const Tensor & self, bool full_matrices=true, bool compute_uv=true);
@@ -2274,6 +2286,19 @@ Program Listing for File Functions.h
    TORCH_API std::tuple<Tensor,Tensor> var_mean(const Tensor& self, int dim);
    TORCH_API Tensor std(const Tensor& self, int dim);
    TORCH_API std::tuple<Tensor,Tensor> std_mean(const Tensor& self, int dim);
+   
+   
+   // Special C++ only overloads for convnd functions (See gh-45667)
+   // These are needed because {1, 2} is ambiguous between string and IntArrayRef overloads
+   TORCH_API at::Tensor conv1d(
+       const Tensor& input, const Tensor& weight, const Tensor& bias, IntArrayRef stride,
+       std::initializer_list<int64_t> padding, IntArrayRef dilation = 1, int64_t groups = 1);
+   TORCH_API at::Tensor conv2d(
+       const Tensor& input, const Tensor& weight, const Tensor& bias, IntArrayRef stride,
+       std::initializer_list<int64_t> padding, IntArrayRef dilation = 1, int64_t groups = 1);
+   TORCH_API at::Tensor conv3d(
+       const Tensor& input, const Tensor& weight, const Tensor& bias, IntArrayRef stride,
+       std::initializer_list<int64_t> padding, IntArrayRef dilation = 1, int64_t groups = 1);
    
    namespace {
      inline std::vector<int64_t> zero_sizes(const TensorOptions& options) {

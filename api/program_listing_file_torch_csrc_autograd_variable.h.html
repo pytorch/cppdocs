@@ -360,6 +360,9 @@
   <span class="c1">// a materialized structure, use materialize_autograd_meta instead.</span>
   <span class="n">TORCH_API</span> <span class="n">AutogradMeta</span><span class="o">*</span> <span class="n">get_autograd_meta</span><span class="p">(</span><span class="k">const</span> <span class="n">Variable</span><span class="o">&amp;</span><span class="p">);</span>
 
+  <span class="c1">// WARNING: This will return a nullptr if the Tensor is not a view.</span>
+  <span class="n">TORCH_API</span> <span class="n">DifferentiableViewMeta</span><span class="o">*</span> <span class="n">get_view_autograd_meta</span><span class="p">(</span><span class="k">const</span> <span class="n">Variable</span><span class="o">&amp;</span><span class="p">);</span>
+
   <span class="c1">// Returns the current autograd meta, materializing it if it was previously</span>
   <span class="c1">// none.  This counts as a *mutating* operation, so do not call it on</span>
   <span class="c1">// &quot;read-only&quot; operators; in particular, this is NOT thread safe</span>
@@ -423,7 +426,7 @@
   <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ForwardGrad</span><span class="o">&gt;</span> <span class="n">fw_grad_</span><span class="p">;</span>
 
   <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">FunctionPreHook</span><span class="o">&gt;&gt;</span> <span class="n">hooks_</span><span class="p">;</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">hooks_list</span><span class="o">&gt;</span> <span class="n">cpp_hooks_list</span><span class="p">;</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">hooks_list</span><span class="o">&gt;</span> <span class="n">cpp_hooks_list_</span><span class="p">;</span>
 
   <span class="c1">// Only meaningful on leaf variables (must be false otherwise)</span>
   <span class="kt">bool</span> <span class="n">requires_grad_</span><span class="p">;</span>
@@ -543,8 +546,8 @@
   <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">ViewInfo</span><span class="o">&gt;</span> <span class="n">forward_info_</span><span class="p">;</span>
 
 
-  <span class="kt">uint32_t</span> <span class="n">attr_version</span><span class="p">;</span>
-  <span class="n">CreationMeta</span> <span class="n">creation_meta</span><span class="p">;</span>
+  <span class="kt">uint32_t</span> <span class="n">attr_version_</span><span class="p">;</span>
+  <span class="n">CreationMeta</span> <span class="n">creation_meta_</span><span class="p">;</span>
 
 <span class="k">public</span><span class="o">:</span>
   <span class="kt">bool</span> <span class="n">requires_grad</span><span class="p">()</span> <span class="k">const</span> <span class="k">override</span> <span class="p">{</span>
@@ -562,22 +565,22 @@
 
   <span class="kt">uint32_t</span> <span class="n">get_attr_version</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">has_bw_view</span><span class="p">(),</span> <span class="s">&quot;attr_version can only exist for backward views.&quot;</span><span class="p">);</span>
-    <span class="k">return</span> <span class="n">attr_version</span><span class="p">;</span>
+    <span class="k">return</span> <span class="n">attr_version_</span><span class="p">;</span>
   <span class="p">}</span>
 
   <span class="kt">void</span> <span class="n">set_attr_version</span><span class="p">(</span><span class="kt">uint32_t</span> <span class="n">new_attr_version</span><span class="p">)</span> <span class="p">{</span>
     <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">has_bw_view</span><span class="p">(),</span> <span class="s">&quot;attr_version can only exist for backward views.&quot;</span><span class="p">);</span>
-    <span class="n">attr_version</span> <span class="o">=</span> <span class="n">new_attr_version</span><span class="p">;</span>
+    <span class="n">attr_version_</span> <span class="o">=</span> <span class="n">new_attr_version</span><span class="p">;</span>
   <span class="p">}</span>
 
   <span class="n">CreationMeta</span> <span class="n">get_creation_meta</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">has_bw_view</span><span class="p">(),</span> <span class="s">&quot;creation_meta can only exist for backward views.&quot;</span><span class="p">);</span>
-    <span class="k">return</span> <span class="n">creation_meta</span><span class="p">;</span>
+    <span class="k">return</span> <span class="n">creation_meta_</span><span class="p">;</span>
   <span class="p">}</span>
 
   <span class="kt">void</span> <span class="n">set_creation_meta</span><span class="p">(</span><span class="n">CreationMeta</span> <span class="n">new_creation_meta</span><span class="p">)</span> <span class="p">{</span>
     <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">has_bw_view</span><span class="p">(),</span> <span class="s">&quot;creation_meta can only exist for backward views.&quot;</span><span class="p">);</span>
-    <span class="n">creation_meta</span> <span class="o">=</span> <span class="n">new_creation_meta</span><span class="p">;</span>
+    <span class="n">creation_meta_</span> <span class="o">=</span> <span class="n">new_creation_meta</span><span class="p">;</span>
   <span class="p">}</span>
 
   <span class="kt">bool</span> <span class="n">has_fw_view</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>

@@ -66,6 +66,9 @@ Program Listing for File variable.h
      // a materialized structure, use materialize_autograd_meta instead.
      TORCH_API AutogradMeta* get_autograd_meta(const Variable&);
    
+     // WARNING: This will return a nullptr if the Tensor is not a view.
+     TORCH_API DifferentiableViewMeta* get_view_autograd_meta(const Variable&);
+   
      // Returns the current autograd meta, materializing it if it was previously
      // none.  This counts as a *mutating* operation, so do not call it on
      // "read-only" operators; in particular, this is NOT thread safe
@@ -129,7 +132,7 @@ Program Listing for File variable.h
      std::shared_ptr<ForwardGrad> fw_grad_;
    
      std::vector<std::shared_ptr<FunctionPreHook>> hooks_;
-     std::shared_ptr<hooks_list> cpp_hooks_list;
+     std::shared_ptr<hooks_list> cpp_hooks_list_;
    
      // Only meaningful on leaf variables (must be false otherwise)
      bool requires_grad_;
@@ -249,8 +252,8 @@ Program Listing for File variable.h
      c10::optional<ViewInfo> forward_info_;
    
    
-     uint32_t attr_version;
-     CreationMeta creation_meta;
+     uint32_t attr_version_;
+     CreationMeta creation_meta_;
    
    public:
      bool requires_grad() const override {
@@ -268,22 +271,22 @@ Program Listing for File variable.h
    
      uint32_t get_attr_version() const {
        TORCH_CHECK(has_bw_view(), "attr_version can only exist for backward views.");
-       return attr_version;
+       return attr_version_;
      }
    
      void set_attr_version(uint32_t new_attr_version) {
        TORCH_CHECK(has_bw_view(), "attr_version can only exist for backward views.");
-       attr_version = new_attr_version;
+       attr_version_ = new_attr_version;
      }
    
      CreationMeta get_creation_meta() const {
        TORCH_CHECK(has_bw_view(), "creation_meta can only exist for backward views.");
-       return creation_meta;
+       return creation_meta_;
      }
    
      void set_creation_meta(CreationMeta new_creation_meta) {
        TORCH_CHECK(has_bw_view(), "creation_meta can only exist for backward views.");
-       creation_meta = new_creation_meta;
+       creation_meta_ = new_creation_meta;
      }
    
      bool has_fw_view() const {
