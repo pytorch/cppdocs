@@ -33,7 +33,14 @@ Program Listing for File conv.h
    > conv_padding_mode_t;
    
    template <size_t D>
+   using conv_padding_t = c10::variant<
+     ExpandingArray<D>,
+     enumtype::kValid,
+     enumtype::kSame>;
+   
+   template <size_t D>
    struct ConvNdOptions {
+     using padding_t = conv_padding_t<D>;
      ConvNdOptions(
          int64_t in_channels,
          int64_t out_channels,
@@ -50,7 +57,12 @@ Program Listing for File conv.h
    
      TORCH_ARG(ExpandingArray<D>, stride) = 1;
    
-     TORCH_ARG(ExpandingArray<D>, padding) = 0;
+     TORCH_ARG(padding_t, padding) = 0;
+   
+   public:
+     decltype(auto) padding(std::initializer_list<int64_t> il) {
+       return padding(IntArrayRef{il});
+     }
    
      TORCH_ARG(ExpandingArray<D>, dilation) = 1;
    
@@ -72,6 +84,7 @@ Program Listing for File conv.h
    template <size_t D>
    struct ConvOptions {
      using padding_mode_t = detail::conv_padding_mode_t;
+     using padding_t = detail::conv_padding_t<D>;
    
      ConvOptions(
          int64_t in_channels,
@@ -89,7 +102,12 @@ Program Listing for File conv.h
    
      TORCH_ARG(ExpandingArray<D>, stride) = 1;
    
-     TORCH_ARG(ExpandingArray<D>, padding) = 0;
+     TORCH_ARG(padding_t, padding) = 0;
+   
+   public:
+     decltype(auto) padding(std::initializer_list<int64_t> il) {
+       return padding(IntArrayRef{il});
+     }
    
      TORCH_ARG(ExpandingArray<D>, dilation) = 1;
    
@@ -112,11 +130,18 @@ Program Listing for File conv.h
    
    template <size_t D>
    struct ConvFuncOptions {
+     using padding_t = torch::nn::detail::conv_padding_t<D>;
+   
      TORCH_ARG(torch::Tensor, bias) = Tensor();
    
      TORCH_ARG(ExpandingArray<D>, stride) = 1;
    
-     TORCH_ARG(ExpandingArray<D>, padding) = 0;
+     TORCH_ARG(padding_t, padding) = 0;
+   
+   public:
+     decltype(auto) padding(std::initializer_list<int64_t> il) {
+       return padding(IntArrayRef{il});
+     }
    
      TORCH_ARG(ExpandingArray<D>, dilation) = 1;
    

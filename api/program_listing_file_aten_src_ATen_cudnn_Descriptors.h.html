@@ -514,7 +514,7 @@
   <span class="c1">// Initialize a dropout descriptor&#39;s RNG state.</span>
   <span class="c1">// WARNING: This function is very expensive, avoid calling this function!</span>
   <span class="kt">void</span> <span class="nf">initialize_rng</span><span class="p">(</span><span class="n">cudnnHandle_t</span> <span class="n">handle</span><span class="p">,</span> <span class="kt">float</span> <span class="n">dropout</span><span class="p">,</span> <span class="kt">long</span> <span class="kt">long</span> <span class="kt">int</span> <span class="n">seed</span><span class="p">,</span> <span class="k">const</span> <span class="n">TensorOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">AT_ASSERTM</span><span class="p">(</span><span class="n">dropout</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&quot;dropout must be nonzero; otherwise call set_no_dropout&quot;</span><span class="p">);</span>
+    <span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span><span class="n">dropout</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&quot;dropout must be nonzero; otherwise call set_no_dropout&quot;</span><span class="p">);</span>
     <span class="kt">size_t</span> <span class="n">state_size</span><span class="p">;</span>
     <span class="n">AT_CUDNN_CHECK</span><span class="p">(</span><span class="n">cudnnDropoutGetStatesSize</span><span class="p">(</span><span class="n">handle</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">state_size</span><span class="p">));</span>
     <span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">device</span><span class="p">().</span><span class="n">type</span><span class="p">()</span> <span class="o">==</span> <span class="n">kCUDA</span><span class="p">);</span>
@@ -525,7 +525,7 @@
 
   <span class="c1">// Restore a dropout descriptor given a dropout probability and existing RNG state.</span>
   <span class="kt">void</span> <span class="nf">set</span><span class="p">(</span><span class="n">cudnnHandle_t</span> <span class="n">handle</span><span class="p">,</span> <span class="kt">float</span> <span class="n">dropout</span><span class="p">,</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">state_</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">AT_ASSERTM</span><span class="p">(</span><span class="n">dropout</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&quot;dropout must be nonzero; otherwise call set_no_dropout&quot;</span><span class="p">);</span>
+    <span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span><span class="n">dropout</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&quot;dropout must be nonzero; otherwise call set_no_dropout&quot;</span><span class="p">);</span>
     <span class="n">state</span> <span class="o">=</span> <span class="n">state_</span><span class="p">;</span>
     <span class="kt">void</span> <span class="o">*</span><span class="n">state_ptr</span> <span class="o">=</span> <span class="n">state</span><span class="p">.</span><span class="n">data_ptr</span><span class="p">();</span>
     <span class="kt">size_t</span> <span class="n">state_size</span> <span class="o">=</span> <span class="n">state</span><span class="p">.</span><span class="n">size</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
@@ -607,6 +607,23 @@
         <span class="n">cudnnSetCTCLossDescriptorEx</span><span class="p">(</span><span class="n">mut_desc</span><span class="p">(),</span> <span class="n">datatype</span><span class="p">,</span> <span class="n">normMode</span><span class="p">,</span> <span class="n">gradMode</span><span class="p">));</span>
   <span class="p">}</span>
 <span class="cp">#endif</span>
+<span class="p">};</span>
+
+<span class="k">struct</span> <span class="nc">TORCH_CUDA_CPP_API</span> <span class="nl">ActivationDescriptor</span>
+    <span class="p">:</span> <span class="k">public</span> <span class="n">Descriptor</span><span class="o">&lt;</span>
+          <span class="n">cudnnActivationStruct</span><span class="p">,</span>
+          <span class="o">&amp;</span><span class="n">cudnnCreateActivationDescriptor</span><span class="p">,</span>
+          <span class="o">&amp;</span><span class="n">cudnnDestroyActivationDescriptor</span><span class="o">&gt;</span> <span class="p">{</span>
+  <span class="kt">void</span> <span class="nf">set</span><span class="p">(</span><span class="n">cudnnActivationMode_t</span> <span class="n">mode</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">AT_ASSERT</span><span class="p">(</span>
+        <span class="n">mode</span> <span class="o">==</span> <span class="n">CUDNN_ACTIVATION_RELU</span><span class="p">,</span>
+        <span class="s">&quot;TODO: support more cuDNN activation modes&quot;</span><span class="p">);</span>
+    <span class="n">AT_CUDNN_CHECK</span><span class="p">(</span><span class="n">cudnnSetActivationDescriptor</span><span class="p">(</span>
+        <span class="n">mut_desc</span><span class="p">(),</span>
+        <span class="n">mode</span><span class="p">,</span>
+        <span class="n">cudnnNanPropagation_t</span><span class="o">::</span><span class="n">CUDNN_NOT_PROPAGATE_NAN</span><span class="p">,</span>
+        <span class="n">std</span><span class="o">::</span><span class="n">numeric_limits</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;::</span><span class="n">max</span><span class="p">()));</span>
+  <span class="p">}</span>
 <span class="p">};</span>
 
 <span class="k">union</span> <span class="nc">Constant</span>
