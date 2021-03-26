@@ -2440,6 +2440,9 @@
 <span class="n">TORCH_API</span> <span class="n">Tensor</span> <span class="o">&amp;</span> <span class="n">isneginf_outf</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span> <span class="o">&amp;</span> <span class="n">self</span><span class="p">,</span> <span class="n">Tensor</span> <span class="o">&amp;</span> <span class="n">out</span><span class="p">);</span>
 <span class="n">TORCH_API</span> <span class="n">Tensor</span> <span class="n">_add_batch_dim</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span> <span class="o">&amp;</span> <span class="n">self</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">batch_dim</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">level</span><span class="p">);</span>
 <span class="n">TORCH_API</span> <span class="n">Tensor</span> <span class="n">_remove_batch_dim</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span> <span class="o">&amp;</span> <span class="n">self</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">level</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">batch_size</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">out_dim</span><span class="p">);</span>
+<span class="n">TORCH_API</span> <span class="n">Tensor</span> <span class="n">special_entr</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span> <span class="o">&amp;</span> <span class="n">self</span><span class="p">);</span>
+<span class="n">TORCH_API</span> <span class="n">Tensor</span> <span class="o">&amp;</span> <span class="n">special_entr_out</span><span class="p">(</span><span class="n">Tensor</span> <span class="o">&amp;</span> <span class="n">out</span><span class="p">,</span> <span class="k">const</span> <span class="n">Tensor</span> <span class="o">&amp;</span> <span class="n">self</span><span class="p">);</span>
+<span class="n">TORCH_API</span> <span class="n">Tensor</span> <span class="o">&amp;</span> <span class="n">special_entr_outf</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span> <span class="o">&amp;</span> <span class="n">self</span><span class="p">,</span> <span class="n">Tensor</span> <span class="o">&amp;</span> <span class="n">out</span><span class="p">);</span>
 <span class="n">TORCH_API</span> <span class="n">Tensor</span> <span class="n">special_gammaln</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span> <span class="o">&amp;</span> <span class="n">self</span><span class="p">);</span>
 <span class="n">TORCH_API</span> <span class="n">Tensor</span> <span class="o">&amp;</span> <span class="n">special_gammaln_out</span><span class="p">(</span><span class="n">Tensor</span> <span class="o">&amp;</span> <span class="n">out</span><span class="p">,</span> <span class="k">const</span> <span class="n">Tensor</span> <span class="o">&amp;</span> <span class="n">self</span><span class="p">);</span>
 <span class="n">TORCH_API</span> <span class="n">Tensor</span> <span class="o">&amp;</span> <span class="n">special_gammaln_outf</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span> <span class="o">&amp;</span> <span class="n">self</span><span class="p">,</span> <span class="n">Tensor</span> <span class="o">&amp;</span> <span class="n">out</span><span class="p">);</span>
@@ -2611,19 +2614,76 @@
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">,</span> <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">weight</span><span class="p">,</span> <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">bias</span><span class="p">,</span> <span class="n">IntArrayRef</span> <span class="n">stride</span><span class="p">,</span>
     <span class="n">std</span><span class="o">::</span><span class="n">initializer_list</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span> <span class="n">padding</span><span class="p">,</span> <span class="n">IntArrayRef</span> <span class="n">dilation</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span> <span class="kt">int64_t</span> <span class="n">groups</span> <span class="o">=</span> <span class="mi">1</span><span class="p">);</span>
 
-<span class="k">namespace</span> <span class="p">{</span>
-  <span class="kr">inline</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span> <span class="n">zero_sizes</span><span class="p">(</span><span class="k">const</span> <span class="n">TensorOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">has_memory_format</span><span class="p">())</span> <span class="p">{</span>
-      <span class="k">auto</span> <span class="n">memory_format</span> <span class="o">=</span> <span class="o">*</span><span class="n">options</span><span class="p">.</span><span class="n">memory_format_opt</span><span class="p">();</span>
-      <span class="k">if</span> <span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">MemoryFormat</span><span class="o">::</span><span class="n">ChannelsLast</span> <span class="o">==</span> <span class="n">memory_format</span><span class="p">)</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="p">{</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">};</span>
-      <span class="p">}</span>
-      <span class="k">if</span> <span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">MemoryFormat</span><span class="o">::</span><span class="n">ChannelsLast3d</span> <span class="o">==</span> <span class="n">memory_format</span><span class="p">)</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="p">{</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">};</span>
-      <span class="p">}</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="p">{</span><span class="mi">0</span><span class="p">};</span>
+<span class="k">namespace</span> <span class="n">detail</span> <span class="p">{</span>
+
+<span class="n">TORCH_API</span> <span class="kt">void</span> <span class="n">noopDelete</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="p">);</span>
+
+<span class="p">}</span> <span class="c1">// namespace detail</span>
+
+<span class="k">class</span> <span class="nc">TORCH_API</span> <span class="n">TensorMaker</span> <span class="p">{</span>
+  <span class="k">friend</span> <span class="n">TensorMaker</span> <span class="n">for_blob</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span> <span class="n">data</span><span class="p">,</span> <span class="n">IntArrayRef</span> <span class="n">sizes</span><span class="p">)</span> <span class="k">noexcept</span><span class="p">;</span>
+
+ <span class="k">public</span><span class="o">:</span>
+  <span class="k">using</span> <span class="n">ContextDeleter</span> <span class="o">=</span> <span class="n">DeleterFnPtr</span><span class="p">;</span>
+
+  <span class="n">TensorMaker</span><span class="o">&amp;</span> <span class="nf">strides</span><span class="p">(</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">IntArrayRef</span><span class="o">&gt;</span> <span class="n">value</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
+    <span class="n">strides_</span> <span class="o">=</span> <span class="n">value</span><span class="p">;</span>
+
+    <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
   <span class="p">}</span>
+
+  <span class="n">TensorMaker</span><span class="o">&amp;</span> <span class="nf">deleter</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="p">)</span><span class="o">&gt;</span> <span class="n">value</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
+    <span class="n">deleter_</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">value</span><span class="p">);</span>
+
+    <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="n">TensorMaker</span><span class="o">&amp;</span> <span class="nf">context</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span> <span class="n">value</span><span class="p">,</span> <span class="n">ContextDeleter</span> <span class="n">deleter</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
+    <span class="n">ctx_</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">,</span> <span class="n">ContextDeleter</span><span class="o">&gt;</span><span class="p">{</span>
+        <span class="n">value</span><span class="p">,</span> <span class="n">deleter</span> <span class="o">?</span> <span class="nl">deleter</span> <span class="p">:</span> <span class="n">detail</span><span class="o">::</span><span class="n">noopDelete</span><span class="p">};</span>
+
+    <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="n">TensorMaker</span><span class="o">&amp;</span> <span class="nf">target_device</span><span class="p">(</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Device</span><span class="o">&gt;</span> <span class="n">value</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
+    <span class="n">device_</span> <span class="o">=</span> <span class="n">value</span><span class="p">;</span>
+
+    <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="n">TensorMaker</span><span class="o">&amp;</span> <span class="nf">options</span><span class="p">(</span><span class="n">TensorOptions</span> <span class="n">value</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
+    <span class="n">opts_</span> <span class="o">=</span> <span class="n">value</span><span class="p">;</span>
+
+    <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="n">Tensor</span> <span class="nf">make_tensor</span><span class="p">();</span>
+
+ <span class="k">private</span><span class="o">:</span>
+  <span class="k">explicit</span> <span class="n">TensorMaker</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span> <span class="n">data</span><span class="p">,</span> <span class="n">IntArrayRef</span> <span class="n">sizes</span><span class="p">)</span> <span class="k">noexcept</span>
+      <span class="o">:</span> <span class="n">data_</span><span class="p">{</span><span class="n">data</span><span class="p">},</span> <span class="n">sizes_</span><span class="p">{</span><span class="n">sizes</span><span class="p">}</span> <span class="p">{}</span>
+
+  <span class="n">std</span><span class="o">::</span><span class="kt">size_t</span> <span class="n">computeStorageSize</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span><span class="p">;</span>
+
+  <span class="n">DataPtr</span> <span class="nf">makeDataPtrFromDeleter</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+
+  <span class="n">DataPtr</span> <span class="nf">makeDataPtrFromContext</span><span class="p">()</span> <span class="k">noexcept</span><span class="p">;</span>
+
+  <span class="n">SmallVector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="kt">int64_t</span><span class="p">,</span> <span class="mi">5</span><span class="o">&gt;</span> <span class="n">makeTempSizes</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span><span class="p">;</span>
+
+  <span class="n">Tensor</span> <span class="nf">makeEmptyTensor</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+
+  <span class="kt">void</span><span class="o">*</span> <span class="n">data_</span><span class="p">;</span>
+  <span class="n">IntArrayRef</span> <span class="n">sizes_</span><span class="p">;</span>
+  <span class="n">optional</span><span class="o">&lt;</span><span class="n">IntArrayRef</span><span class="o">&gt;</span> <span class="n">strides_</span><span class="p">{};</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="p">)</span><span class="o">&gt;</span> <span class="n">deleter_</span><span class="p">{};</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">,</span> <span class="n">ContextDeleter</span><span class="o">&gt;</span> <span class="n">ctx_</span><span class="p">{</span><span class="k">nullptr</span><span class="p">,</span> <span class="n">detail</span><span class="o">::</span><span class="n">noopDelete</span><span class="p">};</span>
+  <span class="n">optional</span><span class="o">&lt;</span><span class="n">Device</span><span class="o">&gt;</span> <span class="n">device_</span><span class="p">{};</span>
+  <span class="n">TensorOptions</span> <span class="n">opts_</span><span class="p">{};</span>
+<span class="p">};</span>
+
+<span class="kr">inline</span> <span class="n">TensorMaker</span> <span class="n">for_blob</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span> <span class="n">data</span><span class="p">,</span> <span class="n">IntArrayRef</span> <span class="n">sizes</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
+  <span class="k">return</span> <span class="n">TensorMaker</span><span class="p">{</span><span class="n">data</span><span class="p">,</span> <span class="n">sizes</span><span class="p">};</span>
 <span class="p">}</span>
 
 <span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">from_blob</span><span class="p">(</span>
@@ -2633,23 +2693,12 @@
     <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="p">)</span><span class="o">&gt;&amp;</span> <span class="n">deleter</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">TensorOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{},</span>
     <span class="k">const</span> <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Device</span><span class="o">&gt;</span> <span class="n">target_device</span> <span class="o">=</span> <span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">AutoNonVariableTypeMode</span> <span class="n">guard</span><span class="p">;</span>  <span class="c1">// TODO: remove</span>
-  <span class="n">tracer</span><span class="o">::</span><span class="n">impl</span><span class="o">::</span><span class="n">NoTracerDispatchMode</span> <span class="n">tracer_guard</span><span class="p">;</span>
-  <span class="k">auto</span> <span class="n">device</span> <span class="o">=</span> <span class="p">(</span><span class="n">target_device</span><span class="p">.</span><span class="n">has_value</span><span class="p">()</span><span class="o">?</span>
-    <span class="n">target_device</span><span class="p">.</span><span class="n">value</span><span class="p">()</span> <span class="o">:</span> <span class="n">globalContext</span><span class="p">().</span><span class="n">getDeviceFromPtr</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">device</span><span class="p">().</span><span class="n">type</span><span class="p">()));</span>
-  <span class="k">if</span> <span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">device</span><span class="p">().</span><span class="n">has_index</span><span class="p">())</span> <span class="p">{</span>
-    <span class="n">TORCH_CHECK</span><span class="p">(</span>
-        <span class="n">options</span><span class="p">.</span><span class="n">device</span><span class="p">()</span> <span class="o">==</span> <span class="n">device</span><span class="p">,</span>
-        <span class="s">&quot;Specified device &quot;</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">device</span><span class="p">(),</span>
-        <span class="s">&quot; does not match device of data &quot;</span><span class="p">,</span> <span class="n">device</span><span class="p">);</span>
-  <span class="p">}</span>
-  <span class="k">auto</span> <span class="n">storage</span> <span class="o">=</span> <span class="n">Storage</span><span class="p">(</span>
-      <span class="n">Storage</span><span class="o">::</span><span class="n">use_byte_size_t</span><span class="p">(),</span>
-      <span class="n">detail</span><span class="o">::</span><span class="n">computeStorageNbytes</span><span class="p">(</span><span class="n">sizes</span><span class="p">,</span> <span class="n">strides</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">dtype</span><span class="p">().</span><span class="n">itemsize</span><span class="p">()),</span>
-      <span class="n">InefficientStdFunctionContext</span><span class="o">::</span><span class="n">makeDataPtr</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">deleter</span><span class="p">,</span> <span class="n">device</span><span class="p">),</span>
-      <span class="cm">/*allocator=*/</span><span class="k">nullptr</span><span class="p">,</span>
-      <span class="cm">/*resizable=*/</span><span class="nb">false</span><span class="p">);</span>
-  <span class="k">return</span> <span class="nf">empty</span><span class="p">(</span><span class="n">IntArrayRef</span><span class="p">(</span><span class="n">zero_sizes</span><span class="p">(</span><span class="n">options</span><span class="p">)),</span> <span class="n">options</span><span class="p">).</span><span class="n">set_</span><span class="p">(</span><span class="n">storage</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">sizes</span><span class="p">,</span> <span class="n">strides</span><span class="p">);</span>
+  <span class="k">return</span> <span class="nf">for_blob</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sizes</span><span class="p">)</span>
+      <span class="p">.</span><span class="n">strides</span><span class="p">(</span><span class="n">strides</span><span class="p">)</span>
+      <span class="p">.</span><span class="n">deleter</span><span class="p">(</span><span class="n">deleter</span><span class="p">)</span>
+      <span class="p">.</span><span class="n">options</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+      <span class="p">.</span><span class="n">target_device</span><span class="p">(</span><span class="n">target_device</span><span class="p">)</span>
+      <span class="p">.</span><span class="n">make_tensor</span><span class="p">();</span>
 <span class="p">}</span>
 
 <span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">from_blob</span><span class="p">(</span>
@@ -2657,7 +2706,10 @@
     <span class="n">IntArrayRef</span> <span class="n">sizes</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">(</span><span class="kt">void</span><span class="o">*</span><span class="p">)</span><span class="o">&gt;&amp;</span> <span class="n">deleter</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">TensorOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{})</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="nf">from_blob</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sizes</span><span class="p">,</span> <span class="n">detail</span><span class="o">::</span><span class="n">defaultStrides</span><span class="p">(</span><span class="n">sizes</span><span class="p">),</span> <span class="n">deleter</span><span class="p">,</span> <span class="n">options</span><span class="p">);</span>
+  <span class="k">return</span> <span class="nf">for_blob</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sizes</span><span class="p">)</span>
+      <span class="p">.</span><span class="n">deleter</span><span class="p">(</span><span class="n">deleter</span><span class="p">)</span>
+      <span class="p">.</span><span class="n">options</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+      <span class="p">.</span><span class="n">make_tensor</span><span class="p">();</span>
 <span class="p">}</span>
 
 <span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">from_blob</span><span class="p">(</span>
@@ -2665,29 +2717,17 @@
     <span class="n">IntArrayRef</span> <span class="n">sizes</span><span class="p">,</span>
     <span class="n">IntArrayRef</span> <span class="n">strides</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">TensorOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{})</span> <span class="p">{</span>
-  <span class="n">AutoNonVariableTypeMode</span> <span class="n">guard</span><span class="p">;</span>  <span class="c1">// TODO: remove</span>
-  <span class="n">tracer</span><span class="o">::</span><span class="n">impl</span><span class="o">::</span><span class="n">NoTracerDispatchMode</span> <span class="n">tracer_guard</span><span class="p">;</span>
-  <span class="k">auto</span> <span class="n">device</span> <span class="o">=</span> <span class="n">globalContext</span><span class="p">().</span><span class="n">getDeviceFromPtr</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">device</span><span class="p">().</span><span class="n">type</span><span class="p">());</span>
-  <span class="k">if</span> <span class="p">(</span><span class="n">options</span><span class="p">.</span><span class="n">device</span><span class="p">().</span><span class="n">has_index</span><span class="p">())</span> <span class="p">{</span>
-    <span class="n">TORCH_CHECK</span><span class="p">(</span>
-        <span class="n">options</span><span class="p">.</span><span class="n">device</span><span class="p">()</span> <span class="o">==</span> <span class="n">device</span><span class="p">,</span>
-        <span class="s">&quot;Specified device &quot;</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">device</span><span class="p">(),</span>
-        <span class="s">&quot; does not match device of data &quot;</span><span class="p">,</span> <span class="n">device</span><span class="p">);</span>
-  <span class="p">}</span>
-  <span class="k">auto</span> <span class="n">storage</span> <span class="o">=</span> <span class="n">Storage</span><span class="p">(</span>
-      <span class="n">Storage</span><span class="o">::</span><span class="n">use_byte_size_t</span><span class="p">(),</span>
-      <span class="n">detail</span><span class="o">::</span><span class="n">computeStorageNbytes</span><span class="p">(</span><span class="n">sizes</span><span class="p">,</span> <span class="n">strides</span><span class="p">,</span> <span class="n">options</span><span class="p">.</span><span class="n">dtype</span><span class="p">().</span><span class="n">itemsize</span><span class="p">()),</span>
-      <span class="n">DataPtr</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="k">nullptr</span><span class="p">,</span> <span class="p">[](</span><span class="kt">void</span><span class="o">*</span><span class="p">)</span> <span class="p">{},</span> <span class="n">device</span><span class="p">),</span>
-      <span class="cm">/*allocator=*/</span><span class="k">nullptr</span><span class="p">,</span>
-      <span class="cm">/*resizable=*/</span><span class="nb">false</span><span class="p">);</span>
-  <span class="k">return</span> <span class="nf">empty</span><span class="p">(</span><span class="n">IntArrayRef</span><span class="p">(</span><span class="n">zero_sizes</span><span class="p">(</span><span class="n">options</span><span class="p">)),</span> <span class="n">options</span><span class="p">).</span><span class="n">set_</span><span class="p">(</span><span class="n">storage</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">sizes</span><span class="p">,</span> <span class="n">strides</span><span class="p">);</span>
+  <span class="k">return</span> <span class="nf">for_blob</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sizes</span><span class="p">)</span>
+      <span class="p">.</span><span class="n">strides</span><span class="p">(</span><span class="n">strides</span><span class="p">)</span>
+      <span class="p">.</span><span class="n">options</span><span class="p">(</span><span class="n">options</span><span class="p">)</span>
+      <span class="p">.</span><span class="n">make_tensor</span><span class="p">();</span>
 <span class="p">}</span>
 
 <span class="kr">inline</span> <span class="n">Tensor</span> <span class="n">from_blob</span><span class="p">(</span>
     <span class="kt">void</span><span class="o">*</span> <span class="n">data</span><span class="p">,</span>
     <span class="n">IntArrayRef</span> <span class="n">sizes</span><span class="p">,</span>
     <span class="k">const</span> <span class="n">TensorOptions</span><span class="o">&amp;</span> <span class="n">options</span> <span class="o">=</span> <span class="p">{})</span> <span class="p">{</span>
-  <span class="k">return</span> <span class="nf">from_blob</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sizes</span><span class="p">,</span> <span class="n">detail</span><span class="o">::</span><span class="n">defaultStrides</span><span class="p">(</span><span class="n">sizes</span><span class="p">),</span> <span class="n">options</span><span class="p">);</span>
+  <span class="k">return</span> <span class="nf">for_blob</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">sizes</span><span class="p">).</span><span class="n">options</span><span class="p">(</span><span class="n">options</span><span class="p">).</span><span class="n">make_tensor</span><span class="p">();</span>
 <span class="p">}</span>
 
 <span class="kr">inline</span> <span class="kt">int64_t</span> <span class="n">numel</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">tensor</span><span class="p">)</span> <span class="p">{</span>

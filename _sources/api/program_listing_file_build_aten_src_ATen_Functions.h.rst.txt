@@ -2146,6 +2146,9 @@ Program Listing for File Functions.h
    TORCH_API Tensor & isneginf_outf(const Tensor & self, Tensor & out);
    TORCH_API Tensor _add_batch_dim(const Tensor & self, int64_t batch_dim, int64_t level);
    TORCH_API Tensor _remove_batch_dim(const Tensor & self, int64_t level, int64_t batch_size, int64_t out_dim);
+   TORCH_API Tensor special_entr(const Tensor & self);
+   TORCH_API Tensor & special_entr_out(Tensor & out, const Tensor & self);
+   TORCH_API Tensor & special_entr_outf(const Tensor & self, Tensor & out);
    TORCH_API Tensor special_gammaln(const Tensor & self);
    TORCH_API Tensor & special_gammaln_out(Tensor & out, const Tensor & self);
    TORCH_API Tensor & special_gammaln_outf(const Tensor & self, Tensor & out);
@@ -2317,19 +2320,76 @@ Program Listing for File Functions.h
        const Tensor& input, const Tensor& weight, const Tensor& bias, IntArrayRef stride,
        std::initializer_list<int64_t> padding, IntArrayRef dilation = 1, int64_t groups = 1);
    
-   namespace {
-     inline std::vector<int64_t> zero_sizes(const TensorOptions& options) {
-       if (options.has_memory_format()) {
-         auto memory_format = *options.memory_format_opt();
-         if (at::MemoryFormat::ChannelsLast == memory_format) {
-           return {0, 0, 0, 0};
-         }
-         if (at::MemoryFormat::ChannelsLast3d == memory_format) {
-           return {0, 0, 0, 0, 0};
-         }
-       }
-       return {0};
+   namespace detail {
+   
+   TORCH_API void noopDelete(void*);
+   
+   } // namespace detail
+   
+   class TORCH_API TensorMaker {
+     friend TensorMaker for_blob(void* data, IntArrayRef sizes) noexcept;
+   
+    public:
+     using ContextDeleter = DeleterFnPtr;
+   
+     TensorMaker& strides(optional<IntArrayRef> value) noexcept {
+       strides_ = value;
+   
+       return *this;
      }
+   
+     TensorMaker& deleter(std::function<void(void*)> value) noexcept {
+       deleter_ = std::move(value);
+   
+       return *this;
+     }
+   
+     TensorMaker& context(void* value, ContextDeleter deleter = nullptr) noexcept {
+       ctx_ = std::unique_ptr<void, ContextDeleter>{
+           value, deleter ? deleter : detail::noopDelete};
+   
+       return *this;
+     }
+   
+     TensorMaker& target_device(optional<Device> value) noexcept {
+       device_ = value;
+   
+       return *this;
+     }
+   
+     TensorMaker& options(TensorOptions value) noexcept {
+       opts_ = value;
+   
+       return *this;
+     }
+   
+     Tensor make_tensor();
+   
+    private:
+     explicit TensorMaker(void* data, IntArrayRef sizes) noexcept
+         : data_{data}, sizes_{sizes} {}
+   
+     std::size_t computeStorageSize() const noexcept;
+   
+     DataPtr makeDataPtrFromDeleter() const;
+   
+     DataPtr makeDataPtrFromContext() noexcept;
+   
+     SmallVector<std::int64_t, 5> makeTempSizes() const noexcept;
+   
+     Tensor makeEmptyTensor() const;
+   
+     void* data_;
+     IntArrayRef sizes_;
+     optional<IntArrayRef> strides_{};
+     std::function<void(void*)> deleter_{};
+     std::unique_ptr<void, ContextDeleter> ctx_{nullptr, detail::noopDelete};
+     optional<Device> device_{};
+     TensorOptions opts_{};
+   };
+   
+   inline TensorMaker for_blob(void* data, IntArrayRef sizes) noexcept {
+     return TensorMaker{data, sizes};
    }
    
    inline Tensor from_blob(
@@ -2339,23 +2399,12 @@ Program Listing for File Functions.h
        const std::function<void(void*)>& deleter,
        const TensorOptions& options = {},
        const c10::optional<Device> target_device = c10::nullopt) {
-     AutoNonVariableTypeMode guard;  // TODO: remove
-     tracer::impl::NoTracerDispatchMode tracer_guard;
-     auto device = (target_device.has_value()?
-       target_device.value() : globalContext().getDeviceFromPtr(data, options.device().type()));
-     if (options.device().has_index()) {
-       TORCH_CHECK(
-           options.device() == device,
-           "Specified device ", options.device(),
-           " does not match device of data ", device);
-     }
-     auto storage = Storage(
-         Storage::use_byte_size_t(),
-         detail::computeStorageNbytes(sizes, strides, options.dtype().itemsize()),
-         InefficientStdFunctionContext::makeDataPtr(data, deleter, device),
-         /*allocator=*/nullptr,
-         /*resizable=*/false);
-     return empty(IntArrayRef(zero_sizes(options)), options).set_(storage, 0, sizes, strides);
+     return for_blob(data, sizes)
+         .strides(strides)
+         .deleter(deleter)
+         .options(options)
+         .target_device(target_device)
+         .make_tensor();
    }
    
    inline Tensor from_blob(
@@ -2363,7 +2412,10 @@ Program Listing for File Functions.h
        IntArrayRef sizes,
        const std::function<void(void*)>& deleter,
        const TensorOptions& options = {}) {
-     return from_blob(data, sizes, detail::defaultStrides(sizes), deleter, options);
+     return for_blob(data, sizes)
+         .deleter(deleter)
+         .options(options)
+         .make_tensor();
    }
    
    inline Tensor from_blob(
@@ -2371,29 +2423,17 @@ Program Listing for File Functions.h
        IntArrayRef sizes,
        IntArrayRef strides,
        const TensorOptions& options = {}) {
-     AutoNonVariableTypeMode guard;  // TODO: remove
-     tracer::impl::NoTracerDispatchMode tracer_guard;
-     auto device = globalContext().getDeviceFromPtr(data, options.device().type());
-     if (options.device().has_index()) {
-       TORCH_CHECK(
-           options.device() == device,
-           "Specified device ", options.device(),
-           " does not match device of data ", device);
-     }
-     auto storage = Storage(
-         Storage::use_byte_size_t(),
-         detail::computeStorageNbytes(sizes, strides, options.dtype().itemsize()),
-         DataPtr(data, nullptr, [](void*) {}, device),
-         /*allocator=*/nullptr,
-         /*resizable=*/false);
-     return empty(IntArrayRef(zero_sizes(options)), options).set_(storage, 0, sizes, strides);
+     return for_blob(data, sizes)
+         .strides(strides)
+         .options(options)
+         .make_tensor();
    }
    
    inline Tensor from_blob(
        void* data,
        IntArrayRef sizes,
        const TensorOptions& options = {}) {
-     return from_blob(data, sizes, detail::defaultStrides(sizes), options);
+     return for_blob(data, sizes).options(options).make_tensor();
    }
    
    inline int64_t numel(const Tensor& tensor) {
