@@ -902,54 +902,12 @@
     <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="nb">false</span><span class="p">,</span> <span class="s">&quot;Expected input batch_size (&quot;</span><span class="p">,</span> <span class="n">input</span><span class="p">.</span><span class="n">sizes</span><span class="p">()[</span><span class="mi">0</span><span class="p">],</span> <span class="s">&quot;) to match target batch_size (&quot;</span><span class="p">,</span> <span class="n">target</span><span class="p">.</span><span class="n">sizes</span><span class="p">()[</span><span class="mi">0</span><span class="p">],</span> <span class="s">&quot;).&quot;</span><span class="p">);</span>
   <span class="p">}</span>
 
-  <span class="n">torch</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">ret</span><span class="p">;</span>
-  <span class="n">torch</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">input_</span> <span class="o">=</span> <span class="n">input</span><span class="p">;</span>
-  <span class="n">torch</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">target_</span> <span class="o">=</span> <span class="n">target</span><span class="p">;</span>
-  <span class="k">if</span> <span class="p">(</span><span class="n">input_</span><span class="p">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">2</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">ret</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">nll_loss</span><span class="p">(</span>
-          <span class="n">input_</span><span class="p">,</span>
-          <span class="n">target_</span><span class="p">,</span>
-          <span class="n">weight</span><span class="p">,</span>
-          <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">reduction</span><span class="p">),</span>
-          <span class="n">ignore_index</span><span class="p">);</span>
-  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">input_</span><span class="p">.</span><span class="n">dim</span><span class="p">()</span> <span class="o">==</span> <span class="mi">4</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">ret</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">nll_loss2d</span><span class="p">(</span>
-          <span class="n">input_</span><span class="p">,</span>
-          <span class="n">target_</span><span class="p">,</span>
-          <span class="n">weight</span><span class="p">,</span>
-          <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">reduction</span><span class="p">),</span>
-          <span class="n">ignore_index</span><span class="p">);</span>
-  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-    <span class="c1">// dim == 3 or dim &gt; 4</span>
-    <span class="k">auto</span> <span class="n">n</span> <span class="o">=</span> <span class="n">input_</span><span class="p">.</span><span class="n">sizes</span><span class="p">()[</span><span class="mi">0</span><span class="p">];</span>
-    <span class="k">auto</span> <span class="n">c</span> <span class="o">=</span> <span class="n">input_</span><span class="p">.</span><span class="n">sizes</span><span class="p">()[</span><span class="mi">1</span><span class="p">];</span>
-    <span class="k">auto</span> <span class="n">out_size</span> <span class="o">=</span> <span class="n">input_</span><span class="p">.</span><span class="n">sizes</span><span class="p">().</span><span class="n">slice</span><span class="p">(</span><span class="mi">2</span><span class="p">).</span><span class="n">vec</span><span class="p">();</span>
-    <span class="n">out_size</span><span class="p">.</span><span class="n">insert</span><span class="p">(</span><span class="n">out_size</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span> <span class="n">n</span><span class="p">);</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">target_</span><span class="p">.</span><span class="n">sizes</span><span class="p">().</span><span class="n">slice</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="o">!=</span> <span class="n">input_</span><span class="p">.</span><span class="n">sizes</span><span class="p">().</span><span class="n">slice</span><span class="p">(</span><span class="mi">2</span><span class="p">))</span> <span class="p">{</span>
-      <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="nb">false</span><span class="p">,</span> <span class="s">&quot;Expected target size &quot;</span><span class="p">,</span> <span class="n">at</span><span class="o">::</span><span class="n">IntArrayRef</span><span class="p">(</span><span class="n">out_size</span><span class="p">),</span> <span class="s">&quot;, got &quot;</span><span class="p">,</span> <span class="n">target_</span><span class="p">.</span><span class="n">sizes</span><span class="p">());</span>
-    <span class="p">}</span>
-    <span class="n">input_</span> <span class="o">=</span> <span class="n">input_</span><span class="p">.</span><span class="n">contiguous</span><span class="p">();</span>
-    <span class="n">target_</span> <span class="o">=</span> <span class="n">target_</span><span class="p">.</span><span class="n">contiguous</span><span class="p">();</span>
-    <span class="c1">// support empty batches, see #15870</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">input_</span><span class="p">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-      <span class="n">input_</span> <span class="o">=</span> <span class="n">input_</span><span class="p">.</span><span class="n">view</span><span class="p">({</span><span class="n">n</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">-1</span><span class="p">});</span>
-    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-      <span class="n">input_</span> <span class="o">=</span> <span class="n">input_</span><span class="p">.</span><span class="n">view</span><span class="p">({</span><span class="n">n</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">});</span>
-    <span class="p">}</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">target_</span><span class="p">.</span><span class="n">numel</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-      <span class="n">target_</span> <span class="o">=</span> <span class="n">target_</span><span class="p">.</span><span class="n">view</span><span class="p">({</span><span class="n">n</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">-1</span><span class="p">});</span>
-    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-      <span class="n">target_</span> <span class="o">=</span> <span class="n">target_</span><span class="p">.</span><span class="n">view</span><span class="p">({</span><span class="n">n</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">});</span>
-    <span class="p">}</span>
-    <span class="k">auto</span> <span class="n">reduction_enum</span> <span class="o">=</span> <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">reduction</span><span class="p">);</span>
-    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">c10</span><span class="o">::</span><span class="n">get_if</span><span class="o">&lt;</span><span class="n">enumtype</span><span class="o">::</span><span class="n">kNone</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">reduction</span><span class="p">))</span> <span class="p">{</span>
-      <span class="n">ret</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">nll_loss2d</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="n">target_</span><span class="p">,</span> <span class="n">weight</span><span class="p">,</span> <span class="n">reduction_enum</span><span class="p">,</span> <span class="n">ignore_index</span><span class="p">);</span>
-    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-      <span class="k">auto</span> <span class="n">out</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">nll_loss2d</span><span class="p">(</span><span class="n">input_</span><span class="p">,</span> <span class="n">target_</span><span class="p">,</span> <span class="n">weight</span><span class="p">,</span> <span class="n">reduction_enum</span><span class="p">,</span> <span class="n">ignore_index</span><span class="p">);</span>
-      <span class="n">ret</span> <span class="o">=</span> <span class="n">out</span><span class="p">.</span><span class="n">view</span><span class="p">(</span><span class="n">out_size</span><span class="p">);</span>
-    <span class="p">}</span>
-  <span class="p">}</span>
-  <span class="k">return</span> <span class="n">ret</span><span class="p">;</span>
+  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">nll_loss_nd</span><span class="p">(</span>
+      <span class="n">input</span><span class="p">,</span>
+      <span class="n">target</span><span class="p">,</span>
+      <span class="n">weight</span><span class="p">,</span>
+      <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">reduction</span><span class="p">),</span>
+      <span class="n">ignore_index</span><span class="p">);</span>
 <span class="p">}</span>
 <span class="p">}</span> <span class="c1">// namespace detail</span>
 <span class="cp">#endif </span><span class="cm">/* DOXYGEN_SHOULD_SKIP_THIS */</span><span class="cp"></span>
@@ -976,25 +934,12 @@
     <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">weight</span><span class="p">,</span>
     <span class="kt">int64_t</span> <span class="n">ignore_index</span><span class="p">,</span>
     <span class="n">CrossEntropyFuncOptions</span><span class="o">::</span><span class="n">reduction_t</span> <span class="n">reduction</span><span class="p">)</span> <span class="p">{</span>
-  <span class="n">NLLLossFuncOptions</span><span class="o">::</span><span class="n">reduction_t</span> <span class="n">reduction_</span><span class="p">;</span>
-  <span class="k">if</span> <span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">get_if</span><span class="o">&lt;</span><span class="n">enumtype</span><span class="o">::</span><span class="n">kNone</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">reduction</span><span class="p">))</span> <span class="p">{</span>
-    <span class="n">reduction_</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">kNone</span><span class="p">;</span>
-  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">get_if</span><span class="o">&lt;</span><span class="n">enumtype</span><span class="o">::</span><span class="n">kMean</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">reduction</span><span class="p">))</span> <span class="p">{</span>
-    <span class="n">reduction_</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">kMean</span><span class="p">;</span>
-  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">get_if</span><span class="o">&lt;</span><span class="n">enumtype</span><span class="o">::</span><span class="n">kSum</span><span class="o">&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">reduction</span><span class="p">))</span> <span class="p">{</span>
-    <span class="n">reduction_</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">kSum</span><span class="p">;</span>
-  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-    <span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span>
-      <span class="nb">false</span><span class="p">,</span>
-      <span class="n">enumtype</span><span class="o">::</span><span class="n">get_enum_name</span><span class="p">(</span><span class="n">reduction</span><span class="p">),</span>
-      <span class="s">&quot; is not valid&quot;</span><span class="p">);</span>
-  <span class="p">}</span>
-  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">nn</span><span class="o">::</span><span class="n">functional</span><span class="o">::</span><span class="n">detail</span><span class="o">::</span><span class="n">nll_loss</span><span class="p">(</span>
-    <span class="n">torch</span><span class="o">::</span><span class="n">nn</span><span class="o">::</span><span class="n">functional</span><span class="o">::</span><span class="n">detail</span><span class="o">::</span><span class="n">log_softmax</span><span class="p">(</span><span class="n">input</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">),</span>
-    <span class="n">target</span><span class="p">,</span>
-    <span class="n">weight</span><span class="p">,</span>
-    <span class="n">ignore_index</span><span class="p">,</span>
-    <span class="n">reduction_</span><span class="p">);</span>
+  <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">cross_entropy_loss</span><span class="p">(</span>
+      <span class="n">input</span><span class="p">,</span>
+      <span class="n">target</span><span class="p">,</span>
+      <span class="n">weight</span><span class="p">,</span>
+      <span class="n">enumtype</span><span class="o">::</span><span class="n">reduction_get_enum</span><span class="p">(</span><span class="n">reduction</span><span class="p">),</span>
+      <span class="n">ignore_index</span><span class="p">);</span>
 <span class="p">}</span>
 <span class="p">}</span> <span class="c1">// namespace detail</span>
 <span class="cp">#endif </span><span class="cm">/* DOXYGEN_SHOULD_SKIP_THIS */</span><span class="cp"></span>
