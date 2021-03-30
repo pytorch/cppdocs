@@ -514,6 +514,13 @@
     <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">isTensor</span><span class="p">())</span> <span class="p">{</span>
       <span class="k">const</span> <span class="k">auto</span><span class="o">&amp;</span> <span class="n">thisTensor</span> <span class="o">=</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">toTensor</span><span class="p">();</span>
       <span class="k">const</span> <span class="k">auto</span><span class="o">&amp;</span> <span class="n">rhsTensor</span> <span class="o">=</span> <span class="n">rhs</span><span class="p">.</span><span class="n">toTensor</span><span class="p">();</span>
+      <span class="c1">// mkldnn tensors dont have views or storage, so we compare</span>
+      <span class="c1">// based on tensor impl. //TODO: find a way to use mkldnn storage</span>
+      <span class="k">if</span> <span class="p">(</span><span class="n">thisTensor</span><span class="p">.</span><span class="n">is_mkldnn</span><span class="p">()</span> <span class="o">||</span> <span class="n">rhsTensor</span><span class="p">.</span><span class="n">is_mkldnn</span><span class="p">())</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">thisTensor</span><span class="p">.</span><span class="n">unsafeGetTensorImpl</span><span class="p">()</span> <span class="o">==</span>
+            <span class="n">rhsTensor</span><span class="p">.</span><span class="n">unsafeGetTensorImpl</span><span class="p">();</span>
+      <span class="p">}</span>
+
       <span class="k">return</span> <span class="n">thisTensor</span><span class="p">.</span><span class="n">is_alias_of</span><span class="p">(</span><span class="n">rhsTensor</span><span class="p">);</span>
     <span class="p">}</span>
 
@@ -1059,8 +1066,15 @@
   <span class="k">struct</span> <span class="nc">HashAliasedIValue</span> <span class="p">{</span>
     <span class="kt">size_t</span> <span class="nf">operator</span><span class="p">()(</span><span class="k">const</span> <span class="n">IValue</span><span class="o">&amp;</span> <span class="n">val</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
       <span class="k">if</span> <span class="p">(</span><span class="n">val</span><span class="p">.</span><span class="n">isTensor</span><span class="p">())</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="o">&gt;</span><span class="p">(</span>
-            <span class="n">val</span><span class="p">.</span><span class="n">toTensor</span><span class="p">().</span><span class="n">storage</span><span class="p">().</span><span class="n">unsafeGetStorageImpl</span><span class="p">());</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">val</span><span class="p">.</span><span class="n">toTensor</span><span class="p">().</span><span class="n">is_mkldnn</span><span class="p">())</span> <span class="p">{</span>
+          <span class="c1">// MKLDNN tensors dont have storage and dont create views</span>
+          <span class="c1">// or aliasing so we can just use Tensor pointer, TODO: find way</span>
+          <span class="c1">// to use mkldnn storage</span>
+          <span class="k">return</span> <span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">val</span><span class="p">.</span><span class="n">toTensor</span><span class="p">().</span><span class="n">unsafeGetTensorImpl</span><span class="p">());</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+          <span class="k">return</span> <span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="o">&gt;</span><span class="p">(</span>
+              <span class="n">val</span><span class="p">.</span><span class="n">toTensor</span><span class="p">().</span><span class="n">storage</span><span class="p">().</span><span class="n">unsafeGetStorageImpl</span><span class="p">());</span>
+        <span class="p">}</span>
       <span class="p">}</span>
       <span class="c1">// If it is not a Tensor, then two mutable IValues alias each other only</span>
       <span class="c1">// if they are the same pointer.</span>
