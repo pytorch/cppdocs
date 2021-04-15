@@ -394,6 +394,16 @@
 <span class="c1">// Note that Tensor can also be NULL, i.e. it is not associated with any underlying TensorImpl, and</span>
 <span class="c1">// special care must be taken to handle this.</span>
 <span class="k">class</span> <span class="nc">TORCH_API</span> <span class="n">Tensor</span> <span class="p">{</span>
+ <span class="k">private</span><span class="o">:</span>
+  <span class="k">struct</span> <span class="nc">unsafe_borrow_t</span> <span class="p">{</span> <span class="k">explicit</span> <span class="nf">unsafe_borrow_t</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span> <span class="p">};</span>
+
+  <span class="c1">// Create a Tensor with a +0 reference count. Special care must be</span>
+  <span class="c1">// taken to avoid decrementing this reference count at destruction</span>
+  <span class="c1">// time. Intended to support MaybeOwnedTraits&lt;Tensor&gt;.</span>
+  <span class="k">explicit</span> <span class="nf">Tensor</span><span class="p">(</span><span class="n">unsafe_borrow_t</span><span class="p">,</span> <span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">rhs</span><span class="p">)</span>
+      <span class="o">:</span> <span class="n">impl_</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="p">,</span> <span class="n">UndefinedTensorImpl</span><span class="o">&gt;::</span><span class="n">reclaim</span><span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">impl_</span><span class="p">.</span><span class="n">get</span><span class="p">()))</span> <span class="p">{}</span>
+  <span class="k">friend</span> <span class="n">MaybeOwnedTraits</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span><span class="p">;</span>
+
  <span class="k">public</span><span class="o">:</span>
   <span class="n">Tensor</span><span class="p">(){};</span>
   <span class="c1">// This constructor should not be used by end users and is an implementation</span>
@@ -434,13 +444,7 @@
     <span class="p">}</span>
   <span class="p">}</span>
 
-  <span class="n">c10</span><span class="o">::</span><span class="n">MaybeOwned</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">expect_contiguous</span><span class="p">(</span><span class="n">MemoryFormat</span> <span class="n">memory_format</span><span class="o">=</span><span class="n">MemoryFormat</span><span class="o">::</span><span class="n">Contiguous</span><span class="p">)</span> <span class="k">const</span> <span class="o">&amp;</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">is_contiguous</span><span class="p">(</span><span class="n">memory_format</span><span class="p">))</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">MaybeOwned</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;::</span><span class="n">borrowed</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">);</span>
-    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">MaybeOwned</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;::</span><span class="n">owned</span><span class="p">(</span><span class="n">__dispatch_contiguous</span><span class="p">(</span><span class="n">memory_format</span><span class="p">));</span>
-    <span class="p">}</span>
-  <span class="p">}</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">MaybeOwned</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">expect_contiguous</span><span class="p">(</span><span class="n">MemoryFormat</span> <span class="n">memory_format</span><span class="o">=</span><span class="n">MemoryFormat</span><span class="o">::</span><span class="n">Contiguous</span><span class="p">)</span> <span class="k">const</span> <span class="o">&amp;</span><span class="p">;</span>
 
   <span class="c1">// Use .contiguous() instead. Trying to borrow from a prvalue Tensor</span>
   <span class="c1">// will only lead to trouble and dangling references.</span>
@@ -706,6 +710,11 @@
   <span class="kt">bool</span> <span class="n">is_sparse</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="c1">// NB: this is not a native function to avoid dispatching overhead.</span>
     <span class="k">return</span> <span class="n">impl_</span><span class="o">-&gt;</span><span class="n">is_sparse</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="kt">bool</span> <span class="n">is_sparse_csr</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="c1">// NB: this is not a native function to avoid dispatching overhead.</span>
+    <span class="k">return</span> <span class="n">impl_</span><span class="o">-&gt;</span><span class="n">is_sparse_csr</span><span class="p">();</span>
   <span class="p">}</span>
 
   <span class="kt">bool</span> <span class="n">is_mkldnn</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
@@ -1324,6 +1333,8 @@
   <span class="n">Tensor</span> <span class="o">&amp;</span> <span class="nf">_coalesced_</span><span class="p">(</span><span class="kt">bool</span> <span class="n">coalesced</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
   <span class="n">Tensor</span> <span class="nf">indices</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
   <span class="n">Tensor</span> <span class="nf">values</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+  <span class="n">Tensor</span> <span class="nf">crow_indices</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+  <span class="n">Tensor</span> <span class="nf">col_indices</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
   <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">unbind</span><span class="p">(</span><span class="kt">int64_t</span> <span class="n">dim</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
   <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">unbind</span><span class="p">(</span><span class="n">Dimname</span> <span class="n">dim</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
   <span class="n">Tensor</span> <span class="nf">to_sparse</span><span class="p">(</span><span class="kt">int64_t</span> <span class="n">sparse_dim</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
@@ -1732,6 +1743,61 @@
   <span class="k">return</span> <span class="nf">legacyExtractDispatchKey</span><span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="n">key_set</span><span class="p">());</span>
 <span class="p">}</span>
 
+<span class="p">}</span> <span class="c1">// namespace at</span>
+
+<span class="k">namespace</span> <span class="n">c10</span> <span class="p">{</span>
+<span class="k">template</span> <span class="o">&lt;&gt;</span>
+<span class="k">struct</span> <span class="nc">MaybeOwnedTraits</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="p">{</span>
+  <span class="k">using</span> <span class="n">owned_type</span> <span class="o">=</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="p">;</span>
+  <span class="k">using</span> <span class="n">borrow_type</span> <span class="o">=</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="p">;</span>
+
+  <span class="k">static</span> <span class="n">borrow_type</span> <span class="n">createBorrow</span><span class="p">(</span><span class="k">const</span> <span class="n">owned_type</span><span class="o">&amp;</span> <span class="n">from</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// NOTE: this can be implemented without the special</span>
+    <span class="c1">// unsafe_borrow_t Tensor constructor as</span>
+    <span class="c1">//</span>
+    <span class="c1">// return borrow_type(c10::intrusive_ptr&lt;at::TensorImpl, at::UndefinedTensorImpl&gt;::reclaim(from.unsafeGetTensorImpl()));</span>
+    <span class="c1">//</span>
+    <span class="c1">// but that hurts inlining due to the nullptr check in the</span>
+    <span class="c1">// Tensor(c10::intrusive_ptr&lt;...&gt;) constructor. We already know</span>
+    <span class="c1">// that from.impl_ isn&#39;t null because from is a valid Tensor, so</span>
+    <span class="c1">// we needn&#39;t do the check again. (using __builtin_assume can</span>
+    <span class="c1">// avoid this, but wouldn&#39;t be portable to MSVC.)</span>
+    <span class="k">return</span> <span class="nf">borrow_type</span><span class="p">(</span><span class="n">borrow_type</span><span class="o">::</span><span class="n">unsafe_borrow_t</span><span class="p">{},</span> <span class="n">from</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="k">static</span> <span class="kt">void</span> <span class="n">assignBorrow</span><span class="p">(</span><span class="n">borrow_type</span><span class="o">&amp;</span> <span class="n">lhs</span><span class="p">,</span> <span class="k">const</span> <span class="n">borrow_type</span><span class="o">&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">lhs</span><span class="p">.</span><span class="n">unsafeReleaseTensorImpl</span><span class="p">();</span>
+    <span class="c1">// See above note: this can be implemented with public API</span>
+    <span class="c1">// similarly to createBorrow(), but that would hurt inlining.</span>
+    <span class="n">lhs</span> <span class="o">=</span> <span class="n">borrow_type</span><span class="p">(</span><span class="n">borrow_type</span><span class="o">::</span><span class="n">unsafe_borrow_t</span><span class="p">{},</span> <span class="n">rhs</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="k">static</span> <span class="kt">void</span> <span class="n">destroyBorrow</span><span class="p">(</span><span class="n">borrow_type</span><span class="o">&amp;</span> <span class="n">toDestroy</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">toDestroy</span><span class="p">.</span><span class="n">unsafeReleaseTensorImpl</span><span class="p">();</span> <span class="c1">// &quot;leak&quot; it, but it was already +0.</span>
+  <span class="p">}</span>
+
+  <span class="k">static</span> <span class="k">const</span> <span class="n">owned_type</span><span class="o">&amp;</span> <span class="n">referenceFromBorrow</span><span class="p">(</span><span class="k">const</span> <span class="n">borrow_type</span><span class="o">&amp;</span> <span class="n">borrow</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">borrow</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="k">static</span> <span class="k">const</span> <span class="n">owned_type</span><span class="o">*</span> <span class="n">pointerFromBorrow</span><span class="p">(</span><span class="k">const</span> <span class="n">borrow_type</span><span class="o">&amp;</span> <span class="n">borrow</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="o">&amp;</span><span class="n">borrow</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="k">static</span> <span class="kt">bool</span> <span class="n">debugBorrowIsValid</span><span class="p">(</span><span class="k">const</span> <span class="n">borrow_type</span><span class="o">&amp;</span> <span class="n">borrow</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p">};</span>
+<span class="p">}</span> <span class="c1">// namespace c10</span>
+
+<span class="k">namespace</span> <span class="n">at</span> <span class="p">{</span>
+<span class="kr">inline</span> <span class="n">c10</span><span class="o">::</span><span class="n">MaybeOwned</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="n">Tensor</span><span class="o">::</span><span class="n">expect_contiguous</span><span class="p">(</span><span class="n">MemoryFormat</span> <span class="n">memory_format</span><span class="p">)</span> <span class="k">const</span> <span class="o">&amp;</span> <span class="p">{</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">is_contiguous</span><span class="p">(</span><span class="n">memory_format</span><span class="p">))</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">MaybeOwned</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;::</span><span class="n">borrowed</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">);</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">MaybeOwned</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;::</span><span class="n">owned</span><span class="p">(</span><span class="n">__dispatch_contiguous</span><span class="p">(</span><span class="n">memory_format</span><span class="p">));</span>
+  <span class="p">}</span>
+<span class="p">}</span>
 <span class="p">}</span> <span class="c1">// namespace at</span>
 </pre></div>
 </div>
