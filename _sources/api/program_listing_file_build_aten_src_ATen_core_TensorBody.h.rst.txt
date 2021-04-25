@@ -781,7 +781,7 @@ Program Listing for File TensorBody.h
      at::Tensor new_full(at::IntArrayRef size, const at::Scalar & fill_value, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory) const;
      at::Tensor new_zeros(at::IntArrayRef size, at::TensorOptions options={}) const;
      at::Tensor new_zeros(at::IntArrayRef size, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory) const;
-     at::Tensor & resize_(at::IntArrayRef size, c10::optional<at::MemoryFormat> memory_format=c10::nullopt) const;
+     const at::Tensor & resize_(at::IntArrayRef size, c10::optional<at::MemoryFormat> memory_format=c10::nullopt) const;
      at::Tensor erf() const;
      at::Tensor & erf_() const;
      at::Tensor erfc() const;
@@ -1014,7 +1014,7 @@ Program Listing for File TensorBody.h
      at::Tensor norm(const c10::optional<at::Scalar> & p, at::DimnameList dim, bool keepdim=false) const;
      std::tuple<at::Tensor,at::Tensor> frexp() const;
      at::Tensor clone(c10::optional<at::MemoryFormat> memory_format=c10::nullopt) const;
-     at::Tensor & resize_as_(const at::Tensor & the_template, c10::optional<at::MemoryFormat> memory_format=c10::nullopt) const;
+     const at::Tensor & resize_as_(const at::Tensor & the_template, c10::optional<at::MemoryFormat> memory_format=c10::nullopt) const;
      at::Tensor & zero_() const;
      at::Tensor sub(const at::Tensor & other, const at::Scalar & alpha=1) const;
      at::Tensor & sub_(const at::Tensor & other, const at::Scalar & alpha=1) const;
@@ -1028,8 +1028,8 @@ Program Listing for File TensorBody.h
      at::Tensor & heaviside_(const at::Tensor & values) const;
      at::Tensor addmm(const at::Tensor & mat1, const at::Tensor & mat2, const at::Scalar & beta=1, const at::Scalar & alpha=1) const;
      at::Tensor & addmm_(const at::Tensor & mat1, const at::Tensor & mat2, const at::Scalar & beta=1, const at::Scalar & alpha=1) const;
-     at::Tensor & sparse_resize_(at::IntArrayRef size, int64_t sparse_dim, int64_t dense_dim) const;
-     at::Tensor & sparse_resize_and_clear_(at::IntArrayRef size, int64_t sparse_dim, int64_t dense_dim) const;
+     const at::Tensor & sparse_resize_(at::IntArrayRef size, int64_t sparse_dim, int64_t dense_dim) const;
+     const at::Tensor & sparse_resize_and_clear_(at::IntArrayRef size, int64_t sparse_dim, int64_t dense_dim) const;
      at::Tensor sparse_mask(const at::Tensor & mask) const;
      at::Tensor to_dense(c10::optional<at::ScalarType> dtype=c10::nullopt) const;
      int64_t sparse_dim() const;
@@ -1502,6 +1502,14 @@ Program Listing for File TensorBody.h
    } // namespace c10
    
    namespace at {
+   
+   inline c10::MaybeOwned<Tensor> borrow_from_optional_tensor(
+       const c10::optional<Tensor>& opt) {
+     return opt.has_value()
+       ? c10::MaybeOwned<Tensor>::borrowed(*opt)
+       : c10::MaybeOwned<Tensor>::owned(c10::in_place);
+   }
+   
    inline c10::MaybeOwned<Tensor> Tensor::expect_contiguous(MemoryFormat memory_format) const & {
      if (is_contiguous(memory_format)) {
        return c10::MaybeOwned<Tensor>::borrowed(*this);
