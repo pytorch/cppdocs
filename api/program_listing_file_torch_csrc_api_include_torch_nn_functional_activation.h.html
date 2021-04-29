@@ -809,18 +809,21 @@
       <span class="n">v</span> <span class="o">=</span> <span class="n">F</span><span class="o">::</span><span class="n">linear</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">_w</span><span class="p">,</span> <span class="n">_b</span><span class="p">);</span>
     <span class="p">}</span>
   <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="c1">// NOLINTNEXTLINE(performance-unnecessary-copy-initialization)</span>
     <span class="k">auto</span> <span class="n">q_proj_weight_non_opt</span> <span class="o">=</span> <span class="n">q_proj_weight</span><span class="p">;</span>
     <span class="k">auto</span> <span class="n">sizes</span> <span class="o">=</span> <span class="n">q_proj_weight_non_opt</span><span class="p">.</span><span class="n">sizes</span><span class="p">();</span>
     <span class="k">auto</span> <span class="n">len1</span> <span class="o">=</span> <span class="n">sizes</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
     <span class="k">auto</span> <span class="n">len2</span> <span class="o">=</span> <span class="n">sizes</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span>
     <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">len1</span> <span class="o">==</span> <span class="n">embed_dim</span> <span class="o">&amp;&amp;</span> <span class="n">len2</span> <span class="o">==</span> <span class="n">query</span><span class="p">.</span><span class="n">size</span><span class="p">(</span><span class="mi">-1</span><span class="p">));</span>
 
+    <span class="c1">// NOLINTNEXTLINE(performance-unnecessary-copy-initialization)</span>
     <span class="k">auto</span> <span class="n">k_proj_weight_non_opt</span> <span class="o">=</span> <span class="n">k_proj_weight</span><span class="p">;</span>
     <span class="n">sizes</span> <span class="o">=</span> <span class="n">k_proj_weight_non_opt</span><span class="p">.</span><span class="n">sizes</span><span class="p">();</span>
     <span class="n">len1</span> <span class="o">=</span> <span class="n">sizes</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
     <span class="n">len2</span> <span class="o">=</span> <span class="n">sizes</span><span class="p">[</span><span class="mi">1</span><span class="p">];</span>
     <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">len1</span> <span class="o">==</span> <span class="n">embed_dim</span> <span class="o">&amp;&amp;</span> <span class="n">len2</span> <span class="o">==</span> <span class="n">key</span><span class="p">.</span><span class="n">size</span><span class="p">(</span><span class="mi">-1</span><span class="p">));</span>
 
+    <span class="c1">// NOLINTNEXTLINE(performance-unnecessary-copy-initialization)</span>
     <span class="k">auto</span> <span class="n">v_proj_weight_non_opt</span> <span class="o">=</span> <span class="n">v_proj_weight</span><span class="p">;</span>
     <span class="n">sizes</span> <span class="o">=</span> <span class="n">v_proj_weight_non_opt</span><span class="p">.</span><span class="n">sizes</span><span class="p">();</span>
     <span class="n">len1</span> <span class="o">=</span> <span class="n">sizes</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
@@ -950,6 +953,7 @@
     <span class="p">);</span>
     <span class="n">attn_output_weights</span> <span class="o">=</span> <span class="n">attn_output_weights</span><span class="p">.</span><span class="n">view</span><span class="p">({</span><span class="n">bsz</span> <span class="o">*</span> <span class="n">num_heads</span><span class="p">,</span> <span class="n">tgt_len</span><span class="p">,</span> <span class="n">src_len</span><span class="p">});</span>
   <span class="p">}</span>
+  <span class="c1">// NOLINTNEXTLINE(bugprone-argument-comment)</span>
   <span class="n">attn_output_weights</span> <span class="o">=</span> <span class="n">F</span><span class="o">::</span><span class="n">softmax</span><span class="p">(</span><span class="n">attn_output_weights</span><span class="p">,</span> <span class="cm">/*dim=*/</span><span class="mi">-1</span><span class="p">);</span>
   <span class="n">attn_output_weights</span> <span class="o">=</span> <span class="n">F</span><span class="o">::</span><span class="n">dropout</span><span class="p">(</span><span class="n">attn_output_weights</span><span class="p">,</span> <span class="n">F</span><span class="o">::</span><span class="n">DropoutFuncOptions</span><span class="p">().</span><span class="n">p</span><span class="p">(</span><span class="n">dropout_p</span><span class="p">).</span><span class="n">training</span><span class="p">(</span><span class="n">training</span><span class="p">));</span>
   <span class="k">auto</span> <span class="n">attn_output</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">bmm</span><span class="p">(</span><span class="n">attn_output_weights</span><span class="p">,</span> <span class="n">v</span><span class="p">);</span>

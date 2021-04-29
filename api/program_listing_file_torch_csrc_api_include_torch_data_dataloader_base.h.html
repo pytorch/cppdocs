@@ -344,10 +344,12 @@
   <span class="n">DataLoaderBase</span><span class="p">(</span>
       <span class="n">DataLoaderOptions</span> <span class="n">options</span><span class="p">,</span>
       <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Dataset</span><span class="o">&gt;</span> <span class="n">main_thread_dataset</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">)</span>
+      <span class="c1">// NOLINTNEXTLINE(performance-move-const-arg)</span>
       <span class="o">:</span> <span class="n">options_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">options</span><span class="p">)),</span>
         <span class="n">main_thread_dataset_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">main_thread_dataset</span><span class="p">)),</span>
         <span class="n">sequencer_</span><span class="p">(</span><span class="n">new_sequencer</span><span class="p">())</span> <span class="p">{}</span>
 
+  <span class="c1">// NOLINTNEXTLINE(bugprone-exception-escape)</span>
   <span class="k">virtual</span> <span class="o">~</span><span class="n">DataLoaderBase</span><span class="p">()</span> <span class="p">{</span>
     <span class="n">join</span><span class="p">();</span>
   <span class="p">}</span>
@@ -411,6 +413,7 @@
     <span class="n">Result</span><span class="p">(</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Batch</span><span class="o">&gt;&amp;&amp;</span> <span class="n">b</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">sqn</span><span class="p">)</span>
         <span class="o">:</span> <span class="n">Sequenced</span><span class="p">(</span><span class="n">sqn</span><span class="p">),</span> <span class="n">batch</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">b</span><span class="p">))</span> <span class="p">{}</span>
     <span class="n">Result</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">exception_ptr</span> <span class="n">exception</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">sqn</span><span class="p">)</span>
+        <span class="c1">// NOLINTNEXTLINE(performance-move-const-arg)</span>
         <span class="o">:</span> <span class="n">Sequenced</span><span class="p">(</span><span class="n">sqn</span><span class="p">),</span> <span class="n">exception</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">exception</span><span class="p">))</span> <span class="p">{}</span>
     <span class="n">optional</span><span class="o">&lt;</span><span class="n">Batch</span><span class="o">&gt;</span> <span class="n">batch</span><span class="p">;</span>
     <span class="n">std</span><span class="o">::</span><span class="n">exception_ptr</span> <span class="n">exception</span><span class="p">;</span>
@@ -488,18 +491,25 @@
     <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">sequencers</span><span class="o">::</span><span class="n">NoSequencer</span><span class="o">&lt;</span><span class="n">Result</span><span class="o">&gt;&gt;</span><span class="p">();</span>
   <span class="p">}</span>
 
+  <span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
   <span class="k">const</span> <span class="n">FullDataLoaderOptions</span> <span class="n">options_</span><span class="p">;</span>
 
+  <span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
   <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Dataset</span><span class="o">&gt;</span> <span class="n">main_thread_dataset_</span><span class="p">;</span>
 
+  <span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
   <span class="kt">size_t</span> <span class="n">sequence_number_</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
 
+  <span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
   <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="kr">thread</span><span class="o">&gt;</span> <span class="n">workers_</span><span class="p">;</span>
 
+  <span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
   <span class="n">detail</span><span class="o">::</span><span class="n">DataShuttle</span><span class="o">&lt;</span><span class="n">Job</span><span class="p">,</span> <span class="n">Result</span><span class="o">&gt;</span> <span class="n">shuttle_</span><span class="p">;</span>
 
+  <span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
   <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">sequencers</span><span class="o">::</span><span class="n">Sequencer</span><span class="o">&lt;</span><span class="n">Result</span><span class="o">&gt;&gt;</span> <span class="n">sequencer_</span><span class="p">;</span>
 
+  <span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
   <span class="kt">bool</span> <span class="n">joined_</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
 <span class="p">};</span>
 <span class="p">}</span> <span class="c1">// namespace data</span>

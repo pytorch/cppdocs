@@ -325,12 +325,14 @@
 <span class="k">namespace</span> <span class="n">nn</span> <span class="p">{</span>
 
 <span class="k">template</span> <span class="o">&lt;</span><span class="kt">size_t</span> <span class="n">D</span><span class="p">,</span> <span class="k">typename</span> <span class="nc">Derived</span><span class="p">,</span> <span class="k">typename</span> <span class="nc">DerivedOptions</span><span class="o">&gt;</span>
+<span class="c1">// NOLINTNEXTLINE(bugprone-exception-escape)</span>
 <span class="k">class</span> <span class="nc">NormImplBase</span> <span class="o">:</span> <span class="k">public</span> <span class="n">torch</span><span class="o">::</span><span class="n">nn</span><span class="o">::</span><span class="n">Cloneable</span><span class="o">&lt;</span><span class="n">Derived</span><span class="o">&gt;</span> <span class="p">{</span>
  <span class="k">protected</span><span class="o">:</span>
   <span class="k">virtual</span> <span class="kt">void</span> <span class="n">_check_input_dim</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">)</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
 
  <span class="k">public</span><span class="o">:</span>
   <span class="n">NormImplBase</span><span class="p">(</span><span class="k">const</span> <span class="n">DerivedOptions</span><span class="o">&amp;</span> <span class="n">options_</span><span class="p">)</span> <span class="o">:</span> <span class="n">options</span><span class="p">(</span><span class="n">options_</span><span class="p">)</span> <span class="p">{</span>
+    <span class="c1">// NOLINTNEXTLINE(clang-analyzer-optin.cplusplus.VirtualCall)</span>
     <span class="n">reset</span><span class="p">();</span>
   <span class="p">}</span>
 
@@ -384,12 +386,14 @@
 <span class="p">};</span>
 
 <span class="k">template</span> <span class="o">&lt;</span><span class="kt">size_t</span> <span class="n">D</span><span class="p">,</span> <span class="k">typename</span> <span class="nc">Derived</span><span class="o">&gt;</span>
+<span class="c1">// NOLINTNEXTLINE(bugprone-exception-escape)</span>
 <span class="k">class</span> <span class="nc">BatchNormImplBase</span> <span class="o">:</span> <span class="k">public</span> <span class="n">NormImplBase</span><span class="o">&lt;</span><span class="n">D</span><span class="p">,</span> <span class="n">Derived</span><span class="p">,</span> <span class="n">BatchNormOptions</span><span class="o">&gt;</span> <span class="p">{</span>
  <span class="k">public</span><span class="o">:</span>
   <span class="k">using</span> <span class="n">NormImplBase</span><span class="o">&lt;</span><span class="n">D</span><span class="p">,</span> <span class="n">Derived</span><span class="p">,</span> <span class="n">BatchNormOptions</span><span class="o">&gt;::</span><span class="n">NormImplBase</span><span class="p">;</span>
 
   <span class="n">Tensor</span> <span class="nf">forward</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">this</span><span class="o">-&gt;</span><span class="n">_check_input_dim</span><span class="p">(</span><span class="n">input</span><span class="p">);</span>
+    <span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-init-variables)</span>
     <span class="kt">double</span> <span class="n">exponential_average_factor</span><span class="p">;</span>
     <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">options</span><span class="p">.</span><span class="n">momentum</span><span class="p">()</span> <span class="o">==</span> <span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">)</span> <span class="p">{</span>
       <span class="n">exponential_average_factor</span> <span class="o">=</span> <span class="mf">0.0</span><span class="p">;</span>
@@ -424,8 +428,10 @@
 
 <span class="c1">// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ BatchNorm1d ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
 
+<span class="c1">// NOLINTNEXTLINE(bugprone-exception-escape)</span>
 <span class="k">class</span> <span class="nc">TORCH_API</span> <span class="nl">BatchNorm1dImpl</span> <span class="p">:</span> <span class="k">public</span> <span class="n">BatchNormImplBase</span><span class="o">&lt;</span><span class="mi">1</span><span class="p">,</span> <span class="n">BatchNorm1dImpl</span><span class="o">&gt;</span> <span class="p">{</span>
  <span class="k">protected</span><span class="o">:</span>
+  <span class="c1">// NOLINTNEXTLINE(modernize-use-override,cppcoreguidelines-explicit-virtual-functions)</span>
   <span class="k">virtual</span> <span class="kt">void</span> <span class="n">_check_input_dim</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">)</span> <span class="k">override</span><span class="p">;</span>
 
  <span class="k">public</span><span class="o">:</span>
@@ -436,8 +442,10 @@
 
 <span class="c1">// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ BatchNorm2d ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
 
+<span class="c1">// NOLINTNEXTLINE(bugprone-exception-escape)</span>
 <span class="k">class</span> <span class="nc">TORCH_API</span> <span class="nl">BatchNorm2dImpl</span> <span class="p">:</span> <span class="k">public</span> <span class="n">BatchNormImplBase</span><span class="o">&lt;</span><span class="mi">2</span><span class="p">,</span> <span class="n">BatchNorm2dImpl</span><span class="o">&gt;</span> <span class="p">{</span>
  <span class="k">protected</span><span class="o">:</span>
+  <span class="c1">// NOLINTNEXTLINE(modernize-use-override,cppcoreguidelines-explicit-virtual-functions)</span>
   <span class="k">virtual</span> <span class="kt">void</span> <span class="n">_check_input_dim</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">)</span> <span class="k">override</span><span class="p">;</span>
 
  <span class="k">public</span><span class="o">:</span>
@@ -448,8 +456,10 @@
 
 <span class="c1">// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ BatchNorm3d ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
 
+<span class="c1">// NOLINTNEXTLINE(bugprone-exception-escape)</span>
 <span class="k">class</span> <span class="nc">TORCH_API</span> <span class="nl">BatchNorm3dImpl</span> <span class="p">:</span> <span class="k">public</span> <span class="n">BatchNormImplBase</span><span class="o">&lt;</span><span class="mi">3</span><span class="p">,</span> <span class="n">BatchNorm3dImpl</span><span class="o">&gt;</span> <span class="p">{</span>
  <span class="k">protected</span><span class="o">:</span>
+  <span class="c1">// NOLINTNEXTLINE(modernize-use-override,cppcoreguidelines-explicit-virtual-functions)</span>
   <span class="k">virtual</span> <span class="kt">void</span> <span class="n">_check_input_dim</span><span class="p">(</span><span class="k">const</span> <span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">input</span><span class="p">)</span> <span class="k">override</span><span class="p">;</span>
 
  <span class="k">public</span><span class="o">:</span>
