@@ -457,6 +457,32 @@
   <span class="n">c10</span><span class="o">::</span><span class="n">impl</span><span class="o">::</span><span class="n">InlineOptionalStreamGuard</span><span class="o">&lt;</span><span class="n">impl</span><span class="o">::</span><span class="n">CUDAGuardImpl</span><span class="o">&gt;</span> <span class="n">guard_</span><span class="p">;</span>
 <span class="p">};</span>
 
+<span class="k">struct</span> <span class="nc">CUDAMultiStreamGuard</span> <span class="p">{</span>
+  <span class="k">explicit</span> <span class="nf">CUDAMultiStreamGuard</span><span class="p">(</span><span class="n">ArrayRef</span><span class="o">&lt;</span><span class="n">CUDAStream</span><span class="o">&gt;</span> <span class="n">streams</span><span class="p">)</span>
+    <span class="o">:</span> <span class="n">guard_</span><span class="p">(</span><span class="n">unwrapStreams</span><span class="p">(</span><span class="n">streams</span><span class="p">))</span> <span class="p">{}</span>
+
+  <span class="n">CUDAMultiStreamGuard</span><span class="p">(</span><span class="k">const</span> <span class="n">CUDAMultiStreamGuard</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+  <span class="n">CUDAMultiStreamGuard</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span> <span class="n">CUDAMultiStreamGuard</span><span class="o">&amp;</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+
+  <span class="c1">// See Note [Move construction for RAII guards is tricky]</span>
+  <span class="n">CUDAMultiStreamGuard</span><span class="p">(</span><span class="n">CUDAMultiStreamGuard</span><span class="o">&amp;&amp;</span> <span class="n">other</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+
+  <span class="c1">// See Note [Move assignment for RAII guards is tricky]</span>
+  <span class="n">CUDAMultiStreamGuard</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">CUDAMultiStreamGuard</span><span class="o">&amp;&amp;</span> <span class="n">other</span><span class="p">)</span> <span class="o">=</span> <span class="k">delete</span><span class="p">;</span>
+
+<span class="k">private</span><span class="o">:</span>
+  <span class="n">c10</span><span class="o">::</span><span class="n">impl</span><span class="o">::</span><span class="n">InlineMultiStreamGuard</span><span class="o">&lt;</span><span class="n">impl</span><span class="o">::</span><span class="n">CUDAGuardImpl</span><span class="o">&gt;</span> <span class="n">guard_</span><span class="p">;</span>
+
+  <span class="k">static</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Stream</span><span class="o">&gt;</span> <span class="n">unwrapStreams</span><span class="p">(</span><span class="n">ArrayRef</span><span class="o">&lt;</span><span class="n">CUDAStream</span><span class="o">&gt;</span> <span class="n">cudaStreams</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Stream</span><span class="o">&gt;</span> <span class="n">streams</span><span class="p">;</span>
+    <span class="n">streams</span><span class="p">.</span><span class="n">reserve</span><span class="p">(</span><span class="n">cudaStreams</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
+    <span class="k">for</span> <span class="p">(</span><span class="k">const</span> <span class="n">CUDAStream</span><span class="o">&amp;</span> <span class="nl">cudaStream</span> <span class="p">:</span> <span class="n">cudaStreams</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">streams</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">cudaStream</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">streams</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p">};</span>
+
 <span class="p">}</span> <span class="c1">// namespace cuda</span>
 <span class="p">}</span> <span class="c1">// namespace c10</span>
 </pre></div>
