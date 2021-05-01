@@ -552,6 +552,18 @@
   <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">ViewInfo</span><span class="o">&gt;</span> <span class="n">backward_info_</span><span class="p">;</span>
   <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">ViewInfo</span><span class="o">&gt;</span> <span class="n">forward_info_</span><span class="p">;</span>
 
+  <span class="c1">// Optimization to reduce the number of ViewInfo we create.</span>
+  <span class="c1">// In the (very common) case where backward_info_ == forward_info_, we only</span>
+  <span class="c1">// populate backward_info_ (that should be used as both the forward and backward</span>
+  <span class="c1">// view information) and set shared_view_info_ = true.</span>
+  <span class="c1">// Invariants:</span>
+  <span class="c1">//   - If shared_view_info_ is false, there is no special constraints on</span>
+  <span class="c1">//     backward_info_ and forward_info_</span>
+  <span class="c1">//   - If shared_view_info_ is true, we must have:</span>
+  <span class="c1">//      - backward_info_.has_value() == true</span>
+  <span class="c1">//      - forward_info_.has_value() == false</span>
+  <span class="kt">bool</span> <span class="n">shared_view_info_</span><span class="p">;</span>
+
 
   <span class="kt">uint32_t</span> <span class="n">attr_version_</span><span class="p">;</span>
   <span class="n">CreationMeta</span> <span class="n">creation_meta_</span><span class="p">;</span>
@@ -559,6 +571,10 @@
 <span class="k">public</span><span class="o">:</span>
   <span class="kt">bool</span> <span class="n">requires_grad</span><span class="p">()</span> <span class="k">const</span> <span class="k">override</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">requires_grad_</span> <span class="o">||</span> <span class="n">grad_fn_</span> <span class="o">||</span> <span class="p">(</span><span class="n">has_bw_view</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">get_backward_view</span><span class="p">().</span><span class="n">base_</span><span class="p">.</span><span class="n">requires_grad</span><span class="p">());</span>
+  <span class="p">}</span>
+
+  <span class="kt">bool</span> <span class="n">shared_view_info</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">shared_view_info_</span><span class="p">;</span>
   <span class="p">}</span>
 
   <span class="kt">bool</span> <span class="n">has_bw_view</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
@@ -591,16 +607,17 @@
   <span class="p">}</span>
 
   <span class="kt">bool</span> <span class="n">has_fw_view</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">forward_info_</span><span class="p">.</span><span class="n">has_value</span><span class="p">();</span>
+    <span class="k">return</span> <span class="n">shared_view_info_</span> <span class="o">||</span> <span class="n">forward_info_</span><span class="p">.</span><span class="n">has_value</span><span class="p">();</span>
   <span class="p">}</span>
 
   <span class="k">const</span> <span class="n">ViewInfo</span><span class="o">&amp;</span> <span class="n">get_forward_view</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">has_fw_view</span><span class="p">(),</span> <span class="s">&quot;forward view info can only exist for forward views.&quot;</span><span class="p">);</span>
-    <span class="k">return</span> <span class="n">forward_info_</span><span class="p">.</span><span class="n">value</span><span class="p">();</span>
+    <span class="n">TORCH_CHECK</span><span class="p">(</span><span class="o">!</span><span class="n">shared_view_info_</span> <span class="o">||</span> <span class="n">has_bw_view</span><span class="p">(),</span> <span class="s">&quot;forward view info can only exist for forward views.&quot;</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">shared_view_info_</span> <span class="o">?</span> <span class="n">backward_info_</span><span class="p">.</span><span class="n">value</span><span class="p">()</span> <span class="o">:</span> <span class="n">forward_info_</span><span class="p">.</span><span class="n">value</span><span class="p">();</span>
   <span class="p">}</span>
 
   <span class="n">DifferentiableViewMeta</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="o">*</span> <span class="n">self_impl</span><span class="p">,</span> <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">ViewInfo</span><span class="o">&gt;</span> <span class="n">backward_info</span><span class="p">,</span>
-    <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">ViewInfo</span><span class="o">&gt;</span> <span class="n">forward_info</span><span class="p">,</span> <span class="n">CreationMeta</span> <span class="n">creation_meta</span><span class="o">=</span><span class="n">CreationMeta</span><span class="o">::</span><span class="n">DEFAULT</span><span class="p">);</span>
+    <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">ViewInfo</span><span class="o">&gt;</span> <span class="n">forward_info</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">shared_view_info</span><span class="p">,</span> <span class="n">CreationMeta</span> <span class="n">creation_meta</span><span class="o">=</span><span class="n">CreationMeta</span><span class="o">::</span><span class="n">DEFAULT</span><span class="p">);</span>
 <span class="p">};</span>
 
 <span class="c1">//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
@@ -618,6 +635,7 @@
     <span class="k">const</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">data</span><span class="p">,</span>
     <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">ViewInfo</span><span class="o">&gt;</span> <span class="n">backward_info</span><span class="p">,</span>
     <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">ViewInfo</span><span class="o">&gt;</span> <span class="n">forward_info</span><span class="p">,</span>
+    <span class="kt">bool</span> <span class="n">shared_view_info</span><span class="p">,</span>
     <span class="n">CreationMeta</span> <span class="n">creation_meta</span><span class="p">,</span>
     <span class="kt">bool</span> <span class="n">allow_tensor_metadata_change</span> <span class="o">=</span> <span class="nb">true</span><span class="p">)</span> <span class="p">{</span>
   <span class="k">if</span> <span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">defined</span><span class="p">())</span> <span class="p">{</span>
@@ -628,17 +646,18 @@
     <span class="c1">// allocation happens in view ops.</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">getIntrusivePtr</span><span class="p">().</span><span class="n">unique</span><span class="p">()</span> <span class="o">&amp;&amp;</span> <span class="n">data</span><span class="p">.</span><span class="n">getIntrusivePtr</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">unique_version</span><span class="p">())</span> <span class="p">{</span>
       <span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="o">*</span> <span class="n">data_impl</span> <span class="o">=</span> <span class="n">data</span><span class="p">.</span><span class="n">unsafeGetTensorImpl</span><span class="p">();</span>
+      <span class="n">data_impl</span><span class="o">-&gt;</span><span class="n">set_allow_tensor_metadata_change</span><span class="p">(</span><span class="n">allow_tensor_metadata_change</span><span class="p">);</span>
       <span class="n">data_impl</span><span class="o">-&gt;</span><span class="n">set_autograd_meta</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">DifferentiableViewMeta</span><span class="o">&gt;</span><span class="p">(</span>
       <span class="n">data_impl</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">backward_info</span><span class="p">),</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">forward_info</span><span class="p">),</span>
-      <span class="n">creation_meta</span><span class="p">));</span>
+      <span class="n">shared_view_info</span><span class="p">,</span> <span class="n">creation_meta</span><span class="p">));</span>
       <span class="k">return</span> <span class="n">data</span><span class="p">;</span>
     <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
       <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="o">&gt;</span> <span class="n">data_impl_copy</span> <span class="o">=</span> <span class="n">data</span><span class="p">.</span><span class="n">getIntrusivePtr</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">shallow_copy_and_detach</span><span class="p">(</span>
         <span class="cm">/*version_counter=*/</span><span class="mi">0</span><span class="p">,</span>
-        <span class="cm">/*allow_tensor_metadata_change=*/</span><span class="nb">true</span><span class="p">);</span>
+        <span class="cm">/*allow_tensor_metadata_change=*/</span><span class="n">allow_tensor_metadata_change</span><span class="p">);</span>
       <span class="n">data_impl_copy</span><span class="o">-&gt;</span><span class="n">set_autograd_meta</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">DifferentiableViewMeta</span><span class="o">&gt;</span><span class="p">(</span>
       <span class="n">data_impl_copy</span><span class="p">.</span><span class="n">get</span><span class="p">(),</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">backward_info</span><span class="p">),</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">forward_info</span><span class="p">),</span>
-      <span class="n">creation_meta</span><span class="p">));</span>
+      <span class="n">shared_view_info</span><span class="p">,</span> <span class="n">creation_meta</span><span class="p">));</span>
       <span class="k">return</span> <span class="nf">Variable</span><span class="p">(</span><span class="n">data_impl_copy</span><span class="p">);</span>
     <span class="p">}</span>
   <span class="p">}</span>
