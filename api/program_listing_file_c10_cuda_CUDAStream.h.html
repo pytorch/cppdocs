@@ -317,53 +317,53 @@
 
 <span class="cp">#include</span> <span class="cpf">&lt;cuda_runtime_api.h&gt;</span><span class="cp"></span>
 
+<span class="cp">#include</span> <span class="cpf">&lt;c10/core/DeviceGuard.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;c10/core/Stream.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;c10/cuda/CUDAException.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;c10/cuda/CUDAMacros.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;c10/core/DeviceGuard.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;c10/util/Exception.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;c10/core/Stream.h&gt;</span><span class="cp"></span>
 
 <span class="cm">/*</span>
-<span class="cm">* Stream pool note.</span>
-<span class="cm">*</span>
-<span class="cm">* A CUDAStream is an abstraction of an actual cuStream on the GPU. CUDAStreams</span>
-<span class="cm">* are backed by cuStreams, but they use several pools to minimize the costs</span>
-<span class="cm">* associated with creating, retaining, and destroying cuStreams.</span>
-<span class="cm">*</span>
-<span class="cm">* There are three pools per device, and a device&#39;s pools are lazily created.</span>
-<span class="cm">*</span>
-<span class="cm">* The first pool contains only the default stream. When the default stream</span>
-<span class="cm">* is requested it&#39;s returned.</span>
-<span class="cm">*</span>
-<span class="cm">* The second pool is the &quot;low priority&quot; or &quot;default priority&quot; streams. In</span>
-<span class="cm">* HIP builds there is no distinction between streams in this pool and streams</span>
-<span class="cm">* in the third pool (below). There are 32 of these streams per device, and</span>
-<span class="cm">* when a stream is requested one of these streams is returned round-robin.</span>
-<span class="cm">* That is, the first stream requested is at index 0, the second at index 1...</span>
-<span class="cm">* to index 31, then index 0 again.</span>
-<span class="cm">*</span>
-<span class="cm">* This means that if 33 low priority streams are requested, the first and</span>
-<span class="cm">* last streams requested are actually the same stream (under the covers)</span>
-<span class="cm">* and kernels enqueued on them cannot run concurrently.</span>
-<span class="cm">*</span>
-<span class="cm">* The third pool is the &quot;high priority&quot; streams. The third pool acts like</span>
-<span class="cm">* the second pool except the streams are created with a higher priority.</span>
-<span class="cm">*</span>
-<span class="cm">* These pools suggest that stream users should prefer many short-lived streams,</span>
-<span class="cm">* as the cost of acquiring and releasing streams is effectively zero. If</span>
-<span class="cm">* many longer-lived streams are required in performance critical scenarios</span>
-<span class="cm">* then the functionality here may need to be extended to allow, for example,</span>
-<span class="cm">* &quot;reserving&quot; a subset of the pool so that other streams do not accidentally</span>
-<span class="cm">* overlap the performance critical streams.</span>
-<span class="cm">*</span>
-<span class="cm">* Note: although the notion of &quot;current stream for device&quot; is thread local</span>
-<span class="cm">* (every OS thread has a separate current stream, as one might expect),</span>
-<span class="cm">* the stream pool is global across all threads; stream 0 is always stream 0</span>
-<span class="cm">* no matter which thread you use it on.  Multiple threads can synchronize</span>
-<span class="cm">* on the same stream.  Although the CUDA documentation is not very clear</span>
-<span class="cm">* on the matter, streams are thread safe; e.g., it is safe to enqueue</span>
-<span class="cm">* a kernel on the same stream from two different threads.</span>
-<span class="cm">*/</span>
+<span class="cm"> * Stream pool note.</span>
+<span class="cm"> *</span>
+<span class="cm"> * A CUDAStream is an abstraction of an actual cuStream on the GPU. CUDAStreams</span>
+<span class="cm"> * are backed by cuStreams, but they use several pools to minimize the costs</span>
+<span class="cm"> * associated with creating, retaining, and destroying cuStreams.</span>
+<span class="cm"> *</span>
+<span class="cm"> * There are three pools per device, and a device&#39;s pools are lazily created.</span>
+<span class="cm"> *</span>
+<span class="cm"> * The first pool contains only the default stream. When the default stream</span>
+<span class="cm"> * is requested it&#39;s returned.</span>
+<span class="cm"> *</span>
+<span class="cm"> * The second pool is the &quot;low priority&quot; or &quot;default priority&quot; streams. In</span>
+<span class="cm"> * HIP builds there is no distinction between streams in this pool and streams</span>
+<span class="cm"> * in the third pool (below). There are 32 of these streams per device, and</span>
+<span class="cm"> * when a stream is requested one of these streams is returned round-robin.</span>
+<span class="cm"> * That is, the first stream requested is at index 0, the second at index 1...</span>
+<span class="cm"> * to index 31, then index 0 again.</span>
+<span class="cm"> *</span>
+<span class="cm"> * This means that if 33 low priority streams are requested, the first and</span>
+<span class="cm"> * last streams requested are actually the same stream (under the covers)</span>
+<span class="cm"> * and kernels enqueued on them cannot run concurrently.</span>
+<span class="cm"> *</span>
+<span class="cm"> * The third pool is the &quot;high priority&quot; streams. The third pool acts like</span>
+<span class="cm"> * the second pool except the streams are created with a higher priority.</span>
+<span class="cm"> *</span>
+<span class="cm"> * These pools suggest that stream users should prefer many short-lived streams,</span>
+<span class="cm"> * as the cost of acquiring and releasing streams is effectively zero. If</span>
+<span class="cm"> * many longer-lived streams are required in performance critical scenarios</span>
+<span class="cm"> * then the functionality here may need to be extended to allow, for example,</span>
+<span class="cm"> * &quot;reserving&quot; a subset of the pool so that other streams do not accidentally</span>
+<span class="cm"> * overlap the performance critical streams.</span>
+<span class="cm"> *</span>
+<span class="cm"> * Note: although the notion of &quot;current stream for device&quot; is thread local</span>
+<span class="cm"> * (every OS thread has a separate current stream, as one might expect),</span>
+<span class="cm"> * the stream pool is global across all threads; stream 0 is always stream 0</span>
+<span class="cm"> * no matter which thread you use it on.  Multiple threads can synchronize</span>
+<span class="cm"> * on the same stream.  Although the CUDA documentation is not very clear</span>
+<span class="cm"> * on the matter, streams are thread safe; e.g., it is safe to enqueue</span>
+<span class="cm"> * a kernel on the same stream from two different threads.</span>
+<span class="cm"> */</span>
 
 <span class="k">namespace</span> <span class="n">c10</span> <span class="p">{</span>
 <span class="k">namespace</span> <span class="n">cuda</span> <span class="p">{</span>
@@ -373,8 +373,7 @@
 <span class="c1">// functionality (conversion to cudaStream_t), and a guarantee that</span>
 <span class="c1">// the wrapped c10::Stream really is a CUDA stream.</span>
 <span class="k">class</span> <span class="nc">C10_CUDA_API</span> <span class="n">CUDAStream</span> <span class="p">{</span>
-<span class="k">public</span><span class="o">:</span>
-
+ <span class="k">public</span><span class="o">:</span>
   <span class="k">enum</span> <span class="nc">Unchecked</span> <span class="p">{</span> <span class="n">UNCHECKED</span> <span class="p">};</span>
 
   <span class="k">explicit</span> <span class="nf">CUDAStream</span><span class="p">(</span><span class="n">Stream</span> <span class="n">stream</span><span class="p">)</span> <span class="o">:</span> <span class="n">stream_</span><span class="p">(</span><span class="n">stream</span><span class="p">)</span> <span class="p">{</span>
@@ -391,15 +390,25 @@
     <span class="k">return</span> <span class="nf">unwrap</span><span class="p">()</span> <span class="o">!=</span> <span class="n">other</span><span class="p">.</span><span class="n">unwrap</span><span class="p">();</span>
   <span class="p">}</span>
 
-  <span class="k">operator</span> <span class="n">cudaStream_t</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="nf">stream</span><span class="p">();</span> <span class="p">}</span>
+  <span class="k">operator</span> <span class="n">cudaStream_t</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nf">stream</span><span class="p">();</span>
+  <span class="p">}</span>
 
-  <span class="k">operator</span> <span class="n">Stream</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="nf">unwrap</span><span class="p">();</span> <span class="p">}</span>
+  <span class="k">operator</span> <span class="n">Stream</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nf">unwrap</span><span class="p">();</span>
+  <span class="p">}</span>
 
-  <span class="n">DeviceIndex</span> <span class="n">device_index</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">stream_</span><span class="p">.</span><span class="n">device_index</span><span class="p">();</span> <span class="p">}</span>
+  <span class="n">DeviceIndex</span> <span class="n">device_index</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">stream_</span><span class="p">.</span><span class="n">device_index</span><span class="p">();</span>
+  <span class="p">}</span>
 
-  <span class="n">Device</span> <span class="n">device</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="nf">Device</span><span class="p">(</span><span class="n">DeviceType</span><span class="o">::</span><span class="n">CUDA</span><span class="p">,</span> <span class="n">device_index</span><span class="p">());</span> <span class="p">}</span>
+  <span class="n">Device</span> <span class="n">device</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="nf">Device</span><span class="p">(</span><span class="n">DeviceType</span><span class="o">::</span><span class="n">CUDA</span><span class="p">,</span> <span class="n">device_index</span><span class="p">());</span>
+  <span class="p">}</span>
 
-  <span class="n">StreamId</span> <span class="n">id</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">stream_</span><span class="p">.</span><span class="n">id</span><span class="p">();</span> <span class="p">}</span>
+  <span class="n">StreamId</span> <span class="n">id</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">stream_</span><span class="p">.</span><span class="n">id</span><span class="p">();</span>
+  <span class="p">}</span>
 
   <span class="kt">bool</span> <span class="n">query</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="n">DeviceGuard</span> <span class="n">guard</span><span class="p">{</span><span class="n">stream_</span><span class="p">.</span><span class="n">device</span><span class="p">()};</span>
@@ -420,15 +429,17 @@
   <span class="p">}</span>
 
   <span class="kt">int</span> <span class="n">priority</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
-      <span class="n">DeviceGuard</span> <span class="n">guard</span><span class="p">{</span><span class="n">stream_</span><span class="p">.</span><span class="n">device</span><span class="p">()};</span>
-      <span class="kt">int</span> <span class="n">priority</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-      <span class="n">C10_CUDA_CHECK</span><span class="p">(</span><span class="n">cudaStreamGetPriority</span><span class="p">(</span><span class="n">stream</span><span class="p">(),</span> <span class="o">&amp;</span><span class="n">priority</span><span class="p">));</span>
-      <span class="k">return</span> <span class="n">priority</span><span class="p">;</span>
+    <span class="n">DeviceGuard</span> <span class="n">guard</span><span class="p">{</span><span class="n">stream_</span><span class="p">.</span><span class="n">device</span><span class="p">()};</span>
+    <span class="kt">int</span> <span class="n">priority</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="n">C10_CUDA_CHECK</span><span class="p">(</span><span class="n">cudaStreamGetPriority</span><span class="p">(</span><span class="n">stream</span><span class="p">(),</span> <span class="o">&amp;</span><span class="n">priority</span><span class="p">));</span>
+    <span class="k">return</span> <span class="n">priority</span><span class="p">;</span>
   <span class="p">}</span>
 
   <span class="n">cudaStream_t</span> <span class="n">stream</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
 
-  <span class="n">Stream</span> <span class="nf">unwrap</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span> <span class="k">return</span> <span class="n">stream_</span><span class="p">;</span> <span class="p">}</span>
+  <span class="n">Stream</span> <span class="nf">unwrap</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">stream_</span><span class="p">;</span>
+  <span class="p">}</span>
 
   <span class="kt">uint64_t</span> <span class="nf">pack</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">stream_</span><span class="p">.</span><span class="n">pack</span><span class="p">();</span>
@@ -440,22 +451,24 @@
   <span class="p">}</span>
 
   <span class="k">static</span> <span class="n">std</span><span class="o">::</span><span class="n">tuple</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span> <span class="kt">int</span><span class="o">&gt;</span> <span class="n">priority_range</span><span class="p">()</span> <span class="p">{</span>
-      <span class="c1">// Note: this returns the range of priority **supported by PyTorch**, not</span>
-      <span class="c1">// the range of priority **supported by CUDA**. The former is a subset of</span>
-      <span class="c1">// the latter. Currently PyTorch only supports 0 and -1, which are &quot;low&quot; and</span>
-      <span class="c1">// &quot;high&quot; priority.</span>
-      <span class="kt">int</span> <span class="n">least_priority</span><span class="p">,</span> <span class="n">greatest_priority</span><span class="p">;</span>
-      <span class="n">C10_CUDA_CHECK</span><span class="p">(</span>
+    <span class="c1">// Note: this returns the range of priority **supported by PyTorch**, not</span>
+    <span class="c1">// the range of priority **supported by CUDA**. The former is a subset of</span>
+    <span class="c1">// the latter. Currently PyTorch only supports 0 and -1, which are &quot;low&quot; and</span>
+    <span class="c1">// &quot;high&quot; priority.</span>
+    <span class="kt">int</span> <span class="n">least_priority</span><span class="p">,</span> <span class="n">greatest_priority</span><span class="p">;</span>
+    <span class="n">C10_CUDA_CHECK</span><span class="p">(</span>
         <span class="n">cudaDeviceGetStreamPriorityRange</span><span class="p">(</span><span class="o">&amp;</span><span class="n">least_priority</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">greatest_priority</span><span class="p">));</span>
-      <span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span><span class="n">least_priority</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&quot;Unexpected CUDA stream priority range&quot;</span><span class="p">);</span>
-      <span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span><span class="n">greatest_priority</span> <span class="o">&lt;=</span> <span class="mi">-1</span><span class="p">,</span> <span class="s">&quot;Unexpected CUDA stream priority range&quot;</span><span class="p">);</span>
-      <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">make_tuple</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">-1</span><span class="p">);</span>
+    <span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span>
+        <span class="n">least_priority</span> <span class="o">&gt;=</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&quot;Unexpected CUDA stream priority range&quot;</span><span class="p">);</span>
+    <span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span>
+        <span class="n">greatest_priority</span> <span class="o">&lt;=</span> <span class="mi">-1</span><span class="p">,</span> <span class="s">&quot;Unexpected CUDA stream priority range&quot;</span><span class="p">);</span>
+    <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">make_tuple</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">-1</span><span class="p">);</span>
   <span class="p">}</span>
 
   <span class="c1">// Deleted for now; use CUDAEvent::block instead</span>
   <span class="c1">// void synchronize_with(const CUDAEvent&amp; event) const;</span>
 
-<span class="k">private</span><span class="o">:</span>
+ <span class="k">private</span><span class="o">:</span>
   <span class="n">Stream</span> <span class="n">stream_</span><span class="p">;</span>
 <span class="p">};</span>
 
@@ -471,15 +484,15 @@
 <span class="n">C10_API</span> <span class="n">std</span><span class="o">::</span><span class="n">ostream</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">&lt;&lt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">ostream</span><span class="o">&amp;</span> <span class="n">stream</span><span class="p">,</span> <span class="k">const</span> <span class="n">CUDAStream</span><span class="o">&amp;</span> <span class="n">s</span><span class="p">);</span>
 
 <span class="p">}</span> <span class="c1">// namespace cuda</span>
-<span class="p">}</span> <span class="c1">// namespace at</span>
+<span class="p">}</span> <span class="c1">// namespace c10</span>
 
 <span class="k">namespace</span> <span class="n">std</span> <span class="p">{</span>
-  <span class="k">template</span> <span class="o">&lt;&gt;</span>
-  <span class="k">struct</span> <span class="nc">hash</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">CUDAStream</span><span class="o">&gt;</span> <span class="p">{</span>
-    <span class="kt">size_t</span> <span class="nf">operator</span><span class="p">()(</span><span class="n">c10</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">CUDAStream</span> <span class="n">s</span><span class="p">)</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">hash</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">Stream</span><span class="o">&gt;</span><span class="p">{}(</span><span class="n">s</span><span class="p">.</span><span class="n">unwrap</span><span class="p">());</span>
-    <span class="p">}</span>
-  <span class="p">};</span>
+<span class="k">template</span> <span class="o">&lt;&gt;</span>
+<span class="k">struct</span> <span class="nc">hash</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">CUDAStream</span><span class="o">&gt;</span> <span class="p">{</span>
+  <span class="kt">size_t</span> <span class="nf">operator</span><span class="p">()(</span><span class="n">c10</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">CUDAStream</span> <span class="n">s</span><span class="p">)</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">hash</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">Stream</span><span class="o">&gt;</span><span class="p">{}(</span><span class="n">s</span><span class="p">.</span><span class="n">unwrap</span><span class="p">());</span>
+  <span class="p">}</span>
+<span class="p">};</span>
 <span class="p">}</span> <span class="c1">// namespace std</span>
 </pre></div>
 </div>
