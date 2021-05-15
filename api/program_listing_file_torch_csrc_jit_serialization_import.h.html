@@ -313,6 +313,7 @@
 <p>↰ <a class="reference internal" href="file_torch_csrc_jit_serialization_import.h.html#file-torch-csrc-jit-serialization-import-h"><span class="std std-ref">Return to documentation for file</span></a> (<code class="docutils literal notranslate"><span class="pre">torch/csrc/jit/serialization/import.h</span></code>)</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#pragma once</span>
 
+<span class="cp">#include</span> <span class="cpf">&lt;ATen/core/ivalue.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;caffe2/serialize/inline_container.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/jit/api/module.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/jit/ir/ir.h&gt;</span><span class="cp"></span>
@@ -328,6 +329,29 @@
 
 <span class="k">namespace</span> <span class="nn">torch</span> <span class="p">{</span>
 <span class="k">namespace</span> <span class="nn">jit</span> <span class="p">{</span>
+
+<span class="c1">// used in torch.package deserialization</span>
+<span class="k">class</span> <span class="nc">TORCH_API</span> <span class="n">StorageContext</span> <span class="p">{</span>
+ <span class="k">public</span><span class="o">:</span>
+  <span class="k">explicit</span> <span class="n">StorageContext</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
+
+  <span class="kt">void</span> <span class="nf">addStorage</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">,</span> <span class="n">c10</span><span class="o">::</span><span class="n">Storage</span> <span class="n">storage</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">storage_map_</span><span class="p">.</span><span class="n">insert</span><span class="p">({</span><span class="n">name</span><span class="p">,</span> <span class="n">storage</span><span class="p">});</span>
+  <span class="p">}</span>
+
+  <span class="kt">bool</span> <span class="nf">hasStorage</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">storage_map_</span><span class="p">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">)</span> <span class="o">!=</span> <span class="n">storage_map_</span><span class="p">.</span><span class="n">end</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="n">c10</span><span class="o">::</span><span class="n">Storage</span> <span class="nf">getStorage</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">name</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span><span class="n">hasStorage</span><span class="p">(</span><span class="n">name</span><span class="p">));</span>
+    <span class="k">return</span> <span class="n">storage_map_</span><span class="p">.</span><span class="n">find</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">second</span><span class="p">;</span>
+  <span class="p">}</span>
+  <span class="o">~</span><span class="n">StorageContext</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
+
+ <span class="k">private</span><span class="o">:</span>
+  <span class="n">std</span><span class="o">::</span><span class="n">map</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">,</span> <span class="n">c10</span><span class="o">::</span><span class="n">Storage</span><span class="o">&gt;</span> <span class="n">storage_map_</span><span class="p">;</span>
+<span class="p">};</span>
 
 <span class="n">TORCH_API</span> <span class="n">Module</span> <span class="n">import_ir_module</span><span class="p">(</span>
     <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">CompilationUnit</span><span class="o">&gt;</span> <span class="n">cu</span><span class="p">,</span>
@@ -349,6 +373,14 @@
     <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">filename</span><span class="p">,</span>
     <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">Device</span><span class="o">&gt;</span> <span class="n">device</span><span class="p">,</span>
     <span class="n">ExtraFilesMap</span><span class="o">&amp;</span> <span class="n">extra_files</span><span class="p">);</span>
+
+<span class="c1">// For reading unified serialization format from torch.Package</span>
+<span class="n">TORCH_API</span> <span class="n">Module</span> <span class="n">import_ir_module</span><span class="p">(</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">CompilationUnit</span><span class="o">&gt;</span> <span class="n">cu</span><span class="p">,</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">caffe2</span><span class="o">::</span><span class="n">serialize</span><span class="o">::</span><span class="n">PyTorchStreamReader</span><span class="o">&gt;</span> <span class="n">reader</span><span class="p">,</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">torch</span><span class="o">::</span><span class="n">jit</span><span class="o">::</span><span class="n">StorageContext</span><span class="o">&gt;</span> <span class="n">storage_context</span><span class="p">,</span>
+    <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Device</span><span class="o">&gt;</span> <span class="n">device</span><span class="p">,</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">ts_id</span> <span class="cm">/* torchscript identifier inside package */</span><span class="p">);</span>
 
 <span class="n">TORCH_API</span> <span class="n">Module</span> <span class="n">import_ir_module</span><span class="p">(</span>
     <span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">CompilationUnit</span><span class="o">&gt;</span> <span class="n">cu</span><span class="p">,</span>
