@@ -331,34 +331,6 @@
 
 <span class="k">namespace</span> <span class="nn">torch</span> <span class="p">{</span>
 
-<span class="k">struct</span> <span class="nc">arg</span> <span class="p">{</span>
-  <span class="c1">// Static method for representing a default value of None. This is meant to</span>
-  <span class="c1">// be used like so:</span>
-  <span class="c1">//     torch::arg(&quot;name&quot;) = torch::arg::none</span>
-  <span class="c1">// and is identical to:</span>
-  <span class="c1">//     torch::arg(&quot;name&quot;) = IValue()</span>
-  <span class="k">static</span> <span class="n">c10</span><span class="o">::</span><span class="n">IValue</span> <span class="nf">none</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">c10</span><span class="o">::</span><span class="n">IValue</span><span class="p">();</span>
-  <span class="p">}</span>
-
-  <span class="c1">// Explicit constructor.</span>
-  <span class="k">explicit</span> <span class="n">arg</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">name</span><span class="p">)</span> <span class="o">:</span> <span class="n">name_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">name</span><span class="p">)),</span> <span class="n">value_</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">)</span> <span class="p">{}</span>
-  <span class="c1">// Assignment operator. This enables the pybind-like syntax of</span>
-  <span class="c1">// torch::arg(&quot;name&quot;) = value.</span>
-  <span class="n">arg</span><span class="o">&amp;</span> <span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span> <span class="n">c10</span><span class="o">::</span><span class="n">IValue</span><span class="o">&amp;</span> <span class="n">rhs</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">value_</span> <span class="o">=</span> <span class="n">rhs</span><span class="p">;</span>
-    <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
-  <span class="p">}</span>
-
-  <span class="c1">// The name of the argument. This is copied to the schema; argument</span>
-  <span class="c1">// names cannot be extracted from the C++ declaration.</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">name_</span><span class="p">;</span>
-  <span class="c1">// IValue&#39;s default constructor makes it None, which is not distinguishable from</span>
-  <span class="c1">// an actual, user-provided default value that is None. This boolean</span>
-  <span class="c1">// helps distinguish between the two cases.</span>
-  <span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">IValue</span><span class="o">&gt;</span> <span class="n">value_</span><span class="p">;</span>
-<span class="p">};</span>
-
 <span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span><span class="p">...</span> <span class="n">Types</span><span class="o">&gt;</span>
 <span class="n">detail</span><span class="o">::</span><span class="n">types</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">,</span> <span class="n">Types</span><span class="p">...</span><span class="o">&gt;</span> <span class="n">init</span><span class="p">()</span> <span class="p">{</span>
   <span class="k">return</span> <span class="n">detail</span><span class="o">::</span><span class="n">types</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">,</span> <span class="n">Types</span><span class="p">...</span><span class="o">&gt;</span><span class="p">{};</span>
@@ -380,30 +352,13 @@
 <span class="p">}</span>
 
 <span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">CurClass</span><span class="o">&gt;</span>
-<span class="k">class</span> <span class="nc">class_</span> <span class="p">{</span>
+<span class="k">class</span> <span class="nc">class_</span> <span class="o">:</span> <span class="k">public</span> <span class="o">::</span><span class="n">torch</span><span class="o">::</span><span class="n">detail</span><span class="o">::</span><span class="n">class_base</span> <span class="p">{</span>
   <span class="k">static_assert</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">is_base_of</span><span class="o">&lt;</span><span class="n">CustomClassHolder</span><span class="p">,</span> <span class="n">CurClass</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span>
     <span class="s">&quot;torch::class_&lt;T&gt; requires T to inherit from CustomClassHolder&quot;</span><span class="p">);</span>
 
  <span class="k">public</span><span class="o">:</span>
-  <span class="k">explicit</span> <span class="n">class_</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">namespaceName</span><span class="p">,</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">className</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">doc_string</span> <span class="o">=</span> <span class="s">&quot;&quot;</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">detail</span><span class="o">::</span><span class="n">checkValidIdent</span><span class="p">(</span><span class="n">namespaceName</span><span class="p">,</span> <span class="s">&quot;Namespace name&quot;</span><span class="p">);</span>
-    <span class="n">detail</span><span class="o">::</span><span class="n">checkValidIdent</span><span class="p">(</span><span class="n">className</span><span class="p">,</span> <span class="s">&quot;Class name&quot;</span><span class="p">);</span>
-    <span class="n">qualClassName</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">(</span><span class="s">&quot;__torch__.torch.classes.&quot;</span><span class="p">)</span> <span class="o">+</span> <span class="n">namespaceName</span> <span class="o">+</span> <span class="s">&quot;.&quot;</span> <span class="o">+</span> <span class="n">className</span><span class="p">;</span>
-
-    <span class="n">classTypePtr</span> <span class="o">=</span> <span class="n">at</span><span class="o">::</span><span class="n">ClassType</span><span class="o">::</span><span class="n">create</span><span class="p">(</span>
-        <span class="n">c10</span><span class="o">::</span><span class="n">QualifiedName</span><span class="p">(</span><span class="n">qualClassName</span><span class="p">),</span>
-        <span class="n">std</span><span class="o">::</span><span class="n">weak_ptr</span><span class="o">&lt;</span><span class="n">jit</span><span class="o">::</span><span class="n">CompilationUnit</span><span class="o">&gt;</span><span class="p">(),</span>
-        <span class="cm">/*is_module=*/</span><span class="nb">false</span><span class="p">,</span>
-        <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">doc_string</span><span class="p">));</span>
-    <span class="n">classTypePtr</span><span class="o">-&gt;</span><span class="n">addAttribute</span><span class="p">(</span><span class="s">&quot;capsule&quot;</span><span class="p">,</span> <span class="n">at</span><span class="o">::</span><span class="n">CapsuleType</span><span class="o">::</span><span class="n">get</span><span class="p">());</span>
-
-    <span class="n">c10</span><span class="o">::</span><span class="n">getCustomClassTypeMap</span><span class="p">().</span><span class="n">insert</span><span class="p">(</span>
-        <span class="p">{</span><span class="n">std</span><span class="o">::</span><span class="n">type_index</span><span class="p">(</span><span class="k">typeid</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">CurClass</span><span class="o">&gt;</span><span class="p">)),</span> <span class="n">classTypePtr</span><span class="p">});</span>
-    <span class="n">c10</span><span class="o">::</span><span class="n">getCustomClassTypeMap</span><span class="p">().</span><span class="n">insert</span><span class="p">(</span>
-        <span class="p">{</span><span class="n">std</span><span class="o">::</span><span class="n">type_index</span><span class="p">(</span><span class="k">typeid</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">tagged_capsule</span><span class="o">&lt;</span><span class="n">CurClass</span><span class="o">&gt;</span><span class="p">)),</span> <span class="n">classTypePtr</span><span class="p">});</span>
-
-    <span class="n">registerCustomClass</span><span class="p">(</span><span class="n">classTypePtr</span><span class="p">);</span>
-  <span class="p">}</span>
+  <span class="k">explicit</span> <span class="n">class_</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">namespaceName</span><span class="p">,</span> <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span> <span class="n">className</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">doc_string</span> <span class="o">=</span> <span class="s">&quot;&quot;</span><span class="p">)</span>
+      <span class="o">:</span> <span class="n">class_base</span><span class="p">(</span><span class="n">namespaceName</span><span class="p">,</span> <span class="n">className</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">doc_string</span><span class="p">),</span> <span class="k">typeid</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">CurClass</span><span class="o">&gt;</span><span class="p">),</span> <span class="k">typeid</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">tagged_capsule</span><span class="o">&lt;</span><span class="n">CurClass</span><span class="o">&gt;</span><span class="p">))</span> <span class="p">{}</span>
 
   <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span><span class="p">...</span> <span class="n">Types</span><span class="o">&gt;</span>
   <span class="n">class_</span><span class="o">&amp;</span> <span class="n">def</span><span class="p">(</span>
@@ -637,31 +592,15 @@
     <span class="c1">// extracted by inferFunctionSchemaSingleReturn, and so there must be a</span>
     <span class="c1">// torch::arg instance in default_args even for arguments that do not</span>
     <span class="c1">// have an actual default value provided.</span>
-        <span class="n">TORCH_CHECK</span><span class="p">(</span>
-            <span class="n">default_args</span><span class="p">.</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">||</span>
-                <span class="n">default_args</span><span class="p">.</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="n">schema</span><span class="p">.</span><span class="n">arguments</span><span class="p">().</span><span class="n">size</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
-            <span class="s">&quot;Default values must be specified for none or all arguments&quot;</span><span class="p">);</span>
+    <span class="n">TORCH_CHECK</span><span class="p">(</span>
+        <span class="n">default_args</span><span class="p">.</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">||</span>
+        <span class="n">default_args</span><span class="p">.</span><span class="n">size</span><span class="p">()</span> <span class="o">==</span> <span class="n">schema</span><span class="p">.</span><span class="n">arguments</span><span class="p">().</span><span class="n">size</span><span class="p">()</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="s">&quot;Default values must be specified for none or all arguments&quot;</span><span class="p">);</span>
 
     <span class="c1">// If there are default args, copy the argument names and default values to the</span>
     <span class="c1">// function schema.</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">default_args</span><span class="p">.</span><span class="n">size</span><span class="p">()</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-      <span class="k">const</span> <span class="k">auto</span><span class="o">&amp;</span> <span class="n">old_args</span> <span class="o">=</span> <span class="n">schema</span><span class="p">.</span><span class="n">arguments</span><span class="p">();</span>
-      <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">Argument</span><span class="o">&gt;</span> <span class="n">new_args</span><span class="p">;</span>
-      <span class="n">new_args</span><span class="p">.</span><span class="n">reserve</span><span class="p">(</span><span class="n">old_args</span><span class="p">.</span><span class="n">size</span><span class="p">());</span>
-      <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">arg</span><span class="o">&gt;</span> <span class="n">default_args_v</span><span class="p">(</span><span class="n">default_args</span><span class="p">);</span>
-
-      <span class="n">new_args</span><span class="p">.</span><span class="n">emplace_back</span><span class="p">(</span><span class="n">old_args</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
-      <span class="k">for</span> <span class="p">(</span><span class="kt">size_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">default_args_v</span><span class="p">.</span><span class="n">size</span><span class="p">();</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
-        <span class="c1">// Skip self.</span>
-        <span class="k">auto</span><span class="o">&amp;</span> <span class="n">arg</span> <span class="o">=</span> <span class="n">old_args</span><span class="p">[</span><span class="n">i</span><span class="o">+</span><span class="mi">1</span><span class="p">];</span>
-        <span class="n">new_args</span><span class="p">.</span><span class="n">emplace_back</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">Argument</span><span class="p">(</span>
-            <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">default_args_v</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">name_</span><span class="p">),</span>
-            <span class="n">arg</span><span class="p">.</span><span class="n">type</span><span class="p">(),</span>
-            <span class="n">arg</span><span class="p">.</span><span class="n">N</span><span class="p">(),</span>
-            <span class="n">default_args_v</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">value_</span><span class="p">.</span><span class="n">has_value</span><span class="p">()</span> <span class="o">?</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="o">*</span><span class="n">default_args_v</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">value_</span><span class="p">)</span> <span class="o">:</span> <span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">));</span>
-      <span class="p">}</span>
-
-      <span class="n">schema</span> <span class="o">=</span> <span class="n">schema</span><span class="p">.</span><span class="n">cloneWithArguments</span><span class="p">(</span><span class="n">new_args</span><span class="p">);</span>
+      <span class="n">schema</span> <span class="o">=</span> <span class="n">withNewArguments</span><span class="p">(</span><span class="n">schema</span><span class="p">,</span> <span class="n">default_args</span><span class="p">);</span>
     <span class="p">}</span>
 
     <span class="k">auto</span> <span class="n">wrapped_func</span> <span class="o">=</span>
@@ -685,9 +624,6 @@
     <span class="n">registerCustomClassMethod</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">method</span><span class="p">));</span>
     <span class="k">return</span> <span class="n">method_val</span><span class="p">;</span>
   <span class="p">}</span>
-
-  <span class="n">std</span><span class="o">::</span><span class="n">string</span> <span class="n">qualClassName</span><span class="p">;</span>
-  <span class="n">at</span><span class="o">::</span><span class="n">ClassTypePtr</span> <span class="n">classTypePtr</span><span class="p">;</span>
 <span class="p">};</span>
 
 <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">CurClass</span><span class="p">,</span> <span class="k">typename</span><span class="p">...</span> <span class="n">CtorArgs</span><span class="o">&gt;</span>
