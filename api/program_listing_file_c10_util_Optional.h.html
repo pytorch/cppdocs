@@ -341,7 +341,6 @@
 <span class="cp">#define C10_UTIL_OPTIONAL_H_</span>
 
 <span class="cp">#include</span> <span class="cpf">&lt;c10/macros/Macros.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;c10/util/ArrayRef.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;c10/util/in_place.h&gt;</span><span class="cp"></span>
 
 <span class="cp">#include</span> <span class="cpf">&lt;cassert&gt;</span><span class="cp"></span>
@@ -568,14 +567,6 @@
       <span class="n">storage_</span><span class="p">.</span><span class="n">value_</span><span class="p">.</span><span class="n">T</span><span class="o">::~</span><span class="n">T</span><span class="p">();</span>
   <span class="p">}</span>
 
-  <span class="k">constexpr</span> <span class="kt">bool</span> <span class="n">initialized</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">init_</span><span class="p">;</span>
-  <span class="p">}</span>
-
-  <span class="kt">void</span> <span class="n">setInitialized</span><span class="p">(</span><span class="kt">bool</span> <span class="n">init</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
-    <span class="n">init_</span> <span class="o">=</span> <span class="n">init</span><span class="p">;</span>
-  <span class="p">}</span>
-
  <span class="k">private</span><span class="o">:</span>
   <span class="k">typename</span> <span class="nc">std</span><span class="o">::</span><span class="n">remove_const</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">type</span><span class="o">*</span> <span class="n">dataptr</span><span class="p">()</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">addressof</span><span class="p">(</span><span class="n">storage_</span><span class="p">.</span><span class="n">value_</span><span class="p">);</span>
@@ -666,13 +657,6 @@
     <span class="k">return</span> <span class="o">*</span><span class="k">this</span><span class="p">;</span>
   <span class="p">}</span>
 
-  <span class="k">constexpr</span> <span class="kt">bool</span> <span class="n">initialized</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">init_</span><span class="p">;</span>
-  <span class="p">}</span>
-  <span class="kt">void</span> <span class="n">setInitialized</span><span class="p">(</span><span class="kt">bool</span> <span class="n">init</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
-    <span class="n">init_</span> <span class="o">=</span> <span class="n">init</span><span class="p">;</span>
-  <span class="p">}</span>
-
  <span class="k">private</span><span class="o">:</span>
   <span class="k">typename</span> <span class="nc">std</span><span class="o">::</span><span class="n">remove_const</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">type</span><span class="o">*</span> <span class="n">dataptr</span><span class="p">()</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">addressof</span><span class="p">(</span><span class="n">storage_</span><span class="p">.</span><span class="n">value_</span><span class="p">);</span>
@@ -721,122 +705,28 @@
       <span class="o">:</span> <span class="n">init_</span><span class="p">(</span><span class="nb">true</span><span class="p">),</span> <span class="n">storage_</span><span class="p">(</span><span class="n">il</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">Args</span><span class="o">&gt;</span><span class="p">(</span><span class="n">args</span><span class="p">)...)</span> <span class="p">{}</span>
 
   <span class="o">~</span><span class="n">trivially_copyable_optimization_optional_base</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
-
-  <span class="k">constexpr</span> <span class="kt">bool</span> <span class="nf">initialized</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">init_</span><span class="p">;</span>
-  <span class="p">}</span>
-  <span class="kt">void</span> <span class="nf">setInitialized</span><span class="p">(</span><span class="kt">bool</span> <span class="n">init</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
-    <span class="n">init_</span> <span class="o">=</span> <span class="n">init</span><span class="p">;</span>
-  <span class="p">}</span>
 <span class="p">};</span>
-
-<span class="c1">// HACK: Optimization for ArrayRef&lt;T&gt;. We take advantage of an unused</span>
-<span class="c1">// bit pattern in ArrayRef (inspired by Arthur O&#39;Dwyer&#39;s</span>
-<span class="c1">// tombstone_traits -- see https://youtu.be/MWBfmmg8-Yo?t=2466) to</span>
-<span class="c1">// keep the size of c10::optional::ArrayRef&lt;T&gt; down to 16 bytes, which</span>
-<span class="c1">// allows it to be passed to functions in registers instead of getting</span>
-<span class="c1">// passed in memory per item 5c of the classification algorithm in</span>
-<span class="c1">// section 3.2.3 of the System V ABI document</span>
-<span class="c1">// (https://www.uclibc.org/docs/psABI-x86_64.pdf).</span>
-<span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">ArrayRefT</span><span class="o">&gt;</span>
-<span class="k">class</span> <span class="nc">arrayref_optional_base</span> <span class="p">{</span>
- <span class="k">public</span><span class="o">:</span>
-  <span class="k">union</span> <span class="nc">storage</span> <span class="p">{</span>
-    <span class="k">struct</span> <span class="nc">raw</span> <span class="p">{</span>
-      <span class="c1">// ArrayRef has the invariant that if Data is nullptr then</span>
-      <span class="c1">// Length must be zero, so this is an unused bit pattern.</span>
-      <span class="k">const</span> <span class="kt">void</span><span class="o">*</span> <span class="n">p</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">;</span>
-      <span class="kt">size_t</span> <span class="n">sz</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-    <span class="p">}</span> <span class="n">uninitialized_</span><span class="p">{};</span>
-    <span class="n">ArrayRefT</span> <span class="n">value_</span><span class="p">;</span>
-
-    <span class="k">constexpr</span> <span class="n">storage</span><span class="p">()</span> <span class="k">noexcept</span> <span class="o">:</span> <span class="n">uninitialized_</span><span class="p">()</span> <span class="p">{</span>
-      <span class="n">setUninitialized</span><span class="p">();</span>
-    <span class="p">}</span>
-
-    <span class="k">constexpr</span> <span class="kt">void</span> <span class="n">setUninitialized</span><span class="p">()</span> <span class="k">noexcept</span> <span class="p">{</span>
-      <span class="n">uninitialized_</span><span class="p">.</span><span class="n">p</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">;</span>
-      <span class="n">uninitialized_</span><span class="p">.</span><span class="n">sz</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-    <span class="p">}</span>
-
-    <span class="k">explicit</span> <span class="k">constexpr</span> <span class="n">storage</span><span class="p">(</span><span class="n">ArrayRefT</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="o">:</span> <span class="n">value_</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="p">{}</span>
-
-    <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="o">&gt;</span>
-    <span class="k">explicit</span> <span class="k">constexpr</span> <span class="n">storage</span><span class="p">(</span><span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">initializer_list</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="o">:</span> <span class="n">value_</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="p">{}</span>
-
-    <span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span><span class="p">...</span> <span class="n">Args</span><span class="o">&gt;</span>
-    <span class="k">explicit</span> <span class="k">constexpr</span> <span class="n">storage</span><span class="p">(</span><span class="n">Args</span><span class="o">&amp;&amp;</span><span class="p">...</span> <span class="n">args</span><span class="p">)</span>
-        <span class="o">:</span> <span class="n">value_</span><span class="p">(</span><span class="n">constexpr_forward</span><span class="o">&lt;</span><span class="n">Args</span><span class="o">&gt;</span><span class="p">(</span><span class="n">args</span><span class="p">)...)</span> <span class="p">{}</span>
-  <span class="p">};</span>
-
-  <span class="n">storage</span> <span class="n">storage_</span><span class="p">;</span>
-
-  <span class="k">constexpr</span> <span class="n">arrayref_optional_base</span><span class="p">()</span> <span class="k">noexcept</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
-
-  <span class="k">explicit</span> <span class="k">constexpr</span> <span class="n">arrayref_optional_base</span><span class="p">(</span><span class="k">const</span> <span class="n">ArrayRefT</span><span class="o">&amp;</span> <span class="n">v</span><span class="p">)</span> <span class="o">:</span> <span class="n">storage_</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="p">{}</span>
-
-  <span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span><span class="p">...</span> <span class="n">Args</span><span class="o">&gt;</span>
-  <span class="k">explicit</span> <span class="k">constexpr</span> <span class="n">arrayref_optional_base</span><span class="p">(</span><span class="n">in_place_t</span><span class="p">,</span> <span class="n">Args</span><span class="o">&amp;&amp;</span><span class="p">...</span> <span class="n">args</span><span class="p">)</span>
-      <span class="o">:</span> <span class="n">storage_</span><span class="p">(</span><span class="n">constexpr_forward</span><span class="o">&lt;</span><span class="n">Args</span><span class="o">&gt;</span><span class="p">(</span><span class="n">args</span><span class="p">)...)</span> <span class="p">{}</span>
-
-  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="o">&gt;</span>
-  <span class="k">explicit</span> <span class="k">constexpr</span> <span class="n">arrayref_optional_base</span><span class="p">(</span>
-      <span class="n">in_place_t</span><span class="p">,</span>
-      <span class="k">const</span> <span class="n">std</span><span class="o">::</span><span class="n">initializer_list</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&amp;</span> <span class="n">v</span><span class="p">)</span>
-      <span class="o">:</span> <span class="n">storage_</span><span class="p">(</span><span class="n">v</span><span class="p">)</span> <span class="p">{}</span>
-
-  <span class="k">constexpr</span> <span class="kt">bool</span> <span class="n">initialized</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="p">{</span>
-    <span class="k">typename</span> <span class="nc">storage</span><span class="o">::</span><span class="n">raw</span> <span class="n">repr</span><span class="p">;</span>
-    <span class="c1">// Cast to void* to suppress GCC&#39;s -Wclass-memaccess.</span>
-    <span class="n">memcpy</span><span class="p">(</span>
-        <span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">*&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">repr</span><span class="p">),</span>
-        <span class="k">static_cast</span><span class="o">&lt;</span><span class="k">const</span> <span class="kt">void</span><span class="o">*&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">storage_</span><span class="p">),</span>
-        <span class="k">sizeof</span><span class="p">(</span><span class="n">storage_</span><span class="p">));</span>
-    <span class="k">return</span> <span class="n">repr</span><span class="p">.</span><span class="n">p</span> <span class="o">!=</span> <span class="k">nullptr</span> <span class="o">||</span> <span class="n">repr</span><span class="p">.</span><span class="n">sz</span> <span class="o">==</span> <span class="mi">0</span><span class="p">;</span>
-  <span class="p">}</span>
-
-  <span class="kt">void</span> <span class="n">setInitialized</span><span class="p">(</span><span class="kt">bool</span> <span class="n">init</span><span class="p">)</span> <span class="k">noexcept</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="n">init</span><span class="p">)</span> <span class="p">{</span>
-      <span class="n">storage_</span><span class="p">.</span><span class="n">setUninitialized</span><span class="p">();</span>
-    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-      <span class="n">assert</span><span class="p">(</span><span class="n">initialized</span><span class="p">());</span>
-    <span class="p">}</span>
-  <span class="p">}</span>
-<span class="p">};</span>
-
-<span class="k">namespace</span> <span class="nn">detail_</span> <span class="p">{</span>
-<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="o">&gt;</span>
-<span class="k">struct</span> <span class="nc">is_arrayref</span> <span class="o">:</span> <span class="n">std</span><span class="o">::</span><span class="n">false_type</span> <span class="p">{};</span>
-
-<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="o">&gt;</span>
-<span class="k">struct</span> <span class="nc">is_arrayref</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">ArrayRef</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;</span> <span class="o">:</span> <span class="n">std</span><span class="o">::</span><span class="n">true_type</span> <span class="p">{};</span>
-<span class="p">}</span> <span class="c1">// namespace detail_</span>
 
 <span class="c1">// CUDA 9.2 and below fail while trying to compile default move constructor</span>
 <span class="c1">// see https://github.com/pytorch/csprng/issues/84</span>
 <span class="cp">#if (!defined(__CUDA_ARCH__) || !defined(CUDA_VERSION) || CUDA_VERSION &gt; 9200)</span>
 <span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
-<span class="k">using</span> <span class="n">OptionalBase</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">conditional_t</span><span class="o">&lt;</span>
-    <span class="n">detail_</span><span class="o">::</span><span class="n">is_arrayref</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span>
-    <span class="n">arrayref_optional_base</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">,</span>
-    <span class="n">std</span><span class="o">::</span><span class="n">conditional_t</span><span class="o">&lt;</span>
-        <span class="n">std</span><span class="o">::</span><span class="n">is_trivially_destructible</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span> <span class="o">&amp;&amp;</span>
-            <span class="n">C10_IS_TRIVIALLY_COPYABLE</span><span class="p">(</span><span class="n">T</span><span class="p">)</span> <span class="o">&amp;&amp;</span>
-            <span class="c1">// Avoid using is_trivially_copy_{constructible,assignable}</span>
-            <span class="c1">// because old GCC versions don&#39;t support them. Also,</span>
-            <span class="c1">// is_trivially_copyable seems not to do what I expect, so check</span>
-            <span class="c1">// trivially_copyable_optimization_optional_base directly.</span>
-            <span class="n">std</span><span class="o">::</span><span class="n">is_copy_constructible</span><span class="o">&lt;</span>
-                <span class="n">trivially_copyable_optimization_optional_base</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;::</span><span class="n">value</span> <span class="o">&amp;&amp;</span>
-            <span class="n">std</span><span class="o">::</span><span class="n">is_copy_assignable</span><span class="o">&lt;</span>
-                <span class="n">trivially_copyable_optimization_optional_base</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;::</span><span class="n">value</span><span class="p">,</span>
-        <span class="n">trivially_copyable_optimization_optional_base</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">,</span>
-        <span class="n">std</span><span class="o">::</span><span class="n">conditional_t</span><span class="o">&lt;</span>
-            <span class="n">std</span><span class="o">::</span><span class="n">is_trivially_destructible</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span> <span class="c1">// if possible</span>
-            <span class="n">constexpr_optional_base</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">remove_const_t</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;</span><span class="p">,</span> <span class="c1">// use base with</span>
-                                                             <span class="c1">// trivial</span>
-                                                             <span class="c1">// destructor</span>
-            <span class="n">optional_base</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">remove_const_t</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;&gt;&gt;&gt;</span><span class="p">;</span>
+<span class="k">using</span> <span class="n">OptionalBase</span> <span class="o">=</span> <span class="k">typename</span> <span class="nc">std</span><span class="o">::</span><span class="n">conditional</span><span class="o">&lt;</span>
+    <span class="n">std</span><span class="o">::</span><span class="n">is_trivially_destructible</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span> <span class="o">&amp;&amp;</span> <span class="n">C10_IS_TRIVIALLY_COPYABLE</span><span class="p">(</span><span class="n">T</span><span class="p">)</span> <span class="o">&amp;&amp;</span>
+        <span class="c1">// Avoid using is_trivially_copy_{constructible,assignable}</span>
+        <span class="c1">// because old GCC versions don&#39;t support them. Also,</span>
+        <span class="c1">// is_trivially_copyable seems not to do what I expect, so check</span>
+        <span class="c1">// trivially_copyable_optimization_optional_base directly.</span>
+        <span class="n">std</span><span class="o">::</span><span class="n">is_copy_constructible</span><span class="o">&lt;</span>
+            <span class="n">trivially_copyable_optimization_optional_base</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;::</span><span class="n">value</span> <span class="o">&amp;&amp;</span>
+        <span class="n">std</span><span class="o">::</span><span class="n">is_copy_assignable</span><span class="o">&lt;</span>
+            <span class="n">trivially_copyable_optimization_optional_base</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;::</span><span class="n">value</span><span class="p">,</span>
+    <span class="n">trivially_copyable_optimization_optional_base</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">,</span>
+    <span class="k">typename</span> <span class="nc">std</span><span class="o">::</span><span class="n">conditional</span><span class="o">&lt;</span>
+        <span class="n">std</span><span class="o">::</span><span class="n">is_trivially_destructible</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span> <span class="c1">// if possible</span>
+        <span class="n">constexpr_optional_base</span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">std</span><span class="o">::</span><span class="n">remove_const</span><span class="o">&lt;</span>
+            <span class="n">T</span><span class="o">&gt;::</span><span class="n">type</span><span class="o">&gt;</span><span class="p">,</span> <span class="c1">// use base with trivial destructor</span>
+        <span class="n">optional_base</span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">std</span><span class="o">::</span><span class="n">remove_const</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">type</span><span class="o">&gt;&gt;::</span><span class="n">type</span><span class="o">&gt;::</span><span class="n">type</span><span class="p">;</span>
 <span class="cp">#else</span>
 <span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span>
 <span class="k">using</span> <span class="n">OptionalBase</span> <span class="o">=</span> <span class="k">typename</span> <span class="nc">std</span><span class="o">::</span><span class="n">conditional</span><span class="o">&lt;</span>
@@ -852,29 +742,19 @@
 <span class="c1">// see https://github.com/pytorch/csprng/issues/84</span>
 <span class="cp">#if (!defined(__CUDA_ARCH__) || !defined(CUDA_VERSION) || CUDA_VERSION &gt; 9200)</span>
   <span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">U</span><span class="o">&gt;</span> <span class="c1">// re-declaration for nvcc on Windows.</span>
-  <span class="k">using</span> <span class="n">OptionalBase</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">conditional_t</span><span class="o">&lt;</span>
-      <span class="n">detail_</span><span class="o">::</span><span class="n">is_arrayref</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span>
-      <span class="n">arrayref_optional_base</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;</span><span class="p">,</span>
-      <span class="n">std</span><span class="o">::</span><span class="n">conditional_t</span><span class="o">&lt;</span>
-          <span class="n">std</span><span class="o">::</span><span class="n">is_trivially_destructible</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;::</span><span class="n">value</span> <span class="o">&amp;&amp;</span>
-              <span class="n">C10_IS_TRIVIALLY_COPYABLE</span><span class="p">(</span><span class="n">U</span><span class="p">)</span> <span class="o">&amp;&amp;</span>
-              <span class="c1">// Avoid using is_trivially_copy_{constructible,assignable}</span>
-              <span class="c1">// because old GCC versions don&#39;t support them. Also,</span>
-              <span class="c1">// is_trivially_copyable seems not to do what I expect, so</span>
-              <span class="c1">// check trivially_copyable_optimization_optional_base</span>
-              <span class="c1">// directly.</span>
-              <span class="n">std</span><span class="o">::</span><span class="n">is_copy_constructible</span><span class="o">&lt;</span>
-                  <span class="n">trivially_copyable_optimization_optional_base</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;&gt;::</span><span class="n">value</span> <span class="o">&amp;&amp;</span>
-              <span class="n">std</span><span class="o">::</span><span class="n">is_copy_assignable</span><span class="o">&lt;</span>
-                  <span class="n">trivially_copyable_optimization_optional_base</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;&gt;::</span><span class="n">value</span><span class="p">,</span>
-          <span class="n">trivially_copyable_optimization_optional_base</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;</span><span class="p">,</span>
-          <span class="n">std</span><span class="o">::</span><span class="n">conditional_t</span><span class="o">&lt;</span>
-              <span class="n">std</span><span class="o">::</span><span class="n">is_trivially_destructible</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span> <span class="c1">// if possible</span>
-              <span class="n">constexpr_optional_base</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">remove_const_t</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;&gt;</span><span class="p">,</span> <span class="c1">// use base</span>
-                                                               <span class="c1">// with</span>
-                                                               <span class="c1">// trivial</span>
-                                                               <span class="c1">// destructor</span>
-              <span class="n">optional_base</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">remove_const_t</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;&gt;&gt;&gt;&gt;</span><span class="p">;</span>
+  <span class="k">using</span> <span class="n">OptionalBase</span> <span class="o">=</span> <span class="k">typename</span> <span class="nc">std</span><span class="o">::</span><span class="n">conditional</span><span class="o">&lt;</span>
+      <span class="n">std</span><span class="o">::</span><span class="n">is_trivially_destructible</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;::</span><span class="n">value</span> <span class="o">&amp;&amp;</span>
+          <span class="n">C10_IS_TRIVIALLY_COPYABLE</span><span class="p">(</span><span class="n">U</span><span class="p">)</span> <span class="o">&amp;&amp;</span>
+          <span class="n">std</span><span class="o">::</span><span class="n">is_copy_constructible</span><span class="o">&lt;</span>
+              <span class="n">trivially_copyable_optimization_optional_base</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;&gt;::</span><span class="n">value</span> <span class="o">&amp;&amp;</span>
+          <span class="n">std</span><span class="o">::</span><span class="n">is_copy_assignable</span><span class="o">&lt;</span>
+              <span class="n">trivially_copyable_optimization_optional_base</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;&gt;::</span><span class="n">value</span><span class="p">,</span>
+      <span class="n">trivially_copyable_optimization_optional_base</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;</span><span class="p">,</span>
+      <span class="k">typename</span> <span class="nc">std</span><span class="o">::</span><span class="n">conditional</span><span class="o">&lt;</span>
+          <span class="n">std</span><span class="o">::</span><span class="n">is_trivially_destructible</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span> <span class="c1">// if possible</span>
+          <span class="n">constexpr_optional_base</span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">std</span><span class="o">::</span><span class="n">remove_const</span><span class="o">&lt;</span>
+              <span class="n">U</span><span class="o">&gt;::</span><span class="n">type</span><span class="o">&gt;</span><span class="p">,</span> <span class="c1">// use base with trivial destructor</span>
+          <span class="n">optional_base</span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">std</span><span class="o">::</span><span class="n">remove_const</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;::</span><span class="n">type</span><span class="o">&gt;&gt;::</span><span class="n">type</span><span class="o">&gt;::</span><span class="n">type</span><span class="p">;</span>
 <span class="cp">#else</span>
   <span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">U</span><span class="o">&gt;</span>
   <span class="k">using</span> <span class="n">OptionalBase</span> <span class="o">=</span> <span class="k">typename</span> <span class="nc">std</span><span class="o">::</span><span class="n">conditional</span><span class="o">&lt;</span>
@@ -892,7 +772,7 @@
       <span class="s">&quot;bad T&quot;</span><span class="p">);</span>
 
   <span class="k">constexpr</span> <span class="kt">bool</span> <span class="nf">initialized</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">initialized</span><span class="p">();</span>
+    <span class="k">return</span> <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">init_</span><span class="p">;</span>
   <span class="p">}</span>
   <span class="k">typename</span> <span class="nc">std</span><span class="o">::</span><span class="n">remove_const</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">type</span><span class="o">*</span> <span class="n">dataptr</span><span class="p">()</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">addressof</span><span class="p">(</span><span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">storage_</span><span class="p">.</span><span class="n">value_</span><span class="p">);</span>
@@ -914,23 +794,23 @@
   <span class="kt">void</span> <span class="n">clear</span><span class="p">()</span> <span class="k">noexcept</span> <span class="p">{</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">initialized</span><span class="p">())</span>
       <span class="n">dataptr</span><span class="p">()</span><span class="o">-&gt;~</span><span class="n">T</span><span class="p">();</span>
-    <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">setInitialized</span><span class="p">(</span><span class="nb">false</span><span class="p">);</span>
+    <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">init_</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
   <span class="p">}</span>
 
   <span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span><span class="p">...</span> <span class="n">Args</span><span class="o">&gt;</span>
   <span class="kt">void</span> <span class="n">initialize</span><span class="p">(</span><span class="n">Args</span><span class="o">&amp;&amp;</span><span class="p">...</span> <span class="n">args</span><span class="p">)</span> <span class="k">noexcept</span><span class="p">(</span>
       <span class="k">noexcept</span><span class="p">(</span><span class="n">T</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">Args</span><span class="o">&gt;</span><span class="p">(</span><span class="n">args</span><span class="p">)...)))</span> <span class="p">{</span>
-    <span class="n">assert</span><span class="p">(</span><span class="o">!</span><span class="n">initialized</span><span class="p">());</span>
+    <span class="n">assert</span><span class="p">(</span><span class="o">!</span><span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">init_</span><span class="p">);</span>
     <span class="o">::</span><span class="k">new</span> <span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">dataptr</span><span class="p">()))</span> <span class="n">T</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">Args</span><span class="o">&gt;</span><span class="p">(</span><span class="n">args</span><span class="p">)...);</span>
-    <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">setInitialized</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>
+    <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">init_</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
   <span class="p">}</span>
 
   <span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span> <span class="nc">U</span><span class="p">,</span> <span class="k">class</span><span class="p">...</span> <span class="n">Args</span><span class="o">&gt;</span>
   <span class="kt">void</span> <span class="n">initialize</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">initializer_list</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;</span> <span class="n">il</span><span class="p">,</span> <span class="n">Args</span><span class="o">&amp;&amp;</span><span class="p">...</span> <span class="n">args</span><span class="p">)</span> <span class="k">noexcept</span><span class="p">(</span>
       <span class="k">noexcept</span><span class="p">(</span><span class="n">T</span><span class="p">(</span><span class="n">il</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">Args</span><span class="o">&gt;</span><span class="p">(</span><span class="n">args</span><span class="p">)...)))</span> <span class="p">{</span>
-    <span class="n">assert</span><span class="p">(</span><span class="o">!</span><span class="n">initialized</span><span class="p">());</span>
+    <span class="n">assert</span><span class="p">(</span><span class="o">!</span><span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">init_</span><span class="p">);</span>
     <span class="o">::</span><span class="k">new</span> <span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">dataptr</span><span class="p">()))</span> <span class="n">T</span><span class="p">(</span><span class="n">il</span><span class="p">,</span> <span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">Args</span><span class="o">&gt;</span><span class="p">(</span><span class="n">args</span><span class="p">)...);</span>
-    <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">setInitialized</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>
+    <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">init_</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
   <span class="p">}</span>
 
  <span class="k">public</span><span class="o">:</span>
@@ -951,7 +831,7 @@
       <span class="n">std</span><span class="o">::</span><span class="n">is_nothrow_move_constructible</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">)</span> <span class="p">{</span>
     <span class="k">if</span> <span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">initialized</span><span class="p">())</span> <span class="p">{</span>
       <span class="o">::</span><span class="k">new</span> <span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">dataptr</span><span class="p">()))</span> <span class="n">T</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="o">*</span><span class="n">rhs</span><span class="p">));</span>
-      <span class="n">setInitialized</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>
+      <span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">init_</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
     <span class="p">}</span>
   <span class="p">}</span>
 <span class="cp">#endif</span>
