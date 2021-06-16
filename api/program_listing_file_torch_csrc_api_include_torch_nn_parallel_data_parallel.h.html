@@ -326,6 +326,7 @@
 <span class="cp">#include</span> <span class="cpf">&lt;ATen/Parallel.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;c10/core/TensorOptions.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;c10/util/Exception.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;c10/util/irange.h&gt;</span><span class="cp"></span>
 
 <span class="cp">#include</span> <span class="cpf">&lt;cstddef&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;exception&gt;</span><span class="cp"></span>
@@ -417,7 +418,7 @@
     <span class="k">auto</span> <span class="n">grad_fn</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">ReduceAdd</span><span class="o">&gt;</span><span class="p">((</span><span class="o">*</span><span class="n">parameter</span><span class="p">).</span><span class="n">device</span><span class="p">());</span>
     <span class="n">grad_fn</span><span class="o">-&gt;</span><span class="n">set_next_edges</span><span class="p">(</span><span class="n">autograd</span><span class="o">::</span><span class="n">collect_next_edges</span><span class="p">(</span><span class="o">*</span><span class="n">parameter</span><span class="p">));</span>
 
-    <span class="k">for</span> <span class="p">(</span><span class="kt">size_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">devices</span><span class="p">.</span><span class="n">size</span><span class="p">();</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="p">(</span><span class="k">const</span> <span class="k">auto</span> <span class="nl">i</span> <span class="p">:</span> <span class="n">c10</span><span class="o">::</span><span class="n">irange</span><span class="p">(</span><span class="n">devices</span><span class="p">.</span><span class="n">size</span><span class="p">()))</span> <span class="p">{</span>
       <span class="n">autograd</span><span class="o">::</span><span class="n">set_history</span><span class="p">(</span><span class="n">replicas</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">parameters_</span><span class="p">[</span><span class="n">parameter</span><span class="p">.</span><span class="n">key</span><span class="p">()],</span> <span class="n">grad_fn</span><span class="p">);</span>
     <span class="p">}</span>
   <span class="p">}</span>
@@ -427,7 +428,7 @@
       <span class="k">auto</span> <span class="n">grad_fn</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">ReduceAdd</span><span class="o">&gt;</span><span class="p">((</span><span class="o">*</span><span class="n">buffer</span><span class="p">).</span><span class="n">device</span><span class="p">());</span>
       <span class="n">grad_fn</span><span class="o">-&gt;</span><span class="n">set_next_edges</span><span class="p">(</span><span class="n">autograd</span><span class="o">::</span><span class="n">collect_next_edges</span><span class="p">(</span><span class="o">*</span><span class="n">buffer</span><span class="p">));</span>
 
-      <span class="k">for</span> <span class="p">(</span><span class="kt">size_t</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">devices</span><span class="p">.</span><span class="n">size</span><span class="p">();</span> <span class="o">++</span><span class="n">i</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">for</span> <span class="p">(</span><span class="k">const</span> <span class="k">auto</span> <span class="nl">i</span> <span class="p">:</span> <span class="n">c10</span><span class="o">::</span><span class="n">irange</span><span class="p">(</span><span class="n">devices</span><span class="p">.</span><span class="n">size</span><span class="p">()))</span> <span class="p">{</span>
         <span class="n">autograd</span><span class="o">::</span><span class="n">set_history</span><span class="p">(</span><span class="n">replicas</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">buffers_</span><span class="p">[</span><span class="n">buffer</span><span class="p">.</span><span class="n">key</span><span class="p">()],</span> <span class="n">grad_fn</span><span class="p">);</span>
       <span class="p">}</span>
     <span class="p">}</span>
@@ -535,7 +536,7 @@
         <span class="n">device_count</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">,</span> <span class="s">&quot;Expected at least one CUDA device to be available&quot;</span><span class="p">);</span>
     <span class="n">devices</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Device</span><span class="o">&gt;</span><span class="p">();</span>
     <span class="n">devices</span><span class="o">-&gt;</span><span class="n">reserve</span><span class="p">(</span><span class="n">device_count</span><span class="p">);</span>
-    <span class="k">for</span> <span class="p">(</span><span class="kt">size_t</span> <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span> <span class="n">index</span> <span class="o">&lt;</span> <span class="n">device_count</span><span class="p">;</span> <span class="o">++</span><span class="n">index</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">for</span> <span class="p">(</span><span class="k">const</span> <span class="k">auto</span> <span class="nl">index</span> <span class="p">:</span> <span class="n">c10</span><span class="o">::</span><span class="n">irange</span><span class="p">(</span><span class="n">device_count</span><span class="p">))</span> <span class="p">{</span>
       <span class="n">devices</span><span class="o">-&gt;</span><span class="n">emplace_back</span><span class="p">(</span><span class="n">kCUDA</span><span class="p">,</span> <span class="k">static_cast</span><span class="o">&lt;</span><span class="n">torch</span><span class="o">::</span><span class="n">DeviceIndex</span><span class="o">&gt;</span><span class="p">(</span><span class="n">index</span><span class="p">));</span>
     <span class="p">}</span>
   <span class="p">}</span>

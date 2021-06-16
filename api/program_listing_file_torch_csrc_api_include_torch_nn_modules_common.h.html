@@ -325,6 +325,8 @@ the forward() method is declared with a corresponding
 `FORWARD_HAS_DEFAULT_ARGS` macro.
 #pragma once
 
+#include &lt;c10/util/irange.h&gt;
+
 #define FORWARD_HAS_DEFAULT_ARGS(...) \
   template &lt;typename ModuleType, typename... ArgumentTypes&gt; \
   friend struct torch::nn::AnyModuleHolder; \
@@ -341,7 +343,7 @@ the forward() method is declared with a corresponding
     TORCH_INTERNAL_ASSERT(arguments.size() &gt;= _forward_num_required_args() &amp;&amp; arguments.size() &lt;= num_all_args); \
     std::vector&lt;torch::nn::AnyValue&gt; ret; \
     ret.reserve(num_all_args); \
-    for (size_t i = 0; i &lt; arguments.size(); i++) { \
+    for (const auto i : c10::irange(arguments.size())) { \
       ret.emplace_back(std::move(arguments[i])); \
     } \
     for (auto&amp; arg_info : args_info) { \

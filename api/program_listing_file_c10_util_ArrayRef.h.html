@@ -354,6 +354,12 @@
 
   <span class="n">size_type</span> <span class="n">Length</span><span class="p">;</span>
 
+  <span class="kt">void</span> <span class="nf">debugCheckNullptrInvariant</span><span class="p">()</span> <span class="p">{</span>
+    <span class="n">TORCH_INTERNAL_ASSERT_DEBUG_ONLY</span><span class="p">(</span>
+        <span class="n">Data</span> <span class="o">!=</span> <span class="k">nullptr</span> <span class="o">||</span> <span class="n">Length</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="s">&quot;created ArrayRef with nullptr and non-zero length! c10::optional relies on this being illegal&quot;</span><span class="p">);</span>
+  <span class="p">}</span>
+
  <span class="k">public</span><span class="o">:</span>
 
   <span class="cm">/* implicit */</span> <span class="k">constexpr</span> <span class="n">ArrayRef</span><span class="p">()</span> <span class="o">:</span> <span class="n">Data</span><span class="p">(</span><span class="k">nullptr</span><span class="p">),</span> <span class="n">Length</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span> <span class="p">{}</span>
@@ -362,14 +368,30 @@
   <span class="k">constexpr</span> <span class="n">ArrayRef</span><span class="p">(</span><span class="k">const</span> <span class="n">T</span><span class="o">&amp;</span> <span class="n">OneElt</span><span class="p">)</span> <span class="o">:</span> <span class="n">Data</span><span class="p">(</span><span class="o">&amp;</span><span class="n">OneElt</span><span class="p">),</span> <span class="n">Length</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span> <span class="p">{}</span>
 
   <span class="k">constexpr</span> <span class="n">ArrayRef</span><span class="p">(</span><span class="k">const</span> <span class="n">T</span><span class="o">*</span> <span class="n">data</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">length</span><span class="p">)</span>
-      <span class="o">:</span> <span class="n">Data</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">Length</span><span class="p">(</span><span class="n">length</span><span class="p">)</span> <span class="p">{}</span>
+      <span class="o">:</span> <span class="n">Data</span><span class="p">(</span><span class="n">data</span><span class="p">),</span> <span class="n">Length</span><span class="p">(</span><span class="n">length</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">debugCheckNullptrInvariant</span><span class="p">();</span>
+  <span class="p">}</span>
 
   <span class="k">constexpr</span> <span class="n">ArrayRef</span><span class="p">(</span><span class="k">const</span> <span class="n">T</span><span class="o">*</span> <span class="n">begin</span><span class="p">,</span> <span class="k">const</span> <span class="n">T</span><span class="o">*</span> <span class="n">end</span><span class="p">)</span>
-      <span class="o">:</span> <span class="n">Data</span><span class="p">(</span><span class="n">begin</span><span class="p">),</span> <span class="n">Length</span><span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">begin</span><span class="p">)</span> <span class="p">{}</span>
+      <span class="o">:</span> <span class="n">Data</span><span class="p">(</span><span class="n">begin</span><span class="p">),</span> <span class="n">Length</span><span class="p">(</span><span class="n">end</span> <span class="o">-</span> <span class="n">begin</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">debugCheckNullptrInvariant</span><span class="p">();</span>
+  <span class="p">}</span>
 
   <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">U</span><span class="o">&gt;</span>
   <span class="cm">/* implicit */</span> <span class="n">ArrayRef</span><span class="p">(</span><span class="k">const</span> <span class="n">SmallVectorTemplateCommon</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span> <span class="n">U</span><span class="o">&gt;&amp;</span> <span class="n">Vec</span><span class="p">)</span>
-      <span class="o">:</span> <span class="n">Data</span><span class="p">(</span><span class="n">Vec</span><span class="p">.</span><span class="n">data</span><span class="p">()),</span> <span class="n">Length</span><span class="p">(</span><span class="n">Vec</span><span class="p">.</span><span class="n">size</span><span class="p">())</span> <span class="p">{}</span>
+      <span class="o">:</span> <span class="n">Data</span><span class="p">(</span><span class="n">Vec</span><span class="p">.</span><span class="n">data</span><span class="p">()),</span> <span class="n">Length</span><span class="p">(</span><span class="n">Vec</span><span class="p">.</span><span class="n">size</span><span class="p">())</span> <span class="p">{</span>
+    <span class="n">debugCheckNullptrInvariant</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="k">template</span> <span class="o">&lt;</span>
+      <span class="k">typename</span> <span class="nc">Container</span><span class="p">,</span>
+      <span class="k">typename</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">enable_if_t</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">is_same</span><span class="o">&lt;</span>
+          <span class="n">std</span><span class="o">::</span><span class="n">remove_const_t</span><span class="o">&lt;</span><span class="k">decltype</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">declval</span><span class="o">&lt;</span><span class="n">Container</span><span class="o">&gt;</span><span class="p">().</span><span class="n">data</span><span class="p">())</span><span class="o">&gt;</span><span class="p">,</span>
+          <span class="n">T</span><span class="o">*&gt;::</span><span class="n">value</span><span class="o">&gt;&gt;</span>
+  <span class="cm">/* implicit */</span> <span class="n">ArrayRef</span><span class="p">(</span><span class="k">const</span> <span class="n">Container</span><span class="o">&amp;</span> <span class="n">container</span><span class="p">)</span>
+      <span class="o">:</span> <span class="n">Data</span><span class="p">(</span><span class="n">container</span><span class="p">.</span><span class="n">data</span><span class="p">()),</span> <span class="n">Length</span><span class="p">(</span><span class="n">container</span><span class="p">.</span><span class="n">size</span><span class="p">())</span> <span class="p">{</span>
+    <span class="n">debugCheckNullptrInvariant</span><span class="p">();</span>
+  <span class="p">}</span>
 
   <span class="c1">// The enable_if stuff here makes sure that this isn&#39;t used for</span>
   <span class="c1">// std::vector&lt;bool&gt;, because ArrayRef can&#39;t work on a std::vector&lt;bool&gt;</span>
