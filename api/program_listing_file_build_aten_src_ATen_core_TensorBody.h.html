@@ -1868,6 +1868,60 @@
     <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
   <span class="p">}</span>
 <span class="p">};</span>
+
+<span class="k">template</span> <span class="o">&lt;&gt;</span>
+<span class="k">struct</span> <span class="nc">ExclusivelyOwnedTraits</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&gt;</span> <span class="p">{</span>
+  <span class="k">using</span> <span class="n">repr_type</span> <span class="o">=</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="p">;</span>
+  <span class="k">using</span> <span class="n">pointer_type</span> <span class="o">=</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">*</span><span class="p">;</span>
+  <span class="k">using</span> <span class="n">const_pointer_type</span> <span class="o">=</span> <span class="k">const</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">*</span><span class="p">;</span>
+
+  <span class="k">static</span> <span class="n">repr_type</span> <span class="nf">nullRepr</span><span class="p">()</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="k">template</span> <span class="o">&lt;</span><span class="k">class</span><span class="p">...</span> <span class="n">Args</span><span class="o">&gt;</span>
+  <span class="k">static</span> <span class="n">repr_type</span> <span class="n">createInPlace</span><span class="p">(</span><span class="n">Args</span><span class="o">&amp;&amp;</span><span class="p">...</span> <span class="n">args</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">Args</span><span class="o">&gt;</span><span class="p">(</span><span class="n">args</span><span class="p">)...);</span>
+  <span class="p">}</span>
+
+  <span class="k">static</span> <span class="n">repr_type</span> <span class="n">moveToRepr</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&amp;&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">x</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="k">static</span> <span class="kt">void</span> <span class="n">destroyOwned</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+    <span class="n">TensorImpl</span><span class="o">*</span><span class="k">const</span> <span class="n">toDestroy</span> <span class="o">=</span> <span class="n">x</span><span class="p">.</span><span class="n">unsafeReleaseTensorImpl</span><span class="p">();</span>
+    <span class="n">TORCH_INTERNAL_ASSERT_DEBUG_ONLY</span><span class="p">(</span><span class="n">toDestroy</span> <span class="o">!=</span> <span class="k">nullptr</span><span class="p">,</span> <span class="s">&quot;Tensor somehow got null TensorImpl?&quot;</span><span class="p">);</span>
+    <span class="c1">// May be 0 because UndefinedTensorImpl doesn&#39;t get its refcount</span>
+    <span class="c1">// incremented.</span>
+    <span class="n">TORCH_INTERNAL_ASSERT_DEBUG_ONLY</span><span class="p">(</span>
+        <span class="n">toDestroy</span><span class="o">-&gt;</span><span class="n">refcount_</span> <span class="o">==</span> <span class="mi">1</span> <span class="o">||</span> <span class="p">(</span><span class="n">toDestroy</span><span class="o">-&gt;</span><span class="n">refcount_</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="n">toDestroy</span> <span class="o">==</span> <span class="n">UndefinedTensorImpl</span><span class="o">::</span><span class="n">singleton</span><span class="p">()),</span>
+        <span class="s">&quot;ExclusivelyOwned&lt;Tensor&gt; destroyed with refcount &quot;</span><span class="p">,</span> <span class="n">toDestroy</span><span class="o">-&gt;</span><span class="n">refcount_</span><span class="p">,</span> <span class="s">&quot;, expected 1!&quot;</span><span class="p">);</span>
+    <span class="n">TORCH_INTERNAL_ASSERT_DEBUG_ONLY</span><span class="p">(</span>
+        <span class="n">toDestroy</span><span class="o">-&gt;</span><span class="n">weakcount_</span> <span class="o">==</span> <span class="mi">1</span> <span class="o">||</span> <span class="p">(</span><span class="n">toDestroy</span><span class="o">-&gt;</span><span class="n">weakcount_</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="n">toDestroy</span> <span class="o">==</span> <span class="n">UndefinedTensorImpl</span><span class="o">::</span><span class="n">singleton</span><span class="p">()),</span>
+        <span class="s">&quot;ExclusivelyOwned&lt;Tensor&gt; destroyed with weakcount &quot;</span><span class="p">,</span> <span class="n">toDestroy</span><span class="o">-&gt;</span><span class="n">weakcount_</span><span class="p">,</span> <span class="s">&quot;, expected 1!&quot;</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">toDestroy</span> <span class="o">!=</span> <span class="n">UndefinedTensorImpl</span><span class="o">::</span><span class="n">singleton</span><span class="p">())</span> <span class="p">{</span>
+<span class="cp">#ifndef NDEBUG</span>
+      <span class="c1">// Needed to pass the debug assertions in ~intrusive_ptr_target.</span>
+      <span class="n">toDestroy</span><span class="o">-&gt;</span><span class="n">refcount_</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+      <span class="n">toDestroy</span><span class="o">-&gt;</span><span class="n">weakcount_</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="cp">#endif</span>
+      <span class="n">toDestroy</span><span class="o">-&gt;</span><span class="n">release_resources</span><span class="p">();</span>
+      <span class="k">delete</span> <span class="n">toDestroy</span><span class="p">;</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+
+  <span class="k">static</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="n">take</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">x</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="k">static</span> <span class="n">pointer_type</span> <span class="n">getImpl</span><span class="p">(</span><span class="n">repr_type</span><span class="o">&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="o">&amp;</span><span class="n">x</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="k">static</span> <span class="n">const_pointer_type</span> <span class="n">getImpl</span><span class="p">(</span><span class="k">const</span> <span class="n">repr_type</span><span class="o">&amp;</span> <span class="n">x</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="o">&amp;</span><span class="n">x</span><span class="p">;</span>
+  <span class="p">}</span>
+<span class="p">};</span>
 <span class="p">}</span> <span class="c1">// namespace c10</span>
 
 <span class="k">namespace</span> <span class="nn">at</span> <span class="p">{</span>
