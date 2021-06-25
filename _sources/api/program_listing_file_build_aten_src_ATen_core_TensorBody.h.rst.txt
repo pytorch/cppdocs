@@ -436,6 +436,11 @@ Program Listing for File TensorBody.h
        return impl_->is_hip();
      }
    
+     bool is_ve() const {
+       // NB: this is not a native function to avoid dispatching overhead.
+       return impl_->is_ve();
+     }
+   
      bool is_sparse() const {
        // NB: this is not a native function to avoid dispatching overhead.
        return impl_->is_sparse();
@@ -595,6 +600,7 @@ Program Listing for File TensorBody.h
      Tensor cpu() const;
      Tensor cuda() const;
      Tensor hip() const;
+     Tensor ve() const;
      Tensor vulkan() const;
      Tensor metal() const;
    
@@ -999,7 +1005,7 @@ Program Listing for File TensorBody.h
      at::Tensor detach() const;
      at::Tensor & detach_() const;
      int64_t size(at::Dimname dim) const;
-     at::Tensor slice(int64_t dim=0, c10::optional<int64_t> start=0, c10::optional<int64_t> end=9223372036854775807, int64_t step=1) const;
+     at::Tensor slice(int64_t dim=0, c10::optional<int64_t> start=c10::nullopt, c10::optional<int64_t> end=c10::nullopt, int64_t step=1) const;
      std::tuple<at::Tensor,at::Tensor> slogdet() const;
      at::Tensor smm(const at::Tensor & mat2) const;
      at::Tensor softmax(int64_t dim, c10::optional<at::ScalarType> dtype=c10::nullopt) const;
@@ -1320,6 +1326,8 @@ Program Listing for File TensorBody.h
      at::Tensor lerp(const at::Tensor & end, const at::Scalar & weight) const;
      at::Tensor lerp(const at::Tensor & end, const at::Tensor & weight) const;
      at::Tensor histc(int64_t bins=100, const at::Scalar & min=0, const at::Scalar & max=0) const;
+     std::tuple<at::Tensor,at::Tensor> histogram(const at::Tensor & bins, const c10::optional<at::Tensor> & weight={}, bool density=false) const;
+     std::tuple<at::Tensor,at::Tensor> histogram(int64_t bins=100, c10::optional<at::ArrayRef<double>> range=c10::nullopt, const c10::optional<at::Tensor> & weight={}, bool density=false) const;
      at::Tensor fmod(const at::Scalar & other) const;
      at::Tensor fmod(const at::Tensor & other) const;
      at::Tensor hypot(const at::Tensor & other) const;
