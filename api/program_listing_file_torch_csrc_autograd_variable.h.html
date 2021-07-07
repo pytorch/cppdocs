@@ -474,6 +474,7 @@
 
   <span class="kt">void</span> <span class="nf">set_fw_grad</span><span class="p">(</span><span class="k">const</span> <span class="n">Variable</span><span class="o">&amp;</span> <span class="n">new_grad</span><span class="p">,</span> <span class="k">const</span> <span class="n">Variable</span><span class="o">&amp;</span> <span class="n">self</span><span class="p">,</span> <span class="kt">uint64_t</span> <span class="n">level</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">is_inplace_op</span><span class="p">)</span> <span class="k">override</span><span class="p">;</span>
 
+  <span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)</span>
   <span class="n">AutogradMeta</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="o">*</span> <span class="n">self_impl</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">,</span> <span class="kt">bool</span> <span class="n">requires_grad</span> <span class="o">=</span> <span class="nb">false</span><span class="p">,</span> <span class="n">Edge</span> <span class="n">gradient_edge</span> <span class="o">=</span> <span class="n">Edge</span><span class="p">()</span> <span class="p">)</span> <span class="p">{</span>
     <span class="n">grad_fn_</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">gradient_edge</span><span class="p">.</span><span class="n">function</span><span class="p">);</span>
     <span class="n">requires_grad_</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
@@ -650,6 +651,7 @@
       <span class="n">shared_view_info</span><span class="p">,</span> <span class="n">creation_meta</span><span class="p">));</span>
       <span class="k">return</span> <span class="n">data</span><span class="p">;</span>
     <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-init-variables)</span>
       <span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="o">&gt;</span> <span class="n">data_impl_copy</span> <span class="o">=</span> <span class="n">data</span><span class="p">.</span><span class="n">getIntrusivePtr</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">shallow_copy_and_detach</span><span class="p">(</span>
         <span class="cm">/*version_counter=*/</span><span class="mi">0</span><span class="p">,</span>
         <span class="cm">/*allow_tensor_metadata_change=*/</span><span class="n">allow_tensor_metadata_change</span><span class="p">);</span>
@@ -689,6 +691,7 @@
     <span class="k">if</span> <span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">getIntrusivePtr</span><span class="p">().</span><span class="n">use_count</span><span class="p">()</span> <span class="o">==</span> <span class="mi">1</span> <span class="o">&amp;&amp;</span> <span class="n">data</span><span class="p">.</span><span class="n">getIntrusivePtr</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">unique_version</span><span class="p">())</span> <span class="p">{</span>
       <span class="k">auto</span> <span class="n">data_impl</span> <span class="o">=</span> <span class="n">data</span><span class="p">.</span><span class="n">unsafeReleaseIntrusivePtr</span><span class="p">();</span>
       <span class="n">data_impl</span><span class="o">-&gt;</span><span class="n">set_allow_tensor_metadata_change</span><span class="p">(</span><span class="n">allow_tensor_metadata_change</span><span class="p">);</span>
+      <span class="c1">// NOLINTNEXTLINE(bugprone-branch-clone)</span>
       <span class="k">if</span> <span class="p">(</span><span class="n">requires_grad</span><span class="p">)</span> <span class="p">{</span>
         <span class="n">data_impl</span><span class="o">-&gt;</span><span class="n">set_autograd_meta</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">AutogradMeta</span><span class="o">&gt;</span><span class="p">(</span><span class="n">data_impl</span><span class="p">.</span><span class="n">get</span><span class="p">(),</span> <span class="n">requires_grad</span><span class="p">));</span>
       <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
@@ -699,6 +702,7 @@
       <span class="k">auto</span> <span class="n">data_impl_copy</span> <span class="o">=</span> <span class="n">data</span><span class="p">.</span><span class="n">getIntrusivePtr</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">shallow_copy_and_detach</span><span class="p">(</span>
         <span class="cm">/*version_counter=*/</span><span class="mi">0</span><span class="p">,</span>
         <span class="cm">/*allow_tensor_metadata_change=*/</span><span class="n">allow_tensor_metadata_change</span><span class="p">);</span>
+      <span class="c1">// NOLINTNEXTLINE(bugprone-branch-clone)</span>
       <span class="k">if</span> <span class="p">(</span><span class="n">requires_grad</span><span class="p">)</span> <span class="p">{</span>
         <span class="n">data_impl_copy</span><span class="o">-&gt;</span><span class="n">set_autograd_meta</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">AutogradMeta</span><span class="o">&gt;</span><span class="p">(</span>
           <span class="n">data_impl_copy</span><span class="p">.</span><span class="n">get</span><span class="p">(),</span> <span class="n">requires_grad</span><span class="p">));</span>
