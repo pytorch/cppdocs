@@ -694,11 +694,23 @@
   <span class="p">}</span>
 
   <span class="c1">// sets the conjugate bit of a tensor.</span>
-  <span class="c1">// NOTE: Conjugate bit is supposed to be a read-only field. Only change this, if you are extremely sure</span>
+  <span class="c1">// NOTE: Conjugate bit is supposed to be a read-only field. Only change this, if you are sure</span>
   <span class="c1">// that&#39;s what you want. Changing this might lead to incorrect behavior since conjugation is</span>
   <span class="c1">// a lazy operation and we rely on this bit to determine if a conjugation needs to be materialized.</span>
   <span class="kr">inline</span> <span class="kt">void</span> <span class="n">_set_conj</span><span class="p">(</span><span class="kt">bool</span> <span class="n">conjugate</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
     <span class="n">impl_</span><span class="o">-&gt;</span><span class="n">_set_conj</span><span class="p">(</span><span class="n">conjugate</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="kr">inline</span> <span class="kt">bool</span> <span class="n">is_neg</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">impl_</span><span class="o">-&gt;</span><span class="n">is_neg</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="c1">// sets the negative bit of a tensor.</span>
+  <span class="c1">// NOTE: Negative bit is supposed to be a read-only field. Only change this, if you are sure</span>
+  <span class="c1">// that&#39;s what you want. Changing this might lead to incorrect behavior since we rely on this</span>
+  <span class="c1">// bit to determine if a negation needs to be materialized.</span>
+  <span class="kr">inline</span> <span class="kt">void</span> <span class="n">_set_neg</span><span class="p">(</span><span class="kt">bool</span> <span class="n">negative</span><span class="p">)</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="n">impl_</span><span class="o">-&gt;</span><span class="n">_set_neg</span><span class="p">(</span><span class="n">negative</span><span class="p">);</span>
   <span class="p">}</span>
 
   <span class="n">Layout</span> <span class="n">layout</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="p">{</span>
@@ -1024,6 +1036,8 @@
   <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="nf">conj_physical</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
   <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="o">&amp;</span> <span class="nf">conj_physical_</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
   <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="nf">resolve_conj</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+  <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="nf">resolve_neg</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+  <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="nf">_neg_view</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
   <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="nf">acos</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
   <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="o">&amp;</span> <span class="nf">acos_</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
   <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="nf">arccos</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
@@ -1218,6 +1232,7 @@
   <span class="kt">bool</span> <span class="nf">__dispatch_is_floating_point</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
   <span class="kt">bool</span> <span class="nf">__dispatch_is_complex</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
   <span class="kt">bool</span> <span class="nf">__dispatch_is_conj</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
+  <span class="kt">bool</span> <span class="nf">__dispatch_is_neg</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
   <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="nf">isreal</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
   <span class="kt">bool</span> <span class="nf">is_nonzero</span><span class="p">()</span> <span class="k">const</span><span class="p">;</span>
   <span class="kt">bool</span> <span class="nf">is_same_size</span><span class="p">(</span><span class="k">const</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="o">&amp;</span> <span class="n">other</span><span class="p">)</span> <span class="k">const</span><span class="p">;</span>
@@ -2020,6 +2035,16 @@
 <span class="c1">// aten::resolve_conj(Tensor(a) self) -&gt; Tensor(a)</span>
 <span class="kr">inline</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="nf">Tensor::resolve_conj</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">at</span><span class="o">::</span><span class="n">_ops</span><span class="o">::</span><span class="n">resolve_conj</span><span class="o">::</span><span class="n">call</span><span class="p">(</span><span class="k">const_cast</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&amp;&gt;</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">));</span>
+<span class="p">}</span>
+
+<span class="c1">// aten::resolve_neg(Tensor(a) self) -&gt; Tensor(a)</span>
+<span class="kr">inline</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="nf">Tensor::resolve_neg</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">at</span><span class="o">::</span><span class="n">_ops</span><span class="o">::</span><span class="n">resolve_neg</span><span class="o">::</span><span class="n">call</span><span class="p">(</span><span class="k">const_cast</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&amp;&gt;</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">));</span>
+<span class="p">}</span>
+
+<span class="c1">// aten::_neg_view(Tensor(a) self) -&gt; Tensor(a)</span>
+<span class="kr">inline</span> <span class="n">at</span><span class="o">::</span><span class="n">Tensor</span> <span class="nf">Tensor::_neg_view</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">at</span><span class="o">::</span><span class="n">_ops</span><span class="o">::</span><span class="n">_neg_view</span><span class="o">::</span><span class="n">call</span><span class="p">(</span><span class="k">const_cast</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&amp;&gt;</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">));</span>
 <span class="p">}</span>
 
 <span class="c1">// aten::acos(Tensor self) -&gt; Tensor</span>
@@ -2990,6 +3015,11 @@
 <span class="c1">// aten::is_conj(Tensor self) -&gt; bool</span>
 <span class="kr">inline</span> <span class="kt">bool</span> <span class="n">Tensor</span><span class="o">::</span><span class="n">__dispatch_is_conj</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="k">return</span> <span class="n">at</span><span class="o">::</span><span class="n">_ops</span><span class="o">::</span><span class="n">is_conj</span><span class="o">::</span><span class="n">call</span><span class="p">(</span><span class="k">const_cast</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&amp;&gt;</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">));</span>
+<span class="p">}</span>
+
+<span class="c1">// aten::is_neg(Tensor self) -&gt; bool</span>
+<span class="kr">inline</span> <span class="kt">bool</span> <span class="n">Tensor</span><span class="o">::</span><span class="n">__dispatch_is_neg</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
+    <span class="k">return</span> <span class="n">at</span><span class="o">::</span><span class="n">_ops</span><span class="o">::</span><span class="n">is_neg</span><span class="o">::</span><span class="n">call</span><span class="p">(</span><span class="k">const_cast</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&amp;&gt;</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">));</span>
 <span class="p">}</span>
 
 <span class="c1">// aten::isreal(Tensor self) -&gt; Tensor</span>
