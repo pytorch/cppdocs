@@ -1026,6 +1026,7 @@ Program Listing for File TensorBody.h
      at::Tensor repeat_interleave(const at::Tensor & repeats, c10::optional<int64_t> dim=c10::nullopt, c10::optional<int64_t> output_size=c10::nullopt) const;
      at::Tensor repeat_interleave(int64_t repeats, c10::optional<int64_t> dim=c10::nullopt, c10::optional<int64_t> output_size=c10::nullopt) const;
      at::Tensor reshape(at::IntArrayRef shape) const;
+     at::Tensor _reshape_alias(at::IntArrayRef size, at::IntArrayRef stride) const;
      at::Tensor reshape_as(const at::Tensor & other) const;
      at::Tensor round() const;
      at::Tensor & round_() const;
@@ -1272,8 +1273,6 @@ Program Listing for File TensorBody.h
      at::Tensor & digamma_() const;
      at::Tensor & lerp_(const at::Tensor & end, const at::Scalar & weight) const;
      at::Tensor & lerp_(const at::Tensor & end, const at::Tensor & weight) const;
-     at::Tensor & fmod_(const at::Scalar & other) const;
-     at::Tensor & fmod_(const at::Tensor & other) const;
      at::Tensor & addbmm_(const at::Tensor & batch1, const at::Tensor & batch2, const at::Scalar & beta=1, const at::Scalar & alpha=1) const;
      at::Tensor addbmm(const at::Tensor & batch1, const at::Tensor & batch2, const at::Scalar & beta=1, const at::Scalar & alpha=1) const;
      at::Tensor & addcdiv_(const at::Tensor & tensor1, const at::Tensor & tensor2, const at::Scalar & value=1) const;
@@ -1384,7 +1383,9 @@ Program Listing for File TensorBody.h
      ::std::tuple<at::Tensor,at::Tensor> histogram(const at::Tensor & bins, const c10::optional<at::Tensor> & weight={}, bool density=false) const;
      ::std::tuple<at::Tensor,at::Tensor> histogram(int64_t bins=100, c10::optional<at::ArrayRef<double>> range=c10::nullopt, const c10::optional<at::Tensor> & weight={}, bool density=false) const;
      at::Tensor fmod(const at::Scalar & other) const;
+     at::Tensor & fmod_(const at::Scalar & other) const;
      at::Tensor fmod(const at::Tensor & other) const;
+     at::Tensor & fmod_(const at::Tensor & other) const;
      at::Tensor hypot(const at::Tensor & other) const;
      at::Tensor & hypot_(const at::Tensor & other) const;
      at::Tensor igamma(const at::Tensor & other) const;
@@ -1442,6 +1443,7 @@ Program Listing for File TensorBody.h
      void record_stream(at::Stream s) const;
      at::Tensor isposinf() const;
      at::Tensor isneginf() const;
+     at::Tensor special_polygamma(int64_t n) const;
      at::Tensor det() const;
      at::Tensor inner(const at::Tensor & other) const;
      at::Tensor outer(const at::Tensor & vec2) const;
@@ -3183,6 +3185,11 @@ Program Listing for File TensorBody.h
        return at::_ops::reshape::call(const_cast<Tensor&>(*this), shape);
    }
    
+   // aten::_reshape_alias(Tensor(a) self, int[] size, int[] stride) -> Tensor(a)
+   inline at::Tensor Tensor::_reshape_alias(at::IntArrayRef size, at::IntArrayRef stride) const {
+       return at::_ops::_reshape_alias::call(const_cast<Tensor&>(*this), size, stride);
+   }
+   
    // aten::reshape_as(Tensor(a) self, Tensor other) -> Tensor(a)
    inline at::Tensor Tensor::reshape_as(const at::Tensor & other) const {
        return at::_ops::reshape_as::call(const_cast<Tensor&>(*this), other);
@@ -4413,16 +4420,6 @@ Program Listing for File TensorBody.h
        return at::_ops::lerp__Tensor::call(const_cast<Tensor&>(*this), end, weight);
    }
    
-   // aten::fmod_.Scalar(Tensor(a!) self, Scalar other) -> Tensor(a!)
-   inline at::Tensor & Tensor::fmod_(const at::Scalar & other) const {
-       return at::_ops::fmod__Scalar::call(const_cast<Tensor&>(*this), other);
-   }
-   
-   // aten::fmod_.Tensor(Tensor(a!) self, Tensor other) -> Tensor(a!)
-   inline at::Tensor & Tensor::fmod_(const at::Tensor & other) const {
-       return at::_ops::fmod__Tensor::call(const_cast<Tensor&>(*this), other);
-   }
-   
    // aten::addbmm_(Tensor(a!) self, Tensor batch1, Tensor batch2, *, Scalar beta=1, Scalar alpha=1) -> Tensor(a!)
    inline at::Tensor & Tensor::addbmm_(const at::Tensor & batch1, const at::Tensor & batch2, const at::Scalar & beta, const at::Scalar & alpha) const {
        return at::_ops::addbmm_::call(const_cast<Tensor&>(*this), batch1, batch2, beta, alpha);
@@ -4973,9 +4970,19 @@ Program Listing for File TensorBody.h
        return at::_ops::fmod_Scalar::call(const_cast<Tensor&>(*this), other);
    }
    
+   // aten::fmod_.Scalar(Tensor(a!) self, Scalar other) -> Tensor(a!)
+   inline at::Tensor & Tensor::fmod_(const at::Scalar & other) const {
+       return at::_ops::fmod__Scalar::call(const_cast<Tensor&>(*this), other);
+   }
+   
    // aten::fmod.Tensor(Tensor self, Tensor other) -> Tensor
    inline at::Tensor Tensor::fmod(const at::Tensor & other) const {
        return at::_ops::fmod_Tensor::call(const_cast<Tensor&>(*this), other);
+   }
+   
+   // aten::fmod_.Tensor(Tensor(a!) self, Tensor other) -> Tensor(a!)
+   inline at::Tensor & Tensor::fmod_(const at::Tensor & other) const {
+       return at::_ops::fmod__Tensor::call(const_cast<Tensor&>(*this), other);
    }
    
    // aten::hypot(Tensor self, Tensor other) -> Tensor
@@ -5261,6 +5268,11 @@ Program Listing for File TensorBody.h
    // aten::isneginf(Tensor self) -> Tensor
    inline at::Tensor Tensor::isneginf() const {
        return at::_ops::isneginf::call(const_cast<Tensor&>(*this));
+   }
+   
+   // aten::special_polygamma(int n, Tensor self) -> Tensor
+   inline at::Tensor Tensor::special_polygamma(int64_t n) const {
+       return at::_ops::special_polygamma::call(n, const_cast<Tensor&>(*this));
    }
    
    // aten::det(Tensor self) -> Tensor

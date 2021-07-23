@@ -320,8 +320,7 @@
 
 <span class="cp">#include</span> <span class="cpf">&lt;c10/core/DeviceGuard.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;c10/core/Stream.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;c10/cuda/CUDAException.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;c10/cuda/CUDAMacros.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span> <span class="cpf">&lt;c10/cuda/CUDAFunctions.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span> <span class="cpf">&lt;c10/util/Exception.h&gt;</span><span class="cp"></span>
 
 <span class="cm">/*</span>
@@ -419,6 +418,9 @@
       <span class="k">return</span> <span class="nb">true</span><span class="p">;</span>
     <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">err</span> <span class="o">!=</span> <span class="n">cudaErrorNotReady</span><span class="p">)</span> <span class="p">{</span>
       <span class="n">C10_CUDA_CHECK</span><span class="p">(</span><span class="n">err</span><span class="p">);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="c1">// ignore and clear the error if not ready</span>
+      <span class="n">cudaGetLastError</span><span class="p">();</span>
     <span class="p">}</span>
 
     <span class="k">return</span> <span class="nb">false</span><span class="p">;</span>
@@ -426,7 +428,7 @@
 
   <span class="kt">void</span> <span class="n">synchronize</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
     <span class="n">DeviceGuard</span> <span class="n">guard</span><span class="p">{</span><span class="n">stream_</span><span class="p">.</span><span class="n">device</span><span class="p">()};</span>
-    <span class="n">C10_CUDA_CHECK</span><span class="p">(</span><span class="n">cudaStreamSynchronize</span><span class="p">(</span><span class="n">stream</span><span class="p">()));</span>
+    <span class="n">c10</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">stream_synchronize</span><span class="p">(</span><span class="n">stream</span><span class="p">());</span>
   <span class="p">}</span>
 
   <span class="kt">int</span> <span class="n">priority</span><span class="p">()</span> <span class="k">const</span> <span class="p">{</span>
