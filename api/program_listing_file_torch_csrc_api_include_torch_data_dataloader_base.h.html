@@ -313,211 +313,211 @@
 <p>↰ <a class="reference internal" href="file_torch_csrc_api_include_torch_data_dataloader_base.h.html#file-torch-csrc-api-include-torch-data-dataloader-base-h"><span class="std std-ref">Return to documentation for file</span></a> (<code class="docutils literal notranslate"><span class="pre">torch/csrc/api/include/torch/data/dataloader/base.h</span></code>)</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#pragma once</span>
 
-<span class="cp">#include</span> <span class="cpf">&lt;torch/data/dataloader_options.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;torch/data/detail/data_shuttle.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;torch/data/detail/sequencers.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;torch/data/iterator.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;torch/data/samplers/random.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;torch/data/worker_exception.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;torch/types.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/data/dataloader_options.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/data/detail/data_shuttle.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/data/detail/sequencers.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/data/iterator.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/data/samplers/random.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/data/worker_exception.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/types.h&gt;</span><span class="cp"></span>
 
-<span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/utils/memory.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;torch/csrc/utils/variadic.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/csrc/utils/memory.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/csrc/utils/variadic.h&gt;</span><span class="cp"></span>
 
-<span class="cp">#include</span> <span class="cpf">&lt;c10/util/Exception.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;c10/util/irange.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/Exception.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/irange.h&gt;</span><span class="cp"></span>
 
-<span class="cp">#include</span> <span class="cpf">&lt;cstddef&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;exception&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;memory&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;thread&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;type_traits&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;utility&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;vector&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cstddef&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;exception&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;memory&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;thread&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;type_traits&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;utility&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;vector&gt;</span><span class="cp"></span>
 
-<span class="k">namespace</span> <span class="nn">torch</span> <span class="p">{</span>
-<span class="k">namespace</span> <span class="nn">data</span> <span class="p">{</span>
-<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">Dataset</span><span class="p">,</span> <span class="k">typename</span> <span class="nc">Batch</span><span class="p">,</span> <span class="k">typename</span> <span class="nc">BatchRequest</span><span class="o">&gt;</span>
-<span class="k">class</span> <span class="nc">DataLoaderBase</span> <span class="p">{</span>
- <span class="k">public</span><span class="o">:</span>
-  <span class="k">using</span> <span class="n">BatchType</span> <span class="o">=</span> <span class="n">Batch</span><span class="p">;</span>
-  <span class="k">using</span> <span class="n">BatchRequestType</span> <span class="o">=</span> <span class="n">BatchRequest</span><span class="p">;</span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">data</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">Dataset</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span> <span class="nc">Batch</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span> <span class="nc">BatchRequest</span><span class="o">&gt;</span><span class="w"></span>
+<span class="k">class</span> <span class="nc">DataLoaderBase</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w"> </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">BatchType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Batch</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">BatchRequestType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">BatchRequest</span><span class="p">;</span><span class="w"></span>
 
-  <span class="n">DataLoaderBase</span><span class="p">(</span>
-      <span class="n">DataLoaderOptions</span> <span class="n">options</span><span class="p">,</span>
-      <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Dataset</span><span class="o">&gt;</span> <span class="n">main_thread_dataset</span> <span class="o">=</span> <span class="k">nullptr</span><span class="p">)</span>
-      <span class="c1">// NOLINTNEXTLINE(performance-move-const-arg)</span>
-      <span class="o">:</span> <span class="n">options_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">options</span><span class="p">)),</span>
-        <span class="n">main_thread_dataset_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">main_thread_dataset</span><span class="p">)),</span>
-        <span class="n">sequencer_</span><span class="p">(</span><span class="n">new_sequencer</span><span class="p">())</span> <span class="p">{}</span>
+<span class="w">  </span><span class="n">DataLoaderBase</span><span class="p">(</span><span class="w"></span>
+<span class="w">      </span><span class="n">DataLoaderOptions</span><span class="w"> </span><span class="n">options</span><span class="p">,</span><span class="w"></span>
+<span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Dataset</span><span class="o">&gt;</span><span class="w"> </span><span class="n">main_thread_dataset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="c1">// NOLINTNEXTLINE(performance-move-const-arg)</span>
+<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">options_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">options</span><span class="p">)),</span><span class="w"></span>
+<span class="w">        </span><span class="n">main_thread_dataset_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">main_thread_dataset</span><span class="p">)),</span><span class="w"></span>
+<span class="w">        </span><span class="n">sequencer_</span><span class="p">(</span><span class="n">new_sequencer</span><span class="p">())</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
 
-  <span class="c1">// NOLINTNEXTLINE(bugprone-exception-escape)</span>
-  <span class="k">virtual</span> <span class="o">~</span><span class="n">DataLoaderBase</span><span class="p">()</span> <span class="p">{</span>
-    <span class="n">join</span><span class="p">();</span>
-  <span class="p">}</span>
+<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(bugprone-exception-escape)</span>
+<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="o">~</span><span class="n">DataLoaderBase</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">join</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
 
-  <span class="n">Iterator</span><span class="o">&lt;</span><span class="n">Batch</span><span class="o">&gt;</span> <span class="n">begin</span><span class="p">()</span> <span class="p">{</span>
-    <span class="n">TORCH_CHECK</span><span class="p">(</span>
-        <span class="n">shuttle_</span><span class="p">.</span><span class="n">in_flight_jobs</span><span class="p">()</span> <span class="o">==</span> <span class="mi">0</span><span class="p">,</span>
-        <span class="s">&quot;Attempted to get a new DataLoader iterator &quot;</span>
-        <span class="s">&quot;while another iterator is not yet exhausted&quot;</span><span class="p">);</span>
-    <span class="n">reset</span><span class="p">();</span>
-    <span class="k">return</span> <span class="n">Iterator</span><span class="o">&lt;</span><span class="n">Batch</span><span class="o">&gt;</span><span class="p">(</span><span class="n">torch</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">ValidIterator</span><span class="o">&lt;</span><span class="n">Batch</span><span class="o">&gt;&gt;</span><span class="p">(</span>
-        <span class="p">[</span><span class="k">this</span><span class="p">]</span> <span class="p">{</span> <span class="k">return</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">();</span> <span class="p">}));</span>
-  <span class="p">}</span>
+<span class="w">  </span><span class="n">Iterator</span><span class="o">&lt;</span><span class="n">Batch</span><span class="o">&gt;</span><span class="w"> </span><span class="n">begin</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">TORCH_CHECK</span><span class="p">(</span><span class="w"></span>
+<span class="w">        </span><span class="n">shuttle_</span><span class="p">.</span><span class="n">in_flight_jobs</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="s">&quot;Attempted to get a new DataLoader iterator &quot;</span><span class="w"></span>
+<span class="w">        </span><span class="s">&quot;while another iterator is not yet exhausted&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">reset</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">Iterator</span><span class="o">&lt;</span><span class="n">Batch</span><span class="o">&gt;</span><span class="p">(</span><span class="n">torch</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">ValidIterator</span><span class="o">&lt;</span><span class="n">Batch</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="w"></span>
+<span class="w">        </span><span class="p">[</span><span class="k">this</span><span class="p">]</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">();</span><span class="w"> </span><span class="p">}));</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
 
-  <span class="n">Iterator</span><span class="o">&lt;</span><span class="n">Batch</span><span class="o">&gt;</span> <span class="n">end</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">Iterator</span><span class="o">&lt;</span><span class="n">Batch</span><span class="o">&gt;</span><span class="p">(</span>
-        <span class="n">torch</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">SentinelIterator</span><span class="o">&lt;</span><span class="n">Batch</span><span class="o">&gt;&gt;</span><span class="p">());</span>
-  <span class="p">}</span>
+<span class="w">  </span><span class="n">Iterator</span><span class="o">&lt;</span><span class="n">Batch</span><span class="o">&gt;</span><span class="w"> </span><span class="n">end</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">Iterator</span><span class="o">&lt;</span><span class="n">Batch</span><span class="o">&gt;</span><span class="p">(</span><span class="w"></span>
+<span class="w">        </span><span class="n">torch</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">SentinelIterator</span><span class="o">&lt;</span><span class="n">Batch</span><span class="o">&gt;&gt;</span><span class="p">());</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
 
-  <span class="kt">void</span> <span class="n">join</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">joined_</span><span class="p">)</span> <span class="p">{</span>
-      <span class="k">return</span><span class="p">;</span>
-    <span class="p">}</span>
-    <span class="n">shuttle_</span><span class="p">.</span><span class="n">drain</span><span class="p">();</span>
-    <span class="c1">// Send one &#39;quit&#39; message per worker. Since a worker dies (exits its</span>
-    <span class="c1">// thread) after receiving this message, each `QuitWorker()` message will be</span>
-    <span class="c1">// read by exactly one worker.</span>
-    <span class="k">for</span> <span class="p">(</span><span class="k">const</span> <span class="k">auto</span> <span class="nl">w</span> <span class="p">:</span> <span class="n">c10</span><span class="o">::</span><span class="n">irange</span><span class="p">(</span><span class="n">options_</span><span class="p">.</span><span class="n">workers</span><span class="p">))</span> <span class="p">{</span>
-      <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">w</span><span class="p">;</span> <span class="c1">// Suppress unused variable warning</span>
-      <span class="n">push_job</span><span class="p">(</span><span class="n">QuitWorker</span><span class="p">());</span>
-    <span class="p">}</span>
-    <span class="k">for</span> <span class="p">(</span><span class="k">auto</span><span class="o">&amp;</span> <span class="nl">worker</span> <span class="p">:</span> <span class="n">workers_</span><span class="p">)</span> <span class="p">{</span>
-      <span class="n">worker</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
-    <span class="p">}</span>
-    <span class="n">joined_</span> <span class="o">=</span> <span class="nb">true</span><span class="p">;</span>
-  <span class="p">}</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">join</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">joined_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">shuttle_</span><span class="p">.</span><span class="n">drain</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="c1">// Send one &#39;quit&#39; message per worker. Since a worker dies (exits its</span>
+<span class="w">    </span><span class="c1">// thread) after receiving this message, each `QuitWorker()` message will be</span>
+<span class="w">    </span><span class="c1">// read by exactly one worker.</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="nl">w</span> <span class="p">:</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">irange</span><span class="p">(</span><span class="n">options_</span><span class="p">.</span><span class="n">workers</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">w</span><span class="p">;</span><span class="w"> </span><span class="c1">// Suppress unused variable warning</span>
+<span class="w">      </span><span class="n">push_job</span><span class="p">(</span><span class="n">QuitWorker</span><span class="p">());</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="nl">worker</span> <span class="p">:</span><span class="w"> </span><span class="n">workers_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="n">worker</span><span class="p">.</span><span class="n">join</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">joined_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
 
-  <span class="k">const</span> <span class="n">FullDataLoaderOptions</span><span class="o">&amp;</span> <span class="n">options</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">options_</span><span class="p">;</span>
-  <span class="p">}</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">FullDataLoaderOptions</span><span class="o">&amp;</span><span class="w"> </span><span class="n">options</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">options_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
 
- <span class="k">protected</span><span class="o">:</span>
-  <span class="k">struct</span> <span class="nc">Sequenced</span> <span class="p">{</span>
-    <span class="n">Sequenced</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
-    <span class="n">Sequenced</span><span class="p">(</span><span class="kt">size_t</span> <span class="n">sqn</span><span class="p">)</span> <span class="o">:</span> <span class="n">sequence_number</span><span class="p">(</span><span class="n">sqn</span><span class="p">)</span> <span class="p">{}</span>
-    <span class="kt">size_t</span> <span class="n">sequence_number</span><span class="p">;</span>
-  <span class="p">};</span>
+<span class="w"> </span><span class="k">protected</span><span class="o">:</span><span class="w"></span>
+<span class="w">  </span><span class="k">struct</span> <span class="nc">Sequenced</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">Sequenced</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">Sequenced</span><span class="p">(</span><span class="kt">size_t</span><span class="w"> </span><span class="n">sqn</span><span class="p">)</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">sequence_number</span><span class="p">(</span><span class="n">sqn</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+<span class="w">    </span><span class="kt">size_t</span><span class="w"> </span><span class="n">sequence_number</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">};</span><span class="w"></span>
 
-  <span class="k">struct</span> <span class="nc">QuitWorker</span> <span class="p">{};</span>
+<span class="w">  </span><span class="k">struct</span> <span class="nc">QuitWorker</span><span class="w"> </span><span class="p">{};</span><span class="w"></span>
 
-  <span class="k">struct</span> <span class="nc">Job</span> <span class="o">:</span> <span class="n">Sequenced</span> <span class="p">{</span>
-    <span class="n">Job</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
-    <span class="n">Job</span><span class="p">(</span><span class="n">QuitWorker</span> <span class="n">q</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">sqn</span><span class="p">)</span> <span class="o">:</span> <span class="n">Sequenced</span><span class="p">(</span><span class="n">sqn</span><span class="p">),</span> <span class="n">quit</span><span class="p">(</span><span class="n">q</span><span class="p">)</span> <span class="p">{}</span>
-    <span class="n">Job</span><span class="p">(</span><span class="n">BatchRequest</span><span class="o">&amp;&amp;</span> <span class="n">i</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">sqn</span><span class="p">)</span>
-        <span class="o">:</span> <span class="n">Sequenced</span><span class="p">(</span><span class="n">sqn</span><span class="p">),</span> <span class="n">batch_request</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">i</span><span class="p">))</span> <span class="p">{}</span>
-    <span class="n">optional</span><span class="o">&lt;</span><span class="n">QuitWorker</span><span class="o">&gt;</span> <span class="n">quit</span><span class="p">;</span>
-    <span class="n">optional</span><span class="o">&lt;</span><span class="n">BatchRequest</span><span class="o">&gt;</span> <span class="n">batch_request</span><span class="p">;</span>
-  <span class="p">};</span>
+<span class="w">  </span><span class="k">struct</span> <span class="nc">Job</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">Sequenced</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">Job</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">Job</span><span class="p">(</span><span class="n">QuitWorker</span><span class="w"> </span><span class="n">q</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">sqn</span><span class="p">)</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">Sequenced</span><span class="p">(</span><span class="n">sqn</span><span class="p">),</span><span class="w"> </span><span class="n">quit</span><span class="p">(</span><span class="n">q</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+<span class="w">    </span><span class="n">Job</span><span class="p">(</span><span class="n">BatchRequest</span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">i</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">sqn</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="o">:</span><span class="w"> </span><span class="n">Sequenced</span><span class="p">(</span><span class="n">sqn</span><span class="p">),</span><span class="w"> </span><span class="n">batch_request</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">i</span><span class="p">))</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+<span class="w">    </span><span class="n">optional</span><span class="o">&lt;</span><span class="n">QuitWorker</span><span class="o">&gt;</span><span class="w"> </span><span class="n">quit</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">optional</span><span class="o">&lt;</span><span class="n">BatchRequest</span><span class="o">&gt;</span><span class="w"> </span><span class="n">batch_request</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">};</span><span class="w"></span>
 
-  <span class="k">struct</span> <span class="nc">Result</span> <span class="o">:</span> <span class="n">Sequenced</span> <span class="p">{</span>
-    <span class="n">Result</span><span class="p">()</span> <span class="o">=</span> <span class="k">default</span><span class="p">;</span>
-    <span class="n">Result</span><span class="p">(</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Batch</span><span class="o">&gt;&amp;&amp;</span> <span class="n">b</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">sqn</span><span class="p">)</span>
-        <span class="o">:</span> <span class="n">Sequenced</span><span class="p">(</span><span class="n">sqn</span><span class="p">),</span> <span class="n">batch</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">b</span><span class="p">))</span> <span class="p">{}</span>
-    <span class="n">Result</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">exception_ptr</span> <span class="n">exception</span><span class="p">,</span> <span class="kt">size_t</span> <span class="n">sqn</span><span class="p">)</span>
-        <span class="c1">// NOLINTNEXTLINE(performance-move-const-arg)</span>
-        <span class="o">:</span> <span class="n">Sequenced</span><span class="p">(</span><span class="n">sqn</span><span class="p">),</span> <span class="n">exception</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">exception</span><span class="p">))</span> <span class="p">{}</span>
-    <span class="n">optional</span><span class="o">&lt;</span><span class="n">Batch</span><span class="o">&gt;</span> <span class="n">batch</span><span class="p">;</span>
-    <span class="n">std</span><span class="o">::</span><span class="n">exception_ptr</span> <span class="n">exception</span><span class="p">;</span>
-  <span class="p">};</span>
+<span class="w">  </span><span class="k">struct</span> <span class="nc">Result</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">Sequenced</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">Result</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">Result</span><span class="p">(</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Batch</span><span class="o">&gt;&amp;&amp;</span><span class="w"> </span><span class="n">b</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">sqn</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="o">:</span><span class="w"> </span><span class="n">Sequenced</span><span class="p">(</span><span class="n">sqn</span><span class="p">),</span><span class="w"> </span><span class="n">batch</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">b</span><span class="p">))</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+<span class="w">    </span><span class="n">Result</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">exception_ptr</span><span class="w"> </span><span class="n">exception</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">sqn</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="c1">// NOLINTNEXTLINE(performance-move-const-arg)</span>
+<span class="w">        </span><span class="o">:</span><span class="w"> </span><span class="n">Sequenced</span><span class="p">(</span><span class="n">sqn</span><span class="p">),</span><span class="w"> </span><span class="n">exception</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">exception</span><span class="p">))</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+<span class="w">    </span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Batch</span><span class="o">&gt;</span><span class="w"> </span><span class="n">batch</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">exception_ptr</span><span class="w"> </span><span class="n">exception</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">};</span><span class="w"></span>
 
-  <span class="k">virtual</span> <span class="n">optional</span><span class="o">&lt;</span><span class="n">BatchRequestType</span><span class="o">&gt;</span> <span class="n">get_batch_request</span><span class="p">()</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="n">optional</span><span class="o">&lt;</span><span class="n">BatchRequestType</span><span class="o">&gt;</span><span class="w"> </span><span class="n">get_batch_request</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
 
-  <span class="k">virtual</span> <span class="kt">void</span> <span class="nf">reset</span><span class="p">()</span> <span class="p">{</span>
-    <span class="n">shuttle_</span><span class="p">.</span><span class="n">drain</span><span class="p">();</span>
-    <span class="n">sequence_number_</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-    <span class="n">sequencer_</span> <span class="o">=</span> <span class="n">new_sequencer</span><span class="p">();</span>
-    <span class="n">prefetch</span><span class="p">();</span>
-  <span class="p">}</span>
+<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">reset</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">shuttle_</span><span class="p">.</span><span class="n">drain</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="n">sequence_number_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">sequencer_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">new_sequencer</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="n">prefetch</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
 
-  <span class="kt">void</span> <span class="nf">prefetch</span><span class="p">(</span><span class="kt">size_t</span> <span class="n">requested_jobs</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">for</span> <span class="p">(</span><span class="k">const</span> <span class="k">auto</span> <span class="nl">r</span> <span class="p">:</span> <span class="n">c10</span><span class="o">::</span><span class="n">irange</span><span class="p">(</span><span class="n">requested_jobs</span><span class="p">))</span> <span class="p">{</span>
-      <span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">r</span><span class="p">;</span> <span class="c1">// Suppress unused variable</span>
-      <span class="k">if</span> <span class="p">(</span><span class="k">auto</span> <span class="n">batch_request</span> <span class="o">=</span> <span class="n">get_batch_request</span><span class="p">())</span> <span class="p">{</span>
-        <span class="k">this</span><span class="o">-&gt;</span><span class="n">push_job</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="o">*</span><span class="n">batch_request</span><span class="p">));</span>
-      <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-        <span class="k">break</span><span class="p">;</span>
-      <span class="p">}</span>
-    <span class="p">}</span>
-  <span class="p">}</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">prefetch</span><span class="p">(</span><span class="kt">size_t</span><span class="w"> </span><span class="n">requested_jobs</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="nl">r</span> <span class="p">:</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">irange</span><span class="p">(</span><span class="n">requested_jobs</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">r</span><span class="p">;</span><span class="w"> </span><span class="c1">// Suppress unused variable</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">batch_request</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_batch_request</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">push_job</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="o">*</span><span class="n">batch_request</span><span class="p">));</span><span class="w"></span>
+<span class="w">      </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">      </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
 
-  <span class="kt">void</span> <span class="nf">prefetch</span><span class="p">()</span> <span class="p">{</span>
-    <span class="n">prefetch</span><span class="p">(</span><span class="n">options_</span><span class="p">.</span><span class="n">max_jobs</span><span class="p">);</span>
-  <span class="p">}</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">prefetch</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">prefetch</span><span class="p">(</span><span class="n">options_</span><span class="p">.</span><span class="n">max_jobs</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
 
-  <span class="n">optional</span><span class="o">&lt;</span><span class="n">BatchType</span><span class="o">&gt;</span> <span class="n">next</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">options_</span><span class="p">.</span><span class="n">workers</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-      <span class="k">while</span> <span class="p">(</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Result</span><span class="o">&gt;</span> <span class="n">result</span> <span class="o">=</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">pop_result</span><span class="p">())</span> <span class="p">{</span>
-        <span class="k">if</span> <span class="p">(</span><span class="n">result</span><span class="o">-&gt;</span><span class="n">exception</span><span class="p">)</span> <span class="p">{</span>
-          <span class="k">throw</span> <span class="n">WorkerException</span><span class="p">(</span><span class="n">result</span><span class="o">-&gt;</span><span class="n">exception</span><span class="p">);</span>
-        <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="n">result</span><span class="o">-&gt;</span><span class="n">batch</span><span class="p">)</span> <span class="p">{</span>
-          <span class="n">prefetch</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
-          <span class="k">return</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">result</span><span class="o">-&gt;</span><span class="n">batch</span><span class="p">);</span>
-        <span class="p">}</span>
-      <span class="p">}</span>
-    <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="k">auto</span> <span class="n">batch_request</span> <span class="o">=</span> <span class="n">get_batch_request</span><span class="p">())</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">main_thread_dataset_</span><span class="o">-&gt;</span><span class="n">get_batch</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="o">*</span><span class="n">batch_request</span><span class="p">));</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="n">nullopt</span><span class="p">;</span>
-  <span class="p">}</span>
+<span class="w">  </span><span class="n">optional</span><span class="o">&lt;</span><span class="n">BatchType</span><span class="o">&gt;</span><span class="w"> </span><span class="n">next</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">options_</span><span class="p">.</span><span class="n">workers</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Result</span><span class="o">&gt;</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">pop_result</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">result</span><span class="o">-&gt;</span><span class="n">exception</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">          </span><span class="k">throw</span><span class="w"> </span><span class="n">WorkerException</span><span class="p">(</span><span class="n">result</span><span class="o">-&gt;</span><span class="n">exception</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">result</span><span class="o">-&gt;</span><span class="n">batch</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">          </span><span class="n">prefetch</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span><span class="w"></span>
+<span class="w">          </span><span class="k">return</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">result</span><span class="o">-&gt;</span><span class="n">batch</span><span class="p">);</span><span class="w"></span>
+<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w">      </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">batch_request</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">get_batch_request</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">main_thread_dataset_</span><span class="o">-&gt;</span><span class="n">get_batch</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="o">*</span><span class="n">batch_request</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">nullopt</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
 
-  <span class="kt">void</span> <span class="n">worker_thread</span><span class="p">(</span><span class="n">Dataset</span><span class="o">&amp;</span> <span class="n">dataset</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">while</span> <span class="p">(</span><span class="nb">true</span><span class="p">)</span> <span class="p">{</span>
-      <span class="k">auto</span> <span class="n">job</span> <span class="o">=</span> <span class="n">shuttle_</span><span class="p">.</span><span class="n">pop_job</span><span class="p">();</span>
-      <span class="k">if</span> <span class="p">(</span><span class="n">job</span><span class="p">.</span><span class="n">quit</span><span class="p">)</span> <span class="p">{</span>
-        <span class="k">break</span><span class="p">;</span>
-      <span class="p">}</span>
-      <span class="k">try</span> <span class="p">{</span>
-        <span class="k">auto</span> <span class="n">batch</span> <span class="o">=</span> <span class="n">dataset</span><span class="p">.</span><span class="n">get_batch</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="o">*</span><span class="n">job</span><span class="p">.</span><span class="n">batch_request</span><span class="p">));</span>
-        <span class="n">shuttle_</span><span class="p">.</span><span class="n">push_result</span><span class="p">({</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">batch</span><span class="p">),</span> <span class="n">job</span><span class="p">.</span><span class="n">sequence_number</span><span class="p">});</span>
-      <span class="p">}</span> <span class="k">catch</span> <span class="p">(...)</span> <span class="p">{</span>
-        <span class="n">shuttle_</span><span class="p">.</span><span class="n">push_result</span><span class="p">({</span><span class="n">std</span><span class="o">::</span><span class="n">current_exception</span><span class="p">(),</span> <span class="n">job</span><span class="p">.</span><span class="n">sequence_number</span><span class="p">});</span>
-      <span class="p">}</span>
-    <span class="p">}</span>
-  <span class="p">}</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">worker_thread</span><span class="p">(</span><span class="n">Dataset</span><span class="o">&amp;</span><span class="w"> </span><span class="n">dataset</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="nb">true</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="k">auto</span><span class="w"> </span><span class="n">job</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">shuttle_</span><span class="p">.</span><span class="n">pop_job</span><span class="p">();</span><span class="w"></span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">job</span><span class="p">.</span><span class="n">quit</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
+<span class="w">      </span><span class="p">}</span><span class="w"></span>
+<span class="w">      </span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="k">auto</span><span class="w"> </span><span class="n">batch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dataset</span><span class="p">.</span><span class="n">get_batch</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="o">*</span><span class="n">job</span><span class="p">.</span><span class="n">batch_request</span><span class="p">));</span><span class="w"></span>
+<span class="w">        </span><span class="n">shuttle_</span><span class="p">.</span><span class="n">push_result</span><span class="p">({</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">batch</span><span class="p">),</span><span class="w"> </span><span class="n">job</span><span class="p">.</span><span class="n">sequence_number</span><span class="p">});</span><span class="w"></span>
+<span class="w">      </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(...)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">        </span><span class="n">shuttle_</span><span class="p">.</span><span class="n">push_result</span><span class="p">({</span><span class="n">std</span><span class="o">::</span><span class="n">current_exception</span><span class="p">(),</span><span class="w"> </span><span class="n">job</span><span class="p">.</span><span class="n">sequence_number</span><span class="p">});</span><span class="w"></span>
+<span class="w">      </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
 
-  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="o">&gt;</span>
-  <span class="kt">void</span> <span class="n">push_job</span><span class="p">(</span><span class="n">T</span> <span class="n">value</span><span class="p">)</span> <span class="p">{</span>
-    <span class="n">shuttle_</span><span class="p">.</span><span class="n">push_job</span><span class="p">({</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">value</span><span class="p">),</span> <span class="n">sequence_number_</span><span class="o">++</span><span class="p">});</span>
-  <span class="p">}</span>
+<span class="w">  </span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="o">&gt;</span><span class="w"></span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">push_job</span><span class="p">(</span><span class="n">T</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">shuttle_</span><span class="p">.</span><span class="n">push_job</span><span class="p">({</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">value</span><span class="p">),</span><span class="w"> </span><span class="n">sequence_number_</span><span class="o">++</span><span class="p">});</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
 
-  <span class="n">optional</span><span class="o">&lt;</span><span class="n">Result</span><span class="o">&gt;</span> <span class="n">pop_result</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">sequencer_</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">(</span>
-        <span class="p">[</span><span class="k">this</span><span class="p">]</span> <span class="p">{</span> <span class="k">return</span> <span class="k">this</span><span class="o">-&gt;</span><span class="n">shuttle_</span><span class="p">.</span><span class="n">pop_result</span><span class="p">(</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">options_</span><span class="p">.</span><span class="n">timeout</span><span class="p">);</span> <span class="p">});</span>
-  <span class="p">}</span>
+<span class="w">  </span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Result</span><span class="o">&gt;</span><span class="w"> </span><span class="n">pop_result</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">sequencer_</span><span class="o">-&gt;</span><span class="n">next</span><span class="p">(</span><span class="w"></span>
+<span class="w">        </span><span class="p">[</span><span class="k">this</span><span class="p">]</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">shuttle_</span><span class="p">.</span><span class="n">pop_result</span><span class="p">(</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">options_</span><span class="p">.</span><span class="n">timeout</span><span class="p">);</span><span class="w"> </span><span class="p">});</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
 
-  <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">sequencers</span><span class="o">::</span><span class="n">Sequencer</span><span class="o">&lt;</span><span class="n">Result</span><span class="o">&gt;&gt;</span> <span class="n">new_sequencer</span><span class="p">()</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="p">(</span><span class="n">options_</span><span class="p">.</span><span class="n">enforce_ordering</span><span class="p">)</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">sequencers</span><span class="o">::</span><span class="n">OrderedSequencer</span><span class="o">&lt;</span><span class="n">Result</span><span class="o">&gt;&gt;</span><span class="p">(</span>
-          <span class="n">options_</span><span class="p">.</span><span class="n">max_jobs</span><span class="p">);</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="n">torch</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">sequencers</span><span class="o">::</span><span class="n">NoSequencer</span><span class="o">&lt;</span><span class="n">Result</span><span class="o">&gt;&gt;</span><span class="p">();</span>
-  <span class="p">}</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">sequencers</span><span class="o">::</span><span class="n">Sequencer</span><span class="o">&lt;</span><span class="n">Result</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">new_sequencer</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">options_</span><span class="p">.</span><span class="n">enforce_ordering</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">sequencers</span><span class="o">::</span><span class="n">OrderedSequencer</span><span class="o">&lt;</span><span class="n">Result</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="w"></span>
+<span class="w">          </span><span class="n">options_</span><span class="p">.</span><span class="n">max_jobs</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">sequencers</span><span class="o">::</span><span class="n">NoSequencer</span><span class="o">&lt;</span><span class="n">Result</span><span class="o">&gt;&gt;</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
 
-  <span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
-  <span class="k">const</span> <span class="n">FullDataLoaderOptions</span> <span class="n">options_</span><span class="p">;</span>
+<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">FullDataLoaderOptions</span><span class="w"> </span><span class="n">options_</span><span class="p">;</span><span class="w"></span>
 
-  <span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Dataset</span><span class="o">&gt;</span> <span class="n">main_thread_dataset_</span><span class="p">;</span>
+<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">Dataset</span><span class="o">&gt;</span><span class="w"> </span><span class="n">main_thread_dataset_</span><span class="p">;</span><span class="w"></span>
 
-  <span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
-  <span class="kt">size_t</span> <span class="n">sequence_number_</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
+<span class="w">  </span><span class="kt">size_t</span><span class="w"> </span><span class="n">sequence_number_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
 
-  <span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="kr">thread</span><span class="o">&gt;</span> <span class="n">workers_</span><span class="p">;</span>
+<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="kr">thread</span><span class="o">&gt;</span><span class="w"> </span><span class="n">workers_</span><span class="p">;</span><span class="w"></span>
 
-  <span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
-  <span class="n">detail</span><span class="o">::</span><span class="n">DataShuttle</span><span class="o">&lt;</span><span class="n">Job</span><span class="p">,</span> <span class="n">Result</span><span class="o">&gt;</span> <span class="n">shuttle_</span><span class="p">;</span>
+<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
+<span class="w">  </span><span class="n">detail</span><span class="o">::</span><span class="n">DataShuttle</span><span class="o">&lt;</span><span class="n">Job</span><span class="p">,</span><span class="w"> </span><span class="n">Result</span><span class="o">&gt;</span><span class="w"> </span><span class="n">shuttle_</span><span class="p">;</span><span class="w"></span>
 
-  <span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
-  <span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">sequencers</span><span class="o">::</span><span class="n">Sequencer</span><span class="o">&lt;</span><span class="n">Result</span><span class="o">&gt;&gt;</span> <span class="n">sequencer_</span><span class="p">;</span>
+<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">sequencers</span><span class="o">::</span><span class="n">Sequencer</span><span class="o">&lt;</span><span class="n">Result</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">sequencer_</span><span class="p">;</span><span class="w"></span>
 
-  <span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
-  <span class="kt">bool</span> <span class="n">joined_</span> <span class="o">=</span> <span class="nb">false</span><span class="p">;</span>
-<span class="p">};</span>
-<span class="p">}</span> <span class="c1">// namespace data</span>
-<span class="p">}</span> <span class="c1">// namespace torch</span>
+<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">joined_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace data</span>
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace torch</span>
 </pre></div>
 </div>
 </div>

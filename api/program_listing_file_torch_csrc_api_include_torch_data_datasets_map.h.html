@@ -313,103 +313,103 @@
 <p>↰ <a class="reference internal" href="file_torch_csrc_api_include_torch_data_datasets_map.h.html#file-torch-csrc-api-include-torch-data-datasets-map-h"><span class="std std-ref">Return to documentation for file</span></a> (<code class="docutils literal notranslate"><span class="pre">torch/csrc/api/include/torch/data/datasets/map.h</span></code>)</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#pragma once</span>
 
-<span class="cp">#include</span> <span class="cpf">&lt;torch/data/datasets/base.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;torch/types.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/data/datasets/base.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/types.h&gt;</span><span class="cp"></span>
 
-<span class="cp">#include</span> <span class="cpf">&lt;c10/util/ArrayRef.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/ArrayRef.h&gt;</span><span class="cp"></span>
 
-<span class="cp">#include</span> <span class="cpf">&lt;cstddef&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;type_traits&gt;</span><span class="cp"></span>
-<span class="cp">#include</span> <span class="cpf">&lt;utility&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cstddef&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;type_traits&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;utility&gt;</span><span class="cp"></span>
 
-<span class="k">namespace</span> <span class="nn">torch</span> <span class="p">{</span>
-<span class="k">namespace</span> <span class="nn">data</span> <span class="p">{</span>
-<span class="k">namespace</span> <span class="nn">datasets</span> <span class="p">{</span>
-<span class="k">namespace</span> <span class="nn">detail</span> <span class="p">{</span>
-<span class="k">template</span> <span class="o">&lt;</span><span class="kt">bool</span> <span class="n">C</span><span class="p">,</span> <span class="k">typename</span> <span class="nc">T</span><span class="o">&gt;</span>
-<span class="k">using</span> <span class="n">optional_if_t</span> <span class="o">=</span> <span class="k">typename</span> <span class="nc">std</span><span class="o">::</span><span class="n">conditional</span><span class="o">&lt;</span><span class="n">C</span><span class="p">,</span> <span class="n">torch</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">,</span> <span class="n">T</span><span class="o">&gt;::</span><span class="n">type</span><span class="p">;</span>
-<span class="p">}</span> <span class="c1">// namespace detail</span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">data</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">detail</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="kt">bool</span><span class="w"> </span><span class="n">C</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span> <span class="nc">T</span><span class="o">&gt;</span><span class="w"></span>
+<span class="k">using</span><span class="w"> </span><span class="n">optional_if_t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span> <span class="nc">std</span><span class="o">::</span><span class="n">conditional</span><span class="o">&lt;</span><span class="n">C</span><span class="p">,</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;::</span><span class="n">type</span><span class="p">;</span><span class="w"></span>
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace detail</span>
 
-<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">SourceDataset</span><span class="p">,</span> <span class="k">typename</span> <span class="nc">AppliedTransform</span><span class="o">&gt;</span>
-<span class="k">class</span> <span class="nc">MapDataset</span> <span class="o">:</span> <span class="k">public</span> <span class="n">BatchDataset</span><span class="o">&lt;</span>
-                       <span class="n">MapDataset</span><span class="o">&lt;</span><span class="n">SourceDataset</span><span class="p">,</span> <span class="n">AppliedTransform</span><span class="o">&gt;</span><span class="p">,</span>
-                       <span class="n">detail</span><span class="o">::</span><span class="n">optional_if_t</span><span class="o">&lt;</span>
-                           <span class="n">SourceDataset</span><span class="o">::</span><span class="n">is_stateful</span><span class="p">,</span>
-                           <span class="k">typename</span> <span class="nc">AppliedTransform</span><span class="o">::</span><span class="n">OutputBatchType</span><span class="o">&gt;</span><span class="p">,</span>
-                       <span class="k">typename</span> <span class="nc">SourceDataset</span><span class="o">::</span><span class="n">BatchRequestType</span><span class="o">&gt;</span> <span class="p">{</span>
- <span class="k">public</span><span class="o">:</span>
-  <span class="k">using</span> <span class="n">DatasetType</span> <span class="o">=</span> <span class="n">SourceDataset</span><span class="p">;</span>
-  <span class="k">using</span> <span class="n">TransformType</span> <span class="o">=</span> <span class="n">AppliedTransform</span><span class="p">;</span>
-  <span class="k">using</span> <span class="n">BatchRequestType</span> <span class="o">=</span> <span class="k">typename</span> <span class="nc">SourceDataset</span><span class="o">::</span><span class="n">BatchRequestType</span><span class="p">;</span>
-  <span class="k">using</span> <span class="n">OutputBatchType</span> <span class="o">=</span> <span class="n">detail</span><span class="o">::</span><span class="n">optional_if_t</span><span class="o">&lt;</span>
-      <span class="n">SourceDataset</span><span class="o">::</span><span class="n">is_stateful</span><span class="p">,</span>
-      <span class="k">typename</span> <span class="nc">AppliedTransform</span><span class="o">::</span><span class="n">OutputBatchType</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">SourceDataset</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span> <span class="nc">AppliedTransform</span><span class="o">&gt;</span><span class="w"></span>
+<span class="k">class</span> <span class="nc">MapDataset</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">BatchDataset</span><span class="o">&lt;</span><span class="w"></span>
+<span class="w">                       </span><span class="n">MapDataset</span><span class="o">&lt;</span><span class="n">SourceDataset</span><span class="p">,</span><span class="w"> </span><span class="n">AppliedTransform</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                       </span><span class="n">detail</span><span class="o">::</span><span class="n">optional_if_t</span><span class="o">&lt;</span><span class="w"></span>
+<span class="w">                           </span><span class="n">SourceDataset</span><span class="o">::</span><span class="n">is_stateful</span><span class="p">,</span><span class="w"></span>
+<span class="w">                           </span><span class="k">typename</span> <span class="nc">AppliedTransform</span><span class="o">::</span><span class="n">OutputBatchType</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
+<span class="w">                       </span><span class="k">typename</span> <span class="nc">SourceDataset</span><span class="o">::</span><span class="n">BatchRequestType</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w"> </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">DatasetType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SourceDataset</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">TransformType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">AppliedTransform</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">BatchRequestType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span> <span class="nc">SourceDataset</span><span class="o">::</span><span class="n">BatchRequestType</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">OutputBatchType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">detail</span><span class="o">::</span><span class="n">optional_if_t</span><span class="o">&lt;</span><span class="w"></span>
+<span class="w">      </span><span class="n">SourceDataset</span><span class="o">::</span><span class="n">is_stateful</span><span class="p">,</span><span class="w"></span>
+<span class="w">      </span><span class="k">typename</span> <span class="nc">AppliedTransform</span><span class="o">::</span><span class="n">OutputBatchType</span><span class="o">&gt;</span><span class="p">;</span><span class="w"></span>
 
-  <span class="n">MapDataset</span><span class="p">(</span><span class="n">DatasetType</span> <span class="n">dataset</span><span class="p">,</span> <span class="n">TransformType</span> <span class="n">transform</span><span class="p">)</span>
-      <span class="o">:</span> <span class="n">dataset_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">dataset</span><span class="p">)),</span> <span class="n">transform_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">transform</span><span class="p">))</span> <span class="p">{}</span>
+<span class="w">  </span><span class="n">MapDataset</span><span class="p">(</span><span class="n">DatasetType</span><span class="w"> </span><span class="n">dataset</span><span class="p">,</span><span class="w"> </span><span class="n">TransformType</span><span class="w"> </span><span class="n">transform</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">dataset_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">dataset</span><span class="p">)),</span><span class="w"> </span><span class="n">transform_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">transform</span><span class="p">))</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
 
-  <span class="n">OutputBatchType</span> <span class="n">get_batch</span><span class="p">(</span><span class="n">BatchRequestType</span> <span class="n">indices</span><span class="p">)</span> <span class="k">override</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">get_batch_impl</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">indices</span><span class="p">));</span>
-  <span class="p">}</span>
+<span class="w">  </span><span class="n">OutputBatchType</span><span class="w"> </span><span class="n">get_batch</span><span class="p">(</span><span class="n">BatchRequestType</span><span class="w"> </span><span class="n">indices</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">get_batch_impl</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">indices</span><span class="p">));</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
 
-  <span class="c1">// NOLINTNEXTLINE(bugprone-exception-escape)</span>
-  <span class="n">optional</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="o">&gt;</span> <span class="n">size</span><span class="p">()</span> <span class="k">const</span> <span class="k">noexcept</span> <span class="k">override</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">dataset_</span><span class="p">.</span><span class="n">size</span><span class="p">();</span>
-  <span class="p">}</span>
+<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(bugprone-exception-escape)</span>
+<span class="w">  </span><span class="n">optional</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">dataset_</span><span class="p">.</span><span class="n">size</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
 
-  <span class="kt">void</span> <span class="n">reset</span><span class="p">()</span> <span class="p">{</span>
-    <span class="n">dataset_</span><span class="p">.</span><span class="n">reset</span><span class="p">();</span>
-  <span class="p">}</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">reset</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">dataset_</span><span class="p">.</span><span class="n">reset</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
 
-  <span class="k">const</span> <span class="n">SourceDataset</span><span class="o">&amp;</span> <span class="n">dataset</span><span class="p">()</span> <span class="k">noexcept</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">dataset_</span><span class="p">;</span>
-  <span class="p">}</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">SourceDataset</span><span class="o">&amp;</span><span class="w"> </span><span class="n">dataset</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">dataset_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
 
-  <span class="k">const</span> <span class="n">AppliedTransform</span><span class="o">&amp;</span> <span class="n">transform</span><span class="p">()</span> <span class="k">noexcept</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">transform_</span><span class="p">;</span>
-  <span class="p">}</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">AppliedTransform</span><span class="o">&amp;</span><span class="w"> </span><span class="n">transform</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">transform_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
 
- <span class="k">private</span><span class="o">:</span>
-  <span class="k">template</span> <span class="o">&lt;</span>
-      <span class="k">typename</span> <span class="nc">D</span> <span class="o">=</span> <span class="n">SourceDataset</span><span class="p">,</span>
-      <span class="k">typename</span> <span class="o">=</span> <span class="n">torch</span><span class="o">::</span><span class="n">disable_if_t</span><span class="o">&lt;</span><span class="n">D</span><span class="o">::</span><span class="n">is_stateful</span><span class="o">&gt;&gt;</span>
-  <span class="n">OutputBatchType</span> <span class="n">get_batch_impl</span><span class="p">(</span><span class="n">BatchRequestType</span> <span class="n">indices</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">return</span> <span class="n">transform_</span><span class="p">.</span><span class="n">apply_batch</span><span class="p">(</span><span class="n">dataset_</span><span class="p">.</span><span class="n">get_batch</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">indices</span><span class="p">)));</span>
-  <span class="p">}</span>
+<span class="w"> </span><span class="k">private</span><span class="o">:</span><span class="w"></span>
+<span class="w">  </span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="w"></span>
+<span class="w">      </span><span class="k">typename</span> <span class="nc">D</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SourceDataset</span><span class="p">,</span><span class="w"></span>
+<span class="w">      </span><span class="k">typename</span> <span class="o">=</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">disable_if_t</span><span class="o">&lt;</span><span class="n">D</span><span class="o">::</span><span class="n">is_stateful</span><span class="o">&gt;&gt;</span><span class="w"></span>
+<span class="w">  </span><span class="n">OutputBatchType</span><span class="w"> </span><span class="n">get_batch_impl</span><span class="p">(</span><span class="n">BatchRequestType</span><span class="w"> </span><span class="n">indices</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">transform_</span><span class="p">.</span><span class="n">apply_batch</span><span class="p">(</span><span class="n">dataset_</span><span class="p">.</span><span class="n">get_batch</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">indices</span><span class="p">)));</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
 
-  <span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">D</span> <span class="o">=</span> <span class="n">SourceDataset</span><span class="o">&gt;</span>
-  <span class="n">torch</span><span class="o">::</span><span class="n">enable_if_t</span><span class="o">&lt;</span><span class="n">D</span><span class="o">::</span><span class="n">is_stateful</span><span class="p">,</span> <span class="n">OutputBatchType</span><span class="o">&gt;</span> <span class="n">get_batch_impl</span><span class="p">(</span>
-      <span class="n">BatchRequestType</span> <span class="n">indices</span><span class="p">)</span> <span class="p">{</span>
-    <span class="k">if</span> <span class="p">(</span><span class="k">auto</span> <span class="n">batch</span> <span class="o">=</span> <span class="n">dataset_</span><span class="p">.</span><span class="n">get_batch</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">indices</span><span class="p">)))</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="n">transform_</span><span class="p">.</span><span class="n">apply_batch</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="o">*</span><span class="n">batch</span><span class="p">));</span>
-    <span class="p">}</span>
-    <span class="k">return</span> <span class="n">nullopt</span><span class="p">;</span>
-  <span class="p">}</span>
+<span class="w">  </span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">D</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">SourceDataset</span><span class="o">&gt;</span><span class="w"></span>
+<span class="w">  </span><span class="n">torch</span><span class="o">::</span><span class="n">enable_if_t</span><span class="o">&lt;</span><span class="n">D</span><span class="o">::</span><span class="n">is_stateful</span><span class="p">,</span><span class="w"> </span><span class="n">OutputBatchType</span><span class="o">&gt;</span><span class="w"> </span><span class="n">get_batch_impl</span><span class="p">(</span><span class="w"></span>
+<span class="w">      </span><span class="n">BatchRequestType</span><span class="w"> </span><span class="n">indices</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">batch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">dataset_</span><span class="p">.</span><span class="n">get_batch</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">indices</span><span class="p">)))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">transform_</span><span class="p">.</span><span class="n">apply_batch</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="o">*</span><span class="n">batch</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">nullopt</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
 
-  <span class="n">SourceDataset</span> <span class="n">dataset_</span><span class="p">;</span>
+<span class="w">  </span><span class="n">SourceDataset</span><span class="w"> </span><span class="n">dataset_</span><span class="p">;</span><span class="w"></span>
 
-  <span class="c1">// The transformation that is applied to batches received from the dataset.</span>
-  <span class="n">AppliedTransform</span> <span class="n">transform_</span><span class="p">;</span>
-<span class="p">};</span>
+<span class="w">  </span><span class="c1">// The transformation that is applied to batches received from the dataset.</span>
+<span class="w">  </span><span class="n">AppliedTransform</span><span class="w"> </span><span class="n">transform_</span><span class="p">;</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
 
-<span class="k">template</span> <span class="o">&lt;</span><span class="k">typename</span> <span class="nc">DatasetType</span><span class="p">,</span> <span class="k">typename</span> <span class="nc">TransformType</span><span class="o">&gt;</span>
-<span class="n">MapDataset</span><span class="o">&lt;</span><span class="n">DatasetType</span><span class="p">,</span> <span class="n">TransformType</span><span class="o">&gt;</span> <span class="n">map</span><span class="p">(</span>
-    <span class="n">DatasetType</span> <span class="n">dataset</span><span class="p">,</span>
-    <span class="n">TransformType</span> <span class="n">transform</span><span class="p">)</span> <span class="p">{</span>
-  <span class="k">static_assert</span><span class="p">(</span>
-      <span class="n">std</span><span class="o">::</span><span class="n">is_same</span><span class="o">&lt;</span>
-          <span class="k">typename</span> <span class="nc">std</span><span class="o">::</span><span class="n">conditional</span><span class="o">&lt;</span>
-              <span class="n">DatasetType</span><span class="o">::</span><span class="n">is_stateful</span><span class="p">,</span>
-              <span class="k">typename</span> <span class="nc">DatasetType</span><span class="o">::</span><span class="n">BatchType</span><span class="o">::</span><span class="n">value_type</span><span class="p">,</span>
-              <span class="k">typename</span> <span class="nc">DatasetType</span><span class="o">::</span><span class="n">BatchType</span><span class="o">&gt;::</span><span class="n">type</span><span class="p">,</span>
-          <span class="k">typename</span> <span class="nc">TransformType</span><span class="o">::</span><span class="n">InputBatchType</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span>
-      <span class="s">&quot;BatchType type of dataset does not match input type of transform&quot;</span><span class="p">);</span>
-  <span class="k">return</span> <span class="p">{</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">dataset</span><span class="p">),</span> <span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">transform</span><span class="p">)};</span>
-<span class="p">}</span>
+<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">DatasetType</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span> <span class="nc">TransformType</span><span class="o">&gt;</span><span class="w"></span>
+<span class="n">MapDataset</span><span class="o">&lt;</span><span class="n">DatasetType</span><span class="p">,</span><span class="w"> </span><span class="n">TransformType</span><span class="o">&gt;</span><span class="w"> </span><span class="n">map</span><span class="p">(</span><span class="w"></span>
+<span class="w">    </span><span class="n">DatasetType</span><span class="w"> </span><span class="n">dataset</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="n">TransformType</span><span class="w"> </span><span class="n">transform</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">static_assert</span><span class="p">(</span><span class="w"></span>
+<span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">is_same</span><span class="o">&lt;</span><span class="w"></span>
+<span class="w">          </span><span class="k">typename</span> <span class="nc">std</span><span class="o">::</span><span class="n">conditional</span><span class="o">&lt;</span><span class="w"></span>
+<span class="w">              </span><span class="n">DatasetType</span><span class="o">::</span><span class="n">is_stateful</span><span class="p">,</span><span class="w"></span>
+<span class="w">              </span><span class="k">typename</span> <span class="nc">DatasetType</span><span class="o">::</span><span class="n">BatchType</span><span class="o">::</span><span class="n">value_type</span><span class="p">,</span><span class="w"></span>
+<span class="w">              </span><span class="k">typename</span> <span class="nc">DatasetType</span><span class="o">::</span><span class="n">BatchType</span><span class="o">&gt;::</span><span class="n">type</span><span class="p">,</span><span class="w"></span>
+<span class="w">          </span><span class="k">typename</span> <span class="nc">TransformType</span><span class="o">::</span><span class="n">InputBatchType</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span><span class="w"></span>
+<span class="w">      </span><span class="s">&quot;BatchType type of dataset does not match input type of transform&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">{</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">dataset</span><span class="p">),</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">transform</span><span class="p">)};</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
 
-<span class="p">}</span> <span class="c1">// namespace datasets</span>
-<span class="p">}</span> <span class="c1">// namespace data</span>
-<span class="p">}</span> <span class="c1">// namespace torch</span>
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace datasets</span>
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace data</span>
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace torch</span>
 </pre></div>
 </div>
 </div>
