@@ -337,13 +337,10 @@
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;ATen/core/DeprecatedTypeProperties.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;ATen/core/NamedTensor.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;ATen/core/QuantizerBase.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;ATen/core/TensorBase.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/csrc/WindowsTorchApiMacro.h&gt;</span><span class="cp"></span>
 
-<span class="k">namespace</span><span class="w"> </span><span class="nn">caffe2</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="k">class</span> <span class="nc">Tensor</span><span class="p">;</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
 <span class="k">namespace</span><span class="w"> </span><span class="nn">c10</span><span class="p">{</span><span class="w"></span>
-<span class="k">struct</span> <span class="nc">TensorOptions</span><span class="p">;</span><span class="w"></span>
 <span class="k">template</span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span><span class="w"> </span><span class="k">class</span> <span class="nc">List</span><span class="p">;</span><span class="w"></span>
 <span class="p">}</span><span class="w"></span>
 <span class="k">namespace</span><span class="w"> </span><span class="nn">at</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
@@ -372,18 +369,6 @@
 
 <span class="k">using</span><span class="w"> </span><span class="n">Stream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">Stream</span><span class="p">;</span><span class="w"></span>
 
-<span class="k">namespace</span><span class="w"> </span><span class="nn">impl</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="kr">inline</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="nf">variable_excluded_from_dispatch</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="cp">#ifdef C10_MOBILE</span>
-<span class="w">  </span><span class="c1">// Please read the comment in `VariableFallbackKernel.cpp` about the background of this change.</span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
-<span class="cp">#else</span>
-<span class="w">  </span><span class="n">TORCH_INTERNAL_ASSERT_DEBUG_ONLY</span><span class="p">(</span><span class="o">!</span><span class="n">c10</span><span class="o">::</span><span class="n">impl</span><span class="o">::</span><span class="n">tls_local_dispatch_key_set</span><span class="p">().</span><span class="n">excluded_</span><span class="p">.</span><span class="n">has</span><span class="p">(</span><span class="n">DispatchKey</span><span class="o">::</span><span class="n">Autograd</span><span class="p">));</span><span class="w"></span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">impl</span><span class="o">::</span><span class="n">tls_local_dispatch_key_set</span><span class="p">().</span><span class="n">excluded_</span><span class="p">.</span><span class="n">isSupersetOf</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">autograd_dispatch_keyset</span><span class="p">);</span><span class="w"></span>
-<span class="cp">#endif</span>
-<span class="p">}</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
-
 <span class="c1">// Tensor is a &quot;generic&quot; object holding a pointer to the underlying TensorImpl object, which</span>
 <span class="c1">// has an embedded reference count. In this way, Tensor is similar to boost::intrusive_ptr.</span>
 <span class="c1">//</span>
@@ -401,56 +386,38 @@
 <span class="c1">//</span>
 <span class="c1">// Note that Tensor can also be NULL, i.e. it is not associated with any underlying TensorImpl, and</span>
 <span class="c1">// special care must be taken to handle this.</span>
-<span class="k">class</span> <span class="nc">TORCH_API</span><span class="w"> </span><span class="n">Tensor</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w"> </span><span class="k">private</span><span class="o">:</span><span class="w"></span>
-<span class="w">  </span><span class="k">struct</span> <span class="nc">unsafe_borrow_t</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">explicit</span><span class="w"> </span><span class="n">unsafe_borrow_t</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span><span class="w"> </span><span class="p">};</span><span class="w"></span>
-
+<span class="k">class</span> <span class="nc">TORCH_API</span><span class="w"> </span><span class="nl">Tensor</span><span class="p">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">TensorBase</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w"> </span><span class="k">protected</span><span class="o">:</span><span class="w"></span>
 <span class="w">  </span><span class="c1">// Create a Tensor with a +0 reference count. Special care must be</span>
 <span class="w">  </span><span class="c1">// taken to avoid decrementing this reference count at destruction</span>
 <span class="w">  </span><span class="c1">// time. Intended to support MaybeOwnedTraits&lt;Tensor&gt;.</span>
-<span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="n">Tensor</span><span class="p">(</span><span class="n">unsafe_borrow_t</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">rhs</span><span class="p">)</span><span class="w"></span>
-<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">impl_</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="p">,</span><span class="w"> </span><span class="n">UndefinedTensorImpl</span><span class="o">&gt;::</span><span class="n">reclaim</span><span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">impl_</span><span class="p">.</span><span class="n">get</span><span class="p">()))</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+<span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="n">Tensor</span><span class="p">(</span><span class="n">unsafe_borrow_t</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">TensorBase</span><span class="o">&amp;</span><span class="w"> </span><span class="n">rhs</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="n">TensorBase</span><span class="p">(</span><span class="n">unsafe_borrow_t</span><span class="p">{},</span><span class="w"> </span><span class="n">rhs</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
 <span class="w">  </span><span class="k">friend</span><span class="w"> </span><span class="n">MaybeOwnedTraits</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span><span class="p">;</span><span class="w"></span>
 <span class="w">  </span><span class="k">friend</span><span class="w"> </span><span class="n">OptionalTensorRef</span><span class="p">;</span><span class="w"></span>
 
 <span class="w"> </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
-<span class="w">  </span><span class="n">Tensor</span><span class="p">(){};</span><span class="w"></span>
+<span class="w">  </span><span class="n">Tensor</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span><span class="w"></span>
 <span class="w">  </span><span class="c1">// This constructor should not be used by end users and is an implementation</span>
 <span class="w">  </span><span class="c1">// detail invoked by autogenerated code.</span>
 <span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="n">Tensor</span><span class="p">(</span><span class="w"></span>
 <span class="w">      </span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">TensorImpl</span><span class="p">,</span><span class="w"> </span><span class="n">UndefinedTensorImpl</span><span class="o">&gt;</span><span class="w"> </span><span class="n">tensor_impl</span><span class="p">)</span><span class="w"></span>
-<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">impl_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">tensor_impl</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">impl_</span><span class="p">.</span><span class="n">get</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="k">nullptr</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">      </span><span class="k">throw</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">runtime_error</span><span class="p">(</span><span class="s">&quot;TensorImpl with nullptr is not supported&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="n">Tensor</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="n">Tensor</span><span class="p">(</span><span class="n">Tensor</span><span class="o">&amp;&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span><span class="w"></span>
+<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">TensorBase</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">tensor_impl</span><span class="p">))</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+<span class="w">  </span><span class="n">Tensor</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="w"> </span><span class="o">&amp;</span><span class="n">tensor</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">Tensor</span><span class="p">(</span><span class="n">Tensor</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="n">tensor</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span><span class="w"></span>
 
+<span class="w">  </span><span class="c1">// Implicitly move-constructible from TensorBase, but must be explicit to increase refcount</span>
+<span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="n">Tensor</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">TensorBase</span><span class="w"> </span><span class="o">&amp;</span><span class="n">base</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="n">TensorBase</span><span class="p">(</span><span class="n">base</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+<span class="w">  </span><span class="cm">/*implicit*/</span><span class="w"> </span><span class="n">Tensor</span><span class="p">(</span><span class="n">TensorBase</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="n">base</span><span class="p">)</span><span class="o">:</span><span class="w"> </span><span class="n">TensorBase</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">base</span><span class="p">))</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
 
-<span class="w"> </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
 <span class="w">  </span><span class="c1">// Creates a new wrapper from TensorImpl. Intentionally a free method because</span>
 <span class="w">  </span><span class="c1">// it should be used with care. Checks necessary invariants</span>
 <span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="n">Tensor</span><span class="w"> </span><span class="n">wrap_tensor_impl</span><span class="p">(</span><span class="w"></span>
 <span class="w">      </span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">TensorImpl</span><span class="p">,</span><span class="w"> </span><span class="n">UndefinedTensorImpl</span><span class="o">&gt;</span><span class="w"> </span><span class="n">tensor_impl</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">Tensor</span><span class="w"> </span><span class="nf">r</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">tensor_impl</span><span class="p">));</span><span class="w"></span>
-<span class="w">    </span><span class="n">r</span><span class="p">.</span><span class="n">enforce_invariants</span><span class="p">();</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">r</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">int64_t</span><span class="w"> </span><span class="n">dim</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">dim</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="kt">int64_t</span><span class="w"> </span><span class="n">storage_offset</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">storage_offset</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TensorBase</span><span class="o">::</span><span class="n">wrap_tensor_impl</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">tensor_impl</span><span class="p">));</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
 <span class="w">  </span><span class="n">Tensor</span><span class="w"> </span><span class="n">contiguous</span><span class="p">(</span><span class="n">MemoryFormat</span><span class="w"> </span><span class="n">memory_format</span><span class="o">=</span><span class="n">MemoryFormat</span><span class="o">::</span><span class="n">Contiguous</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">is_contiguous</span><span class="p">(</span><span class="n">memory_format</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="o">*</span><span class="k">this</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">__dispatch_contiguous</span><span class="p">(</span><span class="n">memory_format</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TensorBase</span><span class="o">::</span><span class="n">contiguous</span><span class="p">(</span><span class="n">memory_format</span><span class="p">);</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
 <span class="w">  </span><span class="n">Tensor</span><span class="w"> </span><span class="n">conj</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
@@ -464,57 +431,15 @@
 <span class="w">    </span><span class="p">}</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
+<span class="w">  </span><span class="c1">// Aliased by Dimname overloads, so need explicit using</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">TensorBase</span><span class="o">::</span><span class="n">size</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">TensorBase</span><span class="o">::</span><span class="n">stride</span><span class="p">;</span><span class="w"></span>
+
 <span class="w">  </span><span class="n">c10</span><span class="o">::</span><span class="n">MaybeOwned</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span><span class="w"> </span><span class="n">expect_contiguous</span><span class="p">(</span><span class="n">MemoryFormat</span><span class="w"> </span><span class="n">memory_format</span><span class="o">=</span><span class="n">MemoryFormat</span><span class="o">::</span><span class="n">Contiguous</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="o">&amp;</span><span class="p">;</span><span class="w"></span>
 
 <span class="w">  </span><span class="c1">// Use .contiguous() instead. Trying to borrow from a prvalue Tensor</span>
 <span class="w">  </span><span class="c1">// will only lead to trouble and dangling references.</span>
 <span class="w">  </span><span class="n">c10</span><span class="o">::</span><span class="n">MaybeOwned</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span><span class="w"> </span><span class="n">expect_contiguous</span><span class="p">(</span><span class="n">MemoryFormat</span><span class="w"> </span><span class="n">memory_format</span><span class="o">=</span><span class="n">MemoryFormat</span><span class="o">::</span><span class="n">Contiguous</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="nf">is_complex</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">isComplexType</span><span class="p">(</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">scalar_type</span><span class="p">());</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="nf">is_floating_point</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">isFloatingType</span><span class="p">(</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">scalar_type</span><span class="p">());</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="nf">is_signed</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">isSignedType</span><span class="p">(</span><span class="k">this</span><span class="o">-&gt;</span><span class="n">scalar_type</span><span class="p">());</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">int64_t</span><span class="w"> </span><span class="nf">size</span><span class="p">(</span><span class="kt">int64_t</span><span class="w"> </span><span class="n">dim</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="c1">// false is passed to maybe_wrap_dim so behavior is identical to array access (but with wrapping)</span>
-<span class="w">    </span><span class="n">dim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">maybe_wrap_dim</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span><span class="w"> </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">dim</span><span class="p">(),</span><span class="w"> </span><span class="nb">false</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">sizes</span><span class="p">()[</span><span class="n">dim</span><span class="p">];</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">int64_t</span><span class="w"> </span><span class="nf">stride</span><span class="p">(</span><span class="kt">int64_t</span><span class="w"> </span><span class="n">dim</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="c1">// false is passed to maybe_wrap_dim so behavior is identical to array access (but with wrapping)</span>
-<span class="w">    </span><span class="n">dim</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">maybe_wrap_dim</span><span class="p">(</span><span class="n">dim</span><span class="p">,</span><span class="w"> </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">dim</span><span class="p">(),</span><span class="w"> </span><span class="nb">false</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">strides</span><span class="p">()[</span><span class="n">dim</span><span class="p">];</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="n">TensorImpl</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nf">unsafeGetTensorImpl</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="p">.</span><span class="n">get</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="n">TensorImpl</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="nf">unsafeReleaseTensorImpl</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="p">.</span><span class="n">release</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">TensorImpl</span><span class="p">,</span><span class="w"> </span><span class="n">UndefinedTensorImpl</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">getIntrusivePtr</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">TensorImpl</span><span class="p">,</span><span class="w"> </span><span class="n">UndefinedTensorImpl</span><span class="o">&gt;</span><span class="w"> </span><span class="n">unsafeReleaseIntrusivePtr</span><span class="p">()</span><span class="w">  </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">impl_</span><span class="p">);</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">defined</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">reset</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">impl_</span><span class="p">.</span><span class="n">reset</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
 
 <span class="w">  </span><span class="c1">// The following overloads are very intruiging.  Consider the following</span>
 <span class="w">  </span><span class="c1">// program:</span>
@@ -556,126 +481,31 @@
 <span class="w">  </span><span class="cp">#pragma warning( disable : 4522 )</span>
 <span class="w">  </span><span class="cp">#endif</span>
 
-<span class="w">  </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">impl_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">.</span><span class="n">impl_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">TensorBase</span><span class="o">&amp;</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">impl_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">.</span><span class="n">getIntrusivePtr</span><span class="p">();</span><span class="w"></span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="o">*</span><span class="k">this</span><span class="p">;</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">Tensor</span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">impl_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">x</span><span class="p">.</span><span class="n">impl_</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">TensorBase</span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">impl_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">.</span><span class="n">unsafeReleaseIntrusivePtr</span><span class="p">();</span><span class="w"></span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="o">*</span><span class="k">this</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="w"> </span><span class="o">&amp;</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="n">TensorBase</span><span class="o">&amp;&gt;</span><span class="p">(</span><span class="n">x</span><span class="p">));</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">Tensor</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="n">TensorBase</span><span class="o">&amp;&amp;&gt;</span><span class="p">(</span><span class="n">x</span><span class="p">));</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
 <span class="w">  </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">Scalar</span><span class="w"> </span><span class="n">v</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="p">;</span><span class="w"></span>
 <span class="w">  </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="p">;</span><span class="w"></span>
 <span class="w">  </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">Tensor</span><span class="o">&amp;&amp;</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="p">;</span><span class="w"></span>
 
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="nf">is_same</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">other</span><span class="p">.</span><span class="n">impl_</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="kt">size_t</span><span class="w"> </span><span class="nf">use_count</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="p">.</span><span class="n">use_count</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="kt">size_t</span><span class="w"> </span><span class="nf">weak_use_count</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="p">.</span><span class="n">weak_use_count</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="nf">toString</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
-
-<span class="w">  </span><span class="n">IntArrayRef</span><span class="w"> </span><span class="nf">sizes</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">sizes</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="n">IntArrayRef</span><span class="w"> </span><span class="nf">strides</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">strides</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="c1">// See impl::get_opt_names in ATen/NamedTensor.h for docs.</span>
-<span class="w">  </span><span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">DimnameList</span><span class="o">&gt;</span><span class="w"> </span><span class="n">opt_names</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl</span><span class="o">::</span><span class="n">get_opt_names</span><span class="p">(</span><span class="n">unsafeGetTensorImpl</span><span class="p">());</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="c1">// See impl::get_names in ATen/NamedTensor.h for docs.</span>
-<span class="w">  </span><span class="n">DimnameList</span><span class="w"> </span><span class="n">names</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl</span><span class="o">::</span><span class="n">get_names</span><span class="p">(</span><span class="n">unsafeGetTensorImpl</span><span class="p">());</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="kt">int64_t</span><span class="w"> </span><span class="n">ndimension</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">dim</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_contiguous</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">MemoryFormat</span><span class="w"> </span><span class="n">memory_format</span><span class="o">=</span><span class="n">at</span><span class="o">::</span><span class="n">MemoryFormat</span><span class="o">::</span><span class="n">Contiguous</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">is_contiguous</span><span class="p">(</span><span class="n">memory_format</span><span class="p">);</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_non_overlapping_and_dense</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">is_non_overlapping_and_dense</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="n">at</span><span class="o">::</span><span class="n">MemoryFormat</span><span class="w"> </span><span class="n">suggest_memory_format</span><span class="p">(</span><span class="w"></span>
-<span class="w">      </span><span class="kt">bool</span><span class="w"> </span><span class="n">channels_last_strides_exact_match</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="c1">// Setting channels_last_strides_exact_match to true forces function to</span>
-<span class="w">    </span><span class="c1">// check 0,1 - sized dimension strides.</span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">is_mkldnn</span><span class="p">()</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">!</span><span class="n">is_sparse</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">is_strides_like_channels_last</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">channels_last_strides_exact_match</span><span class="w"> </span><span class="o">||</span><span class="w"></span>
-<span class="w">            </span><span class="n">get_channels_last_strides_2d</span><span class="p">(</span><span class="n">sizes</span><span class="p">())</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">strides</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">          </span><span class="k">return</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">MemoryFormat</span><span class="o">::</span><span class="n">ChannelsLast</span><span class="p">;</span><span class="w"></span>
-<span class="w">        </span><span class="p">}</span><span class="w"></span>
-<span class="w">      </span><span class="p">}</span><span class="w"></span>
-<span class="w">      </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">is_strides_like_channels_last_3d</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">channels_last_strides_exact_match</span><span class="w"> </span><span class="o">||</span><span class="w"></span>
-<span class="w">            </span><span class="n">get_channels_last_strides_3d</span><span class="p">(</span><span class="n">sizes</span><span class="p">())</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">strides</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">          </span><span class="k">return</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">MemoryFormat</span><span class="o">::</span><span class="n">ChannelsLast3d</span><span class="p">;</span><span class="w"></span>
-<span class="w">        </span><span class="p">}</span><span class="w"></span>
-<span class="w">      </span><span class="p">}</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">MemoryFormat</span><span class="o">::</span><span class="n">Contiguous</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="c1">// Total bytes consumed by the &quot;view&quot; of elements of the array.  Does not</span>
-<span class="w">  </span><span class="c1">// include size of metadata.  The number reported here does not necessarily</span>
-<span class="w">  </span><span class="c1">// correspond to the true physical memory consumed by a tensor; instead,</span>
-<span class="w">  </span><span class="c1">// it reports the memory the tensor would take *if* it were contiguous.</span>
-<span class="w">  </span><span class="c1">// Defined to be numel() * itemsize()</span>
-<span class="w">  </span><span class="kt">size_t</span><span class="w"> </span><span class="n">nbytes</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">layout</span><span class="w"> </span><span class="p">()</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">kSparse</span><span class="p">,</span><span class="w"></span>
-<span class="w">                </span><span class="s">&quot;nbytes is not defined for sparse tensors.  If you want the size of the constituent &quot;</span><span class="w"> </span>\
-<span class="w">                </span><span class="s">&quot;tensors, add the nbytes of the indices and values.  If you want the size of the  &quot;</span><span class="w"> </span>\
-<span class="w">                </span><span class="s">&quot;equivalent dense tensor, multiply numel() by element_size()&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">numel</span><span class="p">()</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">itemsize</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">int64_t</span><span class="w"> </span><span class="n">numel</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">numel</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="c1">// Length of one array element in bytes.  This is the traditional</span>
-<span class="w">  </span><span class="c1">// Numpy naming.</span>
-<span class="w">  </span><span class="kt">size_t</span><span class="w"> </span><span class="n">itemsize</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">itemsize</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="c1">// Same as itemsize().  This is the PyTorch naming.</span>
-<span class="w">  </span><span class="kt">int64_t</span><span class="w"> </span><span class="n">element_size</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">itemsize</span><span class="p">());</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
 <span class="w">  </span><span class="n">C10_DEPRECATED_MESSAGE</span><span class="p">(</span><span class="s">&quot;Tensor.type() is deprecated. Instead use Tensor.options(), which in many cases (e.g. in a constructor) is a drop-in replacement. If you were using data from type(), that is now available from Tensor itself, so instead of tensor.type().scalar_type(), use tensor.scalar_type() instead and instead of tensor.type().backend() use tensor.device().&quot;</span><span class="p">)</span><span class="w"></span>
 <span class="w">  </span><span class="n">DeprecatedTypeProperties</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">type</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">globalDeprecatedTypePropertiesRegistry</span><span class="p">().</span><span class="n">getDeprecatedTypeProperties</span><span class="p">(</span><span class="w"></span>
 <span class="w">        </span><span class="n">dispatchKeyToBackend</span><span class="p">(</span><span class="n">legacyExtractDispatchKey</span><span class="p">(</span><span class="n">key_set</span><span class="p">())),</span><span class="w"></span>
 <span class="w">        </span><span class="n">scalar_type</span><span class="p">());</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="n">DispatchKeySet</span><span class="w"> </span><span class="n">key_set</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">key_set</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="n">ScalarType</span><span class="w"> </span><span class="n">scalar_type</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">typeMetaToScalarType</span><span class="p">(</span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">dtype</span><span class="p">());</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">has_storage</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">defined</span><span class="p">()</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">has_storage</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">Storage</span><span class="o">&amp;</span><span class="w"> </span><span class="n">storage</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">storage</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_alias_of</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">storage</span><span class="p">().</span><span class="n">is_alias_of</span><span class="p">(</span><span class="n">other</span><span class="p">.</span><span class="n">storage</span><span class="p">());</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
 <span class="w">  </span><span class="n">Tensor</span><span class="w"> </span><span class="n">toType</span><span class="p">(</span><span class="n">ScalarType</span><span class="w"> </span><span class="n">t</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
@@ -692,161 +522,6 @@
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="o">!</span><span class="n">at</span><span class="o">::</span><span class="n">impl</span><span class="o">::</span><span class="n">variable_excluded_from_dispatch</span><span class="p">();</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
-<span class="w">  </span><span class="kr">inline</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_conj</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">is_conj</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="c1">// sets the conjugate bit of a tensor.</span>
-<span class="w">  </span><span class="c1">// NOTE: Conjugate bit is supposed to be a read-only field. Only change this, if you are sure</span>
-<span class="w">  </span><span class="c1">// that&#39;s what you want. Changing this might lead to incorrect behavior since conjugation is</span>
-<span class="w">  </span><span class="c1">// a lazy operation and we rely on this bit to determine if a conjugation needs to be materialized.</span>
-<span class="w">  </span><span class="kr">inline</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">_set_conj</span><span class="p">(</span><span class="kt">bool</span><span class="w"> </span><span class="n">conjugate</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">_set_conj</span><span class="p">(</span><span class="n">conjugate</span><span class="p">);</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kr">inline</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_neg</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">is_neg</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="c1">// sets the negative bit of a tensor.</span>
-<span class="w">  </span><span class="c1">// NOTE: Negative bit is supposed to be a read-only field. Only change this, if you are sure</span>
-<span class="w">  </span><span class="c1">// that&#39;s what you want. Changing this might lead to incorrect behavior since we rely on this</span>
-<span class="w">  </span><span class="c1">// bit to determine if a negation needs to be materialized.</span>
-<span class="w">  </span><span class="kr">inline</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">_set_neg</span><span class="p">(</span><span class="kt">bool</span><span class="w"> </span><span class="n">negative</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">_set_neg</span><span class="p">(</span><span class="n">negative</span><span class="p">);</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="n">Layout</span><span class="w"> </span><span class="n">layout</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">layout</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="n">caffe2</span><span class="o">::</span><span class="n">TypeMeta</span><span class="w"> </span><span class="n">dtype</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">dtype</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kr">inline</span><span class="w"> </span><span class="n">Device</span><span class="w"> </span><span class="n">device</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">device</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">int64_t</span><span class="w"> </span><span class="n">get_device</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="c1">// NB: this is not a native function to avoid dispatching overhead.</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">get_device</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_cpu</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="c1">// NB: this is not a native function to avoid dispatching overhead.</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">is_cpu</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_cuda</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="c1">// NB: this is not a native function to avoid dispatching overhead.</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">is_cuda</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_xpu</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="c1">// NB: this is not a native function to avoid dispatching overhead.</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">is_xpu</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_xla</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">is_xla</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_lazy</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">is_lazy</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_hip</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="c1">// NB: this is not a native function to avoid dispatching overhead.</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">is_hip</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_ve</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="c1">// NB: this is not a native function to avoid dispatching overhead.</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">is_ve</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_sparse</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="c1">// NB: this is not a native function to avoid dispatching overhead.</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">is_sparse</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_sparse_csr</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="c1">// NB: this is not a native function to avoid dispatching overhead.</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">is_sparse_csr</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_mkldnn</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="c1">// NB: this is not a native function to avoid dispatching overhead.</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">is_mkldnn</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_mlc</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="c1">// NB: this is not a native function to avoid dispatching overhead.</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">is_mlc</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_ort</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="c1">// NB: this is not a native function to avoid dispatching overhead.</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">is_ort</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_vulkan</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="c1">// NB: this is not a native function to avoid dispatching overhead.</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">is_vulkan</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_metal</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="c1">// NB: this is not a native function to avoid dispatching overhead.</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">is_metal</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_quantized</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="c1">// NB: this is not a native function to avoid dispatching overhead.</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">is_quantized</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_meta</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">is_meta</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_inference</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">is_inference</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="n">QuantizerPtr</span><span class="w"> </span><span class="n">quantizer</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="nf">has_names</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="c1">// If a user is using unnamed tensors, then we can short-circuit right here.</span>
-<span class="w">    </span><span class="c1">// Otherwise, impl::has_names attempts to retrieve names.</span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">has_named_tensor_meta</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl</span><span class="o">::</span><span class="n">has_names</span><span class="p">(</span><span class="n">unsafeGetTensorImpl</span><span class="p">());</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">NamedTensorMeta</span><span class="o">*</span><span class="w"> </span><span class="nf">get_named_tensor_meta</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="n">NamedTensorMeta</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">named_tensor_meta</span><span class="p">());</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="n">NamedTensorMeta</span><span class="o">*</span><span class="w"> </span><span class="nf">get_named_tensor_meta</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="n">NamedTensorMeta</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">named_tensor_meta</span><span class="p">());</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="n">TensorOptions</span><span class="w"> </span><span class="nf">options</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TensorOptions</span><span class="p">().</span><span class="n">dtype</span><span class="p">(</span><span class="n">dtype</span><span class="p">())</span><span class="w"></span>
-<span class="w">                          </span><span class="p">.</span><span class="n">device</span><span class="p">(</span><span class="n">device</span><span class="p">())</span><span class="w"></span>
-<span class="w">                          </span><span class="p">.</span><span class="n">layout</span><span class="p">(</span><span class="n">layout</span><span class="p">());</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="nf">data_ptr</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">unsafeGetTensorImpl</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">data</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="o">&gt;</span><span class="w"></span>
-<span class="w">  </span><span class="n">T</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">data_ptr</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
-
 <span class="w">  </span><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="o">&gt;</span><span class="w"></span>
 <span class="w">  </span><span class="n">C10_DEPRECATED_MESSAGE</span><span class="p">(</span><span class="s">&quot;Tensor.data&lt;T&gt;() is deprecated. Please use Tensor.data_ptr&lt;T&gt;() instead.&quot;</span><span class="p">)</span><span class="w"></span>
 <span class="w">  </span><span class="n">T</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">data</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
@@ -858,45 +533,6 @@
 
 <span class="w">  </span><span class="c1">// Purposely not defined here to avoid inlining</span>
 <span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">print</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
-
-<span class="w">  </span><span class="c1">// Return a `TensorAccessor` for CPU `Tensor`s. You have to specify scalar type and</span>
-<span class="w">  </span><span class="c1">// dimension.</span>
-<span class="w">  </span><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">N</span><span class="o">&gt;</span><span class="w"></span>
-<span class="w">  </span><span class="n">TensorAccessor</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="n">N</span><span class="o">&gt;</span><span class="w"> </span><span class="n">accessor</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">static_assert</span><span class="p">(</span><span class="n">N</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;accessor is used for indexing tensor, for scalars use *data_ptr&lt;T&gt;()&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">dim</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;TensorAccessor expected &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="s">&quot; dims but tensor has &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">dim</span><span class="p">());</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TensorAccessor</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="n">N</span><span class="o">&gt;</span><span class="p">(</span><span class="n">data_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(),</span><span class="n">sizes</span><span class="p">().</span><span class="n">data</span><span class="p">(),</span><span class="n">strides</span><span class="p">().</span><span class="n">data</span><span class="p">());</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">N</span><span class="o">&gt;</span><span class="w"></span>
-<span class="w">  </span><span class="n">TensorAccessor</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="n">N</span><span class="o">&gt;</span><span class="w"> </span><span class="n">accessor</span><span class="p">()</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span><span class="w"></span>
-
-<span class="w">  </span><span class="c1">// Return a `GenericPackedTensorAccessor` for CUDA `Tensor`s. You have to specify scalar type and</span>
-<span class="w">  </span><span class="c1">// dimension. You can optionally specify RestrictPtrTraits as a template parameter to</span>
-<span class="w">  </span><span class="c1">// cast the data pointer to a __restrict__ pointer.</span>
-<span class="w">  </span><span class="c1">// In order to use this, your CUDA kernel has to take a corresponding GenericPackedTensorAccessor</span>
-<span class="w">  </span><span class="c1">// as an argument.</span>
-<span class="w">  </span><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">U</span><span class="o">&gt;</span><span class="w"> </span><span class="k">class</span> <span class="nc">PtrTraits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DefaultPtrTraits</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span> <span class="nc">index_t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">int64_t</span><span class="o">&gt;</span><span class="w"></span>
-<span class="w">  </span><span class="n">GenericPackedTensorAccessor</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="n">N</span><span class="p">,</span><span class="n">PtrTraits</span><span class="p">,</span><span class="n">index_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">generic_packed_accessor</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">static_assert</span><span class="p">(</span><span class="n">N</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;accessor is used for indexing tensor, for scalars use *data_ptr&lt;T&gt;()&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">dim</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;TensorAccessor expected &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="s">&quot; dims but tensor has &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">dim</span><span class="p">());</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">GenericPackedTensorAccessor</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="n">N</span><span class="p">,</span><span class="n">PtrTraits</span><span class="p">,</span><span class="n">index_t</span><span class="o">&gt;</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">PtrTraits</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">PtrType</span><span class="o">&gt;</span><span class="p">(</span><span class="n">data_ptr</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">()),</span><span class="n">sizes</span><span class="p">().</span><span class="n">data</span><span class="p">(),</span><span class="n">strides</span><span class="p">().</span><span class="n">data</span><span class="p">());</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">U</span><span class="o">&gt;</span><span class="w"> </span><span class="k">class</span> <span class="nc">PtrTraits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DefaultPtrTraits</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span> <span class="nc">index_t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">int64_t</span><span class="o">&gt;</span><span class="w"></span>
-<span class="w">  </span><span class="n">GenericPackedTensorAccessor</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="n">N</span><span class="o">&gt;</span><span class="w"> </span><span class="n">generic_packed_accessor</span><span class="p">()</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span><span class="w"></span>
-
-<span class="w">  </span><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">U</span><span class="o">&gt;</span><span class="w"> </span><span class="k">class</span> <span class="nc">PtrTraits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DefaultPtrTraits</span><span class="o">&gt;</span><span class="w"></span>
-<span class="w">  </span><span class="n">PackedTensorAccessor32</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="n">N</span><span class="p">,</span><span class="n">PtrTraits</span><span class="o">&gt;</span><span class="w"> </span><span class="n">packed_accessor32</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">generic_packed_accessor</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="n">N</span><span class="p">,</span><span class="n">PtrTraits</span><span class="p">,</span><span class="kt">int32_t</span><span class="o">&gt;</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">U</span><span class="o">&gt;</span><span class="w"> </span><span class="k">class</span> <span class="nc">PtrTraits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DefaultPtrTraits</span><span class="o">&gt;</span><span class="w"></span>
-<span class="w">  </span><span class="n">PackedTensorAccessor32</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="n">N</span><span class="p">,</span><span class="n">PtrTraits</span><span class="o">&gt;</span><span class="w"> </span><span class="n">packed_accessor32</span><span class="p">()</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span><span class="w"></span>
-
-<span class="w">  </span><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">U</span><span class="o">&gt;</span><span class="w"> </span><span class="k">class</span> <span class="nc">PtrTraits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DefaultPtrTraits</span><span class="o">&gt;</span><span class="w"></span>
-<span class="w">  </span><span class="n">PackedTensorAccessor64</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="n">N</span><span class="p">,</span><span class="n">PtrTraits</span><span class="o">&gt;</span><span class="w"> </span><span class="n">packed_accessor64</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">generic_packed_accessor</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="n">N</span><span class="p">,</span><span class="n">PtrTraits</span><span class="p">,</span><span class="kt">int64_t</span><span class="o">&gt;</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">U</span><span class="o">&gt;</span><span class="w"> </span><span class="k">class</span> <span class="nc">PtrTraits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DefaultPtrTraits</span><span class="o">&gt;</span><span class="w"></span>
-<span class="w">  </span><span class="n">PackedTensorAccessor64</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="n">N</span><span class="p">,</span><span class="n">PtrTraits</span><span class="o">&gt;</span><span class="w"> </span><span class="n">packed_accessor64</span><span class="p">()</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span><span class="w"></span>
 
 <span class="w">  </span><span class="k">template</span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="n">N</span><span class="p">,</span><span class="w"> </span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">U</span><span class="o">&gt;</span><span class="w"> </span><span class="k">class</span> <span class="nc">PtrTraits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">DefaultPtrTraits</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span> <span class="nc">index_t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">int64_t</span><span class="o">&gt;</span><span class="w"></span>
 <span class="w">  </span><span class="n">C10_DEPRECATED_MESSAGE</span><span class="p">(</span><span class="s">&quot;packed_accessor is deprecated, use packed_accessor32 or packed_accessor64 instead&quot;</span><span class="p">)</span><span class="w"></span>
@@ -978,11 +614,8 @@
 
 
 <span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="nf">set_requires_grad</span><span class="p">(</span><span class="kt">bool</span><span class="w"> </span><span class="n">requires_grad</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">set_requires_grad</span><span class="p">(</span><span class="n">requires_grad</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">TensorBase</span><span class="o">::</span><span class="n">set_requires_grad</span><span class="p">(</span><span class="n">requires_grad</span><span class="p">);</span><span class="w"></span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="o">*</span><span class="k">this</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="nf">requires_grad</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">requires_grad</span><span class="p">();</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
 <span class="w">  </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="nf">mutable_grad</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
@@ -1009,7 +642,7 @@
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">_fw_grad</span><span class="p">(</span><span class="n">level</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="k">this</span><span class="p">);</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
-<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">_set_fw_grad</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">new_grad</span><span class="p">,</span><span class="w"> </span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">level</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_inplace_op</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">_set_fw_grad</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">TensorBase</span><span class="o">&amp;</span><span class="w"> </span><span class="n">new_grad</span><span class="p">,</span><span class="w"> </span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">level</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_inplace_op</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">    </span><span class="n">impl_</span><span class="o">-&gt;</span><span class="n">_set_fw_grad</span><span class="p">(</span><span class="n">new_grad</span><span class="p">,</span><span class="w"> </span><span class="o">*</span><span class="k">this</span><span class="p">,</span><span class="w"> </span><span class="n">level</span><span class="p">,</span><span class="w"> </span><span class="n">is_inplace_op</span><span class="p">);</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
@@ -1790,14 +1423,13 @@
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">Args</span><span class="o">&gt;</span><span class="p">(</span><span class="n">params</span><span class="p">)...);</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
-<span class="w">  </span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="w"> </span><span class="n">tensor_data</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="w"> </span><span class="n">tensor_data</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TensorBase</span><span class="o">::</span><span class="n">tensor_data</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
 
-<span class="w">  </span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="w"> </span><span class="nf">variable_data</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
-
-<span class="w">  </span><span class="c1">// Gradient Node and Edges</span>
-<span class="w">  </span><span class="c1">//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
-
-<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">torch</span><span class="o">::</span><span class="n">autograd</span><span class="o">::</span><span class="n">Node</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">grad_fn</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="w"> </span><span class="n">variable_data</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TensorBase</span><span class="o">::</span><span class="n">variable_data</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
 
 <span class="w">  </span><span class="c1">// Hooks</span>
 <span class="w">  </span><span class="c1">//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
@@ -1812,51 +1444,19 @@
 <span class="w">  </span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="o">&gt;</span><span class="w"></span>
 <span class="w">  </span><span class="n">hook_return_var_t</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="n">register_hook</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">hook</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
 
-<span class="k">private</span><span class="o">:</span><span class="w"></span>
-<span class="w">  </span><span class="kt">unsigned</span><span class="w"> </span><span class="n">_register_hook</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;</span><span class="w"> </span><span class="n">hook</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
-
-<span class="k">public</span><span class="o">:</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">remove_hook</span><span class="p">(</span><span class="kt">unsigned</span><span class="w"> </span><span class="n">pos</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
-
 <span class="w">  </span><span class="c1">// Variable methods</span>
 <span class="w">  </span><span class="c1">//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
 
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="nf">is_leaf</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">int64_t</span><span class="w"> </span><span class="nf">output_nr</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">set_data</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="n">new_data</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
-
-<span class="w">  </span><span class="n">Tensor</span><span class="w"> </span><span class="nf">data</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">int64_t</span><span class="w"> </span><span class="nf">_version</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">retain_grad</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="nf">retains_grad</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">Tensor</span><span class="w"> </span><span class="nf">data</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">TensorBase</span><span class="o">::</span><span class="n">data</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
 
 <span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">_backward</span><span class="p">(</span><span class="n">TensorList</span><span class="w"> </span><span class="n">inputs</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">gradient</span><span class="p">,</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;</span><span class="w"> </span><span class="n">keep_graph</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">create_graph</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
 
-<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="nf">requires_grad_</span><span class="p">(</span><span class="kt">bool</span><span class="w"> </span><span class="n">_requires_grad</span><span class="o">=</span><span class="nb">true</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
-
-<span class="w">  </span><span class="c1">// View Variables</span>
-<span class="w">  </span><span class="c1">//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
-
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="nf">is_view</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
-
-<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="nf">_base</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
-
-<span class="w">  </span><span class="c1">// Miscellaneous</span>
-<span class="w">  </span><span class="c1">//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
-
-<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="nf">name</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
-
-<span class="k">protected</span><span class="o">:</span><span class="w"></span>
-<span class="w">  </span><span class="k">friend</span><span class="w"> </span><span class="k">class</span> <span class="o">::</span><span class="n">caffe2</span><span class="o">::</span><span class="n">Tensor</span><span class="p">;</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">enforce_invariants</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">TensorImpl</span><span class="p">,</span><span class="w"> </span><span class="n">UndefinedTensorImpl</span><span class="o">&gt;</span><span class="w"> </span><span class="n">impl_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="nf">requires_grad_</span><span class="p">(</span><span class="kt">bool</span><span class="w"> </span><span class="n">_requires_grad</span><span class="o">=</span><span class="nb">true</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">TensorBase</span><span class="o">::</span><span class="n">requires_grad_</span><span class="p">(</span><span class="n">_requires_grad</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="o">*</span><span class="k">this</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
 <span class="p">};</span><span class="w"></span>
 
 <span class="c1">// For &quot;multiple ... operators specified&quot; warnings, closing brace of class</span>
@@ -1864,27 +1464,6 @@
 <span class="cp">#ifdef _MSC_VER</span>
 <span class="cp">#pragma warning( pop )</span>
 <span class="cp">#endif</span>
-
-<span class="kr">inline</span><span class="w"> </span><span class="kt">int64_t</span><span class="w"> </span><span class="nf">get_device</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">self</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">self</span><span class="p">.</span><span class="n">get_device</span><span class="p">();</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
-
-<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="o">&gt;</span><span class="w"></span>
-<span class="k">auto</span><span class="w"> </span><span class="n">Tensor</span><span class="o">::</span><span class="n">register_hook</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">hook</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Tensor</span><span class="o">::</span><span class="n">hook_return_void_t</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="c1">// Return the grad argument in case of a hook with void return type to have an</span>
-<span class="w">  </span><span class="c1">// std::function with Tensor return type</span>
-<span class="w">  </span><span class="k">static_assert</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">is_same</span><span class="o">&lt;</span><span class="k">decltype</span><span class="p">(</span><span class="n">hook</span><span class="p">(</span><span class="n">Tensor</span><span class="p">())),</span><span class="w"> </span><span class="kt">void</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span><span class="w"></span>
-<span class="w">                </span><span class="s">&quot;Expected hook to return void&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">_register_hook</span><span class="p">([</span><span class="n">fn</span><span class="o">=</span><span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">hook</span><span class="p">)](</span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">grad</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">fn</span><span class="p">(</span><span class="n">grad</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">Tensor</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">});</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
-
-<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">T</span><span class="o">&gt;</span><span class="w"></span>
-<span class="k">auto</span><span class="w"> </span><span class="n">Tensor</span><span class="o">::</span><span class="n">register_hook</span><span class="p">(</span><span class="n">T</span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">hook</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">Tensor</span><span class="o">::</span><span class="n">hook_return_var_t</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">_register_hook</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(</span><span class="n">hook</span><span class="p">));</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
 
 <span class="k">namespace</span><span class="w"> </span><span class="nn">detail</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="c1">// Helper creator for Tensor class which doesn&#39;t requires the users to pass</span>
@@ -1896,10 +1475,6 @@
 <span class="p">}</span><span class="w"></span>
 
 <span class="p">}</span><span class="w"> </span><span class="c1">// namespace detail</span>
-
-<span class="k">static</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="n">DispatchKey</span><span class="w"> </span><span class="n">legacyExtractDispatchKey</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">t</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">legacyExtractDispatchKey</span><span class="p">(</span><span class="n">t</span><span class="p">.</span><span class="n">key_set</span><span class="p">());</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
 
 <span class="p">}</span><span class="w"> </span><span class="c1">// namespace at</span>
 
@@ -5678,25 +5253,7 @@
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
 <span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">destroyOwned</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">TensorImpl</span><span class="o">*</span><span class="k">const</span><span class="w"> </span><span class="n">toDestroy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">x</span><span class="p">.</span><span class="n">unsafeReleaseTensorImpl</span><span class="p">();</span><span class="w"></span>
-<span class="w">    </span><span class="n">TORCH_INTERNAL_ASSERT_DEBUG_ONLY</span><span class="p">(</span><span class="n">toDestroy</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Tensor somehow got null TensorImpl?&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="c1">// May be 0 because UndefinedTensorImpl doesn&#39;t get its refcount</span>
-<span class="w">    </span><span class="c1">// incremented.</span>
-<span class="w">    </span><span class="n">TORCH_INTERNAL_ASSERT_DEBUG_ONLY</span><span class="p">(</span><span class="w"></span>
-<span class="w">        </span><span class="n">toDestroy</span><span class="o">-&gt;</span><span class="n">refcount_</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">(</span><span class="n">toDestroy</span><span class="o">-&gt;</span><span class="n">refcount_</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">toDestroy</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">UndefinedTensorImpl</span><span class="o">::</span><span class="n">singleton</span><span class="p">()),</span><span class="w"></span>
-<span class="w">        </span><span class="s">&quot;ExclusivelyOwned&lt;Tensor&gt; destroyed with refcount &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">toDestroy</span><span class="o">-&gt;</span><span class="n">refcount_</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;, expected 1!&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="n">TORCH_INTERNAL_ASSERT_DEBUG_ONLY</span><span class="p">(</span><span class="w"></span>
-<span class="w">        </span><span class="n">toDestroy</span><span class="o">-&gt;</span><span class="n">weakcount_</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="p">(</span><span class="n">toDestroy</span><span class="o">-&gt;</span><span class="n">weakcount_</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">toDestroy</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">UndefinedTensorImpl</span><span class="o">::</span><span class="n">singleton</span><span class="p">()),</span><span class="w"></span>
-<span class="w">        </span><span class="s">&quot;ExclusivelyOwned&lt;Tensor&gt; destroyed with weakcount &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">toDestroy</span><span class="o">-&gt;</span><span class="n">weakcount_</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;, expected 1!&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">toDestroy</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">UndefinedTensorImpl</span><span class="o">::</span><span class="n">singleton</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="cp">#ifndef NDEBUG</span>
-<span class="w">      </span><span class="c1">// Needed to pass the debug assertions in ~intrusive_ptr_target.</span>
-<span class="w">      </span><span class="n">toDestroy</span><span class="o">-&gt;</span><span class="n">refcount_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
-<span class="w">      </span><span class="n">toDestroy</span><span class="o">-&gt;</span><span class="n">weakcount_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
-<span class="cp">#endif</span>
-<span class="w">      </span><span class="n">toDestroy</span><span class="o">-&gt;</span><span class="n">release_resources</span><span class="p">();</span><span class="w"></span>
-<span class="w">      </span><span class="k">delete</span><span class="w"> </span><span class="n">toDestroy</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">ExclusivelyOwnedTraits</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">TensorBase</span><span class="o">&gt;::</span><span class="n">destroyOwned</span><span class="p">(</span><span class="n">x</span><span class="p">);</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
 <span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="w"> </span><span class="n">take</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">x</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
