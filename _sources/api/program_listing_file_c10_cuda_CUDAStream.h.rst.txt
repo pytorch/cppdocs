@@ -21,7 +21,8 @@ Program Listing for File CUDAStream.h
    
    #include <c10/core/DeviceGuard.h>
    #include <c10/core/Stream.h>
-   #include <c10/cuda/CUDAFunctions.h>
+   #include <c10/cuda/CUDAException.h>
+   #include <c10/cuda/CUDAMacros.h>
    #include <c10/util/Exception.h>
    
    /*
@@ -119,9 +120,6 @@ Program Listing for File CUDAStream.h
          return true;
        } else if (err != cudaErrorNotReady) {
          C10_CUDA_CHECK(err);
-       } else {
-         // ignore and clear the error if not ready
-         (void)cudaGetLastError();
        }
    
        return false;
@@ -129,7 +127,7 @@ Program Listing for File CUDAStream.h
    
      void synchronize() const {
        DeviceGuard guard{stream_.device()};
-       c10::cuda::stream_synchronize(stream());
+       C10_CUDA_CHECK(cudaStreamSynchronize(stream()));
      }
    
      int priority() const {
@@ -178,9 +176,6 @@ Program Listing for File CUDAStream.h
    
    TORCH_API CUDAStream
    getStreamFromPool(const bool isHighPriority = false, DeviceIndex device = -1);
-   
-   TORCH_API CUDAStream
-   getStreamFromExternal(cudaStream_t ext_stream, DeviceIndex device_index);
    
    TORCH_API CUDAStream getDefaultCUDAStream(DeviceIndex device_index = -1);
    

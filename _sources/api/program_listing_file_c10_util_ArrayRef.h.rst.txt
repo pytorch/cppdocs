@@ -55,12 +55,6 @@ Program Listing for File ArrayRef.h
    
      size_type Length;
    
-     void debugCheckNullptrInvariant() {
-       TORCH_INTERNAL_ASSERT_DEBUG_ONLY(
-           Data != nullptr || Length == 0,
-           "created ArrayRef with nullptr and non-zero length! c10::optional relies on this being illegal");
-     }
-   
     public:
    
      /* implicit */ constexpr ArrayRef() : Data(nullptr), Length(0) {}
@@ -68,31 +62,15 @@ Program Listing for File ArrayRef.h
      // TODO Make this explicit
      constexpr ArrayRef(const T& OneElt) : Data(&OneElt), Length(1) {}
    
-     C10_HOST_CONSTEXPR_EXCEPT_CUDA92 ArrayRef(const T* data, size_t length)
-         : Data(data), Length(length) {
-       debugCheckNullptrInvariant();
-     }
+     constexpr ArrayRef(const T* data, size_t length)
+         : Data(data), Length(length) {}
    
-     C10_HOST_CONSTEXPR_EXCEPT_CUDA92 ArrayRef(const T* begin, const T* end)
-         : Data(begin), Length(end - begin) {
-       debugCheckNullptrInvariant();
-     }
+     constexpr ArrayRef(const T* begin, const T* end)
+         : Data(begin), Length(end - begin) {}
    
      template <typename U>
      /* implicit */ ArrayRef(const SmallVectorTemplateCommon<T, U>& Vec)
-         : Data(Vec.data()), Length(Vec.size()) {
-       debugCheckNullptrInvariant();
-     }
-   
-     template <
-         typename Container,
-         typename = std::enable_if_t<std::is_same<
-             std::remove_const_t<decltype(std::declval<Container>().data())>,
-             T*>::value>>
-     /* implicit */ ArrayRef(const Container& container)
-         : Data(container.data()), Length(container.size()) {
-       debugCheckNullptrInvariant();
-     }
+         : Data(Vec.data()), Length(Vec.size()) {}
    
      // The enable_if stuff here makes sure that this isn't used for
      // std::vector<bool>, because ArrayRef can't work on a std::vector<bool>

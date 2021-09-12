@@ -14,7 +14,6 @@ Program Listing for File rnn.h
 
    #pragma once
    
-   #include <c10/util/irange.h>
    #include <torch/types.h>
    
    namespace torch {
@@ -169,7 +168,8 @@ Program Listing for File rnn.h
      Tensor padded_output, lengths;
      std::tie(padded_output, lengths) = torch::_pad_packed_sequence(
        sequence.data(), sequence.batch_sizes(), batch_first, padding_value, max_seq_length);
-     const Tensor& unsorted_indices = sequence.unsorted_indices();
+     // NOLINTNEXTLINE(performance-unnecessary-copy-initialization)
+     Tensor unsorted_indices = sequence.unsorted_indices();
      if (unsorted_indices.defined()) {
        int64_t batch_dim = batch_first ? 0 : 1;
        return std::make_tuple(padded_output.index_select(batch_dim, unsorted_indices), lengths.index({unsorted_indices}));
@@ -186,7 +186,7 @@ Program Listing for File rnn.h
    
    inline PackedSequence pack_sequence(ArrayRef<Tensor> sequences, bool enforce_sorted = true) {
      Tensor lengths = torch::empty({(int64_t)sequences.size()}, kInt64);
-     for (const auto i : c10::irange(sequences.size())) {
+     for (size_t i = 0; i < sequences.size(); i++) {
        lengths[i] = sequences[i].size(0);
      }
      return pack_padded_sequence(

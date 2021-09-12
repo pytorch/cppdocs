@@ -14,7 +14,6 @@ Program Listing for File chunk.h
 
    #pragma once
    
-   #include <c10/util/irange.h>
    #include <torch/arg.h>
    #include <torch/csrc/utils/memory.h>
    #include <torch/data/datasets/stateful.h>
@@ -310,7 +309,8 @@ Program Listing for File chunk.h
            running_preloaders_(0),
            load_checkpoint_(false) {}
    
-      ~ChunkDataset() override {
+     // NOLINTNEXTLINE(modernize-use-override)
+     virtual ~ChunkDataset() {
        // stop batch buffer first.
        if (batch_buffer_) {
          batch_buffer_->stop();
@@ -363,7 +363,7 @@ Program Listing for File chunk.h
    
        AT_ASSERT(running_preloaders_ == 0);
        running_preloaders_ = options_.preloader_count();
-       for (const auto i : c10::irange(options_.preloader_count())) {
+       for (size_t i = 0; i < options_.preloader_count(); ++i) {
          preload_threads_.emplace_back([this, i]() { this->preloader(i); });
        }
      }
@@ -403,7 +403,7 @@ Program Listing for File chunk.h
              }
            }
            UnwrappedBatchType data = chunk_reader_.read_chunk(chunk_idx[0]);
-           for (const auto i : c10::irange(1, chunk_idx.size())) {
+           for (size_t i = 1; i < chunk_idx.size(); ++i) {
              auto chunk_data = chunk_reader_.read_chunk(chunk_idx[i]);
              std::move(
                  chunk_data.begin(), chunk_data.end(), std::back_inserter(data));
