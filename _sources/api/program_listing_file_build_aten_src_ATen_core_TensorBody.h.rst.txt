@@ -175,11 +175,8 @@ Program Listing for File TensorBody.h
      // Also MSVC will wrongly issue the following warning with the aforementioned fix
      //    warning C4522: 'at::Tensor': multiple assignment operators specified
      // Let's just skip the warning.
-   
-     #ifdef _MSC_VER
-     #pragma warning( push )
-     #pragma warning( disable : 4522 )
-     #endif
+     //
+     // TODO: temporarily disabled
    
      Tensor& operator=(const TensorBase& x) & {
        impl_ = x.getIntrusivePtr();
@@ -621,6 +618,7 @@ Program Listing for File TensorBody.h
      at::Tensor mean(c10::optional<at::ScalarType> dtype=c10::nullopt) const;
      at::Tensor mean(at::IntArrayRef dim, bool keepdim=false, c10::optional<at::ScalarType> dtype=c10::nullopt) const;
      at::Tensor mean(at::DimnameList dim, bool keepdim=false, c10::optional<at::ScalarType> dtype=c10::nullopt) const;
+     at::Tensor nanmean(at::IntArrayRef dim={}, bool keepdim=false, c10::optional<at::ScalarType> dtype=c10::nullopt) const;
      at::Tensor median() const;
      ::std::tuple<at::Tensor,at::Tensor> median(int64_t dim, bool keepdim=false) const;
      ::std::tuple<at::Tensor,at::Tensor> median(at::Dimname dim, bool keepdim=false) const;
@@ -1158,12 +1156,6 @@ Program Listing for File TensorBody.h
        return *this;
      }
    };
-   
-   // For "multiple ... operators specified" warnings, closing brace of class
-   // declaration must be included between pragma push & pop
-   #ifdef _MSC_VER
-   #pragma warning( pop )
-   #endif
    
    namespace detail {
    // Helper creator for Tensor class which doesn't requires the users to pass
@@ -2525,6 +2517,11 @@ Program Listing for File TensorBody.h
    // aten::mean.names_dim(Tensor self, Dimname[1] dim, bool keepdim=False, *, ScalarType? dtype=None) -> Tensor
    inline at::Tensor Tensor::mean(at::DimnameList dim, bool keepdim, c10::optional<at::ScalarType> dtype) const {
        return at::_ops::mean_names_dim::call(const_cast<Tensor&>(*this), dim, keepdim, dtype);
+   }
+   
+   // aten::nanmean(Tensor self, int[1] dim=[], bool keepdim=False, *, ScalarType? dtype=None) -> Tensor
+   inline at::Tensor Tensor::nanmean(at::IntArrayRef dim, bool keepdim, c10::optional<at::ScalarType> dtype) const {
+       return at::_ops::nanmean::call(const_cast<Tensor&>(*this), dim, keepdim, dtype);
    }
    
    // aten::median(Tensor self) -> Tensor
