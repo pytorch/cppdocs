@@ -226,6 +226,7 @@
 <ul>
 <li class="toctree-l1"><a class="reference internal" href="../notes/faq.html">FAQ</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../notes/inference_mode.html">Inference Mode</a></li>
+<li class="toctree-l1"><a class="reference internal" href="../notes/maybe_owned.html">MaybeOwned&lt;Tensor&gt;</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../notes/tensor_basics.html">Tensor Basics</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../notes/tensor_creation.html">Tensor Creation API</a></li>
 <li class="toctree-l1"><a class="reference internal" href="../notes/tensor_cuda_stream.html">Tensor CUDA Stream API</a></li>
@@ -320,8 +321,7 @@
 
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/core/DeviceGuard.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/core/Stream.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/cuda/CUDAException.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/cuda/CUDAMacros.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/cuda/CUDAFunctions.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/Exception.h&gt;</span><span class="cp"></span>
 
 <span class="cm">/*</span>
@@ -419,6 +419,9 @@
 <span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
 <span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">err</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">cudaErrorNotReady</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">      </span><span class="n">C10_CUDA_CHECK</span><span class="p">(</span><span class="n">err</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="c1">// ignore and clear the error if not ready</span>
+<span class="w">      </span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="n">cudaGetLastError</span><span class="p">();</span><span class="w"></span>
 <span class="w">    </span><span class="p">}</span><span class="w"></span>
 
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
@@ -426,7 +429,7 @@
 
 <span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">synchronize</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">    </span><span class="n">DeviceGuard</span><span class="w"> </span><span class="n">guard</span><span class="p">{</span><span class="n">stream_</span><span class="p">.</span><span class="n">device</span><span class="p">()};</span><span class="w"></span>
-<span class="w">    </span><span class="n">C10_CUDA_CHECK</span><span class="p">(</span><span class="n">cudaStreamSynchronize</span><span class="p">(</span><span class="n">stream</span><span class="p">()));</span><span class="w"></span>
+<span class="w">    </span><span class="n">c10</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">stream_synchronize</span><span class="p">(</span><span class="n">stream</span><span class="p">());</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
 <span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">priority</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
@@ -475,6 +478,9 @@
 
 <span class="n">TORCH_API</span><span class="w"> </span><span class="n">CUDAStream</span><span class="w"></span>
 <span class="n">getStreamFromPool</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">isHighPriority</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">,</span><span class="w"> </span><span class="n">DeviceIndex</span><span class="w"> </span><span class="n">device</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">-1</span><span class="p">);</span><span class="w"></span>
+
+<span class="n">TORCH_API</span><span class="w"> </span><span class="n">CUDAStream</span><span class="w"></span>
+<span class="n">getStreamFromExternal</span><span class="p">(</span><span class="n">cudaStream_t</span><span class="w"> </span><span class="n">ext_stream</span><span class="p">,</span><span class="w"> </span><span class="n">DeviceIndex</span><span class="w"> </span><span class="n">device_index</span><span class="p">);</span><span class="w"></span>
 
 <span class="n">TORCH_API</span><span class="w"> </span><span class="n">CUDAStream</span><span class="w"> </span><span class="n">getDefaultCUDAStream</span><span class="p">(</span><span class="n">DeviceIndex</span><span class="w"> </span><span class="n">device_index</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">-1</span><span class="p">);</span><span class="w"></span>
 
