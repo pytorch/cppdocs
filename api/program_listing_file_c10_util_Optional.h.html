@@ -813,9 +813,6 @@
 <span class="k">struct</span> <span class="nc">is_arrayref</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">ArrayRef</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">true_type</span><span class="w"> </span><span class="p">{};</span><span class="w"></span>
 <span class="p">}</span><span class="w"> </span><span class="c1">// namespace detail_</span>
 
-<span class="c1">// CUDA 9.2 and below fail while trying to compile default move constructor</span>
-<span class="c1">// see https://github.com/pytorch/csprng/issues/84</span>
-<span class="cp">#if (!defined(__CUDA_ARCH__) || !defined(CUDA_VERSION) || CUDA_VERSION &gt; 9200)</span>
 <span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span><span class="w"></span>
 <span class="k">using</span><span class="w"> </span><span class="n">OptionalBase</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">conditional_t</span><span class="o">&lt;</span><span class="w"></span>
 <span class="w">    </span><span class="n">detail_</span><span class="o">::</span><span class="n">is_arrayref</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span><span class="w"></span>
@@ -838,23 +835,9 @@
 <span class="w">                                                             </span><span class="c1">// trivial</span>
 <span class="w">                                                             </span><span class="c1">// destructor</span>
 <span class="w">            </span><span class="n">optional_base</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">remove_const_t</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;&gt;&gt;&gt;</span><span class="p">;</span><span class="w"></span>
-<span class="cp">#else</span>
-<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span><span class="w"></span>
-<span class="k">using</span><span class="w"> </span><span class="n">OptionalBase</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">conditional_t</span><span class="o">&lt;</span><span class="w"></span>
-<span class="w">    </span><span class="n">detail_</span><span class="o">::</span><span class="n">is_arrayref</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="n">arrayref_optional_base</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">conditional_t</span><span class="o">&lt;</span><span class="w"></span>
-<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">is_trivially_destructible</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="c1">// if possible</span>
-<span class="w">        </span><span class="n">constexpr_optional_base</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">remove_const_t</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;</span><span class="p">,</span><span class="w"> </span><span class="c1">// use base with</span>
-<span class="w">                                                         </span><span class="c1">// trivial destructor</span>
-<span class="w">        </span><span class="n">optional_base</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">remove_const_t</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;&gt;&gt;&gt;</span><span class="p">;</span><span class="w"></span>
-<span class="cp">#endif</span>
 
 <span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">T</span><span class="o">&gt;</span><span class="w"></span>
 <span class="k">class</span> <span class="nc">optional</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">private</span><span class="w"> </span><span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="c1">// CUDA 9.2 and below fail while trying to compile default move constructor</span>
-<span class="c1">// see https://github.com/pytorch/csprng/issues/84</span>
-<span class="cp">#if (!defined(__CUDA_ARCH__) || !defined(CUDA_VERSION) || CUDA_VERSION &gt; 9200)</span>
 <span class="w">  </span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">U</span><span class="o">&gt;</span><span class="w"> </span><span class="c1">// re-declaration for nvcc on Windows.</span>
 <span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">OptionalBase</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">conditional_t</span><span class="o">&lt;</span><span class="w"></span>
 <span class="w">      </span><span class="n">detail_</span><span class="o">::</span><span class="n">is_arrayref</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span><span class="w"></span>
@@ -879,17 +862,6 @@
 <span class="w">                                                               </span><span class="c1">// trivial</span>
 <span class="w">                                                               </span><span class="c1">// destructor</span>
 <span class="w">              </span><span class="n">optional_base</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">remove_const_t</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;&gt;&gt;&gt;&gt;</span><span class="p">;</span><span class="w"></span>
-<span class="cp">#else</span>
-<span class="w">  </span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">U</span><span class="o">&gt;</span><span class="w"></span>
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">OptionalBase</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">conditional_t</span><span class="o">&lt;</span><span class="w"></span>
-<span class="w">      </span><span class="n">detail_</span><span class="o">::</span><span class="n">is_arrayref</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="n">arrayref_optional_base</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">conditional_t</span><span class="o">&lt;</span><span class="w"></span>
-<span class="w">          </span><span class="n">std</span><span class="o">::</span><span class="n">is_trivially_destructible</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="c1">// if possible</span>
-<span class="w">          </span><span class="n">constexpr_optional_base</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">remove_const_t</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;&gt;</span><span class="p">,</span><span class="w"> </span><span class="c1">// use base with</span>
-<span class="w">                                                           </span><span class="c1">// trivial destructor</span>
-<span class="w">          </span><span class="n">optional_base</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">remove_const_t</span><span class="o">&lt;</span><span class="n">U</span><span class="o">&gt;&gt;&gt;&gt;</span><span class="p">;</span><span class="w"></span>
-<span class="cp">#endif</span>
 
 <span class="w">  </span><span class="k">static_assert</span><span class="p">(</span><span class="w"></span>
 <span class="w">      </span><span class="o">!</span><span class="n">std</span><span class="o">::</span><span class="n">is_same</span><span class="o">&lt;</span><span class="k">typename</span> <span class="nc">std</span><span class="o">::</span><span class="n">decay</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">type</span><span class="p">,</span><span class="w"> </span><span class="n">nullopt_t</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span><span class="w"></span>
@@ -948,20 +920,7 @@
 <span class="w">  </span><span class="k">constexpr</span><span class="w"> </span><span class="n">optional</span><span class="p">(</span><span class="n">nullopt_t</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">(){};</span><span class="w"></span>
 
 <span class="w">  </span><span class="n">optional</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">optional</span><span class="o">&amp;</span><span class="w"> </span><span class="n">rhs</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span><span class="w"></span>
-
-<span class="c1">// CUDA 9.2 and below fail while trying to compile default move constructor</span>
-<span class="c1">// see https://github.com/pytorch/csprng/issues/84</span>
-<span class="cp">#if (!defined(__CUDA_ARCH__) || !defined(CUDA_VERSION) || CUDA_VERSION &gt; 9200)</span>
 <span class="w">  </span><span class="n">optional</span><span class="p">(</span><span class="n">optional</span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">rhs</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span><span class="w"></span>
-<span class="cp">#else</span>
-<span class="w">  </span><span class="n">optional</span><span class="p">(</span><span class="n">optional</span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">rhs</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="p">(</span><span class="w"></span>
-<span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">is_nothrow_move_constructible</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">rhs</span><span class="p">.</span><span class="n">initialized</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">      </span><span class="o">::</span><span class="k">new</span><span class="w"> </span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">void</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">dataptr</span><span class="p">()))</span><span class="w"> </span><span class="n">T</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="o">*</span><span class="n">rhs</span><span class="p">));</span><span class="w"></span>
-<span class="w">      </span><span class="n">OptionalBase</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">setInitialized</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="cp">#endif</span>
 
 <span class="w">  </span><span class="c1">// see https://github.com/akrzemi1/Optional/issues/16</span>
 <span class="w">  </span><span class="c1">// and https://en.cppreference.com/w/cpp/utility/optional/optional,</span>
