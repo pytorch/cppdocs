@@ -487,7 +487,7 @@
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
 <span class="w">  </span><span class="n">IValue</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">IValue</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="w"> </span><span class="n">rhs</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="o">*</span><span class="k">this</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">IValue</span><span class="p">(</span><span class="n">rhs</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">IValue</span><span class="p">(</span><span class="n">rhs</span><span class="p">).</span><span class="n">swap</span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="p">);</span><span class="w"></span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="o">*</span><span class="k">this</span><span class="p">;</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
@@ -1362,77 +1362,6 @@
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">torch</span><span class="o">::</span><span class="n">jit</span><span class="o">::</span><span class="n">CompilationUnit</span><span class="o">&gt;</span><span class="w"> </span><span class="n">cu_</span><span class="p">;</span><span class="w"></span>
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Type</span><span class="o">&gt;</span><span class="w"> </span><span class="n">type_</span><span class="p">;</span><span class="w"></span>
 <span class="p">};</span><span class="w"></span>
-
-<span class="c1">// [Constant Object Weak CompilationUnit Reference]</span>
-<span class="c1">// A non owning pointer to a type. When a class get inserted as a constant</span>
-<span class="c1">// into a graph, if we used a strong pointer we would have a circular reference</span>
-<span class="c1">// from Object -&gt; CompilationUnit and CompilationUnit -&gt; Graph (which owns the</span>
-<span class="c1">// Constant Object)</span>
-<span class="k">struct</span> <span class="nc">TORCH_API</span><span class="w"> </span><span class="n">WeakTypePtr</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="n">WeakTypePtr</span><span class="p">(</span><span class="w"></span>
-<span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">weak_ptr</span><span class="o">&lt;</span><span class="n">torch</span><span class="o">::</span><span class="n">jit</span><span class="o">::</span><span class="n">CompilationUnit</span><span class="o">&gt;</span><span class="w"> </span><span class="n">cu</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Type</span><span class="o">&gt;</span><span class="w"> </span><span class="n">type</span><span class="p">);</span><span class="w"></span>
-
-<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">weak_ptr</span><span class="o">&lt;</span><span class="n">torch</span><span class="o">::</span><span class="n">jit</span><span class="o">::</span><span class="n">CompilationUnit</span><span class="o">&gt;</span><span class="w"> </span><span class="n">cu_</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Type</span><span class="o">&gt;</span><span class="w"> </span><span class="n">type_</span><span class="p">;</span><span class="w"></span>
-<span class="p">};</span><span class="w"></span>
-
-<span class="c1">// internal build errors with std::variant :/</span>
-<span class="k">struct</span> <span class="nc">WeakOrStrongCompilationUnit</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="n">WeakOrStrongCompilationUnit</span><span class="p">(</span><span class="w"></span>
-<span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">torch</span><span class="o">::</span><span class="n">jit</span><span class="o">::</span><span class="n">CompilationUnit</span><span class="o">&gt;</span><span class="w"> </span><span class="n">shared_cu</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">strong_ptr_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">shared_cu</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="n">weak_ptr_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="n">WeakOrStrongCompilationUnit</span><span class="p">(</span><span class="w"></span>
-<span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">weak_ptr</span><span class="o">&lt;</span><span class="n">torch</span><span class="o">::</span><span class="n">jit</span><span class="o">::</span><span class="n">CompilationUnit</span><span class="o">&gt;</span><span class="w"> </span><span class="n">weak_cu</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">strong_ptr_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="n">weak_ptr_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">weak_cu</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">torch</span><span class="o">::</span><span class="n">jit</span><span class="o">::</span><span class="n">CompilationUnit</span><span class="o">&gt;</span><span class="w"> </span><span class="n">getStrongRefOrThrow</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span><span class="n">strong_ptr_</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="o">*</span><span class="n">strong_ptr_</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">weak_ptr</span><span class="o">&lt;</span><span class="n">torch</span><span class="o">::</span><span class="n">jit</span><span class="o">::</span><span class="n">CompilationUnit</span><span class="o">&gt;</span><span class="w"> </span><span class="n">getWeakRefOrThrow</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span><span class="n">weak_ptr_</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="o">*</span><span class="n">weak_ptr_</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">holdingStrongRef</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">strong_ptr_</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-
-<span class="w">  </span><span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">torch</span><span class="o">::</span><span class="n">jit</span><span class="o">::</span><span class="n">CompilationUnit</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">strong_ptr_</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">weak_ptr</span><span class="o">&lt;</span><span class="n">torch</span><span class="o">::</span><span class="n">jit</span><span class="o">::</span><span class="n">CompilationUnit</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">weak_ptr_</span><span class="p">;</span><span class="w"></span>
-<span class="p">};</span><span class="w"></span>
-
-<span class="c1">// An Object will hold a non-owning Compilation Unit reference if it is a</span>
-<span class="c1">// Constant in the graph and a Owning reference otherwise</span>
-<span class="k">struct</span> <span class="nc">TORCH_API</span><span class="w"> </span><span class="n">WeakOrStrongTypePtr</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="n">WeakOrStrongTypePtr</span><span class="p">(</span><span class="n">WeakTypePtr</span><span class="w"> </span><span class="n">weak</span><span class="p">)</span><span class="w"></span>
-<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">cu_</span><span class="p">(</span><span class="n">WeakOrStrongCompilationUnit</span><span class="p">(</span><span class="n">weak</span><span class="p">.</span><span class="n">cu_</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">type_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">weak</span><span class="p">.</span><span class="n">type_</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="n">WeakOrStrongTypePtr</span><span class="p">(</span><span class="n">StrongTypePtr</span><span class="w"> </span><span class="n">strong</span><span class="p">)</span><span class="w"></span>
-<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">cu_</span><span class="p">(</span><span class="n">WeakOrStrongCompilationUnit</span><span class="p">(</span><span class="n">strong</span><span class="p">.</span><span class="n">cu_</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">type_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">strong</span><span class="p">.</span><span class="n">type_</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="n">WeakOrStrongTypePtr</span><span class="p">(</span><span class="n">WeakOrStrongCompilationUnit</span><span class="w"> </span><span class="n">cu</span><span class="p">,</span><span class="w"> </span><span class="n">TypePtr</span><span class="w"> </span><span class="n">type</span><span class="p">)</span><span class="w"></span>
-<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">cu_</span><span class="p">(</span><span class="n">cu</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">type_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">type</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="n">WeakTypePtr</span><span class="w"> </span><span class="n">asWeakTypePtr</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
-
-<span class="w">  </span><span class="n">WeakOrStrongCompilationUnit</span><span class="w"> </span><span class="n">cu_</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="n">TypePtr</span><span class="w"> </span><span class="n">type_</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="nf">holds_strong_ref</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">cu_</span><span class="p">.</span><span class="n">holdingStrongRef</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="p">};</span><span class="w"></span>
-
 
 <span class="n">TORCH_API</span><span class="w"> </span><span class="n">ska</span><span class="o">::</span><span class="n">flat_hash_map</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">type_index</span><span class="p">,</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">ClassTypePtr</span><span class="o">&gt;&amp;</span><span class="w"></span>
 <span class="n">getCustomClassTypeMap</span><span class="p">();</span><span class="w"></span>
