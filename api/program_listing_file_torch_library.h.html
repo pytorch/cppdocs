@@ -605,6 +605,13 @@
 
 <span class="k">namespace</span><span class="w"> </span><span class="nn">detail</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 
+<span class="w">  </span><span class="c1">// dummy class for non selected custom torchbind classes</span>
+<span class="w">  </span><span class="k">class</span> <span class="nc">ClassNotSelected</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
+<span class="w">      </span><span class="n">ClassNotSelected</span><span class="o">&amp;</span><span class="w"> </span><span class="n">def_pickle</span><span class="p">(...){</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="o">*</span><span class="k">this</span><span class="p">;}</span><span class="w"></span>
+<span class="w">      </span><span class="n">ClassNotSelected</span><span class="o">&amp;</span><span class="w"> </span><span class="n">def</span><span class="p">(...){</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="o">*</span><span class="k">this</span><span class="p">;}</span><span class="w"></span>
+<span class="w">  </span><span class="p">};</span><span class="w"></span>
+
 <span class="w">  </span><span class="c1">// A SelectiveStr is like a const char*, except that it also comes</span>
 <span class="w">  </span><span class="c1">// with a type brand that says whether or not the name is enabled or</span>
 <span class="w">  </span><span class="c1">// not.  If the string is disabled, then (at compile time) we DON&#39;T generate</span>
@@ -614,12 +621,13 @@
 <span class="w">  </span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="kt">bool</span><span class="w"> </span><span class="n">enabled</span><span class="o">&gt;</span><span class="w"></span>
 <span class="w">  </span><span class="k">class</span> <span class="nc">SelectiveStr</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">  </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
-<span class="w">    </span><span class="k">constexpr</span><span class="w"> </span><span class="n">SelectiveStr</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">name_</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+<span class="w">    </span><span class="k">constexpr</span><span class="w"> </span><span class="k">explicit</span><span class="w"> </span><span class="n">SelectiveStr</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">name_</span><span class="p">(</span><span class="n">name</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
 <span class="w">    </span><span class="k">constexpr</span><span class="w"> </span><span class="k">operator</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">name_</span><span class="p">;</span><span class="w"> </span><span class="p">}</span><span class="w"></span>
 <span class="w">  </span><span class="k">private</span><span class="o">:</span><span class="w"></span>
 <span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">name_</span><span class="p">;</span><span class="w"></span>
 <span class="w">  </span><span class="p">};</span><span class="w"></span>
 
+<span class="cp">#define TORCH_SELECTIVE_CLASS(n) torch::detail::SelectiveStr&lt;c10::impl::custom_class_allowlist_check(n)&gt;(n)</span>
 <span class="cp">#define TORCH_SELECTIVE_NAME(n) torch::detail::SelectiveStr&lt;c10::impl::op_allowlist_check(n)&gt;(n)</span>
 <span class="cp">#define TORCH_SELECTIVE_SCHEMA(n) torch::detail::SelectiveStr&lt;c10::impl::schema_allowlist_check(n)&gt;(n)</span>
 
@@ -762,6 +770,15 @@
 
 <span class="w">  </span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">CurClass</span><span class="o">&gt;</span><span class="w"></span>
 <span class="w">  </span><span class="kr">inline</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">class_</span><span class="o">&lt;</span><span class="n">CurClass</span><span class="o">&gt;</span><span class="w"> </span><span class="n">class_</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">className</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// These overloads enable the use of selective build on classes registered within</span>
+<span class="w">  </span><span class="c1">// a library. The API is the same as before with 1 minor change. Instead of</span>
+<span class="w">  </span><span class="c1">// m.class_&lt;foo&gt;(&quot;foo&quot;) you instead do m.class_&lt;foo&gt;(TORCH_SELECTIVE_CLASS(&quot;foo&quot;))</span>
+<span class="w">  </span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">CurClass</span><span class="o">&gt;</span><span class="w"></span>
+<span class="w">  </span><span class="kr">inline</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">class_</span><span class="o">&lt;</span><span class="n">CurClass</span><span class="o">&gt;</span><span class="w"> </span><span class="n">class_</span><span class="p">(</span><span class="n">detail</span><span class="o">::</span><span class="n">SelectiveStr</span><span class="o">&lt;</span><span class="nb">true</span><span class="o">&gt;</span><span class="w"> </span><span class="n">className</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">CurClass</span><span class="o">&gt;</span><span class="w"></span>
+<span class="w">  </span><span class="kr">inline</span><span class="w"> </span><span class="n">detail</span><span class="o">::</span><span class="n">ClassNotSelected</span><span class="w"> </span><span class="n">class_</span><span class="p">(</span><span class="n">detail</span><span class="o">::</span><span class="n">SelectiveStr</span><span class="o">&lt;</span><span class="nb">false</span><span class="o">&gt;</span><span class="w"> </span><span class="n">className</span><span class="p">);</span><span class="w"></span>
 
 <span class="k">private</span><span class="o">:</span><span class="w"></span>
 <span class="w">  </span><span class="n">Kind</span><span class="w"> </span><span class="n">kind_</span><span class="p">;</span><span class="w"></span>

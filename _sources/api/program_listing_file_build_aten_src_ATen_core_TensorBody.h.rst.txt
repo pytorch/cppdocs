@@ -826,6 +826,8 @@ Program Listing for File TensorBody.h
      int64_t q_per_channel_axis() const;
      at::Tensor int_repr() const;
      at::QScheme qscheme() const;
+     at::Tensor _autocast_to_reduced_precision(bool cuda_enabled, bool cpu_enabled, at::ScalarType cuda_dtype, at::ScalarType cpu_dtype) const;
+     at::Tensor _autocast_to_full_precision(bool cuda_enabled, bool cpu_enabled) const;
      at::Tensor to(at::TensorOptions options={}, bool non_blocking=false, bool copy=false, c10::optional<at::MemoryFormat> memory_format=c10::nullopt) const;
      at::Tensor to(c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory, bool non_blocking, bool copy, c10::optional<at::MemoryFormat> memory_format) const;
      at::Tensor to(at::Device device, at::ScalarType dtype, bool non_blocking=false, bool copy=false, c10::optional<at::MemoryFormat> memory_format=c10::nullopt) const;
@@ -3561,6 +3563,16 @@ Program Listing for File TensorBody.h
    // aten::qscheme(Tensor self) -> QScheme
    inline at::QScheme Tensor::qscheme() const {
        return at::_ops::qscheme::call(const_cast<Tensor&>(*this));
+   }
+   
+   // aten::_autocast_to_reduced_precision(Tensor(a) self, bool cuda_enabled, bool cpu_enabled, ScalarType cuda_dtype, ScalarType cpu_dtype) -> Tensor(a)
+   inline at::Tensor Tensor::_autocast_to_reduced_precision(bool cuda_enabled, bool cpu_enabled, at::ScalarType cuda_dtype, at::ScalarType cpu_dtype) const {
+       return at::_ops::_autocast_to_reduced_precision::call(const_cast<Tensor&>(*this), cuda_enabled, cpu_enabled, cuda_dtype, cpu_dtype);
+   }
+   
+   // aten::_autocast_to_full_precision(Tensor(a) self, bool cuda_enabled, bool cpu_enabled) -> Tensor(a)
+   inline at::Tensor Tensor::_autocast_to_full_precision(bool cuda_enabled, bool cpu_enabled) const {
+       return at::_ops::_autocast_to_full_precision::call(const_cast<Tensor&>(*this), cuda_enabled, cpu_enabled);
    }
    
    // aten::to.dtype_layout(Tensor(a) self, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, bool non_blocking=False, bool copy=False, MemoryFormat? memory_format=None) -> Tensor(a)
