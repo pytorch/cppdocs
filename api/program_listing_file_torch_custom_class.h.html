@@ -633,6 +633,21 @@
 <span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">IValue</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">userClassInstance</span><span class="p">));</span><span class="w"></span>
 <span class="p">}</span><span class="w"></span>
 
+
+<span class="c1">// Alternative api for creating a torchbind class over torch::class_ this api is preffered to prevent size regressions</span>
+<span class="c1">// on Edge usecases. Must be used in conjunction with TORCH_SELECTIVE_CLASS macro aka</span>
+<span class="c1">// selective_class&lt;foo&gt;(&quot;foo_namespace&quot;, TORCH_SELECTIVE_CLASS(&quot;foo&quot;))</span>
+<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">CurClass</span><span class="o">&gt;</span><span class="w"></span>
+<span class="kr">inline</span><span class="w"> </span><span class="n">class_</span><span class="o">&lt;</span><span class="n">CurClass</span><span class="o">&gt;</span><span class="w"> </span><span class="n">selective_class_</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">namespace_name</span><span class="p">,</span><span class="w"> </span><span class="n">detail</span><span class="o">::</span><span class="n">SelectiveStr</span><span class="o">&lt;</span><span class="nb">true</span><span class="o">&gt;</span><span class="w"> </span><span class="n">className</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">class_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">(</span><span class="n">className</span><span class="p">.</span><span class="k">operator</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="w"> </span><span class="o">*</span><span class="p">());</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">class_</span><span class="o">&lt;</span><span class="n">CurClass</span><span class="o">&gt;</span><span class="p">(</span><span class="n">namespace_name</span><span class="p">,</span><span class="w"> </span><span class="n">class_name</span><span class="p">);</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
+<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">class</span> <span class="nc">CurClass</span><span class="o">&gt;</span><span class="w"></span>
+<span class="kr">inline</span><span class="w"> </span><span class="n">detail</span><span class="o">::</span><span class="n">ClassNotSelected</span><span class="w"> </span><span class="n">selective_class_</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="p">,</span><span class="w"> </span><span class="n">detail</span><span class="o">::</span><span class="n">SelectiveStr</span><span class="o">&lt;</span><span class="nb">false</span><span class="o">&gt;</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">detail</span><span class="o">::</span><span class="n">ClassNotSelected</span><span class="p">();</span><span class="w"></span>
+<span class="p">}</span><span class="w"></span>
+
 <span class="c1">// jit namespace for backward-compatibility</span>
 <span class="c1">// We previously defined everything in torch::jit but moved it out to</span>
 <span class="c1">// better reflect that these features are not limited only to TorchScript</span>
