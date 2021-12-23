@@ -115,7 +115,7 @@ Program Listing for File Exception.h
    
    class C10_API WarningHandler {
     public:
-     virtual ~WarningHandler() noexcept(false) {}
+     virtual ~WarningHandler() = default;
      virtual void process(
          const SourceLocation& source_location,
          const std::string& msg,
@@ -151,6 +151,19 @@ Program Listing for File Exception.h
        bool verbatim);
    C10_API void set_warning_handler(WarningHandler* handler) noexcept(true);
    C10_API WarningHandler* get_warning_handler() noexcept(true);
+   
+   class C10_API WarningHandlerGuard {
+     WarningHandler* prev_handler_;
+   
+    public:
+     WarningHandlerGuard(WarningHandler* new_handler)
+         : prev_handler_(c10::Warning::get_warning_handler()) {
+       c10::Warning::set_warning_handler(new_handler);
+     }
+     ~WarningHandlerGuard() {
+       c10::Warning::set_warning_handler(prev_handler_);
+     }
+   };
    
    C10_API void set_warnAlways(bool) noexcept(true);
    C10_API bool get_warnAlways(void) noexcept(true);
@@ -526,6 +539,11 @@ Program Listing for File Exception.h
      } else {                                \
        _TORCH_WARN_ONCE(__VA_ARGS__);        \
      }
+   
+   // Report an error with a specific argument
+   // NOTE: using the argument name in TORCH_CHECK's message is preferred
+   #define TORCH_CHECK_ARG(cond, argN, ...) \
+     TORCH_CHECK(cond, "invalid argument ", argN, ": ", __VA_ARGS__)
    
    // ----------------------------------------------------------------------------
    // Deprecated macros
