@@ -332,7 +332,7 @@
 
 <span class="k">namespace</span><span class="w"> </span><span class="nn">c10</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 
-<span class="k">class</span> <span class="nc">C10_API</span><span class="w"> </span><span class="nl">Error</span> <span class="p">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">exception</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="nl">Error</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">exception</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">  </span><span class="c1">// The actual error message.</span>
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">msg_</span><span class="p">;</span><span class="w"></span>
 
@@ -413,10 +413,10 @@
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="nf">compute_what</span><span class="p">(</span><span class="kt">bool</span><span class="w"> </span><span class="n">include_backtrace</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
 <span class="p">};</span><span class="w"></span>
 
-<span class="k">class</span> <span class="nc">C10_API</span><span class="w"> </span><span class="n">WarningHandler</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">WarningHandler</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w"> </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
-<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="o">~</span><span class="n">WarningHandler</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
-<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">process</span><span class="p">(</span><span class="w"></span>
+<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="o">~</span><span class="n">WarningHandler</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="w"></span>
 <span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="n">SourceLocation</span><span class="o">&amp;</span><span class="w"> </span><span class="n">source_location</span><span class="p">,</span><span class="w"></span>
 <span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">msg</span><span class="p">,</span><span class="w"></span>
 <span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">verbatim</span><span class="p">);</span><span class="w"></span>
@@ -452,12 +452,25 @@
 <span class="n">C10_API</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">set_warning_handler</span><span class="p">(</span><span class="n">WarningHandler</span><span class="o">*</span><span class="w"> </span><span class="n">handler</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span><span class="w"></span>
 <span class="n">C10_API</span><span class="w"> </span><span class="n">WarningHandler</span><span class="o">*</span><span class="w"> </span><span class="n">get_warning_handler</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span><span class="w"></span>
 
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">WarningHandlerGuard</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">WarningHandler</span><span class="o">*</span><span class="w"> </span><span class="n">prev_handler_</span><span class="p">;</span><span class="w"></span>
+
+<span class="w"> </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
+<span class="w">  </span><span class="n">WarningHandlerGuard</span><span class="p">(</span><span class="n">WarningHandler</span><span class="o">*</span><span class="w"> </span><span class="n">new_handler</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">prev_handler_</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">Warning</span><span class="o">::</span><span class="n">get_warning_handler</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">c10</span><span class="o">::</span><span class="n">Warning</span><span class="o">::</span><span class="n">set_warning_handler</span><span class="p">(</span><span class="n">new_handler</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="o">~</span><span class="n">WarningHandlerGuard</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">c10</span><span class="o">::</span><span class="n">Warning</span><span class="o">::</span><span class="n">set_warning_handler</span><span class="p">(</span><span class="n">prev_handler_</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
 <span class="n">C10_API</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">set_warnAlways</span><span class="p">(</span><span class="kt">bool</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span><span class="w"></span>
 <span class="n">C10_API</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">get_warnAlways</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span><span class="w"></span>
 
 <span class="c1">// A RAII guard that sets warn_always (not thread-local) on</span>
 <span class="c1">// construction, and sets it back to the original value upon destruction.</span>
-<span class="k">struct</span> <span class="nc">C10_API</span><span class="w"> </span><span class="n">WarnAlways</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">WarnAlways</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w"> </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
 <span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="n">WarnAlways</span><span class="p">(</span><span class="kt">bool</span><span class="w"> </span><span class="n">setting</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span><span class="w"></span>
 <span class="w">  </span><span class="o">~</span><span class="n">WarnAlways</span><span class="p">();</span><span class="w"></span>
@@ -471,37 +484,43 @@
 <span class="c1">// Used in ATen for out-of-bound indices that can reasonably only be detected</span>
 <span class="c1">// lazily inside a kernel (See: advanced indexing).  These turn into</span>
 <span class="c1">// IndexError when they cross to Python.</span>
-<span class="k">class</span> <span class="nc">C10_API</span><span class="w"> </span><span class="nl">IndexError</span> <span class="p">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="nl">IndexError</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span><span class="w"></span>
 <span class="p">};</span><span class="w"></span>
 
 <span class="c1">// Used in ATen for invalid values.  These turn into</span>
 <span class="c1">// ValueError when they cross to Python.</span>
-<span class="k">class</span> <span class="nc">C10_API</span><span class="w"> </span><span class="nl">ValueError</span> <span class="p">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="nl">ValueError</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span><span class="w"></span>
 <span class="p">};</span><span class="w"></span>
 
 <span class="c1">// Used in ATen for invalid types.  These turn into</span>
 <span class="c1">// TypeError when they cross to Python.</span>
-<span class="k">class</span> <span class="nc">C10_API</span><span class="w"> </span><span class="nl">TypeError</span> <span class="p">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="nl">TypeError</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span><span class="w"></span>
 <span class="p">};</span><span class="w"></span>
 
 <span class="c1">// Used in ATen for functionality that is not implemented.  These turn into</span>
 <span class="c1">// NotImplementedError when they cross to Python.</span>
-<span class="k">class</span> <span class="nc">C10_API</span><span class="w"> </span><span class="nl">NotImplementedError</span> <span class="p">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="nl">NotImplementedError</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span><span class="w"></span>
 <span class="p">};</span><span class="w"></span>
 
 <span class="c1">// Used in ATen for non finite indices.  These turn into</span>
 <span class="c1">// ExitException when they cross to Python.</span>
-<span class="k">class</span> <span class="nc">C10_API</span><span class="w"> </span><span class="nl">EnforceFiniteError</span> <span class="p">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="nl">EnforceFiniteError</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span><span class="w"></span>
 <span class="p">};</span><span class="w"></span>
 
 <span class="c1">// Used in Onnxifi backend lowering.  These turn into</span>
 <span class="c1">// ExitException when they cross to Python.</span>
-<span class="k">class</span> <span class="nc">C10_API</span><span class="w"> </span><span class="nl">OnnxfiBackendSystemError</span> <span class="p">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="nl">OnnxfiBackendSystemError</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="c1">// Used for numerical errors from the linalg module. These</span>
+<span class="c1">// turn into LinAlgError when they cross into Python.</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="nl">LinAlgError</span><span class="w"> </span><span class="p">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span><span class="w"></span>
 <span class="p">};</span><span class="w"></span>
 
@@ -762,6 +781,10 @@
 <span class="c1">// TODO: We&#39;re going to get a lot of similar looking string literals</span>
 <span class="c1">// this way; check if this actually affects binary size.</span>
 
+<span class="c1">// Like TORCH_CHECK, but raises LinAlgError instead of Error.</span>
+<span class="cp">#define TORCH_CHECK_LINALG(cond, ...) \</span>
+<span class="cp">  TORCH_CHECK_WITH_MSG(LinAlgError, cond, &quot;LINALG&quot;, __VA_ARGS__)</span>
+
 <span class="c1">// Like TORCH_CHECK, but raises IndexErrors instead of Errors.</span>
 <span class="cp">#define TORCH_CHECK_INDEX(cond, ...) \</span>
 <span class="cp">  TORCH_CHECK_WITH_MSG(IndexError, cond, &quot;INDEX&quot;, __VA_ARGS__)</span>
@@ -826,6 +849,11 @@
 <span class="cp">  } else {                                \</span>
 <span class="cp">    _TORCH_WARN_ONCE(__VA_ARGS__);        \</span>
 <span class="cp">  }</span>
+
+<span class="c1">// Report an error with a specific argument</span>
+<span class="c1">// NOTE: using the argument name in TORCH_CHECK&#39;s message is preferred</span>
+<span class="cp">#define TORCH_CHECK_ARG(cond, argN, ...) \</span>
+<span class="cp">  TORCH_CHECK(cond, &quot;invalid argument &quot;, argN, &quot;: &quot;, __VA_ARGS__)</span>
 
 <span class="c1">// ----------------------------------------------------------------------------</span>
 <span class="c1">// Deprecated macros</span>

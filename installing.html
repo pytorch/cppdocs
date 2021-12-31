@@ -324,31 +324,33 @@ unzip libtorch-shared-with-deps-latest.zip
 </div>
 <p>Note that the above link has CPU-only libtorch. If you would like to download a GPU-enabled
 libtorch, find the right link in the link selector on <a class="reference external" href="https://pytorch.org">https://pytorch.org</a></p>
+<p>If you’re a Windows developer and wouldn’t like to use CMake, you could jump to the Visual Studio
+Extension section.</p>
 <p>Next, we can write a minimal CMake build configuration to develop a small
 application that depends on LibTorch. CMake is not a hard requirement for using
 LibTorch, but it is the recommended and blessed build system and will be well
 supported into the future. A most basic <cite>CMakeLists.txt</cite> file could look like
 this:</p>
-<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">cmake_minimum_required</span><span class="p">(</span><span class="s">VERSION</span> <span class="s">3.0</span> <span class="s">FATAL_ERROR</span><span class="p">)</span>
+<div class="highlight-cmake notranslate"><div class="highlight"><pre><span></span><span class="nb">cmake_minimum_required</span><span class="p">(</span><span class="s">VERSION</span><span class="w"> </span><span class="s">3.0</span><span class="w"> </span><span class="s">FATAL_ERROR</span><span class="p">)</span>
 <span class="nb">project</span><span class="p">(</span><span class="s">example-app</span><span class="p">)</span>
 
-<span class="nb">find_package</span><span class="p">(</span><span class="s">Torch</span> <span class="s">REQUIRED</span><span class="p">)</span>
-<span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_CXX_FLAGS</span> <span class="s2">&quot;${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}&quot;</span><span class="p">)</span>
+<span class="nb">find_package</span><span class="p">(</span><span class="s">Torch</span><span class="w"> </span><span class="s">REQUIRED</span><span class="p">)</span>
+<span class="nb">set</span><span class="p">(</span><span class="s">CMAKE_CXX_FLAGS</span><span class="w"> </span><span class="s2">&quot;${CMAKE_CXX_FLAGS} ${TORCH_CXX_FLAGS}&quot;</span><span class="p">)</span>
 
-<span class="nb">add_executable</span><span class="p">(</span><span class="s">example-app</span> <span class="s">example-app.cpp</span><span class="p">)</span>
-<span class="nb">target_link_libraries</span><span class="p">(</span><span class="s">example-app</span> <span class="s2">&quot;${TORCH_LIBRARIES}&quot;</span><span class="p">)</span>
-<span class="nb">set_property</span><span class="p">(</span><span class="s">TARGET</span> <span class="s">example-app</span> <span class="s">PROPERTY</span> <span class="s">CXX_STANDARD</span> <span class="s">14</span><span class="p">)</span>
+<span class="nb">add_executable</span><span class="p">(</span><span class="s">example-app</span><span class="w"> </span><span class="s">example-app.cpp</span><span class="p">)</span>
+<span class="nb">target_link_libraries</span><span class="p">(</span><span class="s">example-app</span><span class="w"> </span><span class="s2">&quot;${TORCH_LIBRARIES}&quot;</span><span class="p">)</span>
+<span class="nb">set_property</span><span class="p">(</span><span class="s">TARGET</span><span class="w"> </span><span class="s">example-app</span><span class="w"> </span><span class="s">PROPERTY</span><span class="w"> </span><span class="s">CXX_STANDARD</span><span class="w"> </span><span class="s">14</span><span class="p">)</span>
 
 <span class="c"># The following code block is suggested to be used on Windows.</span>
 <span class="c"># According to https://github.com/pytorch/pytorch/issues/25457,</span>
 <span class="c"># the DLLs need to be copied to avoid memory errors.</span>
 <span class="nb">if</span> <span class="p">(</span><span class="s">MSVC</span><span class="p">)</span>
-  <span class="nb">file</span><span class="p">(</span><span class="s">GLOB</span> <span class="s">TORCH_DLLS</span> <span class="s2">&quot;${TORCH_INSTALL_PREFIX}/lib/*.dll&quot;</span><span class="p">)</span>
-  <span class="nb">add_custom_command</span><span class="p">(</span><span class="s">TARGET</span> <span class="s">example-app</span>
-                     <span class="s">POST_BUILD</span>
-                     <span class="s">COMMAND</span> <span class="o">${</span><span class="nv">CMAKE_COMMAND</span><span class="o">}</span> <span class="s">-E</span> <span class="s">copy_if_different</span>
-                     <span class="o">${</span><span class="nv">TORCH_DLLS</span><span class="o">}</span>
-                     <span class="o">$&lt;</span><span class="nv">TARGET_FILE_DIR:example-app</span><span class="o">&gt;</span><span class="p">)</span>
+<span class="w">  </span><span class="nb">file</span><span class="p">(</span><span class="s">GLOB</span><span class="w"> </span><span class="s">TORCH_DLLS</span><span class="w"> </span><span class="s2">&quot;${TORCH_INSTALL_PREFIX}/lib/*.dll&quot;</span><span class="p">)</span>
+<span class="w">  </span><span class="nb">add_custom_command</span><span class="p">(</span><span class="s">TARGET</span><span class="w"> </span><span class="s">example-app</span>
+<span class="w">                     </span><span class="s">POST_BUILD</span>
+<span class="w">                     </span><span class="s">COMMAND</span><span class="w"> </span><span class="o">${</span><span class="nv">CMAKE_COMMAND</span><span class="o">}</span><span class="w"> </span><span class="s">-E</span><span class="w"> </span><span class="s">copy_if_different</span>
+<span class="w">                     </span><span class="o">${</span><span class="nv">TORCH_DLLS</span><span class="o">}</span>
+<span class="w">                     </span><span class="o">$&lt;</span><span class="nv">TARGET_FILE_DIR:example-app</span><span class="o">&gt;</span><span class="p">)</span>
 <span class="nb">endif</span> <span class="p">(</span><span class="s">MSVC</span><span class="p">)</span>
 </pre></div>
 </div>
@@ -440,6 +442,13 @@ Also, make sure you specify the correct configuration in the <code class="docuti
 line above.</p>
 </div>
 </div>
+<div class="section" id="visual-studio-extension">
+<h2>Visual Studio Extension<a class="headerlink" href="#visual-studio-extension" title="Permalink to this headline">¶</a></h2>
+<p><a class="reference external" href="https://marketplace.visualstudio.com/items?itemName=YiZhang.LibTorch001">LibTorch Project Template</a> can help Windows developers
+set all libtorch project settings and link options for debug and release.
+It’s easy to use and you could check out the <a class="reference external" href="https://ossci-windows.s3.us-east-1.amazonaws.com/vsextension/demo.mp4">demo video</a>.
+The only prerequisite is to download the libtorch on <a class="reference external" href="https://pytorch.org">https://pytorch.org</a></p>
+</div>
 <div class="section" id="support">
 <h2>Support<a class="headerlink" href="#support" title="Permalink to this headline">¶</a></h2>
 <p>If you run into any troubles with this installation and minimal usage guide,
@@ -492,6 +501,7 @@ please use our <a class="reference external" href="https://discuss.pytorch.org/"
               <ul>
 <li><a class="reference internal" href="#">Installing C++ Distributions of PyTorch</a><ul>
 <li><a class="reference internal" href="#minimal-example">Minimal Example</a></li>
+<li><a class="reference internal" href="#visual-studio-extension">Visual Studio Extension</a></li>
 <li><a class="reference internal" href="#support">Support</a></li>
 </ul>
 </li>
