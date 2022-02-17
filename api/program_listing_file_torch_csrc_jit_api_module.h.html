@@ -593,6 +593,45 @@
 <span class="w">    </span><span class="n">Module</span><span class="o">&amp;</span><span class="w"> </span><span class="k">module</span><span class="p">,</span><span class="w"></span>
 <span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">other_methods</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{});</span><span class="w"></span>
 
+<span class="k">enum</span><span class="w"> </span><span class="k">class</span><span class="w"> </span><span class="nc">FusionBehavior</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="n">STATIC</span><span class="p">,</span><span class="w"> </span><span class="n">DYNAMIC</span><span class="w"> </span><span class="p">};</span><span class="w"></span>
+
+<span class="k">using</span><span class="w"> </span><span class="n">FusionStrategy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">pair</span><span class="o">&lt;</span><span class="n">FusionBehavior</span><span class="p">,</span><span class="w"> </span><span class="kt">size_t</span><span class="o">&gt;&gt;</span><span class="p">;</span><span class="w"></span>
+<span class="c1">// clang-format off</span>
+<span class="cm">/*</span>
+<span class="cm">Sets the type and number of specializations that can occur during fusion.</span>
+
+<span class="cm">Usage: provide a list of pairs (type, depth) where type is one of STATIC or DYNAMIC</span>
+<span class="cm">and depth is an integer.</span>
+
+<span class="cm">Behavior - static vs dynamic:</span>
+<span class="cm">    In STATIC fusion, fused ops are compiled to have fixed input shapes. The shape is determined</span>
+<span class="cm">    based on some initial profiling runs.</span>
+<span class="cm">    In DYNAMIC fusion, fused ops are compiled to have variable input shapes, so that multiple</span>
+<span class="cm">    shapes are possible.</span>
+
+<span class="cm">In both cases, we also recompile on new striding behavior, device, or dtype.</span>
+
+<span class="cm">Behavior - fallback functions &amp; depth:</span>
+<span class="cm">    When an input doesn&#39;t match the format required by the specialized compiled op, it will run</span>
+<span class="cm">    a fallback function. Fallback functions are recursively be compiled and specialized based</span>
+<span class="cm">    on the observed tensor shapes. Since compilation can be slow, the &quot;depth&quot; parameter is provided to</span>
+<span class="cm">    limit the number of specializations that can be compiled, before giving up on recompiling and</span>
+<span class="cm">    falling back to a completely un-fused, un-specialized implementation.</span>
+
+<span class="cm">The list of (type, depth) pairs controls the type of specializations and the number of</span>
+<span class="cm">specializations. For example: [(STATIC, 2), (DYNAMIC, 2)] indicates that the first</span>
+<span class="cm">two specializations will use static fusions, the following two specializations will use</span>
+<span class="cm">dynamic fusion, and any inputs that satisfy none of the 4 options will run an</span>
+<span class="cm">unfused implementation.</span>
+
+<span class="cm">NB: in the future, if more as more fusion backends are added there may be more granular</span>
+<span class="cm">apis for specific fusers.</span>
+<span class="cm">*/</span><span class="w"></span>
+<span class="c1">// clang-format on</span>
+<span class="n">TORCH_API</span><span class="w"> </span><span class="n">FusionStrategy</span><span class="w"> </span><span class="n">getFusionStrategy</span><span class="p">();</span><span class="w"></span>
+<span class="c1">// returns previous strategy</span>
+<span class="n">TORCH_API</span><span class="w"> </span><span class="n">FusionStrategy</span><span class="w"> </span><span class="n">setFusionStrategy</span><span class="p">(</span><span class="n">FusionStrategy</span><span class="o">&amp;</span><span class="w"> </span><span class="n">fusion_strategy</span><span class="p">);</span><span class="w"></span>
+
 <span class="k">namespace</span><span class="w"> </span><span class="nn">detail</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 
 <span class="k">struct</span><span class="w"> </span><span class="nc">TORCH_API</span><span class="w"> </span><span class="n">SlotCursor</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
