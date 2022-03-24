@@ -702,27 +702,29 @@
 <span class="cp">#endif</span>
 <span class="p">};</span><span class="w"></span>
 
-<span class="c1">// This is just a placeholder for whatever complex representation we</span>
-<span class="c1">// end up deciding to use for half-precision complex numbers.</span>
+<span class="c1">// TODO : move to complex.h</span>
 <span class="k">template</span><span class="w"> </span><span class="o">&lt;&gt;</span><span class="w"></span>
 <span class="k">struct</span><span class="w"> </span><span class="nc">alignas</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="n">complex</span><span class="o">&lt;</span><span class="n">Half</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">value_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Half</span><span class="p">;</span><span class="w"></span>
 <span class="w">  </span><span class="n">Half</span><span class="w"> </span><span class="n">real_</span><span class="p">;</span><span class="w"></span>
 <span class="w">  </span><span class="n">Half</span><span class="w"> </span><span class="n">imag_</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Constructors</span>
 <span class="w">  </span><span class="n">complex</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="n">Half</span><span class="w"> </span><span class="nf">real</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// Half constructor is not constexpr so the following constructor can&#39;t</span>
+<span class="w">  </span><span class="c1">// be constexpr</span>
+<span class="w">  </span><span class="n">C10_HOST_DEVICE</span><span class="w"> </span><span class="k">explicit</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="n">complex</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"></span>
+<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">real_</span><span class="p">(</span><span class="n">value</span><span class="p">.</span><span class="n">real</span><span class="p">()),</span><span class="w"> </span><span class="n">imag_</span><span class="p">(</span><span class="n">value</span><span class="p">.</span><span class="n">imag</span><span class="p">())</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Conversion operator</span>
+<span class="w">  </span><span class="kr">inline</span><span class="w"> </span><span class="n">C10_HOST_DEVICE</span><span class="w"> </span><span class="k">operator</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">{</span><span class="n">real_</span><span class="p">,</span><span class="w"> </span><span class="n">imag_</span><span class="p">};</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">constexpr</span><span class="w"> </span><span class="n">C10_HOST_DEVICE</span><span class="w"> </span><span class="n">Half</span><span class="w"> </span><span class="n">real</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">real_</span><span class="p">;</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="n">Half</span><span class="w"> </span><span class="nf">imag</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">constexpr</span><span class="w"> </span><span class="n">C10_HOST_DEVICE</span><span class="w"> </span><span class="n">Half</span><span class="w"> </span><span class="n">imag</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">imag_</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="n">complex</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"></span>
-<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">real_</span><span class="p">(</span><span class="n">value</span><span class="p">.</span><span class="n">real</span><span class="p">()),</span><span class="w"> </span><span class="n">imag_</span><span class="p">(</span><span class="n">value</span><span class="p">.</span><span class="n">imag</span><span class="p">())</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
-<span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="n">complex</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"></span>
-<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">real_</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="n">value</span><span class="p">.</span><span class="n">real</span><span class="p">())),</span><span class="w"></span>
-<span class="w">        </span><span class="n">imag_</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="n">value</span><span class="p">.</span><span class="n">imag</span><span class="p">()))</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
-<span class="w">  </span><span class="kr">inline</span><span class="w"> </span><span class="k">operator</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">{</span><span class="n">real_</span><span class="p">,</span><span class="w"> </span><span class="n">imag_</span><span class="p">};</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 <span class="p">};</span><span class="w"></span>
 
