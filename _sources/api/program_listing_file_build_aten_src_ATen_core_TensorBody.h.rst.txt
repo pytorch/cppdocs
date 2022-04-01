@@ -46,7 +46,9 @@ Program Listing for File TensorBody.h
    #include <ATen/core/DeprecatedTypeProperties.h>
    #include <ATen/core/NamedTensor.h>
    #include <ATen/core/QuantizerBase.h>
+   #include <ATen/core/SymInt.h>
    #include <ATen/core/TensorBase.h>
+   
    
    #include <ATen/MethodOperators.h>
    
@@ -706,6 +708,7 @@ Program Listing for File TensorBody.h
      at::Tensor mvlgamma(int64_t p) const;
      at::Tensor & mvlgamma_(int64_t p) const;
      at::Tensor narrow_copy(int64_t dim, int64_t start, int64_t length) const;
+     at::Tensor narrow_copy(int64_t dim, int64_t start, c10::SymInt length) const;
      at::Tensor narrow(int64_t dim, int64_t start, int64_t length) const;
      at::Tensor narrow(int64_t dim, const at::Tensor & start, int64_t length) const;
      at::Tensor permute(at::IntArrayRef dims) const;
@@ -1161,7 +1164,6 @@ Program Listing for File TensorBody.h
      void record_stream(at::Stream s) const;
      at::Tensor isposinf() const;
      at::Tensor isneginf() const;
-     at::Tensor special_polygamma(int64_t n) const;
      at::Tensor det() const;
      at::Tensor inner(const at::Tensor & other) const;
      at::Tensor outer(const at::Tensor & vec2) const;
@@ -2722,6 +2724,11 @@ Program Listing for File TensorBody.h
    // aten::narrow_copy(Tensor self, int dim, int start, int length) -> Tensor
    inline at::Tensor Tensor::narrow_copy(int64_t dim, int64_t start, int64_t length) const {
        return at::_ops::narrow_copy::call(const_cast<Tensor&>(*this), dim, start, length);
+   }
+   
+   // aten::narrow_copy.SymInt(Tensor self, int dim, int start, SymInt length) -> Tensor
+   inline at::Tensor Tensor::narrow_copy(int64_t dim, int64_t start, c10::SymInt length) const {
+       return at::_ops::narrow_copy_SymInt::call(const_cast<Tensor&>(*this), dim, start, length);
    }
    
    // aten::narrow(Tensor(a) self, int dim, int start, int length) -> Tensor(a)
@@ -4997,11 +5004,6 @@ Program Listing for File TensorBody.h
    // aten::isneginf(Tensor self) -> Tensor
    inline at::Tensor Tensor::isneginf() const {
        return at::_ops::isneginf::call(const_cast<Tensor&>(*this));
-   }
-   
-   // aten::special_polygamma(int n, Tensor self) -> Tensor
-   inline at::Tensor Tensor::special_polygamma(int64_t n) const {
-       return at::_ops::special_polygamma::call(n, const_cast<Tensor&>(*this));
    }
    
    // aten::det(Tensor self) -> Tensor
