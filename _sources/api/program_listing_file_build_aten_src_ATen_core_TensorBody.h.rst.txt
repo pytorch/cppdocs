@@ -793,7 +793,8 @@ Program Listing for File TensorBody.h
      at::Tensor & squeeze_(int64_t dim) const;
      at::Tensor & squeeze_(at::Dimname dim) const;
      at::Tensor sspaddmm(const at::Tensor & mat1, const at::Tensor & mat2, const at::Scalar & beta=1, const at::Scalar & alpha=1) const;
-     at::Tensor stft(int64_t n_fft, c10::optional<int64_t> hop_length=c10::nullopt, c10::optional<int64_t> win_length=c10::nullopt, const c10::optional<at::Tensor> & window={}, bool normalized=false, c10::optional<bool> onesided=c10::nullopt, c10::optional<bool> return_complex=c10::nullopt) const;
+     at::Tensor stft(int64_t n_fft, c10::optional<int64_t> hop_length, c10::optional<int64_t> win_length, const c10::optional<at::Tensor> & window, bool normalized, c10::optional<bool> onesided=c10::nullopt, c10::optional<bool> return_complex=c10::nullopt) const;
+     at::Tensor stft(int64_t n_fft, c10::optional<int64_t> hop_length=c10::nullopt, c10::optional<int64_t> win_length=c10::nullopt, const c10::optional<at::Tensor> & window={}, bool center=true, c10::string_view pad_mode="reflect", bool normalized=false, c10::optional<bool> onesided=c10::nullopt, c10::optional<bool> return_complex=c10::nullopt) const;
      at::Tensor istft(int64_t n_fft, c10::optional<int64_t> hop_length=c10::nullopt, c10::optional<int64_t> win_length=c10::nullopt, const c10::optional<at::Tensor> & window={}, bool center=true, bool normalized=false, c10::optional<bool> onesided=c10::nullopt, c10::optional<int64_t> length=c10::nullopt, bool return_complex=false) const;
      int64_t stride(at::Dimname dim) const;
      at::Tensor sum(c10::optional<at::ScalarType> dtype=c10::nullopt) const;
@@ -947,7 +948,8 @@ Program Listing for File TensorBody.h
      at::Tensor scatter_add(int64_t dim, const at::Tensor & index, const at::Tensor & src) const;
      at::Tensor & scatter_add_(int64_t dim, const at::Tensor & index, const at::Tensor & src) const;
      at::Tensor scatter_add(at::Dimname dim, const at::Tensor & index, const at::Tensor & src) const;
-     at::Tensor scatter_reduce(int64_t dim, const at::Tensor & index, c10::string_view reduce, c10::optional<int64_t> output_size=c10::nullopt) const;
+     at::Tensor scatter_reduce(int64_t dim, const at::Tensor & index, const at::Tensor & src, c10::string_view reduce) const;
+     at::Tensor & scatter_reduce_(int64_t dim, const at::Tensor & index, const at::Tensor & src, c10::string_view reduce) const;
      at::Tensor & eq_(const at::Scalar & other) const;
      at::Tensor & eq_(const at::Tensor & other) const;
      at::Tensor bitwise_and(const at::Scalar & other) const;
@@ -3156,6 +3158,11 @@ Program Listing for File TensorBody.h
        return at::_ops::stft::call(const_cast<Tensor&>(*this), n_fft, hop_length, win_length, window, normalized, onesided, return_complex);
    }
    
+   // aten::stft.center(Tensor self, int n_fft, int? hop_length=None, int? win_length=None, Tensor? window=None, bool center=True, str pad_mode="reflect", bool normalized=False, bool? onesided=None, bool? return_complex=None) -> Tensor
+   inline at::Tensor Tensor::stft(int64_t n_fft, c10::optional<int64_t> hop_length, c10::optional<int64_t> win_length, const c10::optional<at::Tensor> & window, bool center, c10::string_view pad_mode, bool normalized, c10::optional<bool> onesided, c10::optional<bool> return_complex) const {
+       return at::_ops::stft_center::call(const_cast<Tensor&>(*this), n_fft, hop_length, win_length, window, center, pad_mode, normalized, onesided, return_complex);
+   }
+   
    // aten::istft(Tensor self, int n_fft, int? hop_length=None, int? win_length=None, Tensor? window=None, bool center=True, bool normalized=False, bool? onesided=None, int? length=None, bool return_complex=False) -> Tensor
    inline at::Tensor Tensor::istft(int64_t n_fft, c10::optional<int64_t> hop_length, c10::optional<int64_t> win_length, const c10::optional<at::Tensor> & window, bool center, bool normalized, c10::optional<bool> onesided, c10::optional<int64_t> length, bool return_complex) const {
        return at::_ops::istft::call(const_cast<Tensor&>(*this), n_fft, hop_length, win_length, window, center, normalized, onesided, length, return_complex);
@@ -3921,9 +3928,14 @@ Program Listing for File TensorBody.h
        return at::_ops::scatter_add_dimname::call(const_cast<Tensor&>(*this), dim, index, src);
    }
    
-   // aten::scatter_reduce.two(Tensor self, int dim, Tensor index, str reduce, *, int? output_size=None) -> Tensor
-   inline at::Tensor Tensor::scatter_reduce(int64_t dim, const at::Tensor & index, c10::string_view reduce, c10::optional<int64_t> output_size) const {
-       return at::_ops::scatter_reduce_two::call(const_cast<Tensor&>(*this), dim, index, reduce, output_size);
+   // aten::scatter_reduce.two(Tensor self, int dim, Tensor index, Tensor src, str reduce) -> Tensor
+   inline at::Tensor Tensor::scatter_reduce(int64_t dim, const at::Tensor & index, const at::Tensor & src, c10::string_view reduce) const {
+       return at::_ops::scatter_reduce_two::call(const_cast<Tensor&>(*this), dim, index, src, reduce);
+   }
+   
+   // aten::scatter_reduce_.two(Tensor(a!) self, int dim, Tensor index, Tensor src, str reduce) -> Tensor(a!)
+   inline at::Tensor & Tensor::scatter_reduce_(int64_t dim, const at::Tensor & index, const at::Tensor & src, c10::string_view reduce) const {
+       return at::_ops::scatter_reduce__two::call(const_cast<Tensor&>(*this), dim, index, src, reduce);
    }
    
    // aten::eq_.Scalar(Tensor(a!) self, Scalar other) -> Tensor(a!)
