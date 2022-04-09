@@ -778,6 +778,7 @@ Program Listing for File TensorBody.h
      at::Tensor softmax(at::Dimname dim, c10::optional<at::ScalarType> dtype=c10::nullopt) const;
      ::std::vector<at::Tensor> unsafe_split(int64_t split_size, int64_t dim=0) const;
      ::std::vector<at::Tensor> split(int64_t split_size, int64_t dim=0) const;
+     ::std::vector<at::Tensor> split(at::IntArrayRef split_size, int64_t dim=0) const;
      ::std::vector<at::Tensor> unsafe_split_with_sizes(at::IntArrayRef split_sizes, int64_t dim=0) const;
      ::std::vector<at::Tensor> split_with_sizes(at::IntArrayRef split_sizes, int64_t dim=0) const;
      ::std::vector<at::Tensor> hsplit(int64_t sections) const;
@@ -868,6 +869,7 @@ Program Listing for File TensorBody.h
      at::Tensor & heaviside_(const at::Tensor & values) const;
      at::Tensor addmm(const at::Tensor & mat1, const at::Tensor & mat2, const at::Scalar & beta=1, const at::Scalar & alpha=1) const;
      at::Tensor & addmm_(const at::Tensor & mat1, const at::Tensor & mat2, const at::Scalar & beta=1, const at::Scalar & alpha=1) const;
+     at::Tensor _addmm_activation(const at::Tensor & mat1, const at::Tensor & mat2, const at::Scalar & beta=1, const at::Scalar & alpha=1, bool use_gelu=false) const;
      const at::Tensor & sparse_resize_(at::IntArrayRef size, int64_t sparse_dim, int64_t dense_dim) const;
      const at::Tensor & sparse_resize_and_clear_(at::IntArrayRef size, int64_t sparse_dim, int64_t dense_dim) const;
      at::Tensor sparse_mask(const at::Tensor & mask) const;
@@ -3078,6 +3080,11 @@ Program Listing for File TensorBody.h
        return at::_ops::split_Tensor::call(const_cast<Tensor&>(*this), split_size, dim);
    }
    
+   // aten::split.sizes(Tensor(a -> *) self, int[] split_size, int dim=0) -> Tensor(a)[]
+   inline ::std::vector<at::Tensor> Tensor::split(at::IntArrayRef split_size, int64_t dim) const {
+       return at::_ops::split_sizes::call(const_cast<Tensor&>(*this), split_size, dim);
+   }
+   
    // aten::unsafe_split_with_sizes(Tensor self, int[] split_sizes, int dim=0) -> Tensor[]
    inline ::std::vector<at::Tensor> Tensor::unsafe_split_with_sizes(at::IntArrayRef split_sizes, int64_t dim) const {
        return at::_ops::unsafe_split_with_sizes::call(const_cast<Tensor&>(*this), split_sizes, dim);
@@ -3526,6 +3533,11 @@ Program Listing for File TensorBody.h
    // aten::addmm_(Tensor(a!) self, Tensor mat1, Tensor mat2, *, Scalar beta=1, Scalar alpha=1) -> Tensor(a!)
    inline at::Tensor & Tensor::addmm_(const at::Tensor & mat1, const at::Tensor & mat2, const at::Scalar & beta, const at::Scalar & alpha) const {
        return at::_ops::addmm_::call(const_cast<Tensor&>(*this), mat1, mat2, beta, alpha);
+   }
+   
+   // aten::_addmm_activation(Tensor self, Tensor mat1, Tensor mat2, *, Scalar beta=1, Scalar alpha=1, bool use_gelu=False) -> Tensor
+   inline at::Tensor Tensor::_addmm_activation(const at::Tensor & mat1, const at::Tensor & mat2, const at::Scalar & beta, const at::Scalar & alpha, bool use_gelu) const {
+       return at::_ops::_addmm_activation::call(const_cast<Tensor&>(*this), mat1, mat2, beta, alpha, use_gelu);
    }
    
    // aten::sparse_resize_(Tensor(a!) self, int[] size, int sparse_dim, int dense_dim) -> Tensor(a!)
