@@ -803,8 +803,7 @@ Program Listing for File TensorBody.h
      at::Tensor sum(c10::optional<at::ScalarType> dtype=c10::nullopt) const;
      at::Tensor sum(at::IntArrayRef dim, bool keepdim=false, c10::optional<at::ScalarType> dtype=c10::nullopt) const;
      at::Tensor sum(at::DimnameList dim, bool keepdim=false, c10::optional<at::ScalarType> dtype=c10::nullopt) const;
-     at::Tensor nansum(c10::optional<at::ScalarType> dtype=c10::nullopt) const;
-     at::Tensor nansum(at::IntArrayRef dim, bool keepdim=false, c10::optional<at::ScalarType> dtype=c10::nullopt) const;
+     at::Tensor nansum(at::IntArrayRef dim={}, bool keepdim=false, c10::optional<at::ScalarType> dtype=c10::nullopt) const;
      at::Tensor sum_to_size(at::IntArrayRef size) const;
      at::Tensor sqrt() const;
      at::Tensor & sqrt_() const;
@@ -931,6 +930,8 @@ Program Listing for File TensorBody.h
      at::Tensor & index_add_(int64_t dim, const at::Tensor & index, const at::Tensor & source, const at::Scalar & alpha=1) const;
      at::Tensor index_add(int64_t dim, const at::Tensor & index, const at::Tensor & source, const at::Scalar & alpha=1) const;
      at::Tensor index_add(at::Dimname dim, const at::Tensor & index, const at::Tensor & source, const at::Scalar & alpha=1) const;
+     at::Tensor & _index_reduce_(int64_t dim, const at::Tensor & index, const at::Tensor & source, c10::string_view reduce, bool include_self=true) const;
+     at::Tensor _index_reduce(int64_t dim, const at::Tensor & index, const at::Tensor & source, c10::string_view reduce, bool include_self=true) const;
      at::Tensor & index_fill_(int64_t dim, const at::Tensor & index, const at::Scalar & value) const;
      at::Tensor index_fill(int64_t dim, const at::Tensor & index, const at::Scalar & value) const;
      at::Tensor & index_fill_(int64_t dim, const at::Tensor & index, const at::Tensor & value) const;
@@ -3208,14 +3209,9 @@ Program Listing for File TensorBody.h
        return at::_ops::sum_dim_DimnameList::call(const_cast<Tensor&>(*this), dim, keepdim, dtype);
    }
    
-   // aten::nansum(Tensor self, *, ScalarType? dtype=None) -> Tensor
-   inline at::Tensor Tensor::nansum(c10::optional<at::ScalarType> dtype) const {
-       return at::_ops::nansum::call(const_cast<Tensor&>(*this), dtype);
-   }
-   
-   // aten::nansum.dim_IntList(Tensor self, int[1] dim, bool keepdim=False, *, ScalarType? dtype=None) -> Tensor
+   // aten::nansum(Tensor self, int[1] dim=[], bool keepdim=False, *, ScalarType? dtype=None) -> Tensor
    inline at::Tensor Tensor::nansum(at::IntArrayRef dim, bool keepdim, c10::optional<at::ScalarType> dtype) const {
-       return at::_ops::nansum_dim_IntList::call(const_cast<Tensor&>(*this), dim, keepdim, dtype);
+       return at::_ops::nansum::call(const_cast<Tensor&>(*this), dim, keepdim, dtype);
    }
    
    // aten::sum_to_size(Tensor self, int[] size) -> Tensor
@@ -3846,6 +3842,16 @@ Program Listing for File TensorBody.h
    // aten::index_add.dimname(Tensor self, Dimname dim, Tensor index, Tensor source, *, Scalar alpha=1) -> Tensor
    inline at::Tensor Tensor::index_add(at::Dimname dim, const at::Tensor & index, const at::Tensor & source, const at::Scalar & alpha) const {
        return at::_ops::index_add_dimname::call(const_cast<Tensor&>(*this), dim, index, source, alpha);
+   }
+   
+   // aten::_index_reduce_(Tensor(a!) self, int dim, Tensor index, Tensor source, str reduce, *, bool include_self=True) -> Tensor(a!)
+   inline at::Tensor & Tensor::_index_reduce_(int64_t dim, const at::Tensor & index, const at::Tensor & source, c10::string_view reduce, bool include_self) const {
+       return at::_ops::_index_reduce_::call(const_cast<Tensor&>(*this), dim, index, source, reduce, include_self);
+   }
+   
+   // aten::_index_reduce(Tensor self, int dim, Tensor index, Tensor source, str reduce, *, bool include_self=True) -> Tensor
+   inline at::Tensor Tensor::_index_reduce(int64_t dim, const at::Tensor & index, const at::Tensor & source, c10::string_view reduce, bool include_self) const {
+       return at::_ops::_index_reduce::call(const_cast<Tensor&>(*this), dim, index, source, reduce, include_self);
    }
    
    // aten::index_fill_.int_Scalar(Tensor(a!) self, int dim, Tensor index, Scalar value) -> Tensor(a!)
