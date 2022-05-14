@@ -896,6 +896,7 @@ Program Listing for File TensorBody.h
      at::Tensor to_sparse(int64_t sparse_dim) const;
      at::Tensor to_sparse() const;
      at::Tensor to_sparse_csr() const;
+     at::Tensor to_sparse_bsr(at::IntArrayRef blocksize) const;
      at::Tensor to_mkldnn(c10::optional<at::ScalarType> dtype=c10::nullopt) const;
      at::Tensor dequantize() const;
      double q_scale() const;
@@ -933,8 +934,8 @@ Program Listing for File TensorBody.h
      at::Tensor & index_add_(int64_t dim, const at::Tensor & index, const at::Tensor & source, const at::Scalar & alpha=1) const;
      at::Tensor index_add(int64_t dim, const at::Tensor & index, const at::Tensor & source, const at::Scalar & alpha=1) const;
      at::Tensor index_add(at::Dimname dim, const at::Tensor & index, const at::Tensor & source, const at::Scalar & alpha=1) const;
-     at::Tensor & _index_reduce_(int64_t dim, const at::Tensor & index, const at::Tensor & source, c10::string_view reduce, bool include_self=true) const;
-     at::Tensor _index_reduce(int64_t dim, const at::Tensor & index, const at::Tensor & source, c10::string_view reduce, bool include_self=true) const;
+     at::Tensor & index_reduce_(int64_t dim, const at::Tensor & index, const at::Tensor & source, c10::string_view reduce, bool include_self=true) const;
+     at::Tensor index_reduce(int64_t dim, const at::Tensor & index, const at::Tensor & source, c10::string_view reduce, bool include_self=true) const;
      at::Tensor & index_fill_(int64_t dim, const at::Tensor & index, const at::Scalar & value) const;
      at::Tensor index_fill(int64_t dim, const at::Tensor & index, const at::Scalar & value) const;
      at::Tensor & index_fill_(int64_t dim, const at::Tensor & index, const at::Tensor & value) const;
@@ -3671,6 +3672,11 @@ Program Listing for File TensorBody.h
        return at::_ops::to_sparse_csr::call(const_cast<Tensor&>(*this));
    }
    
+   // aten::to_sparse_bsr(Tensor self, int[2] blocksize) -> Tensor
+   inline at::Tensor Tensor::to_sparse_bsr(at::IntArrayRef blocksize) const {
+       return at::_ops::to_sparse_bsr::call(const_cast<Tensor&>(*this), blocksize);
+   }
+   
    // aten::to_mkldnn(Tensor self, ScalarType? dtype=None) -> Tensor
    inline at::Tensor Tensor::to_mkldnn(c10::optional<at::ScalarType> dtype) const {
        return at::_ops::to_mkldnn::call(const_cast<Tensor&>(*this), dtype);
@@ -3856,14 +3862,14 @@ Program Listing for File TensorBody.h
        return at::_ops::index_add_dimname::call(const_cast<Tensor&>(*this), dim, index, source, alpha);
    }
    
-   // aten::_index_reduce_(Tensor(a!) self, int dim, Tensor index, Tensor source, str reduce, *, bool include_self=True) -> Tensor(a!)
-   inline at::Tensor & Tensor::_index_reduce_(int64_t dim, const at::Tensor & index, const at::Tensor & source, c10::string_view reduce, bool include_self) const {
-       return at::_ops::_index_reduce_::call(const_cast<Tensor&>(*this), dim, index, source, reduce, include_self);
+   // aten::index_reduce_(Tensor(a!) self, int dim, Tensor index, Tensor source, str reduce, *, bool include_self=True) -> Tensor(a!)
+   inline at::Tensor & Tensor::index_reduce_(int64_t dim, const at::Tensor & index, const at::Tensor & source, c10::string_view reduce, bool include_self) const {
+       return at::_ops::index_reduce_::call(const_cast<Tensor&>(*this), dim, index, source, reduce, include_self);
    }
    
-   // aten::_index_reduce(Tensor self, int dim, Tensor index, Tensor source, str reduce, *, bool include_self=True) -> Tensor
-   inline at::Tensor Tensor::_index_reduce(int64_t dim, const at::Tensor & index, const at::Tensor & source, c10::string_view reduce, bool include_self) const {
-       return at::_ops::_index_reduce::call(const_cast<Tensor&>(*this), dim, index, source, reduce, include_self);
+   // aten::index_reduce(Tensor self, int dim, Tensor index, Tensor source, str reduce, *, bool include_self=True) -> Tensor
+   inline at::Tensor Tensor::index_reduce(int64_t dim, const at::Tensor & index, const at::Tensor & source, c10::string_view reduce, bool include_self) const {
+       return at::_ops::index_reduce::call(const_cast<Tensor&>(*this), dim, index, source, reduce, include_self);
    }
    
    // aten::index_fill_.int_Scalar(Tensor(a!) self, int dim, Tensor index, Scalar value) -> Tensor(a!)
