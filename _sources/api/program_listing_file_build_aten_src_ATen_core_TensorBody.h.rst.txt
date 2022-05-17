@@ -891,12 +891,16 @@ Program Listing for File TensorBody.h
      at::Tensor values() const;
      at::Tensor crow_indices() const;
      at::Tensor col_indices() const;
+     at::Tensor ccol_indices() const;
+     at::Tensor row_indices() const;
      ::std::vector<at::Tensor> unbind(int64_t dim=0) const;
      ::std::vector<at::Tensor> unbind(at::Dimname dim) const;
      at::Tensor to_sparse(int64_t sparse_dim) const;
      at::Tensor to_sparse() const;
      at::Tensor to_sparse_csr() const;
+     at::Tensor to_sparse_csc() const;
      at::Tensor to_sparse_bsr(at::IntArrayRef blocksize) const;
+     at::Tensor to_sparse_bsc(at::IntArrayRef blocksize) const;
      at::Tensor to_mkldnn(c10::optional<at::ScalarType> dtype=c10::nullopt) const;
      at::Tensor dequantize() const;
      double q_scale() const;
@@ -3647,6 +3651,16 @@ Program Listing for File TensorBody.h
        return at::_ops::col_indices::call(const_cast<Tensor&>(*this));
    }
    
+   // aten::ccol_indices(Tensor(a) self) -> Tensor(a)
+   inline at::Tensor Tensor::ccol_indices() const {
+       return at::_ops::ccol_indices::call(const_cast<Tensor&>(*this));
+   }
+   
+   // aten::row_indices(Tensor(a) self) -> Tensor(a)
+   inline at::Tensor Tensor::row_indices() const {
+       return at::_ops::row_indices::call(const_cast<Tensor&>(*this));
+   }
+   
    // aten::unbind.int(Tensor(a -> *) self, int dim=0) -> Tensor(a)[]
    inline ::std::vector<at::Tensor> Tensor::unbind(int64_t dim) const {
        return at::_ops::unbind_int::call(const_cast<Tensor&>(*this), dim);
@@ -3672,9 +3686,19 @@ Program Listing for File TensorBody.h
        return at::_ops::to_sparse_csr::call(const_cast<Tensor&>(*this));
    }
    
+   // aten::to_sparse_csc(Tensor self) -> Tensor
+   inline at::Tensor Tensor::to_sparse_csc() const {
+       return at::_ops::to_sparse_csc::call(const_cast<Tensor&>(*this));
+   }
+   
    // aten::to_sparse_bsr(Tensor self, int[2] blocksize) -> Tensor
    inline at::Tensor Tensor::to_sparse_bsr(at::IntArrayRef blocksize) const {
        return at::_ops::to_sparse_bsr::call(const_cast<Tensor&>(*this), blocksize);
+   }
+   
+   // aten::to_sparse_bsc(Tensor self, int[2] blocksize) -> Tensor
+   inline at::Tensor Tensor::to_sparse_bsc(at::IntArrayRef blocksize) const {
+       return at::_ops::to_sparse_bsc::call(const_cast<Tensor&>(*this), blocksize);
    }
    
    // aten::to_mkldnn(Tensor self, ScalarType? dtype=None) -> Tensor
