@@ -59,6 +59,7 @@ Program Listing for File library.h
    
    // Just for inferFunctionSchemaFromFunctor
    #include <ATen/core/op_registration/op_registration.h>
+   #include <ATen/core/enum_tag.h>
    
    namespace torch {
    
@@ -446,12 +447,12 @@ Program Listing for File library.h
      // messages from overloads, but at the same time you only need to write the
      // overload for any given argument type once.
    
-     template <typename Schema>
-     Library& def(Schema&& raw_schema) & {
-       c10::FunctionSchema s = schema(std::forward<Schema>(raw_schema));
-       return _def(std::move(s));
-     }
    
+     template <typename Schema>
+     Library& def(Schema&& raw_schema, const std::vector<at::Tag>& tags = {}) & {
+       c10::FunctionSchema s = schema(std::forward<Schema>(raw_schema));
+       return _def(std::move(s), nullptr, tags);
+     }
      template <typename NameOrSchema, typename Func>
      Library& def(NameOrSchema&& raw_name_or_schema, Func&& raw_f) & {
        CppFunction f(std::forward<Func>(raw_f));
@@ -595,7 +596,8 @@ Program Listing for File library.h
      // public because we only implement & qualifier and not && qualifier
      Library& _def(
          c10::FunctionSchema&& schema,
-         c10::OperatorName* out_name = nullptr) &;
+         c10::OperatorName* out_name = nullptr,
+         const std::vector<at::Tag>& tags = {}) &;
      Library& _def(
          c10::either<c10::OperatorName, c10::FunctionSchema>&&,
          CppFunction&& f) &;

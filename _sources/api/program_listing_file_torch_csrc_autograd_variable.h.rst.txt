@@ -17,24 +17,25 @@ Program Listing for File variable.h
    #include <torch/csrc/utils/python_stub.h>
    
    #include <torch/csrc/Export.h>
-   #include <torch/csrc/autograd/edge.h>
-   #include <torch/csrc/autograd/function_hook.h>
    #include <torch/csrc/autograd/cpp_hook.h>
+   #include <torch/csrc/autograd/edge.h>
    #include <torch/csrc/autograd/forward_grad.h>
+   #include <torch/csrc/autograd/function_hook.h>
    
-   #include <ATen/core/Tensor.h>
    #include <ATen/NamedTensorUtils.h>
+   #include <ATen/core/Tensor.h>
    #include <c10/util/Exception.h>
    
+   #include <cstdint>
    #include <memory>
    #include <mutex>
    #include <stdexcept>
    #include <string>
    #include <utility>
    #include <vector>
-   #include <cstdint>
    
-   namespace torch { namespace autograd {
+   namespace torch {
+   namespace autograd {
    
    using Variable = at::Tensor;
    
@@ -42,14 +43,16 @@ Program Listing for File variable.h
    } // namespace torch
    
    // The following are all internal APIs and should not be shown in libtorch docs.
-   // Therefore, we wrap the following code with `#ifndef DOXYGEN_SHOULD_SKIP_THIS ... #endif`
+   // Therefore, we wrap the following code with `#ifndef DOXYGEN_SHOULD_SKIP_THIS
+   // ... #endif`
    
    #ifndef DOXYGEN_SHOULD_SKIP_THIS
    
-   namespace torch { namespace autograd {
+   namespace torch {
+   namespace autograd {
    
    static inline bool isDifferentiableType(at::ScalarType t) {
-       return isFloatingType(t) || isComplexType(t);
+     return isFloatingType(t) || isComplexType(t);
    }
    
    struct Node;
@@ -62,48 +65,55 @@ Program Listing for File variable.h
    // on Tensor proper
    namespace impl {
    
-     // WARNING: This may return a nullptr.  If you require AutogradMeta to return
-     // a materialized structure, use materialize_autograd_meta instead.
-     TORCH_API AutogradMeta* get_autograd_meta(const at::TensorBase&);
+   // WARNING: This may return a nullptr.  If you require AutogradMeta to return
+   // a materialized structure, use materialize_autograd_meta instead.
+   TORCH_API AutogradMeta* get_autograd_meta(const at::TensorBase&);
    
-     // WARNING: This will return a nullptr if the Tensor is not a view.
-     TORCH_API DifferentiableViewMeta* get_view_autograd_meta(const at::TensorBase&);
+   // WARNING: This will return a nullptr if the Tensor is not a view.
+   TORCH_API DifferentiableViewMeta* get_view_autograd_meta(const at::TensorBase&);
    
-     // Returns the current autograd meta, materializing it if it was previously
-     // none.  This counts as a *mutating* operation, so do not call it on
-     // "read-only" operators; in particular, this is NOT thread safe
-     TORCH_API AutogradMeta* materialize_autograd_meta(const at::TensorBase&);
+   // Returns the current autograd meta, materializing it if it was previously
+   // none.  This counts as a *mutating* operation, so do not call it on
+   // "read-only" operators; in particular, this is NOT thread safe
+   TORCH_API AutogradMeta* materialize_autograd_meta(const at::TensorBase&);
    
-     TORCH_API void set_grad_accumulator(const Variable&, std::weak_ptr<Node> grad_accumulator);
+   TORCH_API void set_grad_accumulator(
+       const Variable&,
+       std::weak_ptr<Node> grad_accumulator);
    
-     TORCH_API std::shared_ptr<Node> try_get_grad_accumulator(const Variable&);
+   TORCH_API std::shared_ptr<Node> try_get_grad_accumulator(const Variable&);
    
-     TORCH_API std::shared_ptr<Node> grad_accumulator(const Variable&);
+   TORCH_API std::shared_ptr<Node> grad_accumulator(const Variable&);
    
-     TORCH_API Edge gradient_edge(const Variable&);
+   TORCH_API Edge gradient_edge(const Variable&);
    
-     TORCH_API void set_gradient_edge(const Variable&, Edge edge);
+   TORCH_API void set_gradient_edge(const Variable&, Edge edge);
    
-     // Autograd Graph Interaction
-     //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   // Autograd Graph Interaction
+   //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    
-     TORCH_API void rebase_history(const Variable&, Edge gradient_edge);
+   TORCH_API void rebase_history(const Variable&, Edge gradient_edge);
    
-     TORCH_API Node* grad_fn_unsafe(const Variable&);
+   TORCH_API Node* grad_fn_unsafe(const Variable&);
    
-     TORCH_API void bump_version(const Variable&);
-     TORCH_API void set_version_counter(const Variable&, const c10::VariableVersion& version_counter);
+   TORCH_API void bump_version(const Variable&);
+   TORCH_API void set_version_counter(
+       const Variable&,
+       const c10::VariableVersion& version_counter);
    
-     TORCH_API const c10::VariableVersion& version_counter(const Variable&);
+   TORCH_API const c10::VariableVersion& version_counter(const Variable&);
    
-     TORCH_API void set_name(const Variable&, const std::string& name);
+   TORCH_API void set_name(const Variable&, const std::string& name);
    
-     TORCH_API void add_hook(const at::TensorBase&, std::shared_ptr<FunctionPreHook> hook);
-     TORCH_API const std::vector<std::shared_ptr<FunctionPreHook>>& hooks(const Variable&);
-     TORCH_API void clear_hooks(const at::TensorBase&);
+   TORCH_API void add_hook(
+       const at::TensorBase&,
+       std::shared_ptr<FunctionPreHook> hook);
+   TORCH_API const std::vector<std::shared_ptr<FunctionPreHook>>& hooks(
+       const Variable&);
+   TORCH_API void clear_hooks(const at::TensorBase&);
    
-     TORCH_API void create_cpp_hook(const at::TensorBase&);
-   }
+   TORCH_API void create_cpp_hook(const at::TensorBase&);
+   } // namespace impl
    
    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    //                            AutogradMeta
@@ -152,10 +162,12 @@ Program Listing for File variable.h
      // version of this class for the functions above
      mutable std::mutex mutex_;
    
-     void set_requires_grad(bool requires_grad, at::TensorImpl* self_impl) override {
+     void set_requires_grad(bool requires_grad, at::TensorImpl* self_impl)
+         override {
        TORCH_CHECK(
-         !requires_grad || isDifferentiableType(at::typeMetaToScalarType(self_impl->dtype())),
-         "Only Tensors of floating point and complex dtype can require gradients");
+           !requires_grad ||
+               isDifferentiableType(at::typeMetaToScalarType(self_impl->dtype())),
+           "Only Tensors of floating point and complex dtype can require gradients");
        requires_grad_ = requires_grad;
      }
    
@@ -171,12 +183,20 @@ Program Listing for File variable.h
        return grad_;
      }
    
-     const Variable& fw_grad(uint64_t level, const at::TensorBase& self) const override;
+     const Variable& fw_grad(uint64_t level, const at::TensorBase& self)
+         const override;
    
-     void set_fw_grad(const at::TensorBase& new_grad, const at::TensorBase& self, uint64_t level, bool is_inplace_op) override;
+     void set_fw_grad(
+         const at::TensorBase& new_grad,
+         const at::TensorBase& self,
+         uint64_t level,
+         bool is_inplace_op) override;
    
      // NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)
-     AutogradMeta(at::TensorImpl* self_impl = nullptr, bool requires_grad = false, Edge gradient_edge = Edge() ) {
+     AutogradMeta(
+         at::TensorImpl* self_impl = nullptr,
+         bool requires_grad = false,
+         Edge gradient_edge = Edge()) {
        grad_fn_ = std::move(gradient_edge.function);
        requires_grad_ = false;
        retains_grad_ = false;
@@ -195,9 +215,10 @@ Program Listing for File variable.h
      }
    
      ~AutogradMeta() override {
-       // If AutogradMeta is being destroyed, it means that there is no other reference to its
-       // corresponding Tensor. It implies that no other thread can be using this object and so there is
-       // no need to lock mutex_ here to guard the check if fw_grad_ is populated.
+       // If AutogradMeta is being destroyed, it means that there is no other
+       // reference to its corresponding Tensor. It implies that no other thread
+       // can be using this object and so there is no need to lock mutex_ here to
+       // guard the check if fw_grad_ is populated.
        if (fw_grad_) {
          // See note [ Using ForwardGrad ]
          fw_grad_->clear();
@@ -215,16 +236,18 @@ Program Listing for File variable.h
      }
    
      std::function<Variable(const Variable&)> view_fn() const {
-       TORCH_CHECK(has_view_fn(), "Can only access the view function if it exists.");
+       TORCH_CHECK(
+           has_view_fn(), "Can only access the view function if it exists.");
        return view_fn_;
      }
    
-     ViewInfo chain(const Variable & base, const Variable & tensor,
-       std::function<Variable(const Variable&)> view_func=nullptr) const;
+     ViewInfo chain(
+         const Variable& base,
+         const Variable& tensor,
+         std::function<Variable(const Variable&)> view_func = nullptr) const;
    
-     ViewInfo(Variable base, std::function<Variable(const Variable&)> view_fn) :
-       base_(std::move(base)),
-       view_fn_(std::move(view_fn)) {
+     ViewInfo(Variable base, std::function<Variable(const Variable&)> view_fn)
+         : base_(std::move(base)), view_fn_(std::move(view_fn)) {
        TORCH_CHECK(base_.defined(), "base is undefined");
      }
    };
@@ -235,28 +258,37 @@ Program Listing for File variable.h
    
    
    
+   enum class CreationMeta : uint8_t {
+     DEFAULT,
+     IN_CUSTOM_FUNCTION,
+     MULTI_OUTPUT_NODE,
+     NO_GRAD_MODE,
+     INFERENCE_MODE
+   };
    
-   enum class CreationMeta: uint8_t { DEFAULT, IN_CUSTOM_FUNCTION, MULTI_OUTPUT_NODE,
-                                      NO_GRAD_MODE, INFERENCE_MODE};
-   
-   inline CreationMeta propagate_creation_meta(CreationMeta prev_view_creation_meta, CreationMeta new_view_creation_meta) {
-     return (new_view_creation_meta == CreationMeta::DEFAULT) ?
-         prev_view_creation_meta :
-         (prev_view_creation_meta == CreationMeta::INFERENCE_MODE ? prev_view_creation_meta : new_view_creation_meta);
+   inline CreationMeta propagate_creation_meta(
+       CreationMeta prev_view_creation_meta,
+       CreationMeta new_view_creation_meta) {
+     return (new_view_creation_meta == CreationMeta::DEFAULT)
+         ? prev_view_creation_meta
+         : (prev_view_creation_meta == CreationMeta::INFERENCE_MODE
+                ? prev_view_creation_meta
+                : new_view_creation_meta);
    }
    
-   TORCH_API void handle_view_on_rebase(DifferentiableViewMeta* diff_view_meta, bool indirect=false);
+   TORCH_API void handle_view_on_rebase(
+       DifferentiableViewMeta* diff_view_meta,
+       bool indirect = false);
    
    struct TORCH_API DifferentiableViewMeta : public AutogradMeta {
-   private:
+    private:
      c10::optional<ViewInfo> backward_info_;
      c10::optional<ViewInfo> forward_info_;
    
      // Optimization to reduce the number of ViewInfo we create.
      // In the (very common) case where backward_info_ == forward_info_, we only
-     // populate backward_info_ (that should be used as both the forward and backward
-     // view information) and set shared_view_info_ = true.
-     // Invariants:
+     // populate backward_info_ (that should be used as both the forward and
+     // backward view information) and set shared_view_info_ = true. Invariants:
      //   - If shared_view_info_ is false, there is no special constraints on
      //     backward_info_ and forward_info_
      //   - If shared_view_info_ is true, we must have:
@@ -268,9 +300,10 @@ Program Listing for File variable.h
      uint32_t attr_version_;
      CreationMeta creation_meta_;
    
-   public:
+    public:
      bool requires_grad() const override {
-       return requires_grad_ || grad_fn_ || (has_bw_view() && get_backward_view().base_.requires_grad());
+       return requires_grad_ || grad_fn_ ||
+           (has_bw_view() && get_backward_view().base_.requires_grad());
      }
    
      bool shared_view_info() const {
@@ -282,27 +315,32 @@ Program Listing for File variable.h
      }
    
      const ViewInfo& get_backward_view() const {
-       TORCH_CHECK(has_bw_view(), "backward view info can only exist for backward views.");
+       TORCH_CHECK(
+           has_bw_view(), "backward view info can only exist for backward views.");
        return backward_info_.value();
      }
    
      uint32_t get_attr_version() const {
-       TORCH_CHECK(has_bw_view(), "attr_version can only exist for backward views.");
+       TORCH_CHECK(
+           has_bw_view(), "attr_version can only exist for backward views.");
        return attr_version_;
      }
    
      void set_attr_version(uint32_t new_attr_version) {
-       TORCH_CHECK(has_bw_view(), "attr_version can only exist for backward views.");
+       TORCH_CHECK(
+           has_bw_view(), "attr_version can only exist for backward views.");
        attr_version_ = new_attr_version;
      }
    
      CreationMeta get_creation_meta() const {
-       TORCH_CHECK(has_bw_view(), "creation_meta can only exist for backward views.");
+       TORCH_CHECK(
+           has_bw_view(), "creation_meta can only exist for backward views.");
        return creation_meta_;
      }
    
      void set_creation_meta(CreationMeta new_creation_meta) {
-       TORCH_CHECK(has_bw_view(), "creation_meta can only exist for backward views.");
+       TORCH_CHECK(
+           has_bw_view(), "creation_meta can only exist for backward views.");
        creation_meta_ = new_creation_meta;
      }
    
@@ -311,13 +349,20 @@ Program Listing for File variable.h
      }
    
      const ViewInfo& get_forward_view() const {
-       TORCH_CHECK(has_fw_view(), "forward view info can only exist for forward views.");
-       TORCH_CHECK(!shared_view_info_ || has_bw_view(), "forward view info can only exist for forward views.");
+       TORCH_CHECK(
+           has_fw_view(), "forward view info can only exist for forward views.");
+       TORCH_CHECK(
+           !shared_view_info_ || has_bw_view(),
+           "forward view info can only exist for forward views.");
        return shared_view_info_ ? backward_info_.value() : forward_info_.value();
      }
    
-     DifferentiableViewMeta(at::TensorImpl* self_impl, c10::optional<ViewInfo> backward_info,
-       c10::optional<ViewInfo> forward_info, bool shared_view_info, CreationMeta creation_meta=CreationMeta::DEFAULT);
+     DifferentiableViewMeta(
+         at::TensorImpl* self_impl,
+         c10::optional<ViewInfo> backward_info,
+         c10::optional<ViewInfo> forward_info,
+         bool shared_view_info,
+         CreationMeta creation_meta = CreationMeta::DEFAULT);
    };
    
    //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -340,25 +385,34 @@ Program Listing for File variable.h
        bool allow_tensor_metadata_change = true) {
      if (data.defined()) {
        // If we already did a TensorImpl allocation for data, just reuse it.
-       // Otherwise(e.g tensor.swapdim(0, 0) when we return the same tensor as input),
-       // we have to use shallow_copy_and_detach to create a new TensorImpl to avoid
-       // moving leaf node into graph interior. This guarantees only 1 TensorImpl
-       // allocation happens in view ops.
-       if (data.getIntrusivePtr().unique() && data.getIntrusivePtr()->unique_version()) {
+       // Otherwise(e.g tensor.swapdim(0, 0) when we return the same tensor as
+       // input), we have to use shallow_copy_and_detach to create a new TensorImpl
+       // to avoid moving leaf node into graph interior. This guarantees only 1
+       // TensorImpl allocation happens in view ops.
+       if (data.getIntrusivePtr().unique() &&
+           data.getIntrusivePtr()->unique_version()) {
          at::TensorImpl* data_impl = data.unsafeGetTensorImpl();
          data_impl->set_allow_tensor_metadata_change(allow_tensor_metadata_change);
          data_impl->set_autograd_meta(std::make_unique<DifferentiableViewMeta>(
-         data_impl, std::move(backward_info), std::move(forward_info),
-         shared_view_info, creation_meta));
+             data_impl,
+             std::move(backward_info),
+             std::move(forward_info),
+             shared_view_info,
+             creation_meta));
          return data;
        } else {
          // NOLINTNEXTLINE(cppcoreguidelines-init-variables)
-         c10::intrusive_ptr<at::TensorImpl> data_impl_copy = data.getIntrusivePtr()->shallow_copy_and_detach(
-           /*version_counter=*/0,
-           /*allow_tensor_metadata_change=*/allow_tensor_metadata_change);
-         data_impl_copy->set_autograd_meta(std::make_unique<DifferentiableViewMeta>(
-         data_impl_copy.get(), std::move(backward_info), std::move(forward_info),
-         shared_view_info, creation_meta));
+         c10::intrusive_ptr<at::TensorImpl> data_impl_copy =
+             data.getIntrusivePtr()->shallow_copy_and_detach(
+                 /*version_counter=*/0,
+                 /*allow_tensor_metadata_change=*/allow_tensor_metadata_change);
+         data_impl_copy->set_autograd_meta(
+             std::make_unique<DifferentiableViewMeta>(
+                 data_impl_copy.get(),
+                 std::move(backward_info),
+                 std::move(forward_info),
+                 shared_view_info,
+                 creation_meta));
          return Variable(data_impl_copy);
        }
      }
@@ -376,8 +430,8 @@ Program Listing for File variable.h
        // share the same TensorImpl as their base Tensor. Thus a new TensorImpl
        // allocation here is required.
        auto data_impl_copy = data.getIntrusivePtr()->shallow_copy_and_detach(
-         /*version_counter=*/impl::version_counter(base),
-         /*allow_tensor_metadata_change=*/allow_tensor_metadata_change);
+           /*version_counter=*/impl::version_counter(base),
+           /*allow_tensor_metadata_change=*/allow_tensor_metadata_change);
        data_impl_copy->set_autograd_meta(nullptr);
        return Variable(data_impl_copy);
      }
@@ -389,24 +443,26 @@ Program Listing for File variable.h
        bool requires_grad = false,
        bool allow_tensor_metadata_change = true) {
      if (data.defined()) {
-       if (data.getIntrusivePtr().use_count() == 1 && data.getIntrusivePtr()->unique_version()) {
+       if (data.getIntrusivePtr().use_count() == 1 &&
+           data.getIntrusivePtr()->unique_version()) {
          auto data_impl = data.unsafeReleaseIntrusivePtr();
          data_impl->set_allow_tensor_metadata_change(allow_tensor_metadata_change);
          // NOLINTNEXTLINE(bugprone-branch-clone)
          if (requires_grad) {
-           data_impl->set_autograd_meta(std::make_unique<AutogradMeta>(data_impl.get(), requires_grad));
+           data_impl->set_autograd_meta(
+               std::make_unique<AutogradMeta>(data_impl.get(), requires_grad));
          } else {
            data_impl->set_autograd_meta(nullptr);
          }
          return Variable(std::move(data_impl));
        } else {
          auto data_impl_copy = data.getIntrusivePtr()->shallow_copy_and_detach(
-           /*version_counter=*/0,
-           /*allow_tensor_metadata_change=*/allow_tensor_metadata_change);
+             /*version_counter=*/0,
+             /*allow_tensor_metadata_change=*/allow_tensor_metadata_change);
          // NOLINTNEXTLINE(bugprone-branch-clone)
          if (requires_grad) {
            data_impl_copy->set_autograd_meta(std::make_unique<AutogradMeta>(
-             data_impl_copy.get(), requires_grad));
+               data_impl_copy.get(), requires_grad));
          } else {
            data_impl_copy->set_autograd_meta(nullptr);
          }
@@ -422,16 +478,16 @@ Program Listing for File variable.h
        bool allow_tensor_metadata_change = true) {
      if (data.defined()) {
        auto data_impl_copy = data.getIntrusivePtr()->shallow_copy_and_detach(
-         /*version_counter=*/0,
-         /*allow_tensor_metadata_change=*/allow_tensor_metadata_change);
+           /*version_counter=*/0,
+           /*allow_tensor_metadata_change=*/allow_tensor_metadata_change);
        data_impl_copy->set_autograd_meta(std::make_unique<AutogradMeta>(
-         data_impl_copy.get(), false, std::move(gradient_edge)));
+           data_impl_copy.get(), false, std::move(gradient_edge)));
        return Variable(data_impl_copy);
      }
      return Variable();
    }
    
-   
-   }} // namespace torch::autograd
+   } // namespace autograd
+   } // namespace torch
    
    #endif /* DOXYGEN_SHOULD_SKIP_THIS */
