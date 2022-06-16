@@ -146,7 +146,6 @@ Program Listing for File TensorBody.h
    
      // Aliased by Dimname overloads, so need explicit using
      using TensorBase::size;
-     using TensorBase::sym_size;
      using TensorBase::stride;
    
      c10::MaybeOwned<Tensor> expect_contiguous(MemoryFormat memory_format=MemoryFormat::Contiguous) const &;
@@ -605,7 +604,7 @@ Program Listing for File TensorBody.h
      at::Tensor & exp2_() const;
      at::Tensor expm1() const;
      at::Tensor & expm1_() const;
-     at::Tensor expand_symint(c10::SymIntArrayRef size, bool implicit=false) const;
+     at::Tensor expand(c10::SymIntArrayRef size, bool implicit=false) const;
      at::Tensor expand(at::IntArrayRef size, bool implicit=false) const;
      at::Tensor expand_as(const at::Tensor & other) const;
      at::Tensor flatten(int64_t start_dim=0, int64_t end_dim=-1) const;
@@ -712,7 +711,7 @@ Program Listing for File TensorBody.h
      at::Tensor mvlgamma(int64_t p) const;
      at::Tensor & mvlgamma_(int64_t p) const;
      at::Tensor narrow_copy(int64_t dim, int64_t start, int64_t length) const;
-     at::Tensor narrow_copy_symint(int64_t dim, int64_t start, c10::SymInt length) const;
+     at::Tensor narrow_copy(int64_t dim, int64_t start, c10::SymInt length) const;
      at::Tensor narrow(int64_t dim, int64_t start, int64_t length) const;
      at::Tensor narrow(int64_t dim, const at::Tensor & start, int64_t length) const;
      at::Tensor permute(at::IntArrayRef dims) const;
@@ -835,6 +834,7 @@ Program Listing for File TensorBody.h
      at::Tensor flipud() const;
      at::Tensor roll(at::IntArrayRef shifts, at::IntArrayRef dims={}) const;
      at::Tensor rot90(int64_t k=1, at::IntArrayRef dims={0,1}) const;
+     at::Tensor _nested_tensor_size() const;
      at::Tensor trunc() const;
      at::Tensor & trunc_() const;
      at::Tensor fix() const;
@@ -2220,7 +2220,7 @@ Program Listing for File TensorBody.h
    }
    
    // aten::expand.SymInt(Tensor(a) self, SymInt[] size, *, bool implicit=False) -> Tensor(a)
-   inline at::Tensor Tensor::expand_symint(c10::SymIntArrayRef size, bool implicit) const {
+   inline at::Tensor Tensor::expand(c10::SymIntArrayRef size, bool implicit) const {
        return at::_ops::expand_SymInt::call(const_cast<Tensor&>(*this), size, implicit);
    }
    
@@ -2755,7 +2755,7 @@ Program Listing for File TensorBody.h
    }
    
    // aten::narrow_copy.SymInt(Tensor self, int dim, int start, SymInt length) -> Tensor
-   inline at::Tensor Tensor::narrow_copy_symint(int64_t dim, int64_t start, c10::SymInt length) const {
+   inline at::Tensor Tensor::narrow_copy(int64_t dim, int64_t start, c10::SymInt length) const {
        return at::_ops::narrow_copy_SymInt::call(const_cast<Tensor&>(*this), dim, start, length);
    }
    
@@ -3367,6 +3367,11 @@ Program Listing for File TensorBody.h
    // aten::rot90(Tensor self, int k=1, int[] dims=[0,1]) -> Tensor
    inline at::Tensor Tensor::rot90(int64_t k, at::IntArrayRef dims) const {
        return at::_ops::rot90::call(const_cast<Tensor&>(*this), k, dims);
+   }
+   
+   // aten::_nested_tensor_size(Tensor self) -> Tensor
+   inline at::Tensor Tensor::_nested_tensor_size() const {
+       return at::_ops::_nested_tensor_size::call(const_cast<Tensor&>(*this));
    }
    
    // aten::trunc(Tensor self) -> Tensor
