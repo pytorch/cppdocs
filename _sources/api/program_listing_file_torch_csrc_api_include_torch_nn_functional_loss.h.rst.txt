@@ -28,7 +28,10 @@ Program Listing for File loss.h
        const Tensor& input,
        const Tensor& target,
        L1LossFuncOptions::reduction_t reduction) {
-     return torch::l1_loss(input, target, enumtype::reduction_get_enum(reduction));
+     return torch::l1_loss(
+       input,
+       target,
+       enumtype::reduction_get_enum(reduction));
    }
    } // namespace detail
    #endif /* DOXYGEN_SHOULD_SKIP_THIS */
@@ -53,10 +56,9 @@ Program Listing for File loss.h
      torch::Reduction::Reduction reduction_enum;
    
      if (c10::get_if<enumtype::kMean>(&reduction)) {
-       TORCH_WARN(
-           "reduction: 'mean' divides the total loss by both the batch size and the support size."
-           "'batchmean' divides only by the batch size, and aligns with the KL div math definition."
-           "'mean' will be changed to behave the same as 'batchmean' in the next major release.");
+       TORCH_WARN("reduction: 'mean' divides the total loss by both the batch size and the support size."
+                  "'batchmean' divides only by the batch size, and aligns with the KL div math definition."
+                  "'mean' will be changed to behave the same as 'batchmean' in the next major release.");
      }
    
      // special case for batchmean
@@ -81,8 +83,7 @@ Program Listing for File loss.h
        const Tensor& input,
        const Tensor& target,
        const KLDivFuncOptions& options = {}) {
-     return detail::kl_div(
-         input, target, options.reduction(), options.log_target());
+     return detail::kl_div(input, target, options.reduction(), options.log_target());
    }
    
    // ============================================================================
@@ -94,21 +95,18 @@ Program Listing for File loss.h
        const Tensor& target,
        MSELossFuncOptions::reduction_t reduction) {
      if (!(target.sizes() == input.sizes())) {
-       TORCH_WARN(
-           "Using a target size (",
-           target.sizes(),
-           ") that is different to the input size (",
-           input.sizes(),
-           "). ",
-           "This will likely lead to incorrect results due to broadcasting. ",
-           "Please ensure they have the same size.");
+       TORCH_WARN("Using a target size (", target.sizes(),
+                  ") that is different to the input size (", input.sizes(), "). ",
+                  "This will likely lead to incorrect results due to broadcasting. ",
+                  "Please ensure they have the same size.");
      }
-     std::vector<torch::Tensor> broadcast_tensors =
-         torch::broadcast_tensors({input, target});
+     std::vector<torch::Tensor> broadcast_tensors = torch::broadcast_tensors({input, target});
      auto expanded_input = broadcast_tensors[0];
      auto expanded_target = broadcast_tensors[1];
      return torch::mse_loss(
-         expanded_input, expanded_target, enumtype::reduction_get_enum(reduction));
+       expanded_input,
+       expanded_target,
+       enumtype::reduction_get_enum(reduction));
    }
    } // namespace detail
    #endif /* DOXYGEN_SHOULD_SKIP_THIS */
@@ -133,14 +131,10 @@ Program Listing for File loss.h
    
      if (target.sizes() != input.sizes()) {
        TORCH_CHECK(
-           false,
-           "Using a target size (",
-           target.sizes(),
-           ") ",
-           "that is different to the input size (",
-           input.sizes(),
-           ") is deprecated. ",
-           "Please ensure they have the same size.");
+         false,
+         "Using a target size (", target.sizes(), ") ",
+         "that is different to the input size (", input.sizes(), ") is deprecated. ",
+         "Please ensure they have the same size.");
      }
    
      auto weight_ = weight;
@@ -158,8 +152,7 @@ Program Listing for File loss.h
        const Tensor& input,
        const Tensor& target,
        const BinaryCrossEntropyFuncOptions& options = {}) {
-     return detail::binary_cross_entropy(
-         input, target, options.weight(), options.reduction());
+     return detail::binary_cross_entropy(input, target, options.weight(), options.reduction());
    }
    
    // ============================================================================
@@ -172,7 +165,10 @@ Program Listing for File loss.h
        double margin,
        HingeEmbeddingLossFuncOptions::reduction_t reduction) {
      return torch::hinge_embedding_loss(
-         input, target, margin, enumtype::reduction_get_enum(reduction));
+         input,
+         target,
+         margin,
+         enumtype::reduction_get_enum(reduction));
    }
    } // namespace detail
    #endif /* DOXYGEN_SHOULD_SKIP_THIS */
@@ -181,8 +177,7 @@ Program Listing for File loss.h
        const Tensor& input,
        const Tensor& target,
        const HingeEmbeddingLossFuncOptions& options = {}) {
-     return detail::hinge_embedding_loss(
-         input, target, options.margin(), options.reduction());
+     return detail::hinge_embedding_loss(input, target, options.margin(), options.reduction());
    }
    
    // ============================================================================
@@ -202,12 +197,13 @@ Program Listing for File loss.h
      }
    
      return torch::multi_margin_loss(
-         input,
-         target,
-         p,
-         margin,
-         weight,
-         enumtype::reduction_get_enum(reduction));
+       input,
+       target,
+       p,
+       margin,
+       weight,
+       enumtype::reduction_get_enum(reduction)
+     );
    }
    } // namespace detail
    #endif /* DOXYGEN_SHOULD_SKIP_THIS */
@@ -216,13 +212,7 @@ Program Listing for File loss.h
        const Tensor& input,
        const Tensor& target,
        const MultiMarginLossFuncOptions& options = {}) {
-     return detail::multi_margin_loss(
-         input,
-         target,
-         options.p(),
-         options.margin(),
-         options.weight(),
-         options.reduction());
+     return detail::multi_margin_loss(input, target, options.p(), options.margin(), options.weight(), options.reduction());
    }
    
    // ============================================================================
@@ -236,7 +226,11 @@ Program Listing for File loss.h
        double margin,
        CosineEmbeddingLossFuncOptions::reduction_t reduction) {
      return torch::cosine_embedding_loss(
-         input1, input2, target, margin, enumtype::reduction_get_enum(reduction));
+       input1,
+       input2,
+       target,
+       margin,
+       enumtype::reduction_get_enum(reduction));
    }
    } // namespace detail
    #endif /* DOXYGEN_SHOULD_SKIP_THIS */
@@ -246,18 +240,14 @@ Program Listing for File loss.h
        const Tensor& input2,
        const Tensor& target,
        const CosineEmbeddingLossFuncOptions& options = {}) {
-     return detail::cosine_embedding_loss(
-         input1, input2, target, options.margin(), options.reduction());
+     return detail::cosine_embedding_loss(input1, input2, target, options.margin(), options.reduction());
    }
    
    // ============================================================================
    
-   inline Tensor _smooth_l1_loss(
-       const Tensor& input,
-       const Tensor& target,
-       double beta = 1.) {
-     auto t = torch::abs(input - target);
-     return torch::where(t < beta, 0.5 * torch::pow(t, 2) / beta, t - 0.5 * beta);
+   inline Tensor _smooth_l1_loss(const Tensor& input, const Tensor& target, double beta = 1.) {
+       auto t = torch::abs(input - target);
+       return torch::where(t < beta, 0.5 * torch::pow(t, 2) / beta, t - 0.5 * beta);
    }
    
    #ifndef DOXYGEN_SHOULD_SKIP_THIS
@@ -268,23 +258,13 @@ Program Listing for File loss.h
        SmoothL1LossFuncOptions::reduction_t reduction,
        double beta = 1.) {
      if (target.sizes() != input.sizes()) {
-       TORCH_WARN(
-           "Using a target size (",
-           target.sizes(),
-           ") that is different to the input size (",
-           input.sizes(),
-           "). ",
-           "This will likely lead to incorrect results due to broadcasting. ",
-           "Please ensure they have the same size.");
+       TORCH_WARN("Using a target size (", target.sizes(), ") that is different to the input size (", input.sizes(), "). ",
+                     "This will likely lead to incorrect results due to broadcasting. ",
+                     "Please ensure they have the same size.");
      }
    
-     std::vector<Tensor> expanded_tensors =
-         torch::broadcast_tensors({input, target});
-     return torch::smooth_l1_loss(
-         expanded_tensors[0],
-         expanded_tensors[1],
-         enumtype::reduction_get_enum(reduction),
-         beta);
+     std::vector<Tensor> expanded_tensors = torch::broadcast_tensors({input, target});
+     return torch::smooth_l1_loss(expanded_tensors[0], expanded_tensors[1], enumtype::reduction_get_enum(reduction), beta);
    }
    } // namespace detail
    #endif /* DOXYGEN_SHOULD_SKIP_THIS */
@@ -307,23 +287,13 @@ Program Listing for File loss.h
        HuberLossFuncOptions::reduction_t reduction,
        double delta = 1.) {
      if (target.sizes() != input.sizes()) {
-       TORCH_WARN(
-           "Using a target size (",
-           target.sizes(),
-           ") that is different to the input size (",
-           input.sizes(),
-           "). ",
-           "This will likely lead to incorrect results due to broadcasting. ",
-           "Please ensure they have the same size.");
+       TORCH_WARN("Using a target size (", target.sizes(), ") that is different to the input size (", input.sizes(), "). ",
+                  "This will likely lead to incorrect results due to broadcasting. ",
+                  "Please ensure they have the same size.");
      }
    
-     std::vector<Tensor> expanded_tensors =
-         torch::broadcast_tensors({input, target});
-     return torch::huber_loss(
-         expanded_tensors[0],
-         expanded_tensors[1],
-         enumtype::reduction_get_enum(reduction),
-         delta);
+     std::vector<Tensor> expanded_tensors = torch::broadcast_tensors({input, target});
+     return torch::huber_loss(expanded_tensors[0], expanded_tensors[1], enumtype::reduction_get_enum(reduction), delta);
    }
    } // namespace detail
    #endif /* DOXYGEN_SHOULD_SKIP_THIS */
@@ -332,8 +302,7 @@ Program Listing for File loss.h
        const Tensor& input,
        const Tensor& target,
        const HuberLossFuncOptions& options = {}) {
-     return detail::huber_loss(
-         input, target, options.reduction(), options.delta());
+     return detail::huber_loss(input, target, options.reduction(), options.delta());
    }
    
    // ============================================================================
@@ -345,7 +314,9 @@ Program Listing for File loss.h
        const Tensor& target,
        MultilabelMarginLossFuncOptions::reduction_t reduction) {
      return torch::multilabel_margin_loss(
-         input, target, enumtype::reduction_get_enum(reduction));
+       input,
+       target,
+       enumtype::reduction_get_enum(reduction));
    }
    } // namespace detail
    #endif /* DOXYGEN_SHOULD_SKIP_THIS */
@@ -366,7 +337,9 @@ Program Listing for File loss.h
        const Tensor& target,
        SoftMarginLossFuncOptions::reduction_t reduction) {
      return torch::soft_margin_loss(
-         input, target, enumtype::reduction_get_enum(reduction));
+       input,
+       target,
+       enumtype::reduction_get_enum(reduction));
    }
    } // namespace detail
    #endif /* DOXYGEN_SHOULD_SKIP_THIS */
@@ -387,9 +360,7 @@ Program Listing for File loss.h
        const Tensor& target,
        const Tensor& weight,
        MultilabelSoftMarginLossFuncOptions::reduction_t reduction) {
-     auto loss =
-         -(target * torch::log_sigmoid(input) +
-           (1 - target) * torch::log_sigmoid(-input));
+     auto loss = -(target * torch::log_sigmoid(input) + (1 - target) * torch::log_sigmoid(-input));
      if (weight.defined()) {
        loss = loss * weight;
      }
@@ -409,7 +380,9 @@ Program Listing for File loss.h
      } else {
        ret = input;
        TORCH_INTERNAL_ASSERT(
-           false, enumtype::get_enum_name(reduction), " is not valid");
+         false,
+         enumtype::get_enum_name(reduction),
+         " is not valid");
      }
      return ret;
    }
@@ -420,8 +393,7 @@ Program Listing for File loss.h
        const Tensor& input,
        const Tensor& target,
        const MultilabelSoftMarginLossFuncOptions& options = {}) {
-     return detail::multilabel_soft_margin_loss(
-         input, target, options.weight(), options.reduction());
+     return detail::multilabel_soft_margin_loss(input, target, options.weight(), options.reduction());
    }
    
    // ============================================================================
@@ -456,14 +428,14 @@ Program Listing for File loss.h
        const Tensor& negative,
        const TripletMarginLossFuncOptions& options = {}) {
      return detail::triplet_margin_loss(
-         anchor,
-         positive,
-         negative,
-         options.margin(),
-         options.p(),
-         options.eps(),
-         options.swap(),
-         options.reduction());
+       anchor,
+       positive,
+       negative,
+       options.margin(),
+       options.p(),
+       options.eps(),
+       options.swap(),
+       options.reduction());
    }
    
    // ============================================================================
@@ -474,8 +446,7 @@ Program Listing for File loss.h
        const Tensor& anchor,
        const Tensor& positive,
        const Tensor& negative,
-       c10::optional<TripletMarginWithDistanceLossFuncOptions::distance_function_t>
-           distance_function,
+       c10::optional<TripletMarginWithDistanceLossFuncOptions::distance_function_t> distance_function,
        double margin,
        bool swap,
        TripletMarginWithDistanceLossFuncOptions::reduction_t reduction) {
@@ -511,7 +482,9 @@ Program Listing for File loss.h
      } else {
        ret = anchor;
        TORCH_INTERNAL_ASSERT(
-           false, enumtype::get_enum_name(reduction), " is not valid");
+         false,
+         enumtype::get_enum_name(reduction),
+         " is not valid");
      }
      return ret;
    }
@@ -524,122 +497,100 @@ Program Listing for File loss.h
        const Tensor& negative,
        const TripletMarginWithDistanceLossFuncOptions& options = {}) {
      return detail::triplet_margin_with_distance_loss(
-         anchor,
-         positive,
-         negative,
-         options.distance_function(),
-         options.margin(),
-         options.swap(),
-         options.reduction());
+       anchor,
+       positive,
+       negative,
+       options.distance_function(),
+       options.margin(),
+       options.swap(),
+       options.reduction());
    }
    
    // ============================================================================
    
    #ifndef DOXYGEN_SHOULD_SKIP_THIS
    namespace detail {
-   inline Tensor ctc_loss(
-       const Tensor& log_probs,
-       const Tensor& targets,
-       const Tensor& input_lengths,
-       const Tensor& target_lengths,
-       int64_t blank,
-       CTCLossFuncOptions::reduction_t reduction,
-       bool zero_infinity) {
+   inline Tensor ctc_loss(const Tensor& log_probs,
+                          const Tensor& targets,
+                          const Tensor& input_lengths,
+                          const Tensor& target_lengths,
+                          int64_t blank,
+                          CTCLossFuncOptions::reduction_t reduction,
+                          bool zero_infinity) {
      return torch::ctc_loss(
-         log_probs,
-         targets,
-         input_lengths,
-         target_lengths,
-         blank,
-         enumtype::reduction_get_enum(reduction),
-         zero_infinity);
+       log_probs,
+       targets,
+       input_lengths,
+       target_lengths,
+       blank,
+       enumtype::reduction_get_enum(reduction),
+       zero_infinity);
    }
    } // namespace detail
    #endif /* DOXYGEN_SHOULD_SKIP_THIS */
    
-   inline Tensor ctc_loss(
-       const Tensor& log_probs,
-       const Tensor& targets,
-       const Tensor& input_lengths,
-       const Tensor& target_lengths,
-       const CTCLossFuncOptions& options = {}) {
+   inline Tensor ctc_loss(const Tensor& log_probs,
+                          const Tensor& targets,
+                          const Tensor& input_lengths,
+                          const Tensor& target_lengths,
+                          const CTCLossFuncOptions& options = {}) {
      return detail::ctc_loss(
-         log_probs,
-         targets,
-         input_lengths,
-         target_lengths,
-         options.blank(),
-         options.reduction(),
-         options.zero_infinity());
+       log_probs,
+       targets,
+       input_lengths,
+       target_lengths,
+       options.blank(),
+       options.reduction(),
+       options.zero_infinity());
    }
    
    // ============================================================================
    
    #ifndef DOXYGEN_SHOULD_SKIP_THIS
    namespace detail {
-   inline Tensor poisson_nll_loss(
-       const Tensor& input,
-       const Tensor& target,
-       bool log_input,
-       bool full,
-       double eps,
-       PoissonNLLLossFuncOptions::reduction_t reduction) {
+   inline Tensor poisson_nll_loss(const Tensor& input,
+                                  const Tensor& target,
+                                  bool log_input,
+                                  bool full,
+                                  double eps,
+                                  PoissonNLLLossFuncOptions::reduction_t reduction) {
      return torch::poisson_nll_loss(
-         input,
-         target,
-         log_input,
-         full,
-         eps,
-         enumtype::reduction_get_enum(reduction));
+       input, target,
+       log_input, full, eps, enumtype::reduction_get_enum(reduction));
    }
    } // namespace detail
    #endif /* DOXYGEN_SHOULD_SKIP_THIS */
    
-   inline Tensor poisson_nll_loss(
-       const Tensor& input,
-       const Tensor& target,
-       const PoissonNLLLossFuncOptions& options = {}) {
+   inline Tensor poisson_nll_loss(const Tensor& input, const Tensor& target,
+                                  const PoissonNLLLossFuncOptions& options = {}) {
      return detail::poisson_nll_loss(
-         input,
-         target,
-         options.log_input(),
-         options.full(),
-         options.eps(),
-         options.reduction());
+       input, target,
+       options.log_input(), options.full(), options.eps(), options.reduction());
    }
    
    // ============================================================================
    
    #ifndef DOXYGEN_SHOULD_SKIP_THIS
    namespace detail {
-   inline Tensor margin_ranking_loss(
-       const Tensor& input1,
-       const Tensor& input2,
-       const Tensor& target,
-       double margin,
-       MarginRankingLossFuncOptions::reduction_t reduction) {
+   inline Tensor margin_ranking_loss(const Tensor& input1,
+                                     const Tensor& input2,
+                                     const Tensor& target,
+                                     double margin,
+                                     MarginRankingLossFuncOptions::reduction_t reduction) {
      TORCH_CHECK(
-         input1.dim() == input2.dim() && input1.dim() == target.dim(),
-         "margin_ranking_loss : All input tensors should have same dimension but got sizes: "
-         "input1: ",
-         input1.sizes(),
-         ", input2: ",
-         input2.sizes(),
-         ", target: ",
-         target.sizes());
-     return torch::margin_ranking_loss(
-         input1, input2, target, margin, enumtype::reduction_get_enum(reduction));
+       input1.dim() == input2.dim() && input1.dim() == target.dim(),
+       "margin_ranking_loss : All input tensors should have same dimension but got sizes: "
+       "input1: ", input1.sizes(), ", input2: ", input2.sizes(),
+       ", target: ", target.sizes());
+     return torch::margin_ranking_loss(input1, input2, target, margin,
+       enumtype::reduction_get_enum(reduction));
    }
    } // namespace detail
    #endif /* DOXYGEN_SHOULD_SKIP_THIS */
    
-   inline Tensor margin_ranking_loss(
-       const Tensor& input1,
-       const Tensor& input2,
-       const Tensor& target,
-       const MarginRankingLossFuncOptions& options = {}) {
-     return detail::margin_ranking_loss(
-         input1, input2, target, options.margin(), options.reduction());
+   inline Tensor margin_ranking_loss(const Tensor& input1, const Tensor& input2,
+     const Tensor& target, const MarginRankingLossFuncOptions& options = {}) {
+     return detail::margin_ranking_loss(input1, input2, target, options.margin(), options.reduction());
    }
    
    // ============================================================================
@@ -652,18 +603,12 @@ Program Listing for File loss.h
        const Tensor& weight,
        int64_t ignore_index,
        const NLLLossFuncOptions::reduction_t reduction) {
-     if (input.dim() < 2) {
+     if (input.dim() < 2){
        TORCH_CHECK(false, "Expected 2 or more dimensions (got ", input.dim(), ")");
      }
    
      if (input.sizes()[0] != target.sizes()[0]) {
-       TORCH_CHECK(
-           false,
-           "Expected input batch_size (",
-           input.sizes()[0],
-           ") to match target batch_size (",
-           target.sizes()[0],
-           ").");
+       TORCH_CHECK(false, "Expected input batch_size (", input.sizes()[0], ") to match target batch_size (", target.sizes()[0], ").");
      }
    
      return torch::nll_loss_nd(
@@ -681,11 +626,11 @@ Program Listing for File loss.h
        const Tensor& target,
        const NLLLossFuncOptions& options = {}) {
      return detail::nll_loss(
-         input,
-         target,
-         options.weight(),
-         options.ignore_index(),
-         options.reduction());
+       input,
+       target,
+       options.weight(),
+       options.ignore_index(),
+       options.reduction());
    }
    
    // ============================================================================
@@ -728,39 +673,26 @@ Program Listing for File loss.h
    #ifndef DOXYGEN_SHOULD_SKIP_THIS
    namespace detail {
    inline Tensor binary_cross_entropy_with_logits(
-       const Tensor& input,
-       const Tensor& target,
-       const Tensor& weight,
-       BinaryCrossEntropyWithLogitsFuncOptions::reduction_t reduction,
-       const Tensor& pos_weight) {
-     TORCH_CHECK(
-         target.sizes() == input.sizes(),
-         "Target size (",
-         target.sizes(),
-         ") must be the same as input size (",
-         input.sizes(),
-         ")");
+     const Tensor& input, const Tensor& target, const Tensor& weight,
+     BinaryCrossEntropyWithLogitsFuncOptions::reduction_t reduction, const Tensor& pos_weight) {
    
-     return torch::binary_cross_entropy_with_logits(
-         input,
-         target,
-         weight,
-         pos_weight,
-         enumtype::reduction_get_enum(reduction));
+     TORCH_CHECK(target.sizes() == input.sizes(),
+       "Target size (", target.sizes(),
+       ") must be the same as input size (",
+       input.sizes(), ")"
+     );
+   
+     return torch::binary_cross_entropy_with_logits(input, target,
+       weight, pos_weight, enumtype::reduction_get_enum(reduction));
    }
    } // namespace detail
    #endif /* DOXYGEN_SHOULD_SKIP_THIS */
    
    inline Tensor binary_cross_entropy_with_logits(
-       const Tensor& input,
-       const Tensor& target,
-       const BinaryCrossEntropyWithLogitsFuncOptions& options = {}) {
-     return detail::binary_cross_entropy_with_logits(
-         input,
-         target,
-         options.weight(),
-         options.reduction(),
-         options.pos_weight());
+     const Tensor& input, const Tensor& target,
+     const BinaryCrossEntropyWithLogitsFuncOptions& options = {}) {
+     return detail::binary_cross_entropy_with_logits(input, target,
+       options.weight(), options.reduction(), options.pos_weight());
    }
    
    } // namespace functional
