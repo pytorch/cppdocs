@@ -25,16 +25,13 @@ Program Listing for File moduledict.h
    // NOLINTNEXTLINE(bugprone-exception-escape)
    class ModuleDictImpl : public Cloneable<ModuleDictImpl> {
     public:
-     using Iterator =
-         torch::OrderedDict<std::string, std::shared_ptr<Module>>::Iterator;
-     using ConstIterator =
-         torch::OrderedDict<std::string, std::shared_ptr<Module>>::ConstIterator;
+     using Iterator = torch::OrderedDict<std::string, std::shared_ptr<Module>>::Iterator;
+     using ConstIterator = torch::OrderedDict<std::string, std::shared_ptr<Module>>::ConstIterator;
    
      ModuleDictImpl() = default;
    
      explicit ModuleDictImpl(
-         const std::vector<std::pair<std::string, std::shared_ptr<Module>>>&
-             modules) {
+         const std::vector<std::pair<std::string, std::shared_ptr<Module>>>& modules) {
        update(modules);
      }
    
@@ -84,8 +81,7 @@ Program Listing for File moduledict.h
      }
    
      void clear() {
-       // Not remove the registration of modules to make it consistent with python
-       // version.
+       // Not remove the registration of modules to make it consistent with python version.
        modules_.clear();
      }
    
@@ -127,14 +123,12 @@ Program Listing for File moduledict.h
      std::shared_ptr<Module> pop(const std::string& key) {
        auto module = modules_[key];
        modules_.erase(key);
-       // Not remove the registration of the module to make it consistent with
-       // python version.
+       // Not remove the registration of the module to make it consistent with python version.
        return module;
      }
    
      void update(
-         const std::vector<std::pair<std::string, std::shared_ptr<Module>>>&
-             modules) {
+         const std::vector<std::pair<std::string, std::shared_ptr<Module>>>& modules) {
        for (auto& item : modules) {
          insert(item.first, item.second);
        }
@@ -147,18 +141,20 @@ Program Listing for File moduledict.h
        }
      }
    
-    private:
+   private:
      torch::OrderedDict<std::string, std::shared_ptr<Module>> modules_;
    
      void insert(const std::string& key, std::shared_ptr<Module> module) {
        if (contains(key)) {
          modules_[key] = std::move(module);
          replace_module(key, modules_[key]);
-       } else {
+       }
+       else {
          modules_.insert(key, std::move(module));
          register_module(key, modules_.back().value());
        }
      }
+   
    };
    
    TORCH_MODULE(ModuleDict);
