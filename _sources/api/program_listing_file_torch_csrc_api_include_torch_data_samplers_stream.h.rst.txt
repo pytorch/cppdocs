@@ -1,0 +1,61 @@
+:github_url: https://github.com/pytorch/pytorch
+
+
+.. _program_listing_file_torch_csrc_api_include_torch_data_samplers_stream.h:
+
+Program Listing for File stream.h
+=================================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_torch_csrc_api_include_torch_data_samplers_stream.h>` (``torch/csrc/api/include/torch/data/samplers/stream.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: cpp
+
+   #pragma once
+   
+   #include <torch/csrc/Export.h>
+   #include <torch/data/samplers/base.h>
+   #include <torch/data/samplers/custom_batch_request.h>
+   #include <torch/types.h>
+   
+   #include <cstddef>
+   
+   namespace torch {
+   namespace serialize {
+   class InputArchive;
+   class OutputArchive;
+   } // namespace serialize
+   } // namespace torch
+   
+   namespace torch {
+   namespace data {
+   namespace samplers {
+   
+   struct TORCH_API BatchSize : public CustomBatchRequest {
+     explicit BatchSize(size_t size);
+     size_t size() const noexcept override;
+     operator size_t() const noexcept;
+     size_t size_;
+   };
+   
+   class TORCH_API StreamSampler : public Sampler<BatchSize> {
+    public:
+     explicit StreamSampler(size_t epoch_size);
+   
+     void reset(optional<size_t> new_size = nullopt) override;
+   
+     optional<BatchSize> next(size_t batch_size) override;
+   
+     void save(serialize::OutputArchive& archive) const override;
+   
+     void load(serialize::InputArchive& archive) override;
+   
+    private:
+     size_t examples_retrieved_so_far_ = 0;
+     size_t epoch_size_;
+   };
+   
+   } // namespace samplers
+   } // namespace data
+   } // namespace torch

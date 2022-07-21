@@ -1,0 +1,79 @@
+:github_url: https://github.com/pytorch/pytorch
+
+
+.. _program_listing_file_torch_csrc_api_include_torch_data_detail_queue.h:
+
+Program Listing for File queue.h
+================================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_torch_csrc_api_include_torch_data_detail_queue.h>` (``torch/csrc/api/include/torch/data/detail/queue.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: cpp
+
+   #pragma once
+   
+   #include <torch/types.h>
+   
+   #include <c10/util/Exception.h>
+   
+   #include <chrono>
+   #include <condition_variable>
+   #include <cstddef>
+   #include <mutex>
+   #include <queue>
+   
+   namespace torch {
+   namespace data {
+   namespace detail {
+   
+   template <typename T>
+   class Queue {
+    public:
+     void push(T value) {
+       {
+         std::lock_guard<std::mutex> lock(mutex_);
+         queue_.push(std::move(value));
+       }
+       cv_.notify_one();
+     }
+   
+     T pop(optional<std::chrono::milliseconds> timeout = nullopt) {
+       std::unique_lock<std::mutex> lock(mutex_);
+       if (timeout) {
+         if (!cv_.wait_for(
+                 lock, *timeout, [this] { return !this->queue_.empty(); })) {
+           // clang-format off
+           AT_ERROR(
+               "Timeout in DataLoader queue while waiting for next batch"
+               " (timeout was ", timeout->count(), " ms)");
+           // clang-format on
+         }
+       } else {
+         cv_.wait(lock, [this] { return !this->queue_.empty(); });
+       }
+       AT_ASSERT(!queue_.empty());
+       T value = queue_.front();
+       queue_.pop();
+       lock.unlock();
+       return value;
+     }
+   
+     size_t clear() {
+       std::lock_guard<std::mutex> lock(this->mutex_);
+       const auto size = queue_.size();
+       while (!queue_.empty()) {
+         queue_.pop();
+       }
+       return size;
+     }
+   
+    private:
+     std::queue<T> queue_;
+     std::mutex mutex_;
+     std::condition_variable cv_;
+   };
+   } // namespace detail
+   } // namespace data
+   } // namespace torch

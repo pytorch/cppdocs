@@ -1,0 +1,61 @@
+:github_url: https://github.com/pytorch/pytorch
+
+
+.. _program_listing_file_torch_csrc_api_include_torch_data_dataloader_options.h:
+
+Program Listing for File dataloader_options.h
+=============================================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_torch_csrc_api_include_torch_data_dataloader_options.h>` (``torch/csrc/api/include/torch/data/dataloader_options.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: cpp
+
+   #pragma once
+   
+   #include <torch/arg.h>
+   #include <torch/types.h>
+   
+   #include <chrono>
+   #include <cstddef>
+   
+   namespace torch {
+   namespace data {
+   
+   struct DataLoaderOptions {
+     DataLoaderOptions() = default;
+     /* implicit */ DataLoaderOptions(size_t batch_size)
+         : batch_size_(batch_size) {}
+   
+     TORCH_ARG(size_t, batch_size) = 1;
+   
+     TORCH_ARG(size_t, workers) = 0;
+   
+     TORCH_ARG(optional<size_t>, max_jobs);
+   
+     TORCH_ARG(optional<std::chrono::milliseconds>, timeout);
+   
+     TORCH_ARG(bool, enforce_ordering) = true;
+   
+     TORCH_ARG(bool, drop_last) = false;
+   };
+   
+   struct FullDataLoaderOptions {
+     explicit FullDataLoaderOptions(DataLoaderOptions options)
+         : batch_size(options.batch_size()),
+           workers(options.workers()),
+           max_jobs(options.max_jobs().value_or(2 * workers)),
+           timeout(options.timeout()),
+           enforce_ordering(options.enforce_ordering()),
+           drop_last(options.drop_last()) {}
+   
+     size_t batch_size;
+     size_t workers;
+     size_t max_jobs;
+     optional<std::chrono::milliseconds> timeout;
+     bool enforce_ordering;
+     bool drop_last;
+   };
+   } // namespace data
+   } // namespace torch

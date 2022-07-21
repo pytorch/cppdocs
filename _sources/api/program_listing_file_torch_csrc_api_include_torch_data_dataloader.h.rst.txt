@@ -1,0 +1,74 @@
+:github_url: https://github.com/pytorch/pytorch
+
+
+.. _program_listing_file_torch_csrc_api_include_torch_data_dataloader.h:
+
+Program Listing for File dataloader.h
+=====================================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_torch_csrc_api_include_torch_data_dataloader.h>` (``torch/csrc/api/include/torch/data/dataloader.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: cpp
+
+   #pragma once
+   
+   #include <torch/data/dataloader/stateful.h>
+   #include <torch/data/dataloader/stateless.h>
+   
+   #include <torch/csrc/utils/memory.h>
+   #include <torch/csrc/utils/variadic.h>
+   
+   #include <c10/util/Exception.h>
+   
+   #include <cstddef>
+   #include <memory>
+   #include <type_traits>
+   #include <utility>
+   
+   namespace torch {
+   namespace data {
+   
+   template <typename Dataset, typename Sampler>
+   torch::disable_if_t<
+       Dataset::is_stateful,
+       std::unique_ptr<StatelessDataLoader<Dataset, Sampler>>>
+   make_data_loader(Dataset dataset, Sampler sampler, DataLoaderOptions options) {
+     return torch::make_unique<StatelessDataLoader<Dataset, Sampler>>(
+         // NOLINTNEXTLINE(performance-move-const-arg)
+         std::move(dataset),
+         std::move(sampler),
+         std::move(options));
+   }
+   
+   template <typename Sampler = samplers::RandomSampler, typename Dataset>
+   torch::disable_if_t<
+       Dataset::is_stateful || !std::is_constructible<Sampler, size_t>::value,
+       std::unique_ptr<StatelessDataLoader<Dataset, Sampler>>>
+   make_data_loader(
+       Dataset dataset,
+       DataLoaderOptions options = DataLoaderOptions()) {
+     const optional<size_t> size = dataset.size();
+     TORCH_CHECK(
+         size.has_value(),
+         "Expected the dataset to be sized in "
+         "order to construct the Sampler");
+     return make_data_loader(
+         // NOLINTNEXTLINE(performance-move-const-arg)
+         std::move(dataset),
+         Sampler(*size),
+         std::move(options));
+   }
+   
+   template <typename Dataset, typename = torch::enable_if_t<Dataset::is_stateful>>
+   std::unique_ptr<StatefulDataLoader<Dataset>> make_data_loader(
+       Dataset dataset,
+       DataLoaderOptions options = DataLoaderOptions()) {
+     return torch::make_unique<StatefulDataLoader<Dataset>>(
+         // NOLINTNEXTLINE(performance-move-const-arg)
+         std::move(dataset),
+         std::move(options));
+   }
+   } // namespace data
+   } // namespace torch

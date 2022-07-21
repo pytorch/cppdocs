@@ -1,0 +1,106 @@
+:github_url: https://github.com/pytorch/pytorch
+
+
+.. _program_listing_file_torch_csrc_api_include_torch_nn_options_padding.h:
+
+Program Listing for File padding.h
+==================================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_torch_csrc_api_include_torch_nn_options_padding.h>` (``torch/csrc/api/include/torch/nn/options/padding.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: cpp
+
+   #pragma once
+   
+   #include <c10/util/variant.h>
+   #include <torch/arg.h>
+   #include <torch/csrc/Export.h>
+   #include <torch/enum.h>
+   #include <torch/expanding_array.h>
+   #include <torch/types.h>
+   
+   namespace torch {
+   namespace nn {
+   
+   template <size_t D>
+   struct TORCH_API ReflectionPadOptions {
+     ReflectionPadOptions(ExpandingArray<D * 2> padding) : padding_(padding) {}
+   
+   
+     TORCH_ARG(ExpandingArray<D * 2>, padding);
+   };
+   
+   using ReflectionPad1dOptions = ReflectionPadOptions<1>;
+   
+   using ReflectionPad2dOptions = ReflectionPadOptions<2>;
+   
+   using ReflectionPad3dOptions = ReflectionPadOptions<3>;
+   
+   // ============================================================================
+   
+   template <size_t D>
+   struct TORCH_API ReplicationPadOptions {
+     ReplicationPadOptions(ExpandingArray<D * 2> padding) : padding_(padding) {}
+   
+     TORCH_ARG(ExpandingArray<D * 2>, padding);
+   };
+   
+   using ReplicationPad1dOptions = ReplicationPadOptions<1>;
+   
+   using ReplicationPad2dOptions = ReplicationPadOptions<2>;
+   
+   using ReplicationPad3dOptions = ReplicationPadOptions<3>;
+   
+   // ============================================================================
+   
+   struct TORCH_API ZeroPad2dOptions {
+     ZeroPad2dOptions(ExpandingArray<4> padding) : padding_(padding) {}
+   
+     TORCH_ARG(ExpandingArray<4>, padding);
+   };
+   
+   // ============================================================================
+   
+   template <size_t D>
+   struct TORCH_API ConstantPadOptions {
+     ConstantPadOptions(ExpandingArray<D * 2> padding, double value)
+         : padding_(padding), value_(value) {}
+   
+     TORCH_ARG(ExpandingArray<D * 2>, padding);
+   
+     TORCH_ARG(double, value);
+   };
+   
+   using ConstantPad1dOptions = ConstantPadOptions<1>;
+   
+   using ConstantPad2dOptions = ConstantPadOptions<2>;
+   
+   using ConstantPad3dOptions = ConstantPadOptions<3>;
+   
+   // ============================================================================
+   
+   namespace functional {
+   
+   struct TORCH_API PadFuncOptions {
+     typedef c10::variant<
+         enumtype::kConstant,
+         enumtype::kReflect,
+         enumtype::kReplicate,
+         enumtype::kCircular>
+         mode_t;
+   
+     PadFuncOptions(std::vector<int64_t> pad);
+   
+     TORCH_ARG(std::vector<int64_t>, pad);
+   
+     TORCH_ARG(mode_t, mode) = torch::kConstant;
+   
+     TORCH_ARG(double, value) = 0;
+   };
+   
+   } // namespace functional
+   
+   } // namespace nn
+   } // namespace torch

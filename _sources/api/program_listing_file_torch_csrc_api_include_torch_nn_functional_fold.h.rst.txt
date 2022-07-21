@@ -1,0 +1,92 @@
+:github_url: https://github.com/pytorch/pytorch
+
+
+.. _program_listing_file_torch_csrc_api_include_torch_nn_functional_fold.h:
+
+Program Listing for File fold.h
+===============================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_torch_csrc_api_include_torch_nn_functional_fold.h>` (``torch/csrc/api/include/torch/nn/functional/fold.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: cpp
+
+   #pragma once
+   
+   #include <torch/nn/options/fold.h>
+   
+   namespace torch {
+   namespace nn {
+   namespace functional {
+   
+   #ifndef DOXYGEN_SHOULD_SKIP_THIS
+   namespace detail {
+   inline Tensor fold(
+       const Tensor& input,
+       ExpandingArray<2> output_size,
+       ExpandingArray<2> kernel_size,
+       ExpandingArray<2> dilation,
+       ExpandingArray<2> padding,
+       ExpandingArray<2> stride) {
+     if (input.dim() == 3 || input.dim() == 2) {
+       return torch::col2im(
+           input, output_size, kernel_size, dilation, padding, stride);
+     } else {
+       TORCH_CHECK(
+           false,
+           "Input Error: Only unbatched (2D) or batched (3D) input Tensors are supported "
+           "(got ",
+           input.dim(),
+           "D)");
+     }
+   }
+   } // namespace detail
+   #endif /* DOXYGEN_SHOULD_SKIP_THIS */
+   
+   inline Tensor fold(const Tensor& input, const FoldFuncOptions& options) {
+     return detail::fold(
+         input,
+         options.output_size(),
+         options.kernel_size(),
+         options.dilation(),
+         options.padding(),
+         options.stride());
+   }
+   
+   // ============================================================================
+   
+   #ifndef DOXYGEN_SHOULD_SKIP_THIS
+   namespace detail {
+   inline Tensor unfold(
+       const Tensor& input,
+       ExpandingArray<2> kernel_size,
+       ExpandingArray<2> dilation,
+       ExpandingArray<2> padding,
+       ExpandingArray<2> stride) {
+     if (input.dim() == 4) {
+       return torch::im2col(input, kernel_size, dilation, padding, stride);
+     } else {
+       TORCH_CHECK(
+           false,
+           "Input Error: Only 4D input Tensors are supported "
+           "(got ",
+           input.dim(),
+           "D)");
+     }
+   }
+   } // namespace detail
+   #endif /* DOXYGEN_SHOULD_SKIP_THIS */
+   
+   inline Tensor unfold(const Tensor& input, const UnfoldFuncOptions& options) {
+     return detail::unfold(
+         input,
+         options.kernel_size(),
+         options.dilation(),
+         options.padding(),
+         options.stride());
+   }
+   
+   } // namespace functional
+   } // namespace nn
+   } // namespace torch

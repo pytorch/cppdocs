@@ -1,0 +1,127 @@
+:github_url: https://github.com/pytorch/pytorch
+
+
+.. _program_listing_file_torch_csrc_api_include_torch_nn_modules_normalization.h:
+
+Program Listing for File normalization.h
+========================================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_torch_csrc_api_include_torch_nn_modules_normalization.h>` (``torch/csrc/api/include/torch/nn/modules/normalization.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: cpp
+
+   #pragma once
+   
+   #include <torch/nn/cloneable.h>
+   #include <torch/nn/functional/normalization.h>
+   #include <torch/nn/modules/_functions.h>
+   #include <torch/nn/options/normalization.h>
+   #include <torch/nn/pimpl.h>
+   #include <torch/types.h>
+   
+   #include <cstddef>
+   #include <vector>
+   
+   namespace torch {
+   namespace nn {
+   
+   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ LayerNorm ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   
+   // NOLINTNEXTLINE(bugprone-exception-escape)
+   class TORCH_API LayerNormImpl : public torch::nn::Cloneable<LayerNormImpl> {
+    public:
+     LayerNormImpl(std::vector<int64_t> normalized_shape)
+         : LayerNormImpl(LayerNormOptions(normalized_shape)) {}
+     explicit LayerNormImpl(const LayerNormOptions& options_);
+   
+     void reset() override;
+   
+     void reset_parameters();
+   
+     void pretty_print(std::ostream& stream) const override;
+   
+     Tensor forward(const Tensor& input);
+   
+     LayerNormOptions options;
+   
+     Tensor weight;
+   
+     Tensor bias;
+   };
+   
+   TORCH_MODULE(LayerNorm);
+   
+   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ LocalResponseNorm
+   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   
+   // NOLINTNEXTLINE(bugprone-exception-escape)
+   class TORCH_API LocalResponseNormImpl
+       : public Cloneable<LocalResponseNormImpl> {
+    public:
+     LocalResponseNormImpl(int64_t size)
+         : LocalResponseNormImpl(LocalResponseNormOptions(size)) {}
+     explicit LocalResponseNormImpl(const LocalResponseNormOptions& options_);
+   
+     Tensor forward(const Tensor& input);
+   
+     void reset() override;
+   
+     void pretty_print(std::ostream& stream) const override;
+   
+     LocalResponseNormOptions options;
+   };
+   
+   TORCH_MODULE(LocalResponseNorm);
+   
+   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ CrossMapLRN2d ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   
+   // NOLINTNEXTLINE(bugprone-exception-escape)
+   class TORCH_API CrossMapLRN2dImpl
+       : public torch::nn::Cloneable<CrossMapLRN2dImpl> {
+    public:
+     CrossMapLRN2dImpl(int64_t size)
+         : CrossMapLRN2dImpl(CrossMapLRN2dOptions(size)) {}
+     explicit CrossMapLRN2dImpl(const CrossMapLRN2dOptions& options_)
+         : options(options_) {}
+   
+     void reset() override;
+   
+     void pretty_print(std::ostream& stream) const override;
+   
+     torch::Tensor forward(const torch::Tensor& input);
+   
+     CrossMapLRN2dOptions options;
+   };
+   
+   TORCH_MODULE(CrossMapLRN2d);
+   
+   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ GroupNorm ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   
+   // NOLINTNEXTLINE(bugprone-exception-escape)
+   class TORCH_API GroupNormImpl : public torch::nn::Cloneable<GroupNormImpl> {
+    public:
+     GroupNormImpl(int64_t num_groups, int64_t num_channels)
+         : GroupNormImpl(GroupNormOptions(num_groups, num_channels)) {}
+     explicit GroupNormImpl(const GroupNormOptions& options_);
+   
+     void reset() override;
+   
+     void reset_parameters();
+   
+     void pretty_print(std::ostream& stream) const override;
+   
+     Tensor forward(const Tensor& input);
+   
+     GroupNormOptions options;
+   
+     Tensor weight;
+   
+     Tensor bias;
+   };
+   
+   TORCH_MODULE(GroupNorm);
+   
+   } // namespace nn
+   } // namespace torch

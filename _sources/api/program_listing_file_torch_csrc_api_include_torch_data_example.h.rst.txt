@@ -1,0 +1,62 @@
+:github_url: https://github.com/pytorch/pytorch
+
+
+.. _program_listing_file_torch_csrc_api_include_torch_data_example.h:
+
+Program Listing for File example.h
+==================================
+
+|exhale_lsh| :ref:`Return to documentation for file <file_torch_csrc_api_include_torch_data_example.h>` (``torch/csrc/api/include/torch/data/example.h``)
+
+.. |exhale_lsh| unicode:: U+021B0 .. UPWARDS ARROW WITH TIP LEFTWARDS
+
+.. code-block:: cpp
+
+   #pragma once
+   
+   #include <torch/types.h>
+   
+   namespace torch {
+   namespace data {
+   
+   template <typename Data = Tensor, typename Target = Tensor>
+   struct Example {
+     using DataType = Data;
+     using TargetType = Target;
+   
+     Example() = default;
+     Example(Data data, Target target)
+         : data(std::move(data)), target(std::move(target)) {}
+   
+     Data data;
+     Target target;
+   };
+   
+   namespace example {
+   using NoTarget = void;
+   } //  namespace example
+   
+   template <typename Data>
+   struct Example<Data, example::NoTarget> {
+     using DataType = Data;
+     using TargetType = example::NoTarget;
+   
+     Example() = default;
+     /* implicit */ Example(Data data) : data(std::move(data)) {}
+   
+     // When a DataLoader returns an Example like this, that example should be
+     // implicitly convertible to the underlying data type.
+   
+     operator Data&() {
+       return data;
+     }
+     operator const Data&() const {
+       return data;
+     }
+   
+     Data data;
+   };
+   
+   using TensorExample = Example<Tensor, example::NoTarget>;
+   } // namespace data
+   } // namespace torch
