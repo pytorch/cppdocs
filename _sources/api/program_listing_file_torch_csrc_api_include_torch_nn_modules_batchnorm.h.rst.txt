@@ -16,8 +16,8 @@ Program Listing for File batchnorm.h
    
    #include <torch/nn/cloneable.h>
    #include <torch/nn/functional/batchnorm.h>
-   #include <torch/nn/init.h>
    #include <torch/nn/options/batchnorm.h>
+   #include <torch/nn/init.h>
    #include <torch/nn/pimpl.h>
    #include <torch/types.h>
    
@@ -40,28 +40,20 @@ Program Listing for File batchnorm.h
    
      void reset() override {
        if (options.affine()) {
-         weight = this->register_parameter(
-             "weight", torch::empty({options.num_features()}));
-         bias = this->register_parameter(
-             "bias", torch::empty({options.num_features()}));
+         weight = this->register_parameter("weight", torch::empty({options.num_features()}));
+         bias = this->register_parameter("bias", torch::empty({options.num_features()}));
        } else {
-         weight =
-             this->register_parameter("weight", Tensor(), /*requires_grad=*/false);
-         bias =
-             this->register_parameter("bias", Tensor(), /*requires_grad=*/false);
+         weight = this->register_parameter("weight", Tensor(), /*requires_grad=*/false);
+         bias = this->register_parameter("bias", Tensor(), /*requires_grad=*/false);
        }
        if (options.track_running_stats()) {
-         running_mean = this->register_buffer(
-             "running_mean", torch::zeros({options.num_features()}));
-         running_var = this->register_buffer(
-             "running_var", torch::ones({options.num_features()}));
-         num_batches_tracked = this->register_buffer(
-             "num_batches_tracked", torch::tensor(0, torch::dtype(torch::kLong)));
+         running_mean = this->register_buffer("running_mean", torch::zeros({options.num_features()}));
+         running_var = this->register_buffer("running_var", torch::ones({options.num_features()}));
+         num_batches_tracked = this->register_buffer("num_batches_tracked", torch::tensor(0, torch::dtype(torch::kLong)));
        } else {
          running_mean = this->register_buffer("running_mean", Tensor());
          running_var = this->register_buffer("running_var", Tensor());
-         num_batches_tracked =
-             this->register_buffer("num_batches_tracked", Tensor());
+         num_batches_tracked = this->register_buffer("num_batches_tracked", Tensor());
        }
        reset_parameters();
      }
@@ -114,11 +106,9 @@ Program Listing for File batchnorm.h
        if (this->is_training() && this->options.track_running_stats()) {
          if (this->num_batches_tracked.defined()) {
            this->num_batches_tracked += 1;
-           if (this->options.momentum() ==
-               c10::nullopt) { // use cumulative moving average
-             exponential_average_factor =
-                 1.0 / this->num_batches_tracked.template item<double>();
-           } else { // use exponential moving average
+           if (this->options.momentum() == c10::nullopt) {  // use cumulative moving average
+             exponential_average_factor = 1.0 / this->num_batches_tracked.template item<double>();
+           } else {  // use exponential moving average
              exponential_average_factor = this->options.momentum().value();
            }
          }
@@ -138,13 +128,12 @@ Program Listing for File batchnorm.h
      void pretty_print(std::ostream& stream) const override;
    };
    
-   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ BatchNorm1d
-   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ BatchNorm1d ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    
    // NOLINTNEXTLINE(bugprone-exception-escape)
    class TORCH_API BatchNorm1dImpl : public BatchNormImplBase<1, BatchNorm1dImpl> {
     protected:
-     void _check_input_dim(const Tensor& input) override;
+      void _check_input_dim(const Tensor& input) override;
    
     public:
      using BatchNormImplBase<1, BatchNorm1dImpl>::BatchNormImplBase;
@@ -152,13 +141,12 @@ Program Listing for File batchnorm.h
    
    TORCH_MODULE(BatchNorm1d);
    
-   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ BatchNorm2d
-   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ BatchNorm2d ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    
    // NOLINTNEXTLINE(bugprone-exception-escape)
    class TORCH_API BatchNorm2dImpl : public BatchNormImplBase<2, BatchNorm2dImpl> {
     protected:
-     void _check_input_dim(const Tensor& input) override;
+      void _check_input_dim(const Tensor& input) override;
    
     public:
      using BatchNormImplBase<2, BatchNorm2dImpl>::BatchNormImplBase;
@@ -166,13 +154,12 @@ Program Listing for File batchnorm.h
    
    TORCH_MODULE(BatchNorm2d);
    
-   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ BatchNorm3d
-   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ BatchNorm3d ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    
    // NOLINTNEXTLINE(bugprone-exception-escape)
    class TORCH_API BatchNorm3dImpl : public BatchNormImplBase<3, BatchNorm3dImpl> {
     protected:
-     void _check_input_dim(const Tensor& input) override;
+      void _check_input_dim(const Tensor& input) override;
    
     public:
      using BatchNormImplBase<3, BatchNorm3dImpl>::BatchNormImplBase;
