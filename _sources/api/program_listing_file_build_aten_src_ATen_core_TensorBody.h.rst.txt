@@ -586,6 +586,8 @@ Program Listing for File TensorBody.h
      at::Tensor vdot(const at::Tensor & other) const;
      at::Tensor new_empty(at::IntArrayRef size, at::TensorOptions options={}) const;
      at::Tensor new_empty(at::IntArrayRef size, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory) const;
+     at::Tensor new_empty_symint(c10::SymIntArrayRef size, at::TensorOptions options={}) const;
+     at::Tensor new_empty_symint(c10::SymIntArrayRef size, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory) const;
      at::Tensor new_empty_strided(at::IntArrayRef size, at::IntArrayRef stride, at::TensorOptions options={}) const;
      at::Tensor new_empty_strided(at::IntArrayRef size, at::IntArrayRef stride, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory) const;
      at::Tensor new_full(at::IntArrayRef size, const at::Scalar & fill_value, at::TensorOptions options={}) const;
@@ -925,7 +927,6 @@ Program Listing for File TensorBody.h
      at::Tensor & set_(const at::Tensor & source, int64_t storage_offset, at::IntArrayRef size, at::IntArrayRef stride={}) const;
      at::Tensor & set_(const at::Tensor & source) const;
      at::Tensor & set_() const;
-     at::Tensor lift() const;
      bool is_set_to(const at::Tensor & tensor) const;
      at::Tensor & masked_fill_(const at::Tensor & mask, const at::Scalar & value) const;
      at::Tensor masked_fill(const at::Tensor & mask, const at::Scalar & value) const;
@@ -2125,6 +2126,16 @@ Program Listing for File TensorBody.h
    // aten::new_empty(Tensor self, int[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
    inline at::Tensor Tensor::new_empty(at::IntArrayRef size, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory) const {
        return at::_ops::new_empty::call(const_cast<Tensor&>(*this), size, dtype, layout, device, pin_memory);
+   }
+   
+   // aten::new_empty.SymInt(Tensor self, SymInt[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
+   inline at::Tensor Tensor::new_empty_symint(c10::SymIntArrayRef size, at::TensorOptions options) const {
+       return at::_ops::new_empty_SymInt::call(const_cast<Tensor&>(*this), size, optTypeMetaToScalarType(options.dtype_opt()), options.layout_opt(), options.device_opt(), options.pinned_memory_opt());
+   }
+   
+   // aten::new_empty.SymInt(Tensor self, SymInt[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
+   inline at::Tensor Tensor::new_empty_symint(c10::SymIntArrayRef size, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory) const {
+       return at::_ops::new_empty_SymInt::call(const_cast<Tensor&>(*this), size, dtype, layout, device, pin_memory);
    }
    
    // aten::new_empty_strided(Tensor self, int[] size, int[] stride, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
@@ -3820,11 +3831,6 @@ Program Listing for File TensorBody.h
    // aten::set_(Tensor(a!) self) -> Tensor(a!)
    inline at::Tensor & Tensor::set_() const {
        return at::_ops::set_::call(const_cast<Tensor&>(*this));
-   }
-   
-   // aten::lift(Tensor self) -> Tensor
-   inline at::Tensor Tensor::lift() const {
-       return at::_ops::lift::call(const_cast<Tensor&>(*this));
    }
    
    // aten::is_set_to(Tensor self, Tensor tensor) -> bool
