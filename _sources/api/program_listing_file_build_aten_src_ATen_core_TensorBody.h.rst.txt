@@ -146,6 +146,7 @@ Program Listing for File TensorBody.h
    
      // Aliased by Dimname overloads, so need explicit using
      using TensorBase::size;
+     using TensorBase::sym_size;
      using TensorBase::stride;
    
      c10::MaybeOwned<Tensor> expect_contiguous(MemoryFormat memory_format=MemoryFormat::Contiguous) const &;
@@ -585,6 +586,8 @@ Program Listing for File TensorBody.h
      at::Tensor vdot(const at::Tensor & other) const;
      at::Tensor new_empty(at::IntArrayRef size, at::TensorOptions options={}) const;
      at::Tensor new_empty(at::IntArrayRef size, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory) const;
+     at::Tensor new_empty_symint(c10::SymIntArrayRef size, at::TensorOptions options={}) const;
+     at::Tensor new_empty_symint(c10::SymIntArrayRef size, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory) const;
      at::Tensor new_empty_strided(at::IntArrayRef size, at::IntArrayRef stride, at::TensorOptions options={}) const;
      at::Tensor new_empty_strided(at::IntArrayRef size, at::IntArrayRef stride, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory) const;
      at::Tensor new_full(at::IntArrayRef size, const at::Scalar & fill_value, at::TensorOptions options={}) const;
@@ -604,14 +607,14 @@ Program Listing for File TensorBody.h
      at::Tensor & exp2_() const;
      at::Tensor expm1() const;
      at::Tensor & expm1_() const;
-     at::Tensor expand(c10::SymIntArrayRef size, bool implicit=false) const;
+     at::Tensor expand_symint(c10::SymIntArrayRef size, bool implicit=false) const;
      at::Tensor expand(at::IntArrayRef size, bool implicit=false) const;
      at::Tensor expand_as(const at::Tensor & other) const;
      at::Tensor flatten(int64_t start_dim=0, int64_t end_dim=-1) const;
      at::Tensor flatten(int64_t start_dim, int64_t end_dim, at::Dimname out_dim) const;
      at::Tensor flatten(at::Dimname start_dim, at::Dimname end_dim, at::Dimname out_dim) const;
      at::Tensor flatten(at::DimnameList dims, at::Dimname out_dim) const;
-     at::Tensor unflatten(int64_t dim, at::IntArrayRef sizes, c10::optional<at::DimnameList> names=c10::nullopt) const;
+     at::Tensor unflatten(int64_t dim, at::IntArrayRef sizes) const;
      at::Tensor unflatten(at::Dimname dim, at::IntArrayRef sizes, at::DimnameList names) const;
      at::Tensor & fill_(const at::Scalar & value) const;
      at::Tensor & fill_(const at::Tensor & value) const;
@@ -669,7 +672,6 @@ Program Listing for File TensorBody.h
      at::Tensor xlogy(const at::Scalar & other) const;
      at::Tensor & xlogy_(const at::Tensor & other) const;
      at::Tensor & xlogy_(const at::Scalar & other) const;
-     at::Tensor logdet() const;
      at::Tensor log_softmax(int64_t dim, c10::optional<at::ScalarType> dtype=c10::nullopt) const;
      at::Tensor log_softmax(at::Dimname dim, c10::optional<at::ScalarType> dtype=c10::nullopt) const;
      at::Tensor logcumsumexp(int64_t dim) const;
@@ -684,7 +686,7 @@ Program Listing for File TensorBody.h
      ::std::tuple<at::Tensor,at::Tensor> max(at::Dimname dim, bool keepdim=false) const;
      at::Tensor amax(at::IntArrayRef dim={}, bool keepdim=false) const;
      at::Tensor mean(c10::optional<at::ScalarType> dtype=c10::nullopt) const;
-     at::Tensor mean(at::IntArrayRef dim, bool keepdim=false, c10::optional<at::ScalarType> dtype=c10::nullopt) const;
+     at::Tensor mean(at::OptionalIntArrayRef dim, bool keepdim=false, c10::optional<at::ScalarType> dtype=c10::nullopt) const;
      at::Tensor mean(at::DimnameList dim, bool keepdim=false, c10::optional<at::ScalarType> dtype=c10::nullopt) const;
      at::Tensor nanmean(at::IntArrayRef dim={}, bool keepdim=false, c10::optional<at::ScalarType> dtype=c10::nullopt) const;
      at::Tensor median() const;
@@ -711,7 +713,7 @@ Program Listing for File TensorBody.h
      at::Tensor mvlgamma(int64_t p) const;
      at::Tensor & mvlgamma_(int64_t p) const;
      at::Tensor narrow_copy(int64_t dim, int64_t start, int64_t length) const;
-     at::Tensor narrow_copy(int64_t dim, int64_t start, c10::SymInt length) const;
+     at::Tensor narrow_copy_symint(int64_t dim, int64_t start, c10::SymInt length) const;
      at::Tensor narrow(int64_t dim, int64_t start, int64_t length) const;
      at::Tensor narrow(int64_t dim, const at::Tensor & start, int64_t length) const;
      at::Tensor permute(at::IntArrayRef dims) const;
@@ -775,7 +777,7 @@ Program Listing for File TensorBody.h
      at::Tensor slice_scatter(const at::Tensor & src, int64_t dim=0, c10::optional<int64_t> start=c10::nullopt, c10::optional<int64_t> end=c10::nullopt, int64_t step=1) const;
      at::Tensor select_scatter(const at::Tensor & src, int64_t dim, int64_t index) const;
      at::Tensor diagonal_scatter(const at::Tensor & src, int64_t offset=0, int64_t dim1=0, int64_t dim2=1) const;
-     ::std::tuple<at::Tensor,at::Tensor> slogdet() const;
+     at::Tensor as_strided_scatter(const at::Tensor & src, at::IntArrayRef size, at::IntArrayRef stride, c10::optional<int64_t> storage_offset=c10::nullopt) const;
      at::Tensor smm(const at::Tensor & mat2) const;
      at::Tensor softmax(int64_t dim, c10::optional<at::ScalarType> dtype=c10::nullopt) const;
      at::Tensor softmax(at::Dimname dim, c10::optional<at::ScalarType> dtype=c10::nullopt) const;
@@ -802,7 +804,8 @@ Program Listing for File TensorBody.h
      at::Tensor istft(int64_t n_fft, c10::optional<int64_t> hop_length=c10::nullopt, c10::optional<int64_t> win_length=c10::nullopt, const c10::optional<at::Tensor> & window={}, bool center=true, bool normalized=false, c10::optional<bool> onesided=c10::nullopt, c10::optional<int64_t> length=c10::nullopt, bool return_complex=false) const;
      int64_t stride(at::Dimname dim) const;
      at::Tensor sum(c10::optional<at::ScalarType> dtype=c10::nullopt) const;
-     at::Tensor sum(at::IntArrayRef dim, bool keepdim=false, c10::optional<at::ScalarType> dtype=c10::nullopt) const;
+     at::Tensor sum_symint(c10::SymIntArrayRef dim, bool keepdim=false, c10::optional<at::ScalarType> dtype=c10::nullopt) const;
+     at::Tensor sum(at::OptionalIntArrayRef dim, bool keepdim=false, c10::optional<at::ScalarType> dtype=c10::nullopt) const;
      at::Tensor sum(at::DimnameList dim, bool keepdim=false, c10::optional<at::ScalarType> dtype=c10::nullopt) const;
      at::Tensor nansum(at::IntArrayRef dim={}, bool keepdim=false, c10::optional<at::ScalarType> dtype=c10::nullopt) const;
      at::Tensor sum_to_size(at::IntArrayRef size) const;
@@ -833,6 +836,7 @@ Program Listing for File TensorBody.h
      at::Tensor flipud() const;
      at::Tensor roll(at::IntArrayRef shifts, at::IntArrayRef dims={}) const;
      at::Tensor rot90(int64_t k=1, at::IntArrayRef dims={0,1}) const;
+     at::Tensor _nested_tensor_size() const;
      at::Tensor trunc() const;
      at::Tensor & trunc_() const;
      at::Tensor fix() const;
@@ -923,7 +927,6 @@ Program Listing for File TensorBody.h
      at::Tensor & set_(const at::Tensor & source, int64_t storage_offset, at::IntArrayRef size, at::IntArrayRef stride={}) const;
      at::Tensor & set_(const at::Tensor & source) const;
      at::Tensor & set_() const;
-     at::Tensor lift() const;
      bool is_set_to(const at::Tensor & tensor) const;
      at::Tensor & masked_fill_(const at::Tensor & mask, const at::Scalar & value) const;
      at::Tensor masked_fill(const at::Tensor & mask, const at::Scalar & value) const;
@@ -931,6 +934,7 @@ Program Listing for File TensorBody.h
      at::Tensor masked_fill(const at::Tensor & mask, const at::Tensor & value) const;
      at::Tensor & masked_scatter_(const at::Tensor & mask, const at::Tensor & source) const;
      at::Tensor masked_scatter(const at::Tensor & mask, const at::Tensor & source) const;
+     at::Tensor view_symint(c10::SymIntArrayRef size) const;
      at::Tensor view(at::IntArrayRef size) const;
      at::Tensor view(at::ScalarType dtype) const;
      at::Tensor & put_(const at::Tensor & index, const at::Tensor & source, bool accumulate=false) const;
@@ -1155,6 +1159,7 @@ Program Listing for File TensorBody.h
      ::std::tuple<at::Tensor,at::Tensor> sort(c10::optional<bool> stable, at::Dimname dim, bool descending=false) const;
      at::Tensor msort() const;
      at::Tensor argsort(int64_t dim=-1, bool descending=false) const;
+     at::Tensor argsort(bool stable, int64_t dim=-1, bool descending=false) const;
      at::Tensor argsort(at::Dimname dim, bool descending=false) const;
      ::std::tuple<at::Tensor,at::Tensor> topk(int64_t k, int64_t dim=-1, bool largest=true, bool sorted=true) const;
      at::Tensor all() const;
@@ -1179,6 +1184,8 @@ Program Listing for File TensorBody.h
      at::Tensor isposinf() const;
      at::Tensor isneginf() const;
      at::Tensor det() const;
+     ::std::tuple<at::Tensor,at::Tensor> slogdet() const;
+     at::Tensor logdet() const;
      at::Tensor inner(const at::Tensor & other) const;
      at::Tensor outer(const at::Tensor & vec2) const;
      at::Tensor ger(const at::Tensor & vec2) const;
@@ -1226,9 +1233,9 @@ Program Listing for File TensorBody.h
      //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
    
      template <typename T>
-     using hook_return_void_t = std::enable_if_t<std::is_void<typename std::result_of<T&(Tensor)>::type>::value, unsigned>;
+     using hook_return_void_t = std::enable_if_t<std::is_void<typename c10::invoke_result_t<T&, Tensor>>::value, unsigned>;
      template <typename T>
-     using hook_return_var_t = std::enable_if_t<std::is_same<typename std::result_of<T&(Tensor)>::type, Tensor>::value, unsigned>;
+     using hook_return_var_t = std::enable_if_t<std::is_same<typename c10::invoke_result_t<T&, Tensor>, Tensor>::value, unsigned>;
    
      template <typename T>
      hook_return_void_t<T> register_hook(T&& hook) const;
@@ -2121,6 +2128,16 @@ Program Listing for File TensorBody.h
        return at::_ops::new_empty::call(const_cast<Tensor&>(*this), size, dtype, layout, device, pin_memory);
    }
    
+   // aten::new_empty.SymInt(Tensor self, SymInt[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
+   inline at::Tensor Tensor::new_empty_symint(c10::SymIntArrayRef size, at::TensorOptions options) const {
+       return at::_ops::new_empty_SymInt::call(const_cast<Tensor&>(*this), size, optTypeMetaToScalarType(options.dtype_opt()), options.layout_opt(), options.device_opt(), options.pinned_memory_opt());
+   }
+   
+   // aten::new_empty.SymInt(Tensor self, SymInt[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
+   inline at::Tensor Tensor::new_empty_symint(c10::SymIntArrayRef size, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory) const {
+       return at::_ops::new_empty_SymInt::call(const_cast<Tensor&>(*this), size, dtype, layout, device, pin_memory);
+   }
+   
    // aten::new_empty_strided(Tensor self, int[] size, int[] stride, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
    inline at::Tensor Tensor::new_empty_strided(at::IntArrayRef size, at::IntArrayRef stride, at::TensorOptions options) const {
        return at::_ops::new_empty_strided::call(const_cast<Tensor&>(*this), size, stride, optTypeMetaToScalarType(options.dtype_opt()), options.layout_opt(), options.device_opt(), options.pinned_memory_opt());
@@ -2217,7 +2234,7 @@ Program Listing for File TensorBody.h
    }
    
    // aten::expand.SymInt(Tensor(a) self, SymInt[] size, *, bool implicit=False) -> Tensor(a)
-   inline at::Tensor Tensor::expand(c10::SymIntArrayRef size, bool implicit) const {
+   inline at::Tensor Tensor::expand_symint(c10::SymIntArrayRef size, bool implicit) const {
        return at::_ops::expand_SymInt::call(const_cast<Tensor&>(*this), size, implicit);
    }
    
@@ -2251,9 +2268,9 @@ Program Listing for File TensorBody.h
        return at::_ops::flatten_DimnameList::call(const_cast<Tensor&>(*this), dims, out_dim);
    }
    
-   // aten::unflatten.int(Tensor(a) self, int dim, int[] sizes, Dimname[]? names=None) -> Tensor(a)
-   inline at::Tensor Tensor::unflatten(int64_t dim, at::IntArrayRef sizes, c10::optional<at::DimnameList> names) const {
-       return at::_ops::unflatten_int::call(const_cast<Tensor&>(*this), dim, sizes, names);
+   // aten::unflatten.int(Tensor(a) self, int dim, int[] sizes) -> Tensor(a)
+   inline at::Tensor Tensor::unflatten(int64_t dim, at::IntArrayRef sizes) const {
+       return at::_ops::unflatten_int::call(const_cast<Tensor&>(*this), dim, sizes);
    }
    
    // aten::unflatten.Dimname(Tensor(a) self, Dimname dim, int[] sizes, Dimname[] names) -> Tensor(a)
@@ -2541,11 +2558,6 @@ Program Listing for File TensorBody.h
        return at::_ops::xlogy__Scalar_Other::call(const_cast<Tensor&>(*this), other);
    }
    
-   // aten::logdet(Tensor self) -> Tensor
-   inline at::Tensor Tensor::logdet() const {
-       return at::_ops::logdet::call(const_cast<Tensor&>(*this));
-   }
-   
    // aten::log_softmax.int(Tensor self, int dim, ScalarType? dtype=None) -> Tensor
    inline at::Tensor Tensor::log_softmax(int64_t dim, c10::optional<at::ScalarType> dtype) const {
        return at::_ops::log_softmax_int::call(const_cast<Tensor&>(*this), dim, dtype);
@@ -2616,8 +2628,8 @@ Program Listing for File TensorBody.h
        return at::_ops::mean::call(const_cast<Tensor&>(*this), dtype);
    }
    
-   // aten::mean.dim(Tensor self, int[1] dim, bool keepdim=False, *, ScalarType? dtype=None) -> Tensor
-   inline at::Tensor Tensor::mean(at::IntArrayRef dim, bool keepdim, c10::optional<at::ScalarType> dtype) const {
+   // aten::mean.dim(Tensor self, int[1]? dim, bool keepdim=False, *, ScalarType? dtype=None) -> Tensor
+   inline at::Tensor Tensor::mean(at::OptionalIntArrayRef dim, bool keepdim, c10::optional<at::ScalarType> dtype) const {
        return at::_ops::mean_dim::call(const_cast<Tensor&>(*this), dim, keepdim, dtype);
    }
    
@@ -2752,7 +2764,7 @@ Program Listing for File TensorBody.h
    }
    
    // aten::narrow_copy.SymInt(Tensor self, int dim, int start, SymInt length) -> Tensor
-   inline at::Tensor Tensor::narrow_copy(int64_t dim, int64_t start, c10::SymInt length) const {
+   inline at::Tensor Tensor::narrow_copy_symint(int64_t dim, int64_t start, c10::SymInt length) const {
        return at::_ops::narrow_copy_SymInt::call(const_cast<Tensor&>(*this), dim, start, length);
    }
    
@@ -3071,9 +3083,9 @@ Program Listing for File TensorBody.h
        return at::_ops::diagonal_scatter::call(const_cast<Tensor&>(*this), src, offset, dim1, dim2);
    }
    
-   // aten::slogdet(Tensor self) -> (Tensor sign, Tensor logabsdet)
-   inline ::std::tuple<at::Tensor,at::Tensor> Tensor::slogdet() const {
-       return at::_ops::slogdet::call(const_cast<Tensor&>(*this));
+   // aten::as_strided_scatter(Tensor self, Tensor src, int[] size, int[] stride, int? storage_offset=None) -> Tensor
+   inline at::Tensor Tensor::as_strided_scatter(const at::Tensor & src, at::IntArrayRef size, at::IntArrayRef stride, c10::optional<int64_t> storage_offset) const {
+       return at::_ops::as_strided_scatter::call(const_cast<Tensor&>(*this), src, size, stride, storage_offset);
    }
    
    // aten::smm(Tensor self, Tensor mat2) -> Tensor
@@ -3206,8 +3218,13 @@ Program Listing for File TensorBody.h
        return at::_ops::sum::call(const_cast<Tensor&>(*this), dtype);
    }
    
-   // aten::sum.dim_IntList(Tensor self, int[1] dim, bool keepdim=False, *, ScalarType? dtype=None) -> Tensor
-   inline at::Tensor Tensor::sum(at::IntArrayRef dim, bool keepdim, c10::optional<at::ScalarType> dtype) const {
+   // aten::sum.SymInt(Tensor self, SymInt[1] dim, bool keepdim=False, *, ScalarType? dtype=None) -> Tensor
+   inline at::Tensor Tensor::sum_symint(c10::SymIntArrayRef dim, bool keepdim, c10::optional<at::ScalarType> dtype) const {
+       return at::_ops::sum_SymInt::call(const_cast<Tensor&>(*this), dim, keepdim, dtype);
+   }
+   
+   // aten::sum.dim_IntList(Tensor self, int[1]? dim, bool keepdim=False, *, ScalarType? dtype=None) -> Tensor
+   inline at::Tensor Tensor::sum(at::OptionalIntArrayRef dim, bool keepdim, c10::optional<at::ScalarType> dtype) const {
        return at::_ops::sum_dim_IntList::call(const_cast<Tensor&>(*this), dim, keepdim, dtype);
    }
    
@@ -3359,6 +3376,11 @@ Program Listing for File TensorBody.h
    // aten::rot90(Tensor self, int k=1, int[] dims=[0,1]) -> Tensor
    inline at::Tensor Tensor::rot90(int64_t k, at::IntArrayRef dims) const {
        return at::_ops::rot90::call(const_cast<Tensor&>(*this), k, dims);
+   }
+   
+   // aten::_nested_tensor_size(Tensor self) -> Tensor
+   inline at::Tensor Tensor::_nested_tensor_size() const {
+       return at::_ops::_nested_tensor_size::call(const_cast<Tensor&>(*this));
    }
    
    // aten::trunc(Tensor self) -> Tensor
@@ -3811,11 +3833,6 @@ Program Listing for File TensorBody.h
        return at::_ops::set_::call(const_cast<Tensor&>(*this));
    }
    
-   // aten::lift(Tensor self) -> Tensor
-   inline at::Tensor Tensor::lift() const {
-       return at::_ops::lift::call(const_cast<Tensor&>(*this));
-   }
-   
    // aten::is_set_to(Tensor self, Tensor tensor) -> bool
    inline bool Tensor::is_set_to(const at::Tensor & tensor) const {
        return at::_ops::is_set_to::call(const_cast<Tensor&>(*this), tensor);
@@ -3849,6 +3866,11 @@ Program Listing for File TensorBody.h
    // aten::masked_scatter(Tensor self, Tensor mask, Tensor source) -> Tensor
    inline at::Tensor Tensor::masked_scatter(const at::Tensor & mask, const at::Tensor & source) const {
        return at::_ops::masked_scatter::call(const_cast<Tensor&>(*this), mask, source);
+   }
+   
+   // aten::view.SymInt(Tensor(a) self, SymInt[] size) -> Tensor(a)
+   inline at::Tensor Tensor::view_symint(c10::SymIntArrayRef size) const {
+       return at::_ops::view_SymInt::call(const_cast<Tensor&>(*this), size);
    }
    
    // aten::view(Tensor(a) self, int[] size) -> Tensor(a)
@@ -4971,6 +4993,11 @@ Program Listing for File TensorBody.h
        return at::_ops::argsort::call(const_cast<Tensor&>(*this), dim, descending);
    }
    
+   // aten::argsort.stable(Tensor self, *, bool stable, int dim=-1, bool descending=False) -> Tensor
+   inline at::Tensor Tensor::argsort(bool stable, int64_t dim, bool descending) const {
+       return at::_ops::argsort_stable::call(const_cast<Tensor&>(*this), stable, dim, descending);
+   }
+   
    // aten::argsort.dimname(Tensor self, Dimname dim, bool descending=False) -> Tensor
    inline at::Tensor Tensor::argsort(at::Dimname dim, bool descending) const {
        return at::_ops::argsort_dimname::call(const_cast<Tensor&>(*this), dim, descending);
@@ -5089,6 +5116,16 @@ Program Listing for File TensorBody.h
    // aten::det(Tensor self) -> Tensor
    inline at::Tensor Tensor::det() const {
        return at::_ops::det::call(const_cast<Tensor&>(*this));
+   }
+   
+   // aten::slogdet(Tensor self) -> (Tensor sign, Tensor logabsdet)
+   inline ::std::tuple<at::Tensor,at::Tensor> Tensor::slogdet() const {
+       return at::_ops::slogdet::call(const_cast<Tensor&>(*this));
+   }
+   
+   // aten::logdet(Tensor self) -> Tensor
+   inline at::Tensor Tensor::logdet() const {
+       return at::_ops::logdet::call(const_cast<Tensor&>(*this));
    }
    
    // aten::inner(Tensor self, Tensor other) -> Tensor

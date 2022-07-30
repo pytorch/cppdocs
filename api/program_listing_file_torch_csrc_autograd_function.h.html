@@ -322,18 +322,18 @@
 <p>↰ <a class="reference internal" href="file_torch_csrc_autograd_function.h.html#file-torch-csrc-autograd-function-h"><span class="std std-ref">Return to documentation for file</span></a> (<code class="docutils literal notranslate"><span class="pre">torch/csrc/autograd/function.h</span></code>)</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#pragma once</span>
 
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/csrc/autograd/anomaly_mode.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/csrc/autograd/edge.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/csrc/autograd/grad_mode.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/csrc/autograd/anomaly_mode.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/csrc/autograd/saved_variable.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/csrc/autograd/input_metadata.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/csrc/autograd/saved_variable.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/csrc/autograd/variable.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/csrc/utils/python_stub.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/csrc/utils/variadic.h&gt;</span><span class="cp"></span>
 
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;ATen/SequenceNumber.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;ATen/core/Tensor.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;ATen/record_function.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;ATen/SequenceNumber.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/Exception.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/irange.h&gt;</span><span class="cp"></span>
 
@@ -350,7 +350,8 @@
 <span class="n">C10_CLANG_DIAGNOSTIC_IGNORE</span><span class="p">(</span><span class="s">&quot;-Wshorten-64-to-32&quot;</span><span class="p">)</span><span class="w"></span>
 <span class="cp">#endif</span>
 
-<span class="k">namespace</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">namespace</span><span class="w"> </span><span class="nn">autograd</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">autograd</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 
 <span class="k">struct</span><span class="w"> </span><span class="nc">Edge</span><span class="p">;</span><span class="w"></span>
 <span class="k">struct</span><span class="w"> </span><span class="nc">FunctionPostHook</span><span class="p">;</span><span class="w"></span>
@@ -422,18 +423,15 @@
 <span class="c1">// sequence numbers will be ordered `A` &lt; `B` &lt; `C`. If, however, `A` and `B`</span>
 <span class="c1">// are created in one thread and `C` is created in a new thread, there are *no</span>
 <span class="c1">// guarantees* w.r.t. the ordering of `C` relative to `A` or `B`.</span>
-<span class="c1">// See NOTE [ Sequence Number] for more details on the usages of sequence number.</span>
+<span class="c1">// See NOTE [ Sequence Number] for more details on the usages of sequence</span>
+<span class="c1">// number.</span>
 <span class="c1">//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
 <span class="k">struct</span><span class="w"> </span><span class="nc">TORCH_API</span><span class="w"> </span><span class="n">Node</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">enable_shared_from_this</span><span class="o">&lt;</span><span class="n">Node</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w"> </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
 <span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)</span>
-<span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="n">Node</span><span class="p">(</span><span class="w"></span>
-<span class="w">      </span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">sequence_nr</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="n">edge_list</span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">next_edges</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">edge_list</span><span class="p">())</span><span class="w"></span>
-<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">sequence_nr_</span><span class="p">(</span><span class="n">sequence_nr</span><span class="p">),</span><span class="w"></span>
-<span class="w">      </span><span class="n">next_edges_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">next_edges</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-
-<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Edge</span><span class="o">&amp;</span><span class="w"> </span><span class="n">edge</span><span class="o">:</span><span class="w"> </span><span class="n">next_edges_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="n">Node</span><span class="p">(</span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">sequence_nr</span><span class="p">,</span><span class="w"> </span><span class="n">edge_list</span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">next_edges</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">edge_list</span><span class="p">())</span><span class="w"></span>
+<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">sequence_nr_</span><span class="p">(</span><span class="n">sequence_nr</span><span class="p">),</span><span class="w"> </span><span class="n">next_edges_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">next_edges</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Edge</span><span class="o">&amp;</span><span class="w"> </span><span class="n">edge</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">next_edges_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">      </span><span class="n">update_topological_nr</span><span class="p">(</span><span class="n">edge</span><span class="p">);</span><span class="w"></span>
 <span class="w">    </span><span class="p">}</span><span class="w"></span>
 
@@ -454,8 +452,9 @@
 
 <span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-pro-type-member-init)</span>
 <span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="n">Node</span><span class="p">(</span><span class="n">edge_list</span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">next_edges</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">edge_list</span><span class="p">())</span><span class="w"></span>
-<span class="w">    </span><span class="o">:</span><span class="w"> </span><span class="n">Node</span><span class="p">(</span><span class="cm">/*sequence_nr=*/</span><span class="n">at</span><span class="o">::</span><span class="n">sequence_number</span><span class="o">::</span><span class="n">get_and_increment</span><span class="p">(),</span><span class="w"></span>
-<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">next_edges</span><span class="p">))</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">Node</span><span class="p">(</span><span class="w"></span>
+<span class="w">            </span><span class="cm">/*sequence_nr=*/</span><span class="n">at</span><span class="o">::</span><span class="n">sequence_number</span><span class="o">::</span><span class="n">get_and_increment</span><span class="p">(),</span><span class="w"></span>
+<span class="w">            </span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">next_edges</span><span class="p">))</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
 
 <span class="w">  </span><span class="n">Node</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Node</span><span class="o">&amp;</span><span class="w"> </span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span><span class="w"></span>
 <span class="w">  </span><span class="n">Node</span><span class="p">(</span><span class="n">Node</span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span><span class="w"></span>
@@ -469,18 +468,25 @@
 <span class="w">    </span><span class="c1">// probably operate with names.</span>
 <span class="w">    </span><span class="n">at</span><span class="o">::</span><span class="n">NoNamesGuard</span><span class="w"> </span><span class="n">no_names_guard</span><span class="p">;</span><span class="w"></span>
 
-<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">step_callbacks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">getStepCallbacks</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">RecordScope</span><span class="o">::</span><span class="n">BACKWARD_FUNCTION</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">step_callbacks</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">      </span><span class="n">at</span><span class="o">::</span><span class="n">RecordFunction</span><span class="w"> </span><span class="n">guard</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">step_callbacks</span><span class="p">));</span><span class="w"></span>
+<span class="cp">#ifdef USE_ROCM</span>
+<span class="w">    </span><span class="c1">// Keep track of backward pass for rocblas.</span>
+<span class="w">    </span><span class="n">at</span><span class="o">::</span><span class="n">ROCmBackwardPassGuard</span><span class="w"> </span><span class="n">in_backward</span><span class="p">;</span><span class="w"></span>
+<span class="cp">#endif</span>
+
+<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">step_callbacks</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
+<span class="w">        </span><span class="n">at</span><span class="o">::</span><span class="n">getStepCallbacksUnlessEmpty</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">RecordScope</span><span class="o">::</span><span class="n">BACKWARD_FUNCTION</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">C10_UNLIKELY</span><span class="p">(</span><span class="n">step_callbacks</span><span class="p">.</span><span class="n">has_value</span><span class="p">()))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="n">at</span><span class="o">::</span><span class="n">RecordFunction</span><span class="w"> </span><span class="n">guard</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="o">*</span><span class="n">step_callbacks</span><span class="p">));</span><span class="w"></span>
 <span class="w">      </span><span class="c1">// Using sequence number and thread id to correlate with</span>
 <span class="w">      </span><span class="c1">// the forward pass function</span>
 <span class="w">      </span><span class="n">guard</span><span class="p">.</span><span class="n">setForwardThreadId</span><span class="p">(</span><span class="n">thread_id_</span><span class="p">);</span><span class="w"></span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">guard</span><span class="p">.</span><span class="n">needsInputs</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">IValue</span><span class="o">&gt;</span><span class="w"> </span><span class="n">inputs_vec</span><span class="p">(</span><span class="n">inputs</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">inputs</span><span class="p">.</span><span class="n">end</span><span class="p">());</span><span class="w"></span>
 <span class="w">        </span><span class="n">guard</span><span class="p">.</span><span class="n">before</span><span class="p">(</span><span class="w"></span>
-<span class="w">          </span><span class="n">name</span><span class="p">(),</span><span class="w"></span>
-<span class="w">          </span><span class="n">c10</span><span class="o">::</span><span class="n">ArrayRef</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">IValue</span><span class="o">&gt;</span><span class="p">(</span><span class="n">inputs_vec</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span><span class="w"> </span><span class="n">inputs_vec</span><span class="p">.</span><span class="n">size</span><span class="p">()),</span><span class="w"></span>
-<span class="w">          </span><span class="n">sequence_nr</span><span class="p">());</span><span class="w"></span>
+<span class="w">            </span><span class="n">name</span><span class="p">(),</span><span class="w"></span>
+<span class="w">            </span><span class="n">c10</span><span class="o">::</span><span class="n">ArrayRef</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">IValue</span><span class="o">&gt;</span><span class="p">(</span><span class="w"></span>
+<span class="w">                </span><span class="n">inputs_vec</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span><span class="w"> </span><span class="n">inputs_vec</span><span class="p">.</span><span class="n">size</span><span class="p">()),</span><span class="w"></span>
+<span class="w">            </span><span class="n">sequence_nr</span><span class="p">());</span><span class="w"></span>
 <span class="w">      </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">        </span><span class="n">guard</span><span class="p">.</span><span class="n">before</span><span class="p">(</span><span class="n">name</span><span class="p">(),</span><span class="w"> </span><span class="n">sequence_nr</span><span class="p">());</span><span class="w"></span>
 <span class="w">      </span><span class="p">}</span><span class="w"></span>
@@ -500,12 +506,13 @@
 <span class="w">  </span><span class="k">struct</span><span class="w"> </span><span class="nc">undefined_input</span><span class="w"> </span><span class="p">{};</span><span class="w"></span>
 
 <span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="nf">add_input_metadata</span><span class="p">(</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">TensorOptions</span><span class="o">&amp;</span><span class="w"> </span><span class="n">options</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="n">at</span><span class="o">::</span><span class="n">IntArrayRef</span><span class="w"> </span><span class="n">shape</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_tensor_subclass</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">TensorOptions</span><span class="o">&amp;</span><span class="w"> </span><span class="n">options</span><span class="p">,</span><span class="w"></span>
+<span class="w">      </span><span class="n">c10</span><span class="o">::</span><span class="n">SymIntArrayRef</span><span class="w"> </span><span class="n">shape</span><span class="p">,</span><span class="w"></span>
+<span class="w">      </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_tensor_subclass</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">    </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-init-variables)</span>
 <span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">input_nr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">input_metadata_</span><span class="p">.</span><span class="n">size</span><span class="p">();</span><span class="w"></span>
-<span class="w">    </span><span class="n">input_metadata_</span><span class="p">.</span><span class="n">emplace_back</span><span class="p">(</span><span class="n">options</span><span class="p">,</span><span class="w"> </span><span class="n">shape</span><span class="p">,</span><span class="w"> </span><span class="n">is_tensor_subclass</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">meta_shape</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MetadataShape</span><span class="p">{</span><span class="n">c10</span><span class="o">::</span><span class="n">in_place_type</span><span class="o">&lt;</span><span class="n">SymIntSmallVec</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">shape</span><span class="p">};</span><span class="w"></span>
+<span class="w">    </span><span class="n">input_metadata_</span><span class="p">.</span><span class="n">emplace_back</span><span class="p">(</span><span class="n">options</span><span class="p">,</span><span class="w"> </span><span class="n">meta_shape</span><span class="p">,</span><span class="w"> </span><span class="n">is_tensor_subclass</span><span class="p">);</span><span class="w"></span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">input_nr</span><span class="p">;</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
@@ -533,7 +540,8 @@
 
 <span class="w">  </span><span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">Stream</span><span class="o">&gt;</span><span class="w"> </span><span class="n">stream</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">DeviceType</span><span class="w"> </span><span class="n">device_type</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">metadata</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">input_metadata_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">metadata</span><span class="p">.</span><span class="n">device</span><span class="p">().</span><span class="n">type</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">device_type</span><span class="p">)</span><span class="w"> </span><span class="k">return</span><span class="w"> </span><span class="n">metadata</span><span class="p">.</span><span class="n">stream</span><span class="p">();</span><span class="w"></span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">metadata</span><span class="p">.</span><span class="n">device</span><span class="p">().</span><span class="n">type</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">device_type</span><span class="p">)</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">metadata</span><span class="p">.</span><span class="n">stream</span><span class="p">();</span><span class="w"></span>
 <span class="w">    </span><span class="p">}</span><span class="w"></span>
 
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span><span class="w"></span>
@@ -546,10 +554,11 @@
 <span class="w">  </span><span class="c1">// Outputs (&quot;Next Edges&quot;)</span>
 
 <span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">update_topological_nr</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Edge</span><span class="o">&amp;</span><span class="w"> </span><span class="n">edge</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span><span class="o">!</span><span class="n">has_parent_</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="s">&quot;Cannot update a node&#39;s topological_nr after it already has a parent.&quot;</span><span class="w"></span>
-<span class="w">      </span><span class="s">&quot; If we allow this, we can no longer guarantee that a parent&#39;s&quot;</span><span class="w"></span>
-<span class="w">      </span><span class="s">&quot; topo_nr is always greater than those of all its children&quot;</span><span class="p">)</span><span class="w"></span>
+<span class="w">    </span><span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span><span class="w"></span>
+<span class="w">        </span><span class="o">!</span><span class="n">has_parent_</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="s">&quot;Cannot update a node&#39;s topological_nr after it already has a parent.&quot;</span><span class="w"></span>
+<span class="w">        </span><span class="s">&quot; If we allow this, we can no longer guarantee that a parent&#39;s&quot;</span><span class="w"></span>
+<span class="w">        </span><span class="s">&quot; topo_nr is always greater than those of all its children&quot;</span><span class="p">)</span><span class="w"></span>
 <span class="w">    </span><span class="n">Node</span><span class="o">*</span><span class="w"> </span><span class="n">node</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">edge</span><span class="p">.</span><span class="n">function</span><span class="p">.</span><span class="n">get</span><span class="p">();</span><span class="w"></span>
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">node</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">      </span><span class="k">auto</span><span class="w"> </span><span class="n">topo_nr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">node</span><span class="o">-&gt;</span><span class="n">topological_nr</span><span class="p">();</span><span class="w"></span>
@@ -571,7 +580,7 @@
 
 <span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">set_next_edges</span><span class="p">(</span><span class="n">edge_list</span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">next_edges</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">    </span><span class="n">next_edges_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">next_edges</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="k">for</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">next_edge</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">next_edges_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">next_edge</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">next_edges_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">      </span><span class="n">update_topological_nr</span><span class="p">(</span><span class="n">next_edge</span><span class="p">);</span><span class="w"></span>
 <span class="w">    </span><span class="p">}</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
@@ -601,16 +610,16 @@
 
 <span class="w">  </span><span class="c1">// NOTE [ Topological Number ]</span>
 <span class="w">  </span><span class="c1">//</span>
-<span class="w">  </span><span class="c1">// topological_nr is used to prune branches in the DAG during autograd discovery as</span>
-<span class="w">  </span><span class="c1">// maintaining topological_nr helps us check in O(1) if there does NOT exist</span>
-<span class="w">  </span><span class="c1">// a directed path between two nodes.</span>
+<span class="w">  </span><span class="c1">// topological_nr is used to prune branches in the DAG during autograd</span>
+<span class="w">  </span><span class="c1">// discovery as maintaining topological_nr helps us check in O(1) if there</span>
+<span class="w">  </span><span class="c1">// does NOT exist a directed path between two nodes.</span>
 <span class="w">  </span><span class="c1">//</span>
 <span class="w">  </span><span class="c1">// The topological order number of this `Node` representing the length of the</span>
-<span class="w">  </span><span class="c1">// longest possible path from this Node to any leaf node. If you are leaf node,</span>
-<span class="w">  </span><span class="c1">// aka AccumulateGrad, this will be zero. This value has the property that</span>
-<span class="w">  </span><span class="c1">// For every pair of nodes X, Y in G, existence of a directed path from X to Y</span>
-<span class="w">  </span><span class="c1">// implies topo_nr(X) &gt; topo_nr(Y). The converse is not true, however, so we</span>
-<span class="w">  </span><span class="c1">// cannot prove existence of a path from X to Y, only non-existence.</span>
+<span class="w">  </span><span class="c1">// longest possible path from this Node to any leaf node. If you are leaf</span>
+<span class="w">  </span><span class="c1">// node, aka AccumulateGrad, this will be zero. This value has the property</span>
+<span class="w">  </span><span class="c1">// that For every pair of nodes X, Y in G, existence of a directed path from X</span>
+<span class="w">  </span><span class="c1">// to Y implies topo_nr(X) &gt; topo_nr(Y). The converse is not true, however, so</span>
+<span class="w">  </span><span class="c1">// we cannot prove existence of a path from X to Y, only non-existence.</span>
 <span class="w">  </span><span class="c1">//</span>
 <span class="w">  </span><span class="c1">// One assumption we make when using topo_nr is that once a node</span>
 <span class="w">  </span><span class="c1">// has been used, i.e., has a parent node, its own topo_nr does not change</span>
@@ -618,12 +627,15 @@
 <span class="w">  </span><span class="c1">//</span>
 <span class="w">  </span><span class="c1">// What NOT to do:</span>
 <span class="w">  </span><span class="c1">//</span>
-<span class="w">  </span><span class="c1">//   1) 2 -&gt; 1 -&gt; 0               In this diagram we label nodes with their topo_nr.</span>
-<span class="w">  </span><span class="c1">//      2 -&gt; 1 -&gt; 0               We have two simple graphs that can each arise from</span>
+<span class="w">  </span><span class="c1">//   1) 2 -&gt; 1 -&gt; 0               In this diagram we label nodes with their</span>
+<span class="w">  </span><span class="c1">//   topo_nr.</span>
+<span class="w">  </span><span class="c1">//      2 -&gt; 1 -&gt; 0               We have two simple graphs that can each</span>
+<span class="w">  </span><span class="c1">//      arise from</span>
 <span class="w">  </span><span class="c1">//                                `t.exp().exp()`, for example.</span>
 <span class="w">  </span><span class="c1">//   2)        2 -&gt; 1 -&gt; 0</span>
 <span class="w">  </span><span class="c1">//            /</span>
-<span class="w">  </span><span class="c1">//      2 -&gt; 1 -&gt; 0               We add 2 as a next edge to 1 even though 1 already</span>
+<span class="w">  </span><span class="c1">//      2 -&gt; 1 -&gt; 0               We add 2 as a next edge to 1 even though 1</span>
+<span class="w">  </span><span class="c1">//      already</span>
 <span class="w">  </span><span class="c1">//                                has a parent.</span>
 <span class="w">  </span><span class="c1">//   3)        2 -&gt; 1 -&gt; 0</span>
 <span class="w">  </span><span class="c1">//            /</span>
@@ -678,8 +690,8 @@
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="kt">uintptr_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">post_hooks_</span><span class="p">.</span><span class="n">back</span><span class="p">().</span><span class="n">get</span><span class="p">());</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
-<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FunctionPostHook</span><span class="o">&gt;&gt;&amp;</span><span class="w"> </span><span class="n">post_hooks</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"></span>
-<span class="w">      </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FunctionPostHook</span><span class="o">&gt;&gt;&amp;</span><span class="w"> </span><span class="n">post_hooks</span><span class="p">()</span><span class="w"></span>
+<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">post_hooks_</span><span class="p">;</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
@@ -702,8 +714,8 @@
 <span class="w">    </span><span class="n">pre_hooks_</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">pre_hook</span><span class="p">));</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
-<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FunctionPreHook</span><span class="o">&gt;&gt;&amp;</span><span class="w"> </span><span class="n">pre_hooks</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"></span>
-<span class="w">      </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FunctionPreHook</span><span class="o">&gt;&gt;&amp;</span><span class="w"> </span><span class="n">pre_hooks</span><span class="p">()</span><span class="w"></span>
+<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">pre_hooks_</span><span class="p">;</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
@@ -741,8 +753,8 @@
 <span class="w">  </span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">topological_nr_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
 
 <span class="w">  </span><span class="c1">// Tracks whether this node has been added as the next_edge of another node</span>
-<span class="w">  </span><span class="c1">// via set_next_edge(s), which always calls topological_nr() of all its children</span>
-<span class="w">  </span><span class="c1">// See NOTE [ Topological Number ] for why we need this.</span>
+<span class="w">  </span><span class="c1">// via set_next_edge(s), which always calls topological_nr() of all its</span>
+<span class="w">  </span><span class="c1">// children See NOTE [ Topological Number ] for why we need this.</span>
 <span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
 <span class="w">  </span><span class="k">mutable</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">has_parent_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
 
@@ -752,40 +764,46 @@
 
 <span class="w">  </span><span class="c1">// Note [Thread Safety on Autograd Node]</span>
 <span class="w">  </span><span class="c1">// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
-<span class="w">  </span><span class="c1">// Autograd Engine let the owning thread which calls Engine::execute to drive the</span>
-<span class="w">  </span><span class="c1">// GraphTask execution, there might be cases that part of the GraphTask is shared</span>
-<span class="w">  </span><span class="c1">// across different `backward()` or `grad()` calls, i.e. fork new threads in the</span>
-<span class="w">  </span><span class="c1">// middle of the forward and call `backward()` separately from different threads.</span>
-<span class="w">  </span><span class="c1">// We need to protect the thread safety on NodeTask to prevent data racing on</span>
-<span class="w">  </span><span class="c1">// shared variables read/write.</span>
+<span class="w">  </span><span class="c1">// Autograd Engine let the owning thread which calls Engine::execute to drive</span>
+<span class="w">  </span><span class="c1">// the GraphTask execution, there might be cases that part of the GraphTask is</span>
+<span class="w">  </span><span class="c1">// shared across different `backward()` or `grad()` calls, i.e. fork new</span>
+<span class="w">  </span><span class="c1">// threads in the middle of the forward and call `backward()` separately from</span>
+<span class="w">  </span><span class="c1">// different threads. We need to protect the thread safety on NodeTask to</span>
+<span class="w">  </span><span class="c1">// prevent data racing on shared variables read/write.</span>
 <span class="w">  </span><span class="c1">//</span>
-<span class="w">  </span><span class="c1">// NB: This is only needed for Autograd Nodes that runs on CPU, technically &quot;CUDA&quot;,</span>
-<span class="w">  </span><span class="c1">// &quot;XLA&quot; nodes don&#39;t need locking because device threads are always single threaded.</span>
+<span class="w">  </span><span class="c1">// NB: This is only needed for Autograd Nodes that runs on CPU, technically</span>
+<span class="w">  </span><span class="c1">// &quot;CUDA&quot;, &quot;XLA&quot; nodes don&#39;t need locking because device threads are always</span>
+<span class="w">  </span><span class="c1">// single threaded.</span>
 <span class="w">  </span><span class="c1">//</span>
-<span class="w">  </span><span class="c1">// Here we add a thread mutex to help protect the Node&#39;s thread safety, so that</span>
-<span class="w">  </span><span class="c1">// different threads cannot race the shared data when executing the same NodeTask</span>
-<span class="w">  </span><span class="c1">// from multiple CPU threads. It IS the user/developer responsibility to take</span>
-<span class="w">  </span><span class="c1">// advantage of this mutex to protect the thread safety of their autograd Node.</span>
-<span class="w">  </span><span class="c1">// The general strategy of thread safety on autograd Node:</span>
+<span class="w">  </span><span class="c1">// Here we add a thread mutex to help protect the Node&#39;s thread safety, so</span>
+<span class="w">  </span><span class="c1">// that different threads cannot race the shared data when executing the same</span>
+<span class="w">  </span><span class="c1">// NodeTask from multiple CPU threads. It IS the user/developer responsibility</span>
+<span class="w">  </span><span class="c1">// to take advantage of this mutex to protect the thread safety of their</span>
+<span class="w">  </span><span class="c1">// autograd Node. The general strategy of thread safety on autograd Node:</span>
 <span class="w">  </span><span class="c1">//</span>
-<span class="w">  </span><span class="c1">// 1. User should lock the mutex during Node::release_variables() if the Node needs</span>
-<span class="w">  </span><span class="c1">//    to release the variables on the fly, this serve the purpose that when we release</span>
-<span class="w">  </span><span class="c1">//    saved_variables from one thread, no other threads can release the saved variables</span>
-<span class="w">  </span><span class="c1">//    concurrently. call</span>
-<span class="w">  </span><span class="c1">//    the Node::apply(),</span>
-<span class="w">  </span><span class="c1">// 2. User should lock the mutex during Node::apply(), this is to ensure Node that</span>
-<span class="w">  </span><span class="c1">//    writing to the shared variable are not racing across threads (i.e. AccumulateGrad</span>
-<span class="w">  </span><span class="c1">//    and custom C++ Autograd Node if writing to shared variables )</span>
-<span class="w">  </span><span class="c1">// 3. item 2 and item 3 should work together so that when we release saved variables</span>
-<span class="w">  </span><span class="c1">//    from one thread, no other threads can call Node::apply(), this ensures the variable</span>
-<span class="w">  </span><span class="c1">//    references from other threads aren&#39;t dangling.</span>
-<span class="w">  </span><span class="c1">// 4. if the Node don&#39;t release any variables and no shared data read/write in the Node</span>
+<span class="w">  </span><span class="c1">// 1. User should lock the mutex during Node::release_variables() if the Node</span>
+<span class="w">  </span><span class="c1">// needs</span>
+<span class="w">  </span><span class="c1">//    to release the variables on the fly, this serve the purpose that when we</span>
+<span class="w">  </span><span class="c1">//    release saved_variables from one thread, no other threads can release</span>
+<span class="w">  </span><span class="c1">//    the saved variables concurrently. call the Node::apply(),</span>
+<span class="w">  </span><span class="c1">// 2. User should lock the mutex during Node::apply(), this is to ensure Node</span>
+<span class="w">  </span><span class="c1">// that</span>
+<span class="w">  </span><span class="c1">//    writing to the shared variable are not racing across threads (i.e.</span>
+<span class="w">  </span><span class="c1">//    AccumulateGrad and custom C++ Autograd Node if writing to shared</span>
+<span class="w">  </span><span class="c1">//    variables )</span>
+<span class="w">  </span><span class="c1">// 3. item 2 and item 3 should work together so that when we release saved</span>
+<span class="w">  </span><span class="c1">// variables</span>
+<span class="w">  </span><span class="c1">//    from one thread, no other threads can call Node::apply(), this ensures</span>
+<span class="w">  </span><span class="c1">//    the variable references from other threads aren&#39;t dangling.</span>
+<span class="w">  </span><span class="c1">// 4. if the Node don&#39;t release any variables and no shared data read/write in</span>
+<span class="w">  </span><span class="c1">// the Node</span>
 <span class="w">  </span><span class="c1">//    i.e. purely functional, user don&#39;t need to lock the mutex</span>
 <span class="w">  </span><span class="c1">//</span>
-<span class="w">  </span><span class="c1">// This way we could protect the thread safety on Autograd Node, but we could still</span>
-<span class="w">  </span><span class="c1">// not protect the thread safety on Node pre/post C++ hooks (python hooks are</span>
-<span class="w">  </span><span class="c1">// automatically thread safe), we rely on the user to write thread safe C++ hooks</span>
-<span class="w">  </span><span class="c1">// if they want the hook to be correctly applied in multithreading environment.</span>
+<span class="w">  </span><span class="c1">// This way we could protect the thread safety on Autograd Node, but we could</span>
+<span class="w">  </span><span class="c1">// still not protect the thread safety on Node pre/post C++ hooks (python</span>
+<span class="w">  </span><span class="c1">// hooks are automatically thread safe), we rely on the user to write thread</span>
+<span class="w">  </span><span class="c1">// safe C++ hooks if they want the hook to be correctly applied in</span>
+<span class="w">  </span><span class="c1">// multithreading environment.</span>
 <span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="w"> </span><span class="n">mutex_</span><span class="p">;</span><span class="w"></span>
 
@@ -868,7 +886,8 @@
 <span class="w">  </span><span class="n">make</span><span class="p">.</span><span class="n">apply</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">forward</span><span class="o">&lt;</span><span class="n">Variables</span><span class="o">&gt;</span><span class="p">(</span><span class="n">variables</span><span class="p">)...);</span><span class="w"></span>
 <span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">make</span><span class="p">.</span><span class="n">next_edges</span><span class="p">);</span><span class="w"></span>
 <span class="p">}</span><span class="w"></span>
-<span class="p">}}</span><span class="w"> </span><span class="c1">// namespace torch::autograd</span>
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace autograd</span>
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace torch</span>
 
 <span class="n">C10_CLANG_DIAGNOSTIC_POP</span><span class="p">()</span><span class="w"></span>
 </pre></div>
