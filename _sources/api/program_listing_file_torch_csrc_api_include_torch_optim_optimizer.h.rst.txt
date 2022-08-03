@@ -15,11 +15,11 @@ Program Listing for File optimizer.h
    #pragma once
    
    #include <ATen/Tensor.h>
-   #include <c10/util/Exception.h>
    #include <c10/util/flat_hash_map.h>
+   #include <c10/util/Exception.h>
    
-   #include <torch/arg.h>
    #include <torch/csrc/Export.h>
+   #include <torch/arg.h>
    
    #include <algorithm>
    #include <functional>
@@ -73,7 +73,7 @@ Program Listing for File optimizer.h
    
    template <typename Derived>
    class OptimizerCloneableOptions : public OptimizerOptions {
-    private:
+   private:
      std::unique_ptr<OptimizerOptions> clone() const override {
        return std::make_unique<Derived>(static_cast<const Derived&>(*this));
      }
@@ -81,19 +81,10 @@ Program Listing for File optimizer.h
    
    class TORCH_API OptimizerParamGroup {
     public:
-     // NOTE: In order to store `OptimizerParamGroup` in a `std::vector`, it has to
-     // be copy-constructible.
-     OptimizerParamGroup(const OptimizerParamGroup& param_group)
-         : params_(param_group.params()),
-           options_(
-               param_group.has_options() ? param_group.options().clone()
-                                         : nullptr) {}
-     OptimizerParamGroup(std::vector<Tensor> params)
-         : params_(std::move(params)) {}
-     OptimizerParamGroup(
-         std::vector<Tensor> params,
-         std::unique_ptr<OptimizerOptions> options)
-         : params_(std::move(params)), options_(std::move(options)) {}
+     // NOTE: In order to store `OptimizerParamGroup` in a `std::vector`, it has to be copy-constructible.
+     OptimizerParamGroup(const OptimizerParamGroup& param_group) : params_(param_group.params()), options_(param_group.has_options() ? param_group.options().clone() : nullptr) {}
+     OptimizerParamGroup(std::vector<Tensor> params) : params_(std::move(params)) {}
+     OptimizerParamGroup(std::vector<Tensor> params, std::unique_ptr<OptimizerOptions> options) : params_(std::move(params)), options_(std::move(options)) {}
    
      bool has_options() const;
      OptimizerOptions& options();
@@ -116,22 +107,14 @@ Program Listing for File optimizer.h
      Optimizer(const Optimizer& optimizer) = delete;
      Optimizer(Optimizer&& optimizer) = default;
    
-     explicit Optimizer(
-         std::vector<OptimizerParamGroup> param_groups,
-         std::unique_ptr<OptimizerOptions> defaults)
-         : defaults_(std::move(defaults)) {
+     explicit Optimizer(std::vector<OptimizerParamGroup> param_groups, std::unique_ptr<OptimizerOptions> defaults) : defaults_(std::move(defaults)) {
        for (const auto& param_group : param_groups) {
          add_param_group(param_group);
        }
      }
    
      // NOLINTNEXTLINE(performance-move-const-arg)
-     explicit Optimizer(
-         std::vector<Tensor> parameters,
-         std::unique_ptr<OptimizerOptions> defaults)
-         : Optimizer(
-               {std::move(OptimizerParamGroup(parameters))},
-               std::move(defaults)){};
+     explicit Optimizer(std::vector<Tensor> parameters, std::unique_ptr<OptimizerOptions> defaults) : Optimizer({std::move(OptimizerParamGroup(parameters))}, std::move(defaults)) {};
    
      void add_param_group(const OptimizerParamGroup& param_group);
    
@@ -158,23 +141,21 @@ Program Listing for File optimizer.h
    
      const std::vector<OptimizerParamGroup>& param_groups() const noexcept;
    
-     ska::flat_hash_map<std::string, std::unique_ptr<OptimizerParamState>>&
-     state() noexcept;
+     ska::flat_hash_map<std::string, std::unique_ptr<OptimizerParamState>>& state() noexcept;
    
-     const ska::flat_hash_map<std::string, std::unique_ptr<OptimizerParamState>>&
-     state() const noexcept;
+     const ska::flat_hash_map<std::string, std::unique_ptr<OptimizerParamState>>& state() const noexcept;
    
      virtual void save(serialize::OutputArchive& archive) const;
    
      virtual void load(serialize::InputArchive& archive);
    
     protected:
-     // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
-     std::vector<OptimizerParamGroup> param_groups_;
-     // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
-     ska::flat_hash_map<std::string, std::unique_ptr<OptimizerParamState>> state_;
-     // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
-     std::unique_ptr<OptimizerOptions> defaults_;
+      // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
+      std::vector<OptimizerParamGroup> param_groups_;
+      // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
+      ska::flat_hash_map<std::string, std::unique_ptr<OptimizerParamState>> state_;
+      // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
+      std::unique_ptr<OptimizerOptions> defaults_;
    };
    
    /* How do we decide whether to serialize undefined tensors or
@@ -182,18 +163,18 @@ Program Listing for File optimizer.h
    Answer: we strictly follow the behavior of Python API. To be more specific:
    
    For optimizer options:
-   a) For undefined tensor: currently no tensor is used as an options argument in
-   Python API, so we don't need to worry about it now. b) For c10::nullopt value:
-   we serialize c10::nullopt values into the output archive, to follow the exact
-   same behavior as Python API.
+   a) For undefined tensor: currently no tensor is used as an options argument in Python API,
+      so we don't need to worry about it now.
+   b) For c10::nullopt value: we serialize c10::nullopt values into the output archive,
+      to follow the exact same behavior as Python API.
    
    For optimizer param state:
-   a) For undefined tensor: in param state, undefined tensor in C++ impl is
-   equivalent to missing key in Python impl. Since we don't serialize missing keys
-   in Python API, we skip undefined tensors when serializing the param state. b)
-   For c10::nullopt value: in param state, c10::nullopt value in C++ impl is
-   equivalent to missing key in Python impl. Since we don't serialize missing keys
-   in Python API, we skip c10::nullopt values when serializing the param state. */
+   a) For undefined tensor: in param state, undefined tensor in C++ impl is equivalent to
+      missing key in Python impl. Since we don't serialize missing keys in Python API,
+      we skip undefined tensors when serializing the param state.
+   b) For c10::nullopt value: in param state, c10::nullopt value in C++ impl is equivalent to
+      missing key in Python impl. Since we don't serialize missing keys in Python API,
+      we skip c10::nullopt values when serializing the param state. */
    
    TORCH_API serialize::OutputArchive& operator<<(
        serialize::OutputArchive& archive,

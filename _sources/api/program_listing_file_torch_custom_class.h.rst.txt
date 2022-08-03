@@ -344,23 +344,6 @@ Program Listing for File custom_class.h
        registerCustomClassMethod(std::move(method));
        return method_val;
      }
-   
-     // Wrapper function to force method deregistration on shutdown.
-     static void registerCustomClassMethod(std::unique_ptr<jit::Function> method) {
-       c10::QualifiedName method_name = method->qualname();
-       torch::registerCustomClassMethod(std::move(method));
-   
-       struct CustomClassMethodDeregistrator {
-         ~CustomClassMethodDeregistrator() {
-           for (const auto& name : names)
-             torch::deregisterCustomClassMethod(name);
-         }
-         std::vector<c10::QualifiedName> names;
-       };
-   
-       static CustomClassMethodDeregistrator deregistator;
-       deregistator.names.emplace_back(std::move(method_name));
-     }
    };
    
    template <typename CurClass, typename... CtorArgs>

@@ -332,55 +332,49 @@
 
 <span class="cp">#ifndef DOXYGEN_SHOULD_SKIP_THIS</span>
 <span class="k">namespace</span><span class="w"> </span><span class="nn">detail</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="kr">inline</span><span class="w"> </span><span class="n">Tensor</span><span class="w"> </span><span class="nf">batch_norm</span><span class="p">(</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">input</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">running_mean</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">running_var</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="n">Tensor</span><span class="w"> </span><span class="n">weight</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="n">Tensor</span><span class="w"> </span><span class="n">bias</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="n">training</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span><span class="w"> </span><span class="n">momentum</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="kt">double</span><span class="w"> </span><span class="n">eps</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="kr">inline</span><span class="w"> </span><span class="n">Tensor</span><span class="w"> </span><span class="nf">batch_norm</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">input</span><span class="p">,</span><span class="w"></span>
+<span class="w">                         </span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">running_mean</span><span class="p">,</span><span class="w"></span>
+<span class="w">                         </span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">running_var</span><span class="p">,</span><span class="w"></span>
+<span class="w">                         </span><span class="n">Tensor</span><span class="w"> </span><span class="n">weight</span><span class="p">,</span><span class="w"></span>
+<span class="w">                         </span><span class="n">Tensor</span><span class="w"> </span><span class="n">bias</span><span class="p">,</span><span class="w"></span>
+<span class="w">                         </span><span class="kt">bool</span><span class="w"> </span><span class="n">training</span><span class="p">,</span><span class="w"></span>
+<span class="w">                         </span><span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span><span class="w"> </span><span class="n">momentum</span><span class="p">,</span><span class="w"></span>
+<span class="w">                         </span><span class="kt">double</span><span class="w"> </span><span class="n">eps</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">training</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">input</span><span class="p">.</span><span class="n">sizes</span><span class="p">();</span><span class="w"></span>
 <span class="w">    </span><span class="kt">int64_t</span><span class="w"> </span><span class="n">size_prods</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">size</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span><span class="w"></span>
 <span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">irange</span><span class="p">(</span><span class="n">size</span><span class="p">.</span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="mi">2</span><span class="p">))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">      </span><span class="n">size_prods</span><span class="w"> </span><span class="o">*=</span><span class="w"> </span><span class="n">size</span><span class="p">[</span><span class="n">i</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="mi">2</span><span class="p">];</span><span class="w"></span>
 <span class="w">    </span><span class="p">}</span><span class="w"></span>
-<span class="w">    </span><span class="n">TORCH_CHECK</span><span class="p">(</span><span class="w"></span>
-<span class="w">        </span><span class="n">size_prods</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"></span>
-<span class="w">        </span><span class="s">&quot;Expected more than 1 value per channel when training, got input size &quot;</span><span class="p">,</span><span class="w"></span>
-<span class="w">        </span><span class="n">size</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">size_prods</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"></span>
+<span class="w">                </span><span class="s">&quot;Expected more than 1 value per channel when training, got input size &quot;</span><span class="p">,</span><span class="w"> </span><span class="n">size</span><span class="p">);</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
 <span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">batch_norm</span><span class="p">(</span><span class="w"></span>
-<span class="w">      </span><span class="n">input</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="n">weight</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="n">bias</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="n">running_mean</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="n">running_var</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="n">training</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="n">momentum</span><span class="p">.</span><span class="n">value</span><span class="p">(),</span><span class="w"></span>
-<span class="w">      </span><span class="n">eps</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="n">at</span><span class="o">::</span><span class="n">globalContext</span><span class="p">().</span><span class="n">userEnabledCuDNN</span><span class="p">());</span><span class="w"></span>
+<span class="w">    </span><span class="n">input</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="n">weight</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="n">bias</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="n">running_mean</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="n">running_var</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="n">training</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="n">momentum</span><span class="p">.</span><span class="n">value</span><span class="p">(),</span><span class="w"></span>
+<span class="w">    </span><span class="n">eps</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="n">at</span><span class="o">::</span><span class="n">globalContext</span><span class="p">().</span><span class="n">userEnabledCuDNN</span><span class="p">());</span><span class="w"></span>
 <span class="p">}</span><span class="w"></span>
 <span class="p">}</span><span class="w"> </span><span class="c1">// namespace detail</span>
 <span class="cp">#endif </span><span class="cm">/* DOXYGEN_SHOULD_SKIP_THIS */</span><span class="cp"></span>
 
-<span class="kr">inline</span><span class="w"> </span><span class="n">Tensor</span><span class="w"> </span><span class="n">batch_norm</span><span class="p">(</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">input</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">running_mean</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">running_var</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">BatchNormFuncOptions</span><span class="o">&amp;</span><span class="w"> </span><span class="n">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{})</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="kr">inline</span><span class="w"> </span><span class="n">Tensor</span><span class="w"> </span><span class="n">batch_norm</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">input</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">running_mean</span><span class="p">,</span><span class="w"></span>
+<span class="w">                         </span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">running_var</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">BatchNormFuncOptions</span><span class="o">&amp;</span><span class="w"> </span><span class="n">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{})</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">detail</span><span class="o">::</span><span class="n">batch_norm</span><span class="p">(</span><span class="w"></span>
-<span class="w">      </span><span class="n">input</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="n">running_mean</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="n">running_var</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="n">options</span><span class="p">.</span><span class="n">weight</span><span class="p">(),</span><span class="w"></span>
-<span class="w">      </span><span class="n">options</span><span class="p">.</span><span class="n">bias</span><span class="p">(),</span><span class="w"></span>
-<span class="w">      </span><span class="n">options</span><span class="p">.</span><span class="n">training</span><span class="p">(),</span><span class="w"></span>
-<span class="w">      </span><span class="n">options</span><span class="p">.</span><span class="n">momentum</span><span class="p">(),</span><span class="w"></span>
-<span class="w">      </span><span class="n">options</span><span class="p">.</span><span class="n">eps</span><span class="p">());</span><span class="w"></span>
+<span class="w">    </span><span class="n">input</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="n">running_mean</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="n">running_var</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">weight</span><span class="p">(),</span><span class="w"></span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">bias</span><span class="p">(),</span><span class="w"></span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">training</span><span class="p">(),</span><span class="w"></span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">momentum</span><span class="p">(),</span><span class="w"></span>
+<span class="w">    </span><span class="n">options</span><span class="p">.</span><span class="n">eps</span><span class="p">());</span><span class="w"></span>
 <span class="p">}</span><span class="w"></span>
 
 <span class="p">}</span><span class="w"> </span><span class="c1">// namespace functional</span>
