@@ -607,8 +607,8 @@ Program Listing for File TensorBody.h
      at::Tensor & exp2_() const;
      at::Tensor expm1() const;
      at::Tensor & expm1_() const;
-     at::Tensor expand_symint(c10::SymIntArrayRef size, bool implicit=false) const;
      at::Tensor expand(at::IntArrayRef size, bool implicit=false) const;
+     at::Tensor expand_symint(c10::SymIntArrayRef size, bool implicit=false) const;
      at::Tensor expand_as(const at::Tensor & other) const;
      at::Tensor flatten(int64_t start_dim=0, int64_t end_dim=-1) const;
      at::Tensor flatten(int64_t start_dim, int64_t end_dim, at::Dimname out_dim) const;
@@ -713,7 +713,7 @@ Program Listing for File TensorBody.h
      at::Tensor mvlgamma(int64_t p) const;
      at::Tensor & mvlgamma_(int64_t p) const;
      at::Tensor narrow_copy(int64_t dim, int64_t start, int64_t length) const;
-     at::Tensor narrow_copy_symint(int64_t dim, int64_t start, c10::SymInt length) const;
+     at::Tensor narrow_copy_symint(int64_t dim, c10::SymInt start, c10::SymInt length) const;
      at::Tensor narrow(int64_t dim, int64_t start, int64_t length) const;
      at::Tensor narrow(int64_t dim, const at::Tensor & start, int64_t length) const;
      at::Tensor permute(at::IntArrayRef dims) const;
@@ -933,8 +933,8 @@ Program Listing for File TensorBody.h
      at::Tensor masked_fill(const at::Tensor & mask, const at::Tensor & value) const;
      at::Tensor & masked_scatter_(const at::Tensor & mask, const at::Tensor & source) const;
      at::Tensor masked_scatter(const at::Tensor & mask, const at::Tensor & source) const;
-     at::Tensor view_symint(c10::SymIntArrayRef size) const;
      at::Tensor view(at::IntArrayRef size) const;
+     at::Tensor view_symint(c10::SymIntArrayRef size) const;
      at::Tensor view(at::ScalarType dtype) const;
      at::Tensor & put_(const at::Tensor & index, const at::Tensor & source, bool accumulate=false) const;
      at::Tensor put(const at::Tensor & index, const at::Tensor & source, bool accumulate=false) const;
@@ -2117,24 +2117,24 @@ Program Listing for File TensorBody.h
        return at::_ops::vdot::call(const_cast<Tensor&>(*this), other);
    }
    
-   // aten::new_empty(Tensor self, int[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
+   // aten::new_empty(Tensor self, SymInt[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
    inline at::Tensor Tensor::new_empty(at::IntArrayRef size, at::TensorOptions options) const {
+       return at::_ops::new_empty::call(const_cast<Tensor&>(*this), c10::SymIntArrayRef::fromIntArrayRef(size), optTypeMetaToScalarType(options.dtype_opt()), options.layout_opt(), options.device_opt(), options.pinned_memory_opt());
+   }
+   
+   // aten::new_empty(Tensor self, SymInt[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
+   inline at::Tensor Tensor::new_empty(at::IntArrayRef size, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory) const {
+       return at::_ops::new_empty::call(const_cast<Tensor&>(*this), c10::SymIntArrayRef::fromIntArrayRef(size), dtype, layout, device, pin_memory);
+   }
+   
+   // aten::new_empty(Tensor self, SymInt[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
+   inline at::Tensor Tensor::new_empty_symint(c10::SymIntArrayRef size, at::TensorOptions options) const {
        return at::_ops::new_empty::call(const_cast<Tensor&>(*this), size, optTypeMetaToScalarType(options.dtype_opt()), options.layout_opt(), options.device_opt(), options.pinned_memory_opt());
    }
    
-   // aten::new_empty(Tensor self, int[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
-   inline at::Tensor Tensor::new_empty(at::IntArrayRef size, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory) const {
-       return at::_ops::new_empty::call(const_cast<Tensor&>(*this), size, dtype, layout, device, pin_memory);
-   }
-   
-   // aten::new_empty.SymInt(Tensor self, SymInt[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
-   inline at::Tensor Tensor::new_empty_symint(c10::SymIntArrayRef size, at::TensorOptions options) const {
-       return at::_ops::new_empty_SymInt::call(const_cast<Tensor&>(*this), size, optTypeMetaToScalarType(options.dtype_opt()), options.layout_opt(), options.device_opt(), options.pinned_memory_opt());
-   }
-   
-   // aten::new_empty.SymInt(Tensor self, SymInt[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
+   // aten::new_empty(Tensor self, SymInt[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
    inline at::Tensor Tensor::new_empty_symint(c10::SymIntArrayRef size, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory) const {
-       return at::_ops::new_empty_SymInt::call(const_cast<Tensor&>(*this), size, dtype, layout, device, pin_memory);
+       return at::_ops::new_empty::call(const_cast<Tensor&>(*this), size, dtype, layout, device, pin_memory);
    }
    
    // aten::new_empty_strided(Tensor self, int[] size, int[] stride, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
@@ -2232,13 +2232,13 @@ Program Listing for File TensorBody.h
        return at::_ops::expm1_::call(const_cast<Tensor&>(*this));
    }
    
-   // aten::expand.SymInt(Tensor(a) self, SymInt[] size, *, bool implicit=False) -> Tensor(a)
-   inline at::Tensor Tensor::expand_symint(c10::SymIntArrayRef size, bool implicit) const {
-       return at::_ops::expand_SymInt::call(const_cast<Tensor&>(*this), size, implicit);
+   // aten::expand(Tensor(a) self, SymInt[] size, *, bool implicit=False) -> Tensor(a)
+   inline at::Tensor Tensor::expand(at::IntArrayRef size, bool implicit) const {
+       return at::_ops::expand::call(const_cast<Tensor&>(*this), c10::SymIntArrayRef::fromIntArrayRef(size), implicit);
    }
    
-   // aten::expand(Tensor(a) self, int[] size, *, bool implicit=False) -> Tensor(a)
-   inline at::Tensor Tensor::expand(at::IntArrayRef size, bool implicit) const {
+   // aten::expand(Tensor(a) self, SymInt[] size, *, bool implicit=False) -> Tensor(a)
+   inline at::Tensor Tensor::expand_symint(c10::SymIntArrayRef size, bool implicit) const {
        return at::_ops::expand::call(const_cast<Tensor&>(*this), size, implicit);
    }
    
@@ -2757,14 +2757,14 @@ Program Listing for File TensorBody.h
        return at::_ops::mvlgamma_::call(const_cast<Tensor&>(*this), p);
    }
    
-   // aten::narrow_copy(Tensor self, int dim, int start, int length) -> Tensor
+   // aten::narrow_copy(Tensor self, int dim, SymInt start, SymInt length) -> Tensor
    inline at::Tensor Tensor::narrow_copy(int64_t dim, int64_t start, int64_t length) const {
        return at::_ops::narrow_copy::call(const_cast<Tensor&>(*this), dim, start, length);
    }
    
-   // aten::narrow_copy.SymInt(Tensor self, int dim, int start, SymInt length) -> Tensor
-   inline at::Tensor Tensor::narrow_copy_symint(int64_t dim, int64_t start, c10::SymInt length) const {
-       return at::_ops::narrow_copy_SymInt::call(const_cast<Tensor&>(*this), dim, start, length);
+   // aten::narrow_copy(Tensor self, int dim, SymInt start, SymInt length) -> Tensor
+   inline at::Tensor Tensor::narrow_copy_symint(int64_t dim, c10::SymInt start, c10::SymInt length) const {
+       return at::_ops::narrow_copy::call(const_cast<Tensor&>(*this), dim, start, length);
    }
    
    // aten::narrow(Tensor(a) self, int dim, int start, int length) -> Tensor(a)
@@ -3862,13 +3862,13 @@ Program Listing for File TensorBody.h
        return at::_ops::masked_scatter::call(const_cast<Tensor&>(*this), mask, source);
    }
    
-   // aten::view.SymInt(Tensor(a) self, SymInt[] size) -> Tensor(a)
-   inline at::Tensor Tensor::view_symint(c10::SymIntArrayRef size) const {
-       return at::_ops::view_SymInt::call(const_cast<Tensor&>(*this), size);
+   // aten::view(Tensor(a) self, SymInt[] size) -> Tensor(a)
+   inline at::Tensor Tensor::view(at::IntArrayRef size) const {
+       return at::_ops::view::call(const_cast<Tensor&>(*this), c10::SymIntArrayRef::fromIntArrayRef(size));
    }
    
-   // aten::view(Tensor(a) self, int[] size) -> Tensor(a)
-   inline at::Tensor Tensor::view(at::IntArrayRef size) const {
+   // aten::view(Tensor(a) self, SymInt[] size) -> Tensor(a)
+   inline at::Tensor Tensor::view_symint(c10::SymIntArrayRef size) const {
        return at::_ops::view::call(const_cast<Tensor&>(*this), size);
    }
    
