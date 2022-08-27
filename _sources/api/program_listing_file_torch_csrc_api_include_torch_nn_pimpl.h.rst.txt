@@ -162,11 +162,19 @@ Program Listing for File pimpl.h
    } // namespace nn
    } // namespace torch
    
+   // Workaround for CUDA 10.2 and below not allowing attribute unused on
+   // using declarations.
+   #ifdef __CUDACC__
+   #define TORCH_UNUSED_EXCEPT_CUDA
+   #else
+   #define TORCH_UNUSED_EXCEPT_CUDA C10_UNUSED
+   #endif
+   
    #define TORCH_MODULE_IMPL(Name, ImplType)                              \
      class Name : public torch::nn::ModuleHolder<ImplType> { /* NOLINT */ \
       public:                                                             \
        using torch::nn::ModuleHolder<ImplType>::ModuleHolder;             \
-       using Impl = ImplType;                                             \
+       using Impl TORCH_UNUSED_EXCEPT_CUDA = ImplType;                    \
      }
    
    #define TORCH_MODULE(Name) TORCH_MODULE_IMPL(Name, Name##Impl)
