@@ -694,37 +694,26 @@
 <span class="w">    </span><span class="n">CreationMeta</span><span class="w"> </span><span class="n">creation_meta</span><span class="p">,</span><span class="w"></span>
 <span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="n">allow_tensor_metadata_change</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">defined</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="c1">// If we already did a TensorImpl allocation for data, just reuse it.</span>
-<span class="w">    </span><span class="c1">// Otherwise(e.g tensor.swapdim(0, 0) when we return the same tensor as</span>
-<span class="w">    </span><span class="c1">// input), we have to use shallow_copy_and_detach to create a new TensorImpl</span>
-<span class="w">    </span><span class="c1">// to avoid moving leaf node into graph interior. This guarantees only 1</span>
-<span class="w">    </span><span class="c1">// TensorImpl allocation happens in view ops.</span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">getIntrusivePtr</span><span class="p">().</span><span class="n">unique</span><span class="p">()</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"></span>
-<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">getIntrusivePtr</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">unique_version</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">      </span><span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="o">*</span><span class="w"> </span><span class="n">data_impl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">.</span><span class="n">unsafeGetTensorImpl</span><span class="p">();</span><span class="w"></span>
-<span class="w">      </span><span class="n">data_impl</span><span class="o">-&gt;</span><span class="n">set_allow_tensor_metadata_change</span><span class="p">(</span><span class="n">allow_tensor_metadata_change</span><span class="p">);</span><span class="w"></span>
-<span class="w">      </span><span class="n">data_impl</span><span class="o">-&gt;</span><span class="n">set_autograd_meta</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">DifferentiableViewMeta</span><span class="o">&gt;</span><span class="p">(</span><span class="w"></span>
-<span class="w">          </span><span class="n">data_impl</span><span class="p">,</span><span class="w"></span>
-<span class="w">          </span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">backward_info</span><span class="p">),</span><span class="w"></span>
-<span class="w">          </span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">forward_info</span><span class="p">),</span><span class="w"></span>
-<span class="w">          </span><span class="n">shared_view_info</span><span class="p">,</span><span class="w"></span>
-<span class="w">          </span><span class="n">creation_meta</span><span class="p">));</span><span class="w"></span>
-<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">data</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">      </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-init-variables)</span>
-<span class="w">      </span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="o">&gt;</span><span class="w"> </span><span class="n">data_impl_copy</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
-<span class="w">          </span><span class="n">data</span><span class="p">.</span><span class="n">getIntrusivePtr</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">shallow_copy_and_detach</span><span class="p">(</span><span class="w"></span>
-<span class="w">              </span><span class="cm">/*version_counter=*/</span><span class="mi">0</span><span class="p">,</span><span class="w"></span>
-<span class="w">              </span><span class="cm">/*allow_tensor_metadata_change=*/</span><span class="n">allow_tensor_metadata_change</span><span class="p">);</span><span class="w"></span>
-<span class="w">      </span><span class="n">data_impl_copy</span><span class="o">-&gt;</span><span class="n">set_autograd_meta</span><span class="p">(</span><span class="w"></span>
-<span class="w">          </span><span class="n">std</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">DifferentiableViewMeta</span><span class="o">&gt;</span><span class="p">(</span><span class="w"></span>
-<span class="w">              </span><span class="n">data_impl_copy</span><span class="p">.</span><span class="n">get</span><span class="p">(),</span><span class="w"></span>
-<span class="w">              </span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">backward_info</span><span class="p">),</span><span class="w"></span>
-<span class="w">              </span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">forward_info</span><span class="p">),</span><span class="w"></span>
-<span class="w">              </span><span class="n">shared_view_info</span><span class="p">,</span><span class="w"></span>
-<span class="w">              </span><span class="n">creation_meta</span><span class="p">));</span><span class="w"></span>
-<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">Variable</span><span class="p">(</span><span class="n">data_impl_copy</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">TORCH_CHECK</span><span class="p">(</span><span class="w"></span>
+<span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">getIntrusivePtr</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">autograd_meta</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="k">nullptr</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="s">&quot;Attempted to make a tensor into a differentiable view, but the &quot;</span><span class="w"></span>
+<span class="w">        </span><span class="s">&quot;tensor already had autograd metadata associated with it.  If you are &quot;</span><span class="w"></span>
+<span class="w">        </span><span class="s">&quot;using a __torch_dispatch__ mode, the most common cause for this &quot;</span><span class="w"></span>
+<span class="w">        </span><span class="s">&quot;problem is that you used torch.overrides.enable_reentrant_dispatch() &quot;</span><span class="w"></span>
+<span class="w">        </span><span class="s">&quot;improperly; tensors created within the extent of reentrant dispatch &quot;</span><span class="w"></span>
+<span class="w">        </span><span class="s">&quot;MUST NOT be directly returned from __torch_dispatch__; instead, they &quot;</span><span class="w"></span>
+<span class="w">        </span><span class="s">&quot;must be wrapped into fresh tensors that serve as the output.  If you &quot;</span><span class="w"></span>
+<span class="w">        </span><span class="s">&quot;are not using wrappers, you probably don&#39;t need reentrant dispatch.  &quot;</span><span class="w"></span>
+<span class="w">        </span><span class="s">&quot;If this doesn&#39;t seem applicable, please file a bug to PyTorch.&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="o">*</span><span class="w"> </span><span class="n">data_impl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">.</span><span class="n">unsafeGetTensorImpl</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="n">data_impl</span><span class="o">-&gt;</span><span class="n">set_allow_tensor_metadata_change</span><span class="p">(</span><span class="n">allow_tensor_metadata_change</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">data_impl</span><span class="o">-&gt;</span><span class="n">set_autograd_meta</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">DifferentiableViewMeta</span><span class="o">&gt;</span><span class="p">(</span><span class="w"></span>
+<span class="w">        </span><span class="n">data_impl</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">backward_info</span><span class="p">),</span><span class="w"></span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">forward_info</span><span class="p">),</span><span class="w"></span>
+<span class="w">        </span><span class="n">shared_view_info</span><span class="p">,</span><span class="w"></span>
+<span class="w">        </span><span class="n">creation_meta</span><span class="p">));</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">data</span><span class="p">;</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 <span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">Variable</span><span class="p">();</span><span class="w"></span>
 <span class="p">}</span><span class="w"></span>
