@@ -329,6 +329,7 @@
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;ATen/core/ivalue_to.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;ATen/core/jit_type_base.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;ATen/core/type_factory.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/core/SymFloat.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/C++17.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/MaybeOwned.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/intrusive_ptr.h&gt;</span><span class="cp"></span>
@@ -467,6 +468,7 @@
 <span class="cp">  _(ComplexDouble)           \</span>
 <span class="cp">  _(Int)                     \</span>
 <span class="cp">  _(SymInt)                  \</span>
+<span class="cp">  _(SymFloat)                \</span>
 <span class="cp">  _(Bool)                    \</span>
 <span class="cp">  _(Tuple)                   \</span>
 <span class="cp">  _(String)                  \</span>
@@ -800,6 +802,22 @@
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
 <span class="w">  </span><span class="n">c10</span><span class="o">::</span><span class="n">SymInt</span><span class="w"> </span><span class="n">toSymInt</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">SymFloat</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">i</span><span class="p">.</span><span class="n">is_symbolic</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="n">tag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Tag</span><span class="o">::</span><span class="n">SymFloat</span><span class="p">;</span><span class="w"></span>
+<span class="w">      </span><span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="p">.</span><span class="n">toSymFloatNodeImpl</span><span class="p">().</span><span class="n">release</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="n">tag</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Tag</span><span class="o">::</span><span class="n">Double</span><span class="p">;</span><span class="w"></span>
+<span class="w">      </span><span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_double</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">i</span><span class="p">.</span><span class="n">as_float_unchecked</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">isSymFloat</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">Tag</span><span class="o">::</span><span class="n">SymFloat</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">tag</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">c10</span><span class="o">::</span><span class="n">SymFloat</span><span class="w"> </span><span class="n">toSymFloat</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
 
 <span class="w">  </span><span class="c1">// allow you to pass literals (3, 4) without ambiguity</span>
 <span class="w">  </span><span class="n">IValue</span><span class="p">(</span><span class="kt">int32_t</span><span class="w"> </span><span class="n">i</span><span class="p">)</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">IValue</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">i</span><span class="p">))</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
@@ -1299,6 +1317,8 @@
 <span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
 <span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="no">Tag</span><span class="o">::</span><span class="no">SymInt</span><span class="p">:</span><span class="w"></span>
 <span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="no">Tag</span><span class="o">::</span><span class="no">SymFloat</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
 <span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="no">Tag</span><span class="o">::</span><span class="no">Bool</span><span class="p">:</span><span class="w"></span>
 <span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
 <span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="no">Tag</span><span class="o">::</span><span class="no">Tuple</span><span class="p">:</span><span class="w"></span>
@@ -1561,6 +1581,10 @@
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">strong_ptr_</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">holdingEmptyStrongRef</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">holdingStrongRef</span><span class="p">()</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">*</span><span class="n">strong_ptr_</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
 <span class="w">  </span><span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">torch</span><span class="o">::</span><span class="n">jit</span><span class="o">::</span><span class="n">CompilationUnit</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">strong_ptr_</span><span class="p">;</span><span class="w"></span>
 <span class="w">  </span><span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">weak_ptr</span><span class="o">&lt;</span><span class="n">torch</span><span class="o">::</span><span class="n">jit</span><span class="o">::</span><span class="n">CompilationUnit</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">weak_ptr_</span><span class="p">;</span><span class="w"></span>
 <span class="p">};</span><span class="w"></span>
@@ -1584,8 +1608,13 @@
 
 <span class="w">  </span><span class="n">WeakOrStrongCompilationUnit</span><span class="w"> </span><span class="n">cu_</span><span class="p">;</span><span class="w"></span>
 <span class="w">  </span><span class="n">TypePtr</span><span class="w"> </span><span class="n">type_</span><span class="p">;</span><span class="w"></span>
+
 <span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="nf">holds_strong_ref</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">cu_</span><span class="p">.</span><span class="n">holdingStrongRef</span><span class="p">();</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="nf">holds_empty_strong_ref</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">cu_</span><span class="p">.</span><span class="n">holdingEmptyStrongRef</span><span class="p">();</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 <span class="p">};</span><span class="w"></span>
 
