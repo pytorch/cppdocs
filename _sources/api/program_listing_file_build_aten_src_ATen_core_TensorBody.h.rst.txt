@@ -746,10 +746,13 @@ Program Listing for File TensorBody.h
      at::Tensor negative() const;
      at::Tensor & negative_() const;
      at::Tensor repeat(at::IntArrayRef repeats) const;
+     at::Tensor repeat_symint(c10::SymIntArrayRef repeats) const;
      at::Tensor repeat_interleave(const at::Tensor & repeats, c10::optional<int64_t> dim=c10::nullopt, c10::optional<int64_t> output_size=c10::nullopt) const;
      at::Tensor repeat_interleave(int64_t repeats, c10::optional<int64_t> dim=c10::nullopt, c10::optional<int64_t> output_size=c10::nullopt) const;
      at::Tensor reshape(at::IntArrayRef shape) const;
+     at::Tensor reshape_symint(c10::SymIntArrayRef shape) const;
      at::Tensor _reshape_alias(at::IntArrayRef size, at::IntArrayRef stride) const;
+     at::Tensor _reshape_alias_symint(c10::SymIntArrayRef size, c10::SymIntArrayRef stride) const;
      at::Tensor reshape_as(const at::Tensor & other) const;
      at::Tensor round() const;
      at::Tensor & round_() const;
@@ -2923,8 +2926,13 @@ Program Listing for File TensorBody.h
        return at::_ops::negative_::call(const_cast<Tensor&>(*this));
    }
    
-   // aten::repeat(Tensor self, int[] repeats) -> Tensor
+   // aten::repeat(Tensor self, SymInt[] repeats) -> Tensor
    inline at::Tensor Tensor::repeat(at::IntArrayRef repeats) const {
+       return at::_ops::repeat::call(const_cast<Tensor&>(*this), c10::fromIntArrayRef(repeats));
+   }
+   
+   // aten::repeat(Tensor self, SymInt[] repeats) -> Tensor
+   inline at::Tensor Tensor::repeat_symint(c10::SymIntArrayRef repeats) const {
        return at::_ops::repeat::call(const_cast<Tensor&>(*this), repeats);
    }
    
@@ -2938,13 +2946,23 @@ Program Listing for File TensorBody.h
        return at::_ops::repeat_interleave_self_int::call(const_cast<Tensor&>(*this), repeats, dim, output_size);
    }
    
-   // aten::reshape(Tensor(a) self, int[] shape) -> Tensor(a)
+   // aten::reshape(Tensor(a) self, SymInt[] shape) -> Tensor(a)
    inline at::Tensor Tensor::reshape(at::IntArrayRef shape) const {
+       return at::_ops::reshape::call(const_cast<Tensor&>(*this), c10::fromIntArrayRef(shape));
+   }
+   
+   // aten::reshape(Tensor(a) self, SymInt[] shape) -> Tensor(a)
+   inline at::Tensor Tensor::reshape_symint(c10::SymIntArrayRef shape) const {
        return at::_ops::reshape::call(const_cast<Tensor&>(*this), shape);
    }
    
-   // aten::_reshape_alias(Tensor(a) self, int[] size, int[] stride) -> Tensor(a)
+   // aten::_reshape_alias(Tensor(a) self, SymInt[] size, SymInt[] stride) -> Tensor(a)
    inline at::Tensor Tensor::_reshape_alias(at::IntArrayRef size, at::IntArrayRef stride) const {
+       return at::_ops::_reshape_alias::call(const_cast<Tensor&>(*this), c10::fromIntArrayRef(size), c10::fromIntArrayRef(stride));
+   }
+   
+   // aten::_reshape_alias(Tensor(a) self, SymInt[] size, SymInt[] stride) -> Tensor(a)
+   inline at::Tensor Tensor::_reshape_alias_symint(c10::SymIntArrayRef size, c10::SymIntArrayRef stride) const {
        return at::_ops::_reshape_alias::call(const_cast<Tensor&>(*this), size, stride);
    }
    
