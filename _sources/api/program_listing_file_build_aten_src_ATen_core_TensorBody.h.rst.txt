@@ -727,9 +727,7 @@ Program Listing for File TensorBody.h
      at::Tensor narrow_copy(int64_t dim, int64_t start, int64_t length) const;
      at::Tensor narrow_copy_symint(int64_t dim, c10::SymInt start, c10::SymInt length) const;
      at::Tensor narrow(int64_t dim, int64_t start, int64_t length) const;
-     at::Tensor narrow_symint(int64_t dim, c10::SymInt start, c10::SymInt length) const;
      at::Tensor narrow(int64_t dim, const at::Tensor & start, int64_t length) const;
-     at::Tensor narrow_symint(int64_t dim, const at::Tensor & start, c10::SymInt length) const;
      at::Tensor permute(at::IntArrayRef dims) const;
      at::Tensor movedim(at::IntArrayRef source, at::IntArrayRef destination) const;
      at::Tensor movedim(int64_t source, int64_t destination) const;
@@ -1212,6 +1210,7 @@ Program Listing for File TensorBody.h
      at::Tensor outer(const at::Tensor & vec2) const;
      at::Tensor ger(const at::Tensor & vec2) const;
      at::Tensor to_padded_tensor(double padding, at::OptionalIntArrayRef output_size=c10::nullopt) const;
+     at::Tensor _nested_tensor_layer_norm(const c10::optional<at::Tensor> & weight, const c10::optional<at::Tensor> & bias, double eps) const;
    
      // Special C++ only overloads for std()-like functions (See gh-40287)
      // These are needed because int -> bool conversion takes precedence over int -> IntArrayRef
@@ -1611,7 +1610,7 @@ Program Listing for File TensorBody.h
    
    // aten::as_strided(Tensor(a) self, SymInt[] size, SymInt[] stride, SymInt? storage_offset=None) -> Tensor(a)
    inline at::Tensor Tensor::as_strided(at::IntArrayRef size, at::IntArrayRef stride, c10::optional<int64_t> storage_offset) const {
-       return at::_ops::as_strided::call(const_cast<Tensor&>(*this), c10::fromIntArrayRefSlow(size), c10::fromIntArrayRefSlow(stride), storage_offset.has_value() ? c10::make_optional(c10::SymInt(*storage_offset)) : c10::nullopt);
+       return at::_ops::as_strided::call(const_cast<Tensor&>(*this), c10::fromIntArrayRef(size), c10::fromIntArrayRef(stride), storage_offset.has_value() ? c10::make_optional(c10::SymInt(*storage_offset)) : c10::nullopt);
    }
    
    // aten::as_strided(Tensor(a) self, SymInt[] size, SymInt[] stride, SymInt? storage_offset=None) -> Tensor(a)
@@ -1621,7 +1620,7 @@ Program Listing for File TensorBody.h
    
    // aten::as_strided_(Tensor(a!) self, SymInt[] size, SymInt[] stride, SymInt? storage_offset=None) -> Tensor(a!)
    inline const at::Tensor & Tensor::as_strided_(at::IntArrayRef size, at::IntArrayRef stride, c10::optional<int64_t> storage_offset) const {
-       return at::_ops::as_strided_::call(const_cast<Tensor&>(*this), c10::fromIntArrayRefSlow(size), c10::fromIntArrayRefSlow(stride), storage_offset.has_value() ? c10::make_optional(c10::SymInt(*storage_offset)) : c10::nullopt);
+       return at::_ops::as_strided_::call(const_cast<Tensor&>(*this), c10::fromIntArrayRef(size), c10::fromIntArrayRef(stride), storage_offset.has_value() ? c10::make_optional(c10::SymInt(*storage_offset)) : c10::nullopt);
    }
    
    // aten::as_strided_(Tensor(a!) self, SymInt[] size, SymInt[] stride, SymInt? storage_offset=None) -> Tensor(a!)
@@ -2151,12 +2150,12 @@ Program Listing for File TensorBody.h
    
    // aten::new_empty(Tensor self, SymInt[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
    inline at::Tensor Tensor::new_empty(at::IntArrayRef size, at::TensorOptions options) const {
-       return at::_ops::new_empty::call(const_cast<Tensor&>(*this), c10::fromIntArrayRefSlow(size), optTypeMetaToScalarType(options.dtype_opt()), options.layout_opt(), options.device_opt(), options.pinned_memory_opt());
+       return at::_ops::new_empty::call(const_cast<Tensor&>(*this), c10::fromIntArrayRef(size), optTypeMetaToScalarType(options.dtype_opt()), options.layout_opt(), options.device_opt(), options.pinned_memory_opt());
    }
    
    // aten::new_empty(Tensor self, SymInt[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
    inline at::Tensor Tensor::new_empty(at::IntArrayRef size, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory) const {
-       return at::_ops::new_empty::call(const_cast<Tensor&>(*this), c10::fromIntArrayRefSlow(size), dtype, layout, device, pin_memory);
+       return at::_ops::new_empty::call(const_cast<Tensor&>(*this), c10::fromIntArrayRef(size), dtype, layout, device, pin_memory);
    }
    
    // aten::new_empty(Tensor self, SymInt[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
@@ -2171,12 +2170,12 @@ Program Listing for File TensorBody.h
    
    // aten::new_empty_strided(Tensor self, SymInt[] size, SymInt[] stride, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
    inline at::Tensor Tensor::new_empty_strided(at::IntArrayRef size, at::IntArrayRef stride, at::TensorOptions options) const {
-       return at::_ops::new_empty_strided::call(const_cast<Tensor&>(*this), c10::fromIntArrayRefSlow(size), c10::fromIntArrayRefSlow(stride), optTypeMetaToScalarType(options.dtype_opt()), options.layout_opt(), options.device_opt(), options.pinned_memory_opt());
+       return at::_ops::new_empty_strided::call(const_cast<Tensor&>(*this), c10::fromIntArrayRef(size), c10::fromIntArrayRef(stride), optTypeMetaToScalarType(options.dtype_opt()), options.layout_opt(), options.device_opt(), options.pinned_memory_opt());
    }
    
    // aten::new_empty_strided(Tensor self, SymInt[] size, SymInt[] stride, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
    inline at::Tensor Tensor::new_empty_strided(at::IntArrayRef size, at::IntArrayRef stride, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory) const {
-       return at::_ops::new_empty_strided::call(const_cast<Tensor&>(*this), c10::fromIntArrayRefSlow(size), c10::fromIntArrayRefSlow(stride), dtype, layout, device, pin_memory);
+       return at::_ops::new_empty_strided::call(const_cast<Tensor&>(*this), c10::fromIntArrayRef(size), c10::fromIntArrayRef(stride), dtype, layout, device, pin_memory);
    }
    
    // aten::new_empty_strided(Tensor self, SymInt[] size, SymInt[] stride, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
@@ -2191,12 +2190,12 @@ Program Listing for File TensorBody.h
    
    // aten::new_full(Tensor self, SymInt[] size, Scalar fill_value, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
    inline at::Tensor Tensor::new_full(at::IntArrayRef size, const at::Scalar & fill_value, at::TensorOptions options) const {
-       return at::_ops::new_full::call(const_cast<Tensor&>(*this), c10::fromIntArrayRefSlow(size), fill_value, optTypeMetaToScalarType(options.dtype_opt()), options.layout_opt(), options.device_opt(), options.pinned_memory_opt());
+       return at::_ops::new_full::call(const_cast<Tensor&>(*this), c10::fromIntArrayRef(size), fill_value, optTypeMetaToScalarType(options.dtype_opt()), options.layout_opt(), options.device_opt(), options.pinned_memory_opt());
    }
    
    // aten::new_full(Tensor self, SymInt[] size, Scalar fill_value, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
    inline at::Tensor Tensor::new_full(at::IntArrayRef size, const at::Scalar & fill_value, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory) const {
-       return at::_ops::new_full::call(const_cast<Tensor&>(*this), c10::fromIntArrayRefSlow(size), fill_value, dtype, layout, device, pin_memory);
+       return at::_ops::new_full::call(const_cast<Tensor&>(*this), c10::fromIntArrayRef(size), fill_value, dtype, layout, device, pin_memory);
    }
    
    // aten::new_full(Tensor self, SymInt[] size, Scalar fill_value, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
@@ -2211,12 +2210,12 @@ Program Listing for File TensorBody.h
    
    // aten::new_zeros(Tensor self, SymInt[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
    inline at::Tensor Tensor::new_zeros(at::IntArrayRef size, at::TensorOptions options) const {
-       return at::_ops::new_zeros::call(const_cast<Tensor&>(*this), c10::fromIntArrayRefSlow(size), optTypeMetaToScalarType(options.dtype_opt()), options.layout_opt(), options.device_opt(), options.pinned_memory_opt());
+       return at::_ops::new_zeros::call(const_cast<Tensor&>(*this), c10::fromIntArrayRef(size), optTypeMetaToScalarType(options.dtype_opt()), options.layout_opt(), options.device_opt(), options.pinned_memory_opt());
    }
    
    // aten::new_zeros(Tensor self, SymInt[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
    inline at::Tensor Tensor::new_zeros(at::IntArrayRef size, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory) const {
-       return at::_ops::new_zeros::call(const_cast<Tensor&>(*this), c10::fromIntArrayRefSlow(size), dtype, layout, device, pin_memory);
+       return at::_ops::new_zeros::call(const_cast<Tensor&>(*this), c10::fromIntArrayRef(size), dtype, layout, device, pin_memory);
    }
    
    // aten::new_zeros(Tensor self, SymInt[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
@@ -2231,12 +2230,12 @@ Program Listing for File TensorBody.h
    
    // aten::new_ones(Tensor self, SymInt[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
    inline at::Tensor Tensor::new_ones(at::IntArrayRef size, at::TensorOptions options) const {
-       return at::_ops::new_ones::call(const_cast<Tensor&>(*this), c10::fromIntArrayRefSlow(size), optTypeMetaToScalarType(options.dtype_opt()), options.layout_opt(), options.device_opt(), options.pinned_memory_opt());
+       return at::_ops::new_ones::call(const_cast<Tensor&>(*this), c10::fromIntArrayRef(size), optTypeMetaToScalarType(options.dtype_opt()), options.layout_opt(), options.device_opt(), options.pinned_memory_opt());
    }
    
    // aten::new_ones(Tensor self, SymInt[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
    inline at::Tensor Tensor::new_ones(at::IntArrayRef size, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory) const {
-       return at::_ops::new_ones::call(const_cast<Tensor&>(*this), c10::fromIntArrayRefSlow(size), dtype, layout, device, pin_memory);
+       return at::_ops::new_ones::call(const_cast<Tensor&>(*this), c10::fromIntArrayRef(size), dtype, layout, device, pin_memory);
    }
    
    // aten::new_ones(Tensor self, SymInt[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
@@ -2251,7 +2250,7 @@ Program Listing for File TensorBody.h
    
    // aten::resize_(Tensor(a!) self, SymInt[] size, *, MemoryFormat? memory_format=None) -> Tensor(a!)
    inline const at::Tensor & Tensor::resize_(at::IntArrayRef size, c10::optional<at::MemoryFormat> memory_format) const {
-       return at::_ops::resize_::call(const_cast<Tensor&>(*this), c10::fromIntArrayRefSlow(size), memory_format);
+       return at::_ops::resize_::call(const_cast<Tensor&>(*this), c10::fromIntArrayRef(size), memory_format);
    }
    
    // aten::resize_(Tensor(a!) self, SymInt[] size, *, MemoryFormat? memory_format=None) -> Tensor(a!)
@@ -2311,7 +2310,7 @@ Program Listing for File TensorBody.h
    
    // aten::expand(Tensor(a) self, SymInt[] size, *, bool implicit=False) -> Tensor(a)
    inline at::Tensor Tensor::expand(at::IntArrayRef size, bool implicit) const {
-       return at::_ops::expand::call(const_cast<Tensor&>(*this), c10::fromIntArrayRefSlow(size), implicit);
+       return at::_ops::expand::call(const_cast<Tensor&>(*this), c10::fromIntArrayRef(size), implicit);
    }
    
    // aten::expand(Tensor(a) self, SymInt[] size, *, bool implicit=False) -> Tensor(a)
@@ -2839,23 +2838,13 @@ Program Listing for File TensorBody.h
        return at::_ops::narrow_copy::call(const_cast<Tensor&>(*this), dim, start, length);
    }
    
-   // aten::narrow(Tensor(a) self, int dim, SymInt start, SymInt length) -> Tensor(a)
+   // aten::narrow(Tensor(a) self, int dim, int start, int length) -> Tensor(a)
    inline at::Tensor Tensor::narrow(int64_t dim, int64_t start, int64_t length) const {
        return at::_ops::narrow::call(const_cast<Tensor&>(*this), dim, start, length);
    }
    
-   // aten::narrow(Tensor(a) self, int dim, SymInt start, SymInt length) -> Tensor(a)
-   inline at::Tensor Tensor::narrow_symint(int64_t dim, c10::SymInt start, c10::SymInt length) const {
-       return at::_ops::narrow::call(const_cast<Tensor&>(*this), dim, start, length);
-   }
-   
-   // aten::narrow.Tensor(Tensor(a) self, int dim, Tensor start, SymInt length) -> Tensor(a)
+   // aten::narrow.Tensor(Tensor(a) self, int dim, Tensor start, int length) -> Tensor(a)
    inline at::Tensor Tensor::narrow(int64_t dim, const at::Tensor & start, int64_t length) const {
-       return at::_ops::narrow_Tensor::call(const_cast<Tensor&>(*this), dim, start, length);
-   }
-   
-   // aten::narrow.Tensor(Tensor(a) self, int dim, Tensor start, SymInt length) -> Tensor(a)
-   inline at::Tensor Tensor::narrow_symint(int64_t dim, const at::Tensor & start, c10::SymInt length) const {
        return at::_ops::narrow_Tensor::call(const_cast<Tensor&>(*this), dim, start, length);
    }
    
@@ -2981,7 +2970,7 @@ Program Listing for File TensorBody.h
    
    // aten::repeat(Tensor self, SymInt[] repeats) -> Tensor
    inline at::Tensor Tensor::repeat(at::IntArrayRef repeats) const {
-       return at::_ops::repeat::call(const_cast<Tensor&>(*this), c10::fromIntArrayRefSlow(repeats));
+       return at::_ops::repeat::call(const_cast<Tensor&>(*this), c10::fromIntArrayRef(repeats));
    }
    
    // aten::repeat(Tensor self, SymInt[] repeats) -> Tensor
@@ -3001,7 +2990,7 @@ Program Listing for File TensorBody.h
    
    // aten::reshape(Tensor(a) self, SymInt[] shape) -> Tensor(a)
    inline at::Tensor Tensor::reshape(at::IntArrayRef shape) const {
-       return at::_ops::reshape::call(const_cast<Tensor&>(*this), c10::fromIntArrayRefSlow(shape));
+       return at::_ops::reshape::call(const_cast<Tensor&>(*this), c10::fromIntArrayRef(shape));
    }
    
    // aten::reshape(Tensor(a) self, SymInt[] shape) -> Tensor(a)
@@ -3011,7 +3000,7 @@ Program Listing for File TensorBody.h
    
    // aten::_reshape_alias(Tensor(a) self, SymInt[] size, SymInt[] stride) -> Tensor(a)
    inline at::Tensor Tensor::_reshape_alias(at::IntArrayRef size, at::IntArrayRef stride) const {
-       return at::_ops::_reshape_alias::call(const_cast<Tensor&>(*this), c10::fromIntArrayRefSlow(size), c10::fromIntArrayRefSlow(stride));
+       return at::_ops::_reshape_alias::call(const_cast<Tensor&>(*this), c10::fromIntArrayRef(size), c10::fromIntArrayRef(stride));
    }
    
    // aten::_reshape_alias(Tensor(a) self, SymInt[] size, SymInt[] stride) -> Tensor(a)
@@ -3191,7 +3180,7 @@ Program Listing for File TensorBody.h
    
    // aten::as_strided_scatter(Tensor self, Tensor src, SymInt[] size, SymInt[] stride, SymInt? storage_offset=None) -> Tensor
    inline at::Tensor Tensor::as_strided_scatter(const at::Tensor & src, at::IntArrayRef size, at::IntArrayRef stride, c10::optional<int64_t> storage_offset) const {
-       return at::_ops::as_strided_scatter::call(const_cast<Tensor&>(*this), src, c10::fromIntArrayRefSlow(size), c10::fromIntArrayRefSlow(stride), storage_offset.has_value() ? c10::make_optional(c10::SymInt(*storage_offset)) : c10::nullopt);
+       return at::_ops::as_strided_scatter::call(const_cast<Tensor&>(*this), src, c10::fromIntArrayRef(size), c10::fromIntArrayRef(stride), storage_offset.has_value() ? c10::make_optional(c10::SymInt(*storage_offset)) : c10::nullopt);
    }
    
    // aten::as_strided_scatter(Tensor self, Tensor src, SymInt[] size, SymInt[] stride, SymInt? storage_offset=None) -> Tensor
@@ -3931,7 +3920,7 @@ Program Listing for File TensorBody.h
    
    // aten::set_.source_Storage_storage_offset(Tensor(a!) self, Storage source, SymInt storage_offset, SymInt[] size, SymInt[] stride=[]) -> Tensor(a!)
    inline at::Tensor & Tensor::set_(at::Storage source, int64_t storage_offset, at::IntArrayRef size, at::IntArrayRef stride) const {
-       return at::_ops::set__source_Storage_storage_offset::call(const_cast<Tensor&>(*this), source, storage_offset, c10::fromIntArrayRefSlow(size), c10::fromIntArrayRefSlow(stride));
+       return at::_ops::set__source_Storage_storage_offset::call(const_cast<Tensor&>(*this), source, storage_offset, c10::fromIntArrayRef(size), c10::fromIntArrayRef(stride));
    }
    
    // aten::set_.source_Storage_storage_offset(Tensor(a!) self, Storage source, SymInt storage_offset, SymInt[] size, SymInt[] stride=[]) -> Tensor(a!)
@@ -3941,7 +3930,7 @@ Program Listing for File TensorBody.h
    
    // aten::set_.source_Tensor_storage_offset(Tensor(a!) self, Tensor source, SymInt storage_offset, SymInt[] size, SymInt[] stride=[]) -> Tensor(a!)
    inline at::Tensor & Tensor::set_(const at::Tensor & source, int64_t storage_offset, at::IntArrayRef size, at::IntArrayRef stride) const {
-       return at::_ops::set__source_Tensor_storage_offset::call(const_cast<Tensor&>(*this), source, storage_offset, c10::fromIntArrayRefSlow(size), c10::fromIntArrayRefSlow(stride));
+       return at::_ops::set__source_Tensor_storage_offset::call(const_cast<Tensor&>(*this), source, storage_offset, c10::fromIntArrayRef(size), c10::fromIntArrayRef(stride));
    }
    
    // aten::set_.source_Tensor_storage_offset(Tensor(a!) self, Tensor source, SymInt storage_offset, SymInt[] size, SymInt[] stride=[]) -> Tensor(a!)
@@ -3996,7 +3985,7 @@ Program Listing for File TensorBody.h
    
    // aten::view(Tensor(a) self, SymInt[] size) -> Tensor(a)
    inline at::Tensor Tensor::view(at::IntArrayRef size) const {
-       return at::_ops::view::call(const_cast<Tensor&>(*this), c10::fromIntArrayRefSlow(size));
+       return at::_ops::view::call(const_cast<Tensor&>(*this), c10::fromIntArrayRef(size));
    }
    
    // aten::view(Tensor(a) self, SymInt[] size) -> Tensor(a)
@@ -5267,6 +5256,11 @@ Program Listing for File TensorBody.h
    // aten::to_padded_tensor(Tensor self, float padding, int[]? output_size=None) -> Tensor
    inline at::Tensor Tensor::to_padded_tensor(double padding, at::OptionalIntArrayRef output_size) const {
        return at::_ops::to_padded_tensor::call(const_cast<Tensor&>(*this), padding, output_size);
+   }
+   
+   // aten::_nested_tensor_layer_norm(Tensor self, Tensor? weight, Tensor? bias, float eps) -> Tensor
+   inline at::Tensor Tensor::_nested_tensor_layer_norm(const c10::optional<at::Tensor> & weight, const c10::optional<at::Tensor> & bias, double eps) const {
+       return at::_ops::_nested_tensor_layer_norm::call(const_cast<Tensor&>(*this), weight, bias, eps);
    }
    } // namespace at
    
