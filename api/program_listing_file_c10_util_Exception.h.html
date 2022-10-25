@@ -342,6 +342,7 @@
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/macros/Macros.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/Deprecated.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/StringUtil.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/variant.h&gt;</span><span class="cp"></span>
 
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cstddef&gt;</span><span class="cp"></span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;exception&gt;</span><span class="cp"></span>
@@ -437,16 +438,65 @@
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="nf">compute_what</span><span class="p">(</span><span class="kt">bool</span><span class="w"> </span><span class="n">include_backtrace</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
 <span class="p">};</span><span class="w"></span>
 
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">Warning</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w"> </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
+<span class="w">  </span><span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">UserWarning</span><span class="w"> </span><span class="p">{};</span><span class="w"></span>
+<span class="w">  </span><span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">DeprecationWarning</span><span class="w"> </span><span class="p">{};</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">warning_variant_t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">variant</span><span class="o">&lt;</span><span class="n">UserWarning</span><span class="p">,</span><span class="w"> </span><span class="n">DeprecationWarning</span><span class="o">&gt;</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">Warning</span><span class="p">(</span><span class="w"></span>
+<span class="w">      </span><span class="n">warning_variant_t</span><span class="w"> </span><span class="n">type</span><span class="p">,</span><span class="w"></span>
+<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="n">SourceLocation</span><span class="o">&amp;</span><span class="w"> </span><span class="n">source_location</span><span class="p">,</span><span class="w"></span>
+<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">msg</span><span class="p">,</span><span class="w"></span>
+<span class="w">      </span><span class="kt">bool</span><span class="w"> </span><span class="n">verbatim</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">Warning</span><span class="p">(</span><span class="w"></span>
+<span class="w">      </span><span class="n">warning_variant_t</span><span class="w"> </span><span class="n">type</span><span class="p">,</span><span class="w"></span>
+<span class="w">      </span><span class="n">SourceLocation</span><span class="w"> </span><span class="n">source_location</span><span class="p">,</span><span class="w"></span>
+<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">msg</span><span class="p">,</span><span class="w"></span>
+<span class="w">      </span><span class="kt">bool</span><span class="w"> </span><span class="n">verbatim</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">Warning</span><span class="p">(</span><span class="w"></span>
+<span class="w">      </span><span class="n">warning_variant_t</span><span class="w"> </span><span class="n">type</span><span class="p">,</span><span class="w"></span>
+<span class="w">      </span><span class="n">SourceLocation</span><span class="w"> </span><span class="n">source_location</span><span class="p">,</span><span class="w"></span>
+<span class="w">      </span><span class="o">::</span><span class="n">c10</span><span class="o">::</span><span class="n">detail</span><span class="o">::</span><span class="n">CompileTimeEmptyString</span><span class="w"> </span><span class="n">msg</span><span class="p">,</span><span class="w"></span>
+<span class="w">      </span><span class="kt">bool</span><span class="w"> </span><span class="n">verbatim</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Getters for members</span>
+<span class="w">  </span><span class="n">warning_variant_t</span><span class="w"> </span><span class="nf">type</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">SourceLocation</span><span class="o">&amp;</span><span class="w"> </span><span class="nf">source_location</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="nf">msg</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="nf">verbatim</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
+
+<span class="w"> </span><span class="k">private</span><span class="o">:</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// The type of warning</span>
+<span class="w">  </span><span class="n">warning_variant_t</span><span class="w"> </span><span class="n">type_</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Where the warning happened.</span>
+<span class="w">  </span><span class="n">SourceLocation</span><span class="w"> </span><span class="n">source_location_</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// The actual warning message.</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">msg_</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// See note: [Verbatim Warnings]</span>
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">verbatim_</span><span class="p">;</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
+<span class="k">using</span><span class="w"> </span><span class="n">UserWarning</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Warning</span><span class="o">::</span><span class="n">UserWarning</span><span class="p">;</span><span class="w"></span>
+<span class="k">using</span><span class="w"> </span><span class="n">DeprecationWarning</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Warning</span><span class="o">::</span><span class="n">DeprecationWarning</span><span class="p">;</span><span class="w"></span>
+
+<span class="c1">// Issue a warning with a given message. Dispatched to the current</span>
+<span class="c1">// warning handler.</span>
+<span class="kt">void</span><span class="w"> </span><span class="n">C10_API</span><span class="w"> </span><span class="nf">warn</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Warning</span><span class="o">&amp;</span><span class="w"> </span><span class="n">warning</span><span class="p">);</span><span class="w"></span>
+
 <span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">WarningHandler</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w"> </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
 <span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="o">~</span><span class="n">WarningHandler</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="w"></span>
-<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="n">SourceLocation</span><span class="o">&amp;</span><span class="w"> </span><span class="n">source_location</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">msg</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">verbatim</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Warning</span><span class="o">&amp;</span><span class="w"> </span><span class="n">warning</span><span class="p">);</span><span class="w"></span>
 <span class="p">};</span><span class="w"></span>
 
-<span class="k">namespace</span><span class="w"> </span><span class="nn">Warning</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">WarningUtils</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 
 <span class="c1">// Note: [Verbatim Warnings]</span>
 <span class="c1">// Warnings originating in C++ code can appear out-of-place to Python users:</span>
@@ -461,18 +511,6 @@
 <span class="c1">// context in their warnings should set verbatim to true so their warnings</span>
 <span class="c1">// appear without modification.</span>
 
-<span class="n">C10_API</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">warn</span><span class="p">(</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">SourceLocation</span><span class="o">&amp;</span><span class="w"> </span><span class="n">source_location</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">msg</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="n">verbatim</span><span class="p">);</span><span class="w"></span>
-<span class="n">C10_API</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">warn</span><span class="p">(</span><span class="w"></span>
-<span class="w">    </span><span class="n">SourceLocation</span><span class="w"> </span><span class="n">source_location</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">msg</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="n">verbatim</span><span class="p">);</span><span class="w"></span>
-<span class="n">C10_API</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">warn</span><span class="p">(</span><span class="w"></span>
-<span class="w">    </span><span class="n">SourceLocation</span><span class="w"> </span><span class="n">source_location</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="o">::</span><span class="n">c10</span><span class="o">::</span><span class="n">detail</span><span class="o">::</span><span class="n">CompileTimeEmptyString</span><span class="w"> </span><span class="n">msg</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="n">verbatim</span><span class="p">);</span><span class="w"></span>
 <span class="n">C10_API</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">set_warning_handler</span><span class="p">(</span><span class="n">WarningHandler</span><span class="o">*</span><span class="w"> </span><span class="n">handler</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span><span class="w"></span>
 <span class="n">C10_API</span><span class="w"> </span><span class="n">WarningHandler</span><span class="o">*</span><span class="w"> </span><span class="n">get_warning_handler</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span><span class="w"></span>
 
@@ -481,11 +519,11 @@
 
 <span class="w"> </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
 <span class="w">  </span><span class="n">WarningHandlerGuard</span><span class="p">(</span><span class="n">WarningHandler</span><span class="o">*</span><span class="w"> </span><span class="n">new_handler</span><span class="p">)</span><span class="w"></span>
-<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">prev_handler_</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">Warning</span><span class="o">::</span><span class="n">get_warning_handler</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">c10</span><span class="o">::</span><span class="n">Warning</span><span class="o">::</span><span class="n">set_warning_handler</span><span class="p">(</span><span class="n">new_handler</span><span class="p">);</span><span class="w"></span>
+<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">prev_handler_</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">WarningUtils</span><span class="o">::</span><span class="n">get_warning_handler</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">c10</span><span class="o">::</span><span class="n">WarningUtils</span><span class="o">::</span><span class="n">set_warning_handler</span><span class="p">(</span><span class="n">new_handler</span><span class="p">);</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 <span class="w">  </span><span class="o">~</span><span class="n">WarningHandlerGuard</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">c10</span><span class="o">::</span><span class="n">Warning</span><span class="o">::</span><span class="n">set_warning_handler</span><span class="p">(</span><span class="n">prev_handler_</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">c10</span><span class="o">::</span><span class="n">WarningUtils</span><span class="o">::</span><span class="n">set_warning_handler</span><span class="p">(</span><span class="n">prev_handler_</span><span class="p">);</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 <span class="p">};</span><span class="w"></span>
 
@@ -503,7 +541,7 @@
 <span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">prev_setting</span><span class="p">;</span><span class="w"></span>
 <span class="p">};</span><span class="w"></span>
 
-<span class="p">}</span><span class="w"> </span><span class="c1">// namespace Warning</span>
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace WarningUtils</span>
 
 <span class="c1">// Used in ATen for out-of-bound indices that can reasonably only be detected</span>
 <span class="c1">// lazily inside a kernel (See: advanced indexing).  These turn into</span>
@@ -829,53 +867,43 @@
 <span class="cp">#define TORCH_CHECK_NOT_IMPLEMENTED(cond, ...) \</span>
 <span class="cp">  TORCH_CHECK_WITH_MSG(NotImplementedError, cond, &quot;TYPE&quot;, __VA_ARGS__)</span>
 
+<span class="cp">#ifdef STRIP_ERROR_MESSAGES</span>
+<span class="cp">#define WARNING_MESSAGE_STRING(...) \</span>
+<span class="cp">  ::c10::detail::CompileTimeEmptyString {}</span>
+<span class="cp">#else</span>
+<span class="cp">#define WARNING_MESSAGE_STRING(...) ::c10::str(__VA_ARGS__)</span>
+<span class="cp">#endif</span>
+
 <span class="c1">// Report a warning to the user.  Accepts an arbitrary number of extra</span>
 <span class="c1">// arguments which are concatenated into the warning message using operator&lt;&lt;</span>
 <span class="c1">//</span>
-<span class="cp">#ifdef STRIP_ERROR_MESSAGES</span>
-<span class="cp">#define TORCH_WARN(...)                                      \</span>
-<span class="cp">  ::c10::Warning::warn(                                      \</span>
+<span class="cp">#define TORCH_WARN_WITH(warning_t, ...)                      \</span>
+<span class="cp">  ::c10::warn(::c10::Warning(                                \</span>
+<span class="cp">      warning_t(),                                           \</span>
 <span class="cp">      {__func__, __FILE__, static_cast&lt;uint32_t&gt;(__LINE__)}, \</span>
-<span class="cp">      ::c10::detail::CompileTimeEmptyString{},               \</span>
-<span class="cp">      false)</span>
-<span class="cp">#else</span>
-<span class="cp">#define TORCH_WARN(...)                                      \</span>
-<span class="cp">  ::c10::Warning::warn(                                      \</span>
-<span class="cp">      {__func__, __FILE__, static_cast&lt;uint32_t&gt;(__LINE__)}, \</span>
-<span class="cp">      ::c10::str(__VA_ARGS__),                               \</span>
-<span class="cp">      false)</span>
-<span class="cp">#endif</span>
+<span class="cp">      WARNING_MESSAGE_STRING(__VA_ARGS__),                   \</span>
+<span class="cp">      false));</span>
+
+<span class="cp">#define TORCH_WARN(...) TORCH_WARN_WITH(::c10::UserWarning, __VA_ARGS__);</span>
+
+<span class="cp">#define TORCH_WARN_DEPRECATION(...) \</span>
+<span class="cp">  TORCH_WARN_WITH(::c10::DeprecationWarning, __VA_ARGS__);</span>
 
 <span class="c1">// Report a warning to the user only once.  Accepts an arbitrary number of extra</span>
 <span class="c1">// arguments which are concatenated into the warning message using operator&lt;&lt;</span>
 <span class="c1">//</span>
-<span class="cp">#ifdef STRIP_ERROR_MESSAGES</span>
 <span class="cp">#define _TORCH_WARN_ONCE(...)                                             \</span>
 <span class="cp">  C10_UNUSED static const auto C10_ANONYMOUS_VARIABLE(torch_warn_once_) = \</span>
 <span class="cp">      [&amp;] {                                                               \</span>
-<span class="cp">        ::c10::Warning::warn(                                             \</span>
-<span class="cp">            {__func__, __FILE__, static_cast&lt;uint32_t&gt;(__LINE__)},        \</span>
-<span class="cp">            ::c10::detail::CompileTimeEmptyString{},                      \</span>
-<span class="cp">            false);                                                       \</span>
+<span class="cp">        TORCH_WARN(__VA_ARGS__);                                          \</span>
 <span class="cp">        return true;                                                      \</span>
 <span class="cp">      }()</span>
-<span class="cp">#else</span>
-<span class="cp">#define _TORCH_WARN_ONCE(...)                                             \</span>
-<span class="cp">  C10_UNUSED static const auto C10_ANONYMOUS_VARIABLE(torch_warn_once_) = \</span>
-<span class="cp">      [&amp;] {                                                               \</span>
-<span class="cp">        ::c10::Warning::warn(                                             \</span>
-<span class="cp">            {__func__, __FILE__, static_cast&lt;uint32_t&gt;(__LINE__)},        \</span>
-<span class="cp">            ::c10::str(__VA_ARGS__),                                      \</span>
-<span class="cp">            false);                                                       \</span>
-<span class="cp">        return true;                                                      \</span>
-<span class="cp">      }()</span>
-<span class="cp">#endif</span>
 
-<span class="cp">#define TORCH_WARN_ONCE(...)              \</span>
-<span class="cp">  if (::c10::Warning::get_warnAlways()) { \</span>
-<span class="cp">    TORCH_WARN(__VA_ARGS__);              \</span>
-<span class="cp">  } else {                                \</span>
-<span class="cp">    _TORCH_WARN_ONCE(__VA_ARGS__);        \</span>
+<span class="cp">#define TORCH_WARN_ONCE(...)                   \</span>
+<span class="cp">  if (::c10::WarningUtils::get_warnAlways()) { \</span>
+<span class="cp">    TORCH_WARN(__VA_ARGS__);                   \</span>
+<span class="cp">  } else {                                     \</span>
+<span class="cp">    _TORCH_WARN_ONCE(__VA_ARGS__);             \</span>
 <span class="cp">  }</span>
 
 <span class="c1">// Report an error with a specific argument</span>
