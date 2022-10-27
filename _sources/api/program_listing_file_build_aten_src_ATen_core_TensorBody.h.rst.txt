@@ -520,7 +520,9 @@ Program Listing for File TensorBody.h
      ::std::vector<at::Tensor> unsafe_chunk(int64_t chunks, int64_t dim=0) const;
      ::std::vector<at::Tensor> chunk(int64_t chunks, int64_t dim=0) const;
      ::std::vector<at::Tensor> tensor_split(int64_t sections, int64_t dim=0) const;
+     ::std::vector<at::Tensor> tensor_split_symint(c10::SymInt sections, int64_t dim=0) const;
      ::std::vector<at::Tensor> tensor_split(at::IntArrayRef indices, int64_t dim=0) const;
+     ::std::vector<at::Tensor> tensor_split_symint(c10::SymIntArrayRef indices, int64_t dim=0) const;
      ::std::vector<at::Tensor> tensor_split(const at::Tensor & tensor_indices_or_sections, int64_t dim=0) const;
      at::Tensor clamp(const c10::optional<at::Scalar> & min, const c10::optional<at::Scalar> & max=c10::nullopt) const;
      at::Tensor clamp(const c10::optional<at::Tensor> & min={}, const c10::optional<at::Tensor> & max={}) const;
@@ -1810,13 +1812,23 @@ Program Listing for File TensorBody.h
        return at::_ops::chunk::call(const_cast<Tensor&>(*this), chunks, dim);
    }
    
-   // aten::tensor_split.sections(Tensor(a -> *) self, int sections, int dim=0) -> Tensor(a)[]
+   // aten::tensor_split.sections(Tensor(a -> *) self, SymInt sections, int dim=0) -> Tensor(a)[]
    inline ::std::vector<at::Tensor> Tensor::tensor_split(int64_t sections, int64_t dim) const {
        return at::_ops::tensor_split_sections::call(const_cast<Tensor&>(*this), sections, dim);
    }
    
-   // aten::tensor_split.indices(Tensor(a -> *) self, int[] indices, int dim=0) -> Tensor(a)[]
+   // aten::tensor_split.sections(Tensor(a -> *) self, SymInt sections, int dim=0) -> Tensor(a)[]
+   inline ::std::vector<at::Tensor> Tensor::tensor_split_symint(c10::SymInt sections, int64_t dim) const {
+       return at::_ops::tensor_split_sections::call(const_cast<Tensor&>(*this), sections, dim);
+   }
+   
+   // aten::tensor_split.indices(Tensor(a -> *) self, SymInt[] indices, int dim=0) -> Tensor(a)[]
    inline ::std::vector<at::Tensor> Tensor::tensor_split(at::IntArrayRef indices, int64_t dim) const {
+       return at::_ops::tensor_split_indices::call(const_cast<Tensor&>(*this), c10::fromIntArrayRefSlow(indices), dim);
+   }
+   
+   // aten::tensor_split.indices(Tensor(a -> *) self, SymInt[] indices, int dim=0) -> Tensor(a)[]
+   inline ::std::vector<at::Tensor> Tensor::tensor_split_symint(c10::SymIntArrayRef indices, int64_t dim) const {
        return at::_ops::tensor_split_indices::call(const_cast<Tensor&>(*this), indices, dim);
    }
    
