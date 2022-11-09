@@ -590,6 +590,12 @@
 <span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span><span class="w"></span>
 <span class="p">};</span><span class="w"></span>
 
+<span class="c1">// Used for collective communication library errors from the distributed module.</span>
+<span class="c1">// These turn into DistBackendError when they cross into Python.</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">DistBackendError</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
 <span class="c1">// A utility function to return an exception std::string by prepending its</span>
 <span class="c1">// exception type before its what() content</span>
 <span class="n">C10_API</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">GetExceptionString</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">exception</span><span class="o">&amp;</span><span class="w"> </span><span class="n">e</span><span class="p">);</span><span class="w"></span>
@@ -877,17 +883,21 @@
 <span class="c1">// Report a warning to the user.  Accepts an arbitrary number of extra</span>
 <span class="c1">// arguments which are concatenated into the warning message using operator&lt;&lt;</span>
 <span class="c1">//</span>
-<span class="cp">#define TORCH_WARN_WITH(warning_t, ...)                      \</span>
+<span class="cp">#ifdef DISABLE_WARN</span>
+<span class="cp">#define _TORCH_WARN_WITH(...) ((void)0);</span>
+<span class="cp">#else</span>
+<span class="cp">#define _TORCH_WARN_WITH(warning_t, ...)                     \</span>
 <span class="cp">  ::c10::warn(::c10::Warning(                                \</span>
 <span class="cp">      warning_t(),                                           \</span>
 <span class="cp">      {__func__, __FILE__, static_cast&lt;uint32_t&gt;(__LINE__)}, \</span>
 <span class="cp">      WARNING_MESSAGE_STRING(__VA_ARGS__),                   \</span>
 <span class="cp">      false));</span>
+<span class="cp">#endif</span>
 
-<span class="cp">#define TORCH_WARN(...) TORCH_WARN_WITH(::c10::UserWarning, __VA_ARGS__);</span>
+<span class="cp">#define TORCH_WARN(...) _TORCH_WARN_WITH(::c10::UserWarning, __VA_ARGS__);</span>
 
 <span class="cp">#define TORCH_WARN_DEPRECATION(...) \</span>
-<span class="cp">  TORCH_WARN_WITH(::c10::DeprecationWarning, __VA_ARGS__);</span>
+<span class="cp">  _TORCH_WARN_WITH(::c10::DeprecationWarning, __VA_ARGS__);</span>
 
 <span class="c1">// Report a warning to the user only once.  Accepts an arbitrary number of extra</span>
 <span class="c1">// arguments which are concatenated into the warning message using operator&lt;&lt;</span>
@@ -899,12 +909,16 @@
 <span class="cp">        return true;                                                      \</span>
 <span class="cp">      }()</span>
 
+<span class="cp">#ifdef DISABLE_WARN</span>
+<span class="cp">#define TORCH_WARN_ONCE(...) ((void)0);</span>
+<span class="cp">#else</span>
 <span class="cp">#define TORCH_WARN_ONCE(...)                   \</span>
 <span class="cp">  if (::c10::WarningUtils::get_warnAlways()) { \</span>
 <span class="cp">    TORCH_WARN(__VA_ARGS__);                   \</span>
 <span class="cp">  } else {                                     \</span>
 <span class="cp">    _TORCH_WARN_ONCE(__VA_ARGS__);             \</span>
 <span class="cp">  }</span>
+<span class="cp">#endif</span>
 
 <span class="c1">// Report an error with a specific argument</span>
 <span class="c1">// NOTE: using the argument name in TORCH_CHECK&#39;s message is preferred</span>
