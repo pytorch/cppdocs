@@ -410,6 +410,17 @@
 <span class="w">    </span><span class="n">ComplexHolder</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span><span class="w"></span>
 <span class="w">    </span><span class="n">c10</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span><span class="w"> </span><span class="n">val</span><span class="p">;</span><span class="w"></span>
 <span class="p">};</span><span class="w"></span>
+
+<span class="c1">// Similar to ComplexHolder, for StreamData3</span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">StreamData3Holder</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr_target</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
+<span class="w">    </span><span class="n">StreamData3Holder</span><span class="p">(</span><span class="k">struct</span><span class="w"> </span><span class="nc">c10</span><span class="o">::</span><span class="n">StreamData3</span><span class="w"> </span><span class="n">d</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="n">val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">d</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">StreamData3Holder</span><span class="p">()</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+<span class="w">    </span><span class="k">struct</span><span class="w"> </span><span class="nc">c10</span><span class="o">::</span><span class="n">StreamData3</span><span class="w"> </span><span class="n">val</span><span class="p">;</span><span class="w"></span>
+<span class="p">};</span><span class="w"></span>
+
 <span class="p">}</span><span class="w"> </span><span class="c1">// namespace ivalue</span>
 
 <span class="c1">// This is an owning wrapper for a c10::optional&lt;std::vector&lt;T&gt;&gt;</span>
@@ -1111,10 +1122,11 @@
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">Device</span><span class="p">(</span><span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_device</span><span class="p">.</span><span class="n">type</span><span class="p">,</span><span class="w"> </span><span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_device</span><span class="p">.</span><span class="n">index</span><span class="p">);</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
-<span class="w">  </span><span class="c1">//Stream</span>
-<span class="w">  </span><span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">Stream</span><span class="w"> </span><span class="n">stream</span><span class="p">)</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// Stream</span>
+<span class="w">  </span><span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">Stream</span><span class="w"> </span><span class="n">s</span><span class="p">)</span><span class="w"></span>
 <span class="w">    </span><span class="o">:</span><span class="w"> </span><span class="n">tag</span><span class="p">(</span><span class="n">Tag</span><span class="o">::</span><span class="n">Stream</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_int</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">stream</span><span class="p">.</span><span class="n">pack</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">v</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">make_intrusive</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">StreamData3Holder</span><span class="o">&gt;</span><span class="p">(</span><span class="n">s</span><span class="p">.</span><span class="n">pack3</span><span class="p">());</span><span class="w"></span>
+<span class="w">    </span><span class="n">payload</span><span class="p">.</span><span class="n">u</span><span class="p">.</span><span class="n">as_intrusive_ptr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">v</span><span class="p">.</span><span class="n">release</span><span class="p">();</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 <span class="w">  </span><span class="n">c10</span><span class="o">::</span><span class="n">Stream</span><span class="w"> </span><span class="n">toStream</span><span class="p">()</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="p">;</span><span class="w"></span>
 <span class="w">  </span><span class="n">c10</span><span class="o">::</span><span class="n">Stream</span><span class="w"> </span><span class="nf">toStream</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="o">&amp;</span><span class="p">;</span><span class="w"></span>
