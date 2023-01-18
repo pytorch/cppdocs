@@ -398,15 +398,6 @@
 <span class="c1">// executed.</span>
 <span class="n">TORCH_API</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Node</span><span class="o">&gt;</span><span class="w"> </span><span class="n">get_current_node</span><span class="p">();</span><span class="w"></span>
 
-<span class="c1">// Global (not thread-local) feature flag for the new autograd.Function</span>
-<span class="c1">// extension. The extension consists of:</span>
-<span class="c1">// - splitting autograd.Function.forward into forward() and setup_context().</span>
-<span class="c1">// - adding a vmap staticmethod to autograd.Function</span>
-<span class="c1">// The feature flag is for preventing users from unknowningly stumbling upon</span>
-<span class="c1">// the feature and will be removed once we&#39;ve ironed out the details.</span>
-<span class="n">TORCH_API</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">isAutogradFunctionExtensionEnabled</span><span class="p">();</span><span class="w"></span>
-<span class="n">TORCH_API</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">setAutogradFunctionExtensionEnabled</span><span class="p">(</span><span class="kt">bool</span><span class="w"> </span><span class="n">enabled</span><span class="p">);</span><span class="w"></span>
-
 <span class="c1">//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
 <span class="c1">//                               Node</span>
 <span class="c1">//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
@@ -775,6 +766,14 @@
 <span class="w">    </span><span class="n">pre_hooks_</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">pre_hook</span><span class="p">));</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">add_tensor_pre_hook</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FunctionPreHook</span><span class="o">&gt;&amp;&amp;</span><span class="w"> </span><span class="n">pre_hook</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">tensor_pre_hooks_</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">pre_hook</span><span class="p">));</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">add_retains_grad_hook</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FunctionPreHook</span><span class="o">&gt;&amp;&amp;</span><span class="w"> </span><span class="n">pre_hook</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="n">retains_grad_hooks_</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">pre_hook</span><span class="p">));</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
 <span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FunctionPreHook</span><span class="o">&gt;&gt;&amp;</span><span class="w"> </span><span class="n">pre_hooks</span><span class="p">()</span><span class="w"></span>
 <span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">pre_hooks_</span><span class="p">;</span><span class="w"></span>
@@ -782,6 +781,15 @@
 
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FunctionPreHook</span><span class="o">&gt;&gt;&amp;</span><span class="w"> </span><span class="n">pre_hooks</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">pre_hooks_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FunctionPreHook</span><span class="o">&gt;&gt;&amp;</span><span class="w"></span>
+<span class="w">  </span><span class="n">tensor_pre_hooks</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">tensor_pre_hooks_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FunctionPreHook</span><span class="o">&gt;&gt;&amp;</span><span class="w"> </span><span class="n">retains_grad_hooks</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">retains_grad_hooks_</span><span class="p">;</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
 <span class="w">  </span><span class="c1">// Customization Points for Subclasses</span>
@@ -874,8 +882,23 @@
 <span class="w">  </span><span class="n">PyObject</span><span class="o">*</span><span class="w"> </span><span class="n">pyobj_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span><span class="w"> </span><span class="c1">// weak reference</span>
 <span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">AnomalyMetadata</span><span class="o">&gt;</span><span class="w"> </span><span class="n">anomaly_metadata_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// NOTE [Hooks ordering]</span>
+<span class="w">  </span><span class="c1">// We have 3 separate fields for pre hooks registered to the autograd nodes</span>
+<span class="w">  </span><span class="c1">// because the conditions under which they execute are different, and we</span>
+<span class="w">  </span><span class="c1">// want more fine-grained control over the order in which different types</span>
+<span class="w">  </span><span class="c1">// of hooks are executed.</span>
+<span class="w">  </span><span class="c1">// - pre_hooks  are only executed when the node itself is executed</span>
+<span class="w">  </span><span class="c1">// - tensor_pre_hook is executed as long as the engine traverses over it</span>
+<span class="w">  </span><span class="c1">//   even if that node won&#39;t be executed.</span>
+<span class="w">  </span><span class="c1">// - retains_grad_hook are like tensor_pre_hooks except they are always</span>
+<span class="w">  </span><span class="c1">//   ordered after all other tensor pre hooks</span>
 <span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FunctionPreHook</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">pre_hooks_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FunctionPreHook</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">tensor_pre_hooks_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FunctionPreHook</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">retains_grad_hooks_</span><span class="p">;</span><span class="w"></span>
 <span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FunctionPostHook</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">post_hooks_</span><span class="p">;</span><span class="w"></span>
 <span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>

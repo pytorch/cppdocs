@@ -431,12 +431,13 @@
 
 <span class="n">TORCH_API</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">add_hook</span><span class="p">(</span><span class="w"></span>
 <span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">TensorBase</span><span class="o">&amp;</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">FunctionPreHook</span><span class="o">&gt;</span><span class="w"> </span><span class="n">hook</span><span class="p">);</span><span class="w"></span>
-<span class="n">TORCH_API</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">FunctionPreHook</span><span class="o">&gt;&gt;&amp;</span><span class="w"> </span><span class="n">hooks</span><span class="p">(</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">Variable</span><span class="o">&amp;</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FunctionPreHook</span><span class="o">&gt;</span><span class="w"> </span><span class="n">hook</span><span class="p">);</span><span class="w"></span>
+<span class="n">TORCH_API</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FunctionPreHook</span><span class="o">&gt;&gt;&amp;</span><span class="w"> </span><span class="n">hooks</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Variable</span><span class="o">&amp;</span><span class="p">);</span><span class="w"></span>
 <span class="n">TORCH_API</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">clear_hooks</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">TensorBase</span><span class="o">&amp;</span><span class="p">);</span><span class="w"></span>
 
-<span class="n">TORCH_API</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">create_cpp_hook</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">TensorBase</span><span class="o">&amp;</span><span class="p">);</span><span class="w"></span>
+<span class="n">TORCH_API</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">create_cpp_hook</span><span class="p">(</span><span class="w"></span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">TensorBase</span><span class="o">&amp;</span><span class="p">,</span><span class="w"></span>
+<span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_retains_grad_hooks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">);</span><span class="w"></span>
 <span class="p">}</span><span class="w"> </span><span class="c1">// namespace impl</span>
 
 <span class="c1">//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
@@ -462,16 +463,25 @@
 <span class="w">  </span><span class="c1">// must be protected by mutex_</span>
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ForwardGrad</span><span class="o">&gt;</span><span class="w"> </span><span class="n">fw_grad_</span><span class="p">;</span><span class="w"></span>
 
-<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">FunctionPreHook</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">hooks_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// The hooks_ field is actually reused by both python and cpp logic</span>
+<span class="w">  </span><span class="c1">// For both cases, we have a data structure, cpp_hooks_list_ (cpp)</span>
+<span class="w">  </span><span class="c1">// or dict (python) which is the canonical copy.</span>
+<span class="w">  </span><span class="c1">// Then, for both cases, we always register a single hook to</span>
+<span class="w">  </span><span class="c1">// hooks_ which wraps all the hooks in the list/dict.</span>
+<span class="w">  </span><span class="c1">// And, again in both cases, if the grad_fn exists on that tensor</span>
+<span class="w">  </span><span class="c1">// we will additionally register a single hook to the grad_fn.</span>
+<span class="w">  </span><span class="c1">//</span>
+<span class="w">  </span><span class="c1">// Note that the cpp and python use cases aren&#39;t actually aware of</span>
+<span class="w">  </span><span class="c1">// each other, so using both is not defined behavior.</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FunctionPreHook</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">hooks_</span><span class="p">;</span><span class="w"></span>
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">hooks_list</span><span class="o">&gt;</span><span class="w"> </span><span class="n">cpp_hooks_list_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">hooks_list</span><span class="o">&gt;</span><span class="w"> </span><span class="n">retains_grad_hooks_list_</span><span class="p">;</span><span class="w"></span>
 
 <span class="w">  </span><span class="c1">// Only meaningful on leaf variables (must be false otherwise)</span>
 <span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">requires_grad_</span><span class="p">;</span><span class="w"></span>
 
-<span class="w">  </span><span class="c1">// Only meaningful on non-leaf variables (must be -1 otherwise)</span>
-<span class="w">  </span><span class="c1">// The value of retains_grad_ indicates the index of it in cpp_hooks_list_</span>
-<span class="w">  </span><span class="c1">// A value of -1 indicates that the tensor does not retain grad</span>
-<span class="w">  </span><span class="kt">int64_t</span><span class="w"> </span><span class="n">retains_grad_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="c1">// Only meaningful on non-leaf variables (must be false otherwise)</span>
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">retains_grad_</span><span class="p">;</span><span class="w"></span>
 
 <span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_view_</span><span class="p">;</span><span class="w"></span>
 
@@ -525,7 +535,7 @@
 <span class="w">      </span><span class="n">Edge</span><span class="w"> </span><span class="n">gradient_edge</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Edge</span><span class="p">())</span><span class="w"></span>
 <span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">grad_fn_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">gradient_edge</span><span class="p">.</span><span class="n">function</span><span class="p">)),</span><span class="w"></span>
 <span class="w">        </span><span class="n">requires_grad_</span><span class="p">(</span><span class="nb">false</span><span class="p">),</span><span class="w"></span>
-<span class="w">        </span><span class="n">retains_grad_</span><span class="p">(</span><span class="mi">-1</span><span class="p">),</span><span class="w"></span>
+<span class="w">        </span><span class="n">retains_grad_</span><span class="p">(</span><span class="nb">false</span><span class="p">),</span><span class="w"></span>
 <span class="w">        </span><span class="n">is_view_</span><span class="p">(</span><span class="nb">false</span><span class="p">),</span><span class="w"></span>
 <span class="w">        </span><span class="n">output_nr_</span><span class="p">(</span><span class="n">gradient_edge</span><span class="p">.</span><span class="n">input_nr</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">    </span><span class="c1">// set_requires_grad also checks error conditions.</span>
