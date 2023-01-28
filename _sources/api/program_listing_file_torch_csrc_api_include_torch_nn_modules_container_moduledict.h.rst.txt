@@ -112,7 +112,14 @@ Program Listing for File moduledict.h
        static_assert(
            torch::detail::is_module<T>::value,
            "Can only call ModuleList::at with an nn::Module type");
-       return *modules_[key]->as<T>();
+       auto module = modules_[key]->as<T>();
+       TORCH_CHECK(
+           module,
+           "Unable to cast module[",
+           key,
+           "] to ",
+           c10::demangle(typeid(T).name()));
+       return *module;
      }
    
      template <typename T>
@@ -120,7 +127,14 @@ Program Listing for File moduledict.h
        static_assert(
            torch::detail::is_module<T>::value,
            "Can only call ModuleList::at with an nn::Module type");
-       return *modules_[key]->as<T>();
+       const auto module = modules_[key]->as<T>();
+       TORCH_CHECK(
+           module,
+           "Unable to cast module[",
+           key,
+           "] to ",
+           c10::demangle(typeid(T).name()));
+       return *module;
      }
    
      std::shared_ptr<Module> pop(const std::string& key) {
