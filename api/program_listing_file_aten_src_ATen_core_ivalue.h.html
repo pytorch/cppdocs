@@ -392,6 +392,7 @@
 <span class="k">namespace</span><span class="w"> </span><span class="nn">ivalue</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="k">struct</span><span class="w"> </span><span class="nc">Tuple</span><span class="p">;</span><span class="w"></span>
 <span class="k">struct</span><span class="w"> </span><span class="nc">Future</span><span class="p">;</span><span class="w"></span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">Await</span><span class="p">;</span><span class="w"></span>
 <span class="k">struct</span><span class="w"> </span><span class="nc">ConstantString</span><span class="p">;</span><span class="w"></span>
 <span class="k">struct</span><span class="w"> </span><span class="nc">GenericDict</span><span class="p">;</span><span class="w"></span>
 <span class="k">struct</span><span class="w"> </span><span class="nc">Object</span><span class="p">;</span><span class="w"></span>
@@ -506,6 +507,7 @@
 <span class="cp">  _(GenericList)             \</span>
 <span class="cp">  _(GenericDict)             \</span>
 <span class="cp">  _(Future)                  \</span>
+<span class="cp">  _(Await)                   \</span>
 <span class="cp">  _(Device)                  \</span>
 <span class="cp">  _(Stream)                  \</span>
 <span class="cp">  _(Object)                  \</span>
@@ -796,6 +798,13 @@
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 <span class="w">  </span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Future</span><span class="o">&gt;</span><span class="w"> </span><span class="n">toFuture</span><span class="p">()</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="p">;</span><span class="w"></span>
 <span class="w">  </span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Future</span><span class="o">&gt;</span><span class="w"> </span><span class="n">toFuture</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Await</span><span class="o">&gt;</span><span class="w"> </span><span class="n">v</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="nf">isAwait</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">Tag</span><span class="o">::</span><span class="n">Await</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">tag</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Await</span><span class="o">&gt;</span><span class="w"> </span><span class="n">toAwait</span><span class="p">()</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">ivalue</span><span class="o">::</span><span class="n">Await</span><span class="o">&gt;</span><span class="w"> </span><span class="n">toAwait</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="o">&amp;</span><span class="p">;</span><span class="w"></span>
 
 <span class="w">  </span><span class="c1">// RRef</span>
 <span class="w">  </span><span class="n">IValue</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">intrusive_ptr</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">RRefInterface</span><span class="o">&gt;</span><span class="w"> </span><span class="n">v</span><span class="p">);</span><span class="w"></span>
@@ -1415,6 +1424,8 @@
 <span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="no">Tag</span><span class="o">::</span><span class="no">GenericDict</span><span class="p">:</span><span class="w"></span>
 <span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
 <span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="no">Tag</span><span class="o">::</span><span class="no">Future</span><span class="p">:</span><span class="w"></span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
+<span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="no">Tag</span><span class="o">::</span><span class="no">Await</span><span class="p">:</span><span class="w"></span>
 <span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
 <span class="w">      </span><span class="k">case</span><span class="w"> </span><span class="no">Tag</span><span class="o">::</span><span class="no">Device</span><span class="p">:</span><span class="w"></span>
 <span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
