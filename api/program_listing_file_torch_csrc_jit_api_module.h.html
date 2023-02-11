@@ -587,6 +587,28 @@
 <span class="w">    </span><span class="n">mem_to_delete_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">delete_mem</span><span class="p">;</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
+<span class="w">  </span><span class="c1">// A set of functions to maintain input shapes through torch.jit.save and</span>
+<span class="w">  </span><span class="c1">// torch.jit.load. It only works on tensors and lists/dicts of tensors</span>
+<span class="w">  </span><span class="c1">// because tracing is only supported by these types.</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">store_traced_inputs</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">func_name</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">IValue</span><span class="o">&gt;</span><span class="w"> </span><span class="n">inputs</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">inputs</span><span class="p">.</span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">c10_inputs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">impl</span><span class="o">::</span><span class="n">GenericList</span><span class="p">(</span><span class="n">AnyType</span><span class="o">::</span><span class="n">get</span><span class="p">());</span><span class="w"></span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">IValue</span><span class="o">&amp;</span><span class="w"> </span><span class="n">value</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">inputs</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="c1">// Not checking whether this is traceable type as that is already checked</span>
+<span class="w">      </span><span class="c1">// higher up in the stack and changing that would require a larger</span>
+<span class="w">      </span><span class="c1">// restructuring.</span>
+<span class="w">      </span><span class="n">c10_inputs</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">value</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">traced_inputs_</span><span class="p">.</span><span class="n">insert_or_assign</span><span class="p">(</span><span class="n">func_name</span><span class="p">,</span><span class="w"> </span><span class="n">c10_inputs</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
+<span class="w">  </span><span class="n">c10</span><span class="o">::</span><span class="n">Dict</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">,</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">impl</span><span class="o">::</span><span class="n">GenericList</span><span class="o">&gt;</span><span class="w"> </span><span class="n">retrieve_traced_inputs</span><span class="p">()</span><span class="w"></span>
+<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">traced_inputs_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="p">}</span><span class="w"></span>
+
 <span class="w"> </span><span class="k">private</span><span class="o">:</span><span class="w"></span>
 <span class="w">  </span><span class="n">Module</span><span class="w"> </span><span class="n">clone_impl</span><span class="p">(</span><span class="w"></span>
 <span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">unordered_map</span><span class="o">&lt;</span><span class="n">TypePtr</span><span class="p">,</span><span class="w"> </span><span class="n">TypePtr</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">type_remap</span><span class="p">,</span><span class="w"></span>
@@ -611,6 +633,9 @@
 
 <span class="w">  </span><span class="c1">// Extra handle for the module to delete when itself is deleted</span>
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">&gt;</span><span class="w"> </span><span class="n">mem_to_delete_</span><span class="p">;</span><span class="w"></span>
+
+<span class="w">  </span><span class="c1">// Map of function names to the traced inputs that they have been traced with</span>
+<span class="w">  </span><span class="n">c10</span><span class="o">::</span><span class="n">Dict</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">,</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">impl</span><span class="o">::</span><span class="n">GenericList</span><span class="o">&gt;</span><span class="w"> </span><span class="n">traced_inputs_</span><span class="p">;</span><span class="w"></span>
 <span class="p">};</span><span class="w"></span>
 
 <span class="c1">// C++ equivalent api of `torch.jit.freeze`. See documentation there for</span>
