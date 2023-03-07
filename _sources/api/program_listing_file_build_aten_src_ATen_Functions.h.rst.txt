@@ -163,9 +163,26 @@ Program Listing for File Functions.h
        return at::_ops::_assert_async::call(self);
    }
    
-   // aten::_assert_tensor_metadata(Tensor a, int[]? size=None, int[]? stride=None, ScalarType? dtype=None) -> ()
+   // aten::_assert_tensor_metadata(Tensor a, SymInt[]? size=None, SymInt[]? stride=None, ScalarType? dtype=None) -> ()
    inline void _assert_tensor_metadata(const at::Tensor & a, at::OptionalIntArrayRef size=c10::nullopt, at::OptionalIntArrayRef stride=c10::nullopt, c10::optional<at::ScalarType> dtype=c10::nullopt) {
+       return at::_ops::_assert_tensor_metadata::call(a, size.has_value() ? c10::make_optional(c10::fromIntArrayRefSlow(*size)) : c10::nullopt, stride.has_value() ? c10::make_optional(c10::fromIntArrayRefSlow(*stride)) : c10::nullopt, dtype);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, int64_t>::value>>
+     void _assert_tensor_metadata(const at::Tensor & a, at::OptionalIntArrayRef size=c10::nullopt, at::OptionalIntArrayRef stride=c10::nullopt, c10::optional<at::ScalarType> dtype=c10::nullopt) {
+       return at::_ops::_assert_tensor_metadata::call(a, size.has_value() ? c10::make_optional(c10::fromIntArrayRefSlow(*size)) : c10::nullopt, stride.has_value() ? c10::make_optional(c10::fromIntArrayRefSlow(*stride)) : c10::nullopt, dtype);
+     }
+   }
+   
+   // aten::_assert_tensor_metadata(Tensor a, SymInt[]? size=None, SymInt[]? stride=None, ScalarType? dtype=None) -> ()
+   inline void _assert_tensor_metadata_symint(const at::Tensor & a, at::OptionalSymIntArrayRef size=c10::nullopt, at::OptionalSymIntArrayRef stride=c10::nullopt, c10::optional<at::ScalarType> dtype=c10::nullopt) {
        return at::_ops::_assert_tensor_metadata::call(a, size, stride, dtype);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, c10::SymInt>::value>>
+     void _assert_tensor_metadata(const at::Tensor & a, at::OptionalSymIntArrayRef size=c10::nullopt, at::OptionalSymIntArrayRef stride=c10::nullopt, c10::optional<at::ScalarType> dtype=c10::nullopt) {
+       return at::_ops::_assert_tensor_metadata::call(a, size, stride, dtype);
+     }
    }
    
    // aten::_use_cudnn_ctc_loss(Tensor log_probs, Tensor targets, int[] input_lengths, int[] target_lengths, int blank) -> bool
@@ -627,14 +644,48 @@ Program Listing for File Functions.h
        return at::_ops::addr_out::call(self, vec1, vec2, beta, alpha, out);
    }
    
-   // aten::affine_grid_generator(Tensor theta, int[] size, bool align_corners) -> Tensor
+   // aten::affine_grid_generator(Tensor theta, SymInt[] size, bool align_corners) -> Tensor
    inline at::Tensor affine_grid_generator(const at::Tensor & theta, at::IntArrayRef size, bool align_corners) {
-       return at::_ops::affine_grid_generator::call(theta, size, align_corners);
+       return at::_ops::affine_grid_generator::call(theta, c10::fromIntArrayRefSlow(size), align_corners);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, int64_t>::value>>
+     at::Tensor affine_grid_generator(const at::Tensor & theta, at::IntArrayRef size, bool align_corners) {
+       return at::_ops::affine_grid_generator::call(theta, c10::fromIntArrayRefSlow(size), align_corners);
+     }
    }
    
-   // aten::affine_grid_generator_backward(Tensor grad, int[] size, bool align_corners) -> Tensor
+   // aten::affine_grid_generator(Tensor theta, SymInt[] size, bool align_corners) -> Tensor
+   inline at::Tensor affine_grid_generator_symint(const at::Tensor & theta, c10::SymIntArrayRef size, bool align_corners) {
+       return at::_ops::affine_grid_generator::call(theta, size, align_corners);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, c10::SymInt>::value>>
+     at::Tensor affine_grid_generator(const at::Tensor & theta, c10::SymIntArrayRef size, bool align_corners) {
+       return at::_ops::affine_grid_generator::call(theta, size, align_corners);
+     }
+   }
+   
+   // aten::affine_grid_generator_backward(Tensor grad, SymInt[] size, bool align_corners) -> Tensor
    inline at::Tensor affine_grid_generator_backward(const at::Tensor & grad, at::IntArrayRef size, bool align_corners) {
+       return at::_ops::affine_grid_generator_backward::call(grad, c10::fromIntArrayRefSlow(size), align_corners);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, int64_t>::value>>
+     at::Tensor affine_grid_generator_backward(const at::Tensor & grad, at::IntArrayRef size, bool align_corners) {
+       return at::_ops::affine_grid_generator_backward::call(grad, c10::fromIntArrayRefSlow(size), align_corners);
+     }
+   }
+   
+   // aten::affine_grid_generator_backward(Tensor grad, SymInt[] size, bool align_corners) -> Tensor
+   inline at::Tensor affine_grid_generator_backward_symint(const at::Tensor & grad, c10::SymIntArrayRef size, bool align_corners) {
        return at::_ops::affine_grid_generator_backward::call(grad, size, align_corners);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, c10::SymInt>::value>>
+     at::Tensor affine_grid_generator_backward(const at::Tensor & grad, c10::SymIntArrayRef size, bool align_corners) {
+       return at::_ops::affine_grid_generator_backward::call(grad, size, align_corners);
+     }
    }
    
    // aten::_is_all_true(Tensor self) -> Tensor
@@ -2839,22 +2890,92 @@ Program Listing for File Functions.h
      }
    }
    
-   // aten::_empty_affine_quantized(int[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, float scale=1, int zero_point=0, MemoryFormat? memory_format=contiguous_format) -> Tensor
+   // aten::_empty_affine_quantized(SymInt[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, float scale=1, int zero_point=0, MemoryFormat? memory_format=contiguous_format) -> Tensor
    inline at::Tensor _empty_affine_quantized(at::IntArrayRef size, at::TensorOptions options={}, double scale=1, int64_t zero_point=0, c10::optional<at::MemoryFormat> memory_format=MemoryFormat::Contiguous) {
-       return at::_ops::_empty_affine_quantized::call(size, optTypeMetaToScalarType(options.dtype_opt()), options.layout_opt(), options.device_opt(), options.pinned_memory_opt(), scale, zero_point, c10::impl::check_tensor_options_and_extract_memory_format(options, memory_format));
+       return at::_ops::_empty_affine_quantized::call(c10::fromIntArrayRefSlow(size), optTypeMetaToScalarType(options.dtype_opt()), options.layout_opt(), options.device_opt(), options.pinned_memory_opt(), scale, zero_point, c10::impl::check_tensor_options_and_extract_memory_format(options, memory_format));
    }
-   // aten::_empty_affine_quantized(int[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, float scale=1, int zero_point=0, MemoryFormat? memory_format=contiguous_format) -> Tensor
-   inline at::Tensor _empty_affine_quantized(at::IntArrayRef size, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory, double scale, int64_t zero_point, c10::optional<at::MemoryFormat> memory_format) {
-       return at::_ops::_empty_affine_quantized::call(size, dtype, layout, device, pin_memory, scale, zero_point, memory_format);
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, int64_t>::value>>
+     at::Tensor _empty_affine_quantized(at::IntArrayRef size, at::TensorOptions options={}, double scale=1, int64_t zero_point=0, c10::optional<at::MemoryFormat> memory_format=MemoryFormat::Contiguous) {
+       return at::_ops::_empty_affine_quantized::call(c10::fromIntArrayRefSlow(size), optTypeMetaToScalarType(options.dtype_opt()), options.layout_opt(), options.device_opt(), options.pinned_memory_opt(), scale, zero_point, c10::impl::check_tensor_options_and_extract_memory_format(options, memory_format));
+     }
    }
    
-   // aten::_empty_per_channel_affine_quantized(int[] size, *, Tensor scales, Tensor zero_points, int axis, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, MemoryFormat? memory_format=contiguous_format) -> Tensor
+   // aten::_empty_affine_quantized(SymInt[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, float scale=1, int zero_point=0, MemoryFormat? memory_format=contiguous_format) -> Tensor
+   inline at::Tensor _empty_affine_quantized(at::IntArrayRef size, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory, double scale, int64_t zero_point, c10::optional<at::MemoryFormat> memory_format) {
+       return at::_ops::_empty_affine_quantized::call(c10::fromIntArrayRefSlow(size), dtype, layout, device, pin_memory, scale, zero_point, memory_format);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, int64_t>::value>>
+     at::Tensor _empty_affine_quantized(at::IntArrayRef size, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory, double scale, int64_t zero_point, c10::optional<at::MemoryFormat> memory_format) {
+       return at::_ops::_empty_affine_quantized::call(c10::fromIntArrayRefSlow(size), dtype, layout, device, pin_memory, scale, zero_point, memory_format);
+     }
+   }
+   
+   // aten::_empty_affine_quantized(SymInt[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, float scale=1, int zero_point=0, MemoryFormat? memory_format=contiguous_format) -> Tensor
+   inline at::Tensor _empty_affine_quantized_symint(c10::SymIntArrayRef size, at::TensorOptions options={}, double scale=1, int64_t zero_point=0, c10::optional<at::MemoryFormat> memory_format=MemoryFormat::Contiguous) {
+       return at::_ops::_empty_affine_quantized::call(size, optTypeMetaToScalarType(options.dtype_opt()), options.layout_opt(), options.device_opt(), options.pinned_memory_opt(), scale, zero_point, c10::impl::check_tensor_options_and_extract_memory_format(options, memory_format));
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, c10::SymInt>::value>>
+     at::Tensor _empty_affine_quantized(c10::SymIntArrayRef size, at::TensorOptions options={}, double scale=1, int64_t zero_point=0, c10::optional<at::MemoryFormat> memory_format=MemoryFormat::Contiguous) {
+       return at::_ops::_empty_affine_quantized::call(size, optTypeMetaToScalarType(options.dtype_opt()), options.layout_opt(), options.device_opt(), options.pinned_memory_opt(), scale, zero_point, c10::impl::check_tensor_options_and_extract_memory_format(options, memory_format));
+     }
+   }
+   
+   // aten::_empty_affine_quantized(SymInt[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, float scale=1, int zero_point=0, MemoryFormat? memory_format=contiguous_format) -> Tensor
+   inline at::Tensor _empty_affine_quantized_symint(c10::SymIntArrayRef size, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory, double scale, int64_t zero_point, c10::optional<at::MemoryFormat> memory_format) {
+       return at::_ops::_empty_affine_quantized::call(size, dtype, layout, device, pin_memory, scale, zero_point, memory_format);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, c10::SymInt>::value>>
+     at::Tensor _empty_affine_quantized(c10::SymIntArrayRef size, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory, double scale, int64_t zero_point, c10::optional<at::MemoryFormat> memory_format) {
+       return at::_ops::_empty_affine_quantized::call(size, dtype, layout, device, pin_memory, scale, zero_point, memory_format);
+     }
+   }
+   
+   // aten::_empty_per_channel_affine_quantized(SymInt[] size, *, Tensor scales, Tensor zero_points, int axis, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, MemoryFormat? memory_format=contiguous_format) -> Tensor
    inline at::Tensor _empty_per_channel_affine_quantized(at::IntArrayRef size, const at::Tensor & scales, const at::Tensor & zero_points, int64_t axis, at::TensorOptions options={}, c10::optional<at::MemoryFormat> memory_format=MemoryFormat::Contiguous) {
+       return at::_ops::_empty_per_channel_affine_quantized::call(c10::fromIntArrayRefSlow(size), scales, zero_points, axis, optTypeMetaToScalarType(options.dtype_opt()), options.layout_opt(), options.device_opt(), options.pinned_memory_opt(), c10::impl::check_tensor_options_and_extract_memory_format(options, memory_format));
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, int64_t>::value>>
+     at::Tensor _empty_per_channel_affine_quantized(at::IntArrayRef size, const at::Tensor & scales, const at::Tensor & zero_points, int64_t axis, at::TensorOptions options={}, c10::optional<at::MemoryFormat> memory_format=MemoryFormat::Contiguous) {
+       return at::_ops::_empty_per_channel_affine_quantized::call(c10::fromIntArrayRefSlow(size), scales, zero_points, axis, optTypeMetaToScalarType(options.dtype_opt()), options.layout_opt(), options.device_opt(), options.pinned_memory_opt(), c10::impl::check_tensor_options_and_extract_memory_format(options, memory_format));
+     }
+   }
+   
+   // aten::_empty_per_channel_affine_quantized(SymInt[] size, *, Tensor scales, Tensor zero_points, int axis, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, MemoryFormat? memory_format=contiguous_format) -> Tensor
+   inline at::Tensor _empty_per_channel_affine_quantized(at::IntArrayRef size, const at::Tensor & scales, const at::Tensor & zero_points, int64_t axis, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory, c10::optional<at::MemoryFormat> memory_format) {
+       return at::_ops::_empty_per_channel_affine_quantized::call(c10::fromIntArrayRefSlow(size), scales, zero_points, axis, dtype, layout, device, pin_memory, memory_format);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, int64_t>::value>>
+     at::Tensor _empty_per_channel_affine_quantized(at::IntArrayRef size, const at::Tensor & scales, const at::Tensor & zero_points, int64_t axis, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory, c10::optional<at::MemoryFormat> memory_format) {
+       return at::_ops::_empty_per_channel_affine_quantized::call(c10::fromIntArrayRefSlow(size), scales, zero_points, axis, dtype, layout, device, pin_memory, memory_format);
+     }
+   }
+   
+   // aten::_empty_per_channel_affine_quantized(SymInt[] size, *, Tensor scales, Tensor zero_points, int axis, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, MemoryFormat? memory_format=contiguous_format) -> Tensor
+   inline at::Tensor _empty_per_channel_affine_quantized_symint(c10::SymIntArrayRef size, const at::Tensor & scales, const at::Tensor & zero_points, int64_t axis, at::TensorOptions options={}, c10::optional<at::MemoryFormat> memory_format=MemoryFormat::Contiguous) {
        return at::_ops::_empty_per_channel_affine_quantized::call(size, scales, zero_points, axis, optTypeMetaToScalarType(options.dtype_opt()), options.layout_opt(), options.device_opt(), options.pinned_memory_opt(), c10::impl::check_tensor_options_and_extract_memory_format(options, memory_format));
    }
-   // aten::_empty_per_channel_affine_quantized(int[] size, *, Tensor scales, Tensor zero_points, int axis, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, MemoryFormat? memory_format=contiguous_format) -> Tensor
-   inline at::Tensor _empty_per_channel_affine_quantized(at::IntArrayRef size, const at::Tensor & scales, const at::Tensor & zero_points, int64_t axis, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory, c10::optional<at::MemoryFormat> memory_format) {
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, c10::SymInt>::value>>
+     at::Tensor _empty_per_channel_affine_quantized(c10::SymIntArrayRef size, const at::Tensor & scales, const at::Tensor & zero_points, int64_t axis, at::TensorOptions options={}, c10::optional<at::MemoryFormat> memory_format=MemoryFormat::Contiguous) {
+       return at::_ops::_empty_per_channel_affine_quantized::call(size, scales, zero_points, axis, optTypeMetaToScalarType(options.dtype_opt()), options.layout_opt(), options.device_opt(), options.pinned_memory_opt(), c10::impl::check_tensor_options_and_extract_memory_format(options, memory_format));
+     }
+   }
+   
+   // aten::_empty_per_channel_affine_quantized(SymInt[] size, *, Tensor scales, Tensor zero_points, int axis, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, MemoryFormat? memory_format=contiguous_format) -> Tensor
+   inline at::Tensor _empty_per_channel_affine_quantized_symint(c10::SymIntArrayRef size, const at::Tensor & scales, const at::Tensor & zero_points, int64_t axis, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory, c10::optional<at::MemoryFormat> memory_format) {
        return at::_ops::_empty_per_channel_affine_quantized::call(size, scales, zero_points, axis, dtype, layout, device, pin_memory, memory_format);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, c10::SymInt>::value>>
+     at::Tensor _empty_per_channel_affine_quantized(c10::SymIntArrayRef size, const at::Tensor & scales, const at::Tensor & zero_points, int64_t axis, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory, c10::optional<at::MemoryFormat> memory_format) {
+       return at::_ops::_empty_per_channel_affine_quantized::call(size, scales, zero_points, axis, dtype, layout, device, pin_memory, memory_format);
+     }
    }
    
    namespace symint {
@@ -2871,9 +2992,26 @@ Program Listing for File Functions.h
      }
    }
    
-   // aten::_resize_output_(Tensor(a!) self, int[] size, Device device) -> Tensor(a!)
+   // aten::_resize_output_(Tensor(a!) self, SymInt[] size, Device device) -> Tensor(a!)
    inline const at::Tensor & _resize_output_(const at::Tensor & self, at::IntArrayRef size, at::Device device) {
+       return at::_ops::_resize_output_::call(self, c10::fromIntArrayRefSlow(size), device);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, int64_t>::value>>
+     const at::Tensor & _resize_output_(const at::Tensor & self, at::IntArrayRef size, at::Device device) {
+       return at::_ops::_resize_output_::call(self, c10::fromIntArrayRefSlow(size), device);
+     }
+   }
+   
+   // aten::_resize_output_(Tensor(a!) self, SymInt[] size, Device device) -> Tensor(a!)
+   inline const at::Tensor & _resize_output__symint(const at::Tensor & self, c10::SymIntArrayRef size, at::Device device) {
        return at::_ops::_resize_output_::call(self, size, device);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, c10::SymInt>::value>>
+     const at::Tensor & _resize_output_(const at::Tensor & self, c10::SymIntArrayRef size, at::Device device) {
+       return at::_ops::_resize_output_::call(self, size, device);
+     }
    }
    
    // aten::empty_quantized(int[] size, Tensor qtensor, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None, MemoryFormat? memory_format=None) -> Tensor
@@ -3147,14 +3285,48 @@ Program Listing for File Functions.h
        return at::_ops::flatten_DimnameList::call(self, dims, out_dim);
    }
    
-   // aten::unflatten.int(Tensor(a) self, int dim, int[] sizes) -> Tensor(a)
+   // aten::unflatten.int(Tensor(a) self, int dim, SymInt[] sizes) -> Tensor(a)
    inline at::Tensor unflatten(const at::Tensor & self, int64_t dim, at::IntArrayRef sizes) {
-       return at::_ops::unflatten_int::call(self, dim, sizes);
+       return at::_ops::unflatten_int::call(self, dim, c10::fromIntArrayRefSlow(sizes));
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, int64_t>::value>>
+     at::Tensor unflatten(const at::Tensor & self, int64_t dim, at::IntArrayRef sizes) {
+       return at::_ops::unflatten_int::call(self, dim, c10::fromIntArrayRefSlow(sizes));
+     }
    }
    
-   // aten::unflatten.Dimname(Tensor(a) self, Dimname dim, int[] sizes, Dimname[] names) -> Tensor(a)
+   // aten::unflatten.int(Tensor(a) self, int dim, SymInt[] sizes) -> Tensor(a)
+   inline at::Tensor unflatten_symint(const at::Tensor & self, int64_t dim, c10::SymIntArrayRef sizes) {
+       return at::_ops::unflatten_int::call(self, dim, sizes);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, c10::SymInt>::value>>
+     at::Tensor unflatten(const at::Tensor & self, int64_t dim, c10::SymIntArrayRef sizes) {
+       return at::_ops::unflatten_int::call(self, dim, sizes);
+     }
+   }
+   
+   // aten::unflatten.Dimname(Tensor(a) self, Dimname dim, SymInt[] sizes, Dimname[] names) -> Tensor(a)
    inline at::Tensor unflatten(const at::Tensor & self, at::Dimname dim, at::IntArrayRef sizes, at::DimnameList names) {
+       return at::_ops::unflatten_Dimname::call(self, dim, c10::fromIntArrayRefSlow(sizes), names);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, int64_t>::value>>
+     at::Tensor unflatten(const at::Tensor & self, at::Dimname dim, at::IntArrayRef sizes, at::DimnameList names) {
+       return at::_ops::unflatten_Dimname::call(self, dim, c10::fromIntArrayRefSlow(sizes), names);
+     }
+   }
+   
+   // aten::unflatten.Dimname(Tensor(a) self, Dimname dim, SymInt[] sizes, Dimname[] names) -> Tensor(a)
+   inline at::Tensor unflatten_symint(const at::Tensor & self, at::Dimname dim, c10::SymIntArrayRef sizes, at::DimnameList names) {
        return at::_ops::unflatten_Dimname::call(self, dim, sizes, names);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, c10::SymInt>::value>>
+     at::Tensor unflatten(const at::Tensor & self, at::Dimname dim, c10::SymIntArrayRef sizes, at::DimnameList names) {
+       return at::_ops::unflatten_Dimname::call(self, dim, sizes, names);
+     }
    }
    
    // aten::fill.Scalar(Tensor self, Scalar value) -> Tensor
@@ -7597,6 +7769,20 @@ Program Listing for File Functions.h
        return at::_ops::nansum_out::call(self, dim, keepdim, dtype, out);
    }
    
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, int64_t>::value>>
+     at::Tensor sum_to_size(const at::Tensor & self, at::IntArrayRef size) {
+       return at::_ops::sum_to_size::call(self, c10::fromIntArrayRefSlow(size));
+     }
+   }
+   
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, c10::SymInt>::value>>
+     at::Tensor sum_to_size(const at::Tensor & self, c10::SymIntArrayRef size) {
+       return at::_ops::sum_to_size::call(self, size);
+     }
+   }
+   
    // aten::sqrt(Tensor self) -> Tensor
    inline at::Tensor sqrt(const at::Tensor & self) {
        return at::_ops::sqrt::call(self);
@@ -8218,13 +8404,48 @@ Program Listing for File Functions.h
        return at::_ops::zeros_names::call(size, names, dtype, layout, device, pin_memory);
    }
    
-   // aten::_efficientzerotensor(int[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
+   // aten::_efficientzerotensor(SymInt[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
    inline at::Tensor _efficientzerotensor(at::IntArrayRef size, at::TensorOptions options={}) {
+       return at::_ops::_efficientzerotensor::call(c10::fromIntArrayRefSlow(size), optTypeMetaToScalarType(options.dtype_opt()), options.layout_opt(), options.device_opt(), options.pinned_memory_opt());
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, int64_t>::value>>
+     at::Tensor _efficientzerotensor(at::IntArrayRef size, at::TensorOptions options={}) {
+       return at::_ops::_efficientzerotensor::call(c10::fromIntArrayRefSlow(size), optTypeMetaToScalarType(options.dtype_opt()), options.layout_opt(), options.device_opt(), options.pinned_memory_opt());
+     }
+   }
+   
+   // aten::_efficientzerotensor(SymInt[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
+   inline at::Tensor _efficientzerotensor(at::IntArrayRef size, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory) {
+       return at::_ops::_efficientzerotensor::call(c10::fromIntArrayRefSlow(size), dtype, layout, device, pin_memory);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, int64_t>::value>>
+     at::Tensor _efficientzerotensor(at::IntArrayRef size, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory) {
+       return at::_ops::_efficientzerotensor::call(c10::fromIntArrayRefSlow(size), dtype, layout, device, pin_memory);
+     }
+   }
+   
+   // aten::_efficientzerotensor(SymInt[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
+   inline at::Tensor _efficientzerotensor_symint(c10::SymIntArrayRef size, at::TensorOptions options={}) {
        return at::_ops::_efficientzerotensor::call(size, optTypeMetaToScalarType(options.dtype_opt()), options.layout_opt(), options.device_opt(), options.pinned_memory_opt());
    }
-   // aten::_efficientzerotensor(int[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
-   inline at::Tensor _efficientzerotensor(at::IntArrayRef size, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory) {
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, c10::SymInt>::value>>
+     at::Tensor _efficientzerotensor(c10::SymIntArrayRef size, at::TensorOptions options={}) {
+       return at::_ops::_efficientzerotensor::call(size, optTypeMetaToScalarType(options.dtype_opt()), options.layout_opt(), options.device_opt(), options.pinned_memory_opt());
+     }
+   }
+   
+   // aten::_efficientzerotensor(SymInt[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
+   inline at::Tensor _efficientzerotensor_symint(c10::SymIntArrayRef size, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory) {
        return at::_ops::_efficientzerotensor::call(size, dtype, layout, device, pin_memory);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, c10::SymInt>::value>>
+     at::Tensor _efficientzerotensor(c10::SymIntArrayRef size, c10::optional<at::ScalarType> dtype, c10::optional<at::Layout> layout, c10::optional<at::Device> device, c10::optional<bool> pin_memory) {
+       return at::_ops::_efficientzerotensor::call(size, dtype, layout, device, pin_memory);
+     }
    }
    
    // aten::zeros(SymInt[] size, *, ScalarType? dtype=None, Layout? layout=None, Device? device=None, bool? pin_memory=None) -> Tensor
@@ -20296,13 +20517,48 @@ Program Listing for File Functions.h
        return at::_ops::add_Scalar_out::call(self, other, alpha, out);
    }
    
-   // aten::affine_grid_generator.out(Tensor theta, int[] size, bool align_corners, *, Tensor(a!) out) -> Tensor(a!)
+   // aten::affine_grid_generator.out(Tensor theta, SymInt[] size, bool align_corners, *, Tensor(a!) out) -> Tensor(a!)
    inline at::Tensor & affine_grid_generator_out(at::Tensor & out, const at::Tensor & theta, at::IntArrayRef size, bool align_corners) {
+       return at::_ops::affine_grid_generator_out::call(theta, c10::fromIntArrayRefSlow(size), align_corners, out);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, int64_t>::value>>
+     at::Tensor & affine_grid_generator_out(at::Tensor & out, const at::Tensor & theta, at::IntArrayRef size, bool align_corners) {
+       return at::_ops::affine_grid_generator_out::call(theta, c10::fromIntArrayRefSlow(size), align_corners, out);
+     }
+   }
+   
+   // aten::affine_grid_generator.out(Tensor theta, SymInt[] size, bool align_corners, *, Tensor(a!) out) -> Tensor(a!)
+   inline at::Tensor & affine_grid_generator_outf(const at::Tensor & theta, at::IntArrayRef size, bool align_corners, at::Tensor & out) {
+       return at::_ops::affine_grid_generator_out::call(theta, c10::fromIntArrayRefSlow(size), align_corners, out);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, int64_t>::value>>
+     at::Tensor & affine_grid_generator_outf(const at::Tensor & theta, at::IntArrayRef size, bool align_corners, at::Tensor & out) {
+       return at::_ops::affine_grid_generator_out::call(theta, c10::fromIntArrayRefSlow(size), align_corners, out);
+     }
+   }
+   
+   // aten::affine_grid_generator.out(Tensor theta, SymInt[] size, bool align_corners, *, Tensor(a!) out) -> Tensor(a!)
+   inline at::Tensor & affine_grid_generator_symint_out(at::Tensor & out, const at::Tensor & theta, c10::SymIntArrayRef size, bool align_corners) {
        return at::_ops::affine_grid_generator_out::call(theta, size, align_corners, out);
    }
-   // aten::affine_grid_generator.out(Tensor theta, int[] size, bool align_corners, *, Tensor(a!) out) -> Tensor(a!)
-   inline at::Tensor & affine_grid_generator_outf(const at::Tensor & theta, at::IntArrayRef size, bool align_corners, at::Tensor & out) {
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, c10::SymInt>::value>>
+     at::Tensor & affine_grid_generator_out(at::Tensor & out, const at::Tensor & theta, c10::SymIntArrayRef size, bool align_corners) {
        return at::_ops::affine_grid_generator_out::call(theta, size, align_corners, out);
+     }
+   }
+   
+   // aten::affine_grid_generator.out(Tensor theta, SymInt[] size, bool align_corners, *, Tensor(a!) out) -> Tensor(a!)
+   inline at::Tensor & affine_grid_generator_symint_outf(const at::Tensor & theta, c10::SymIntArrayRef size, bool align_corners, at::Tensor & out) {
+       return at::_ops::affine_grid_generator_out::call(theta, size, align_corners, out);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, c10::SymInt>::value>>
+     at::Tensor & affine_grid_generator_outf(const at::Tensor & theta, c10::SymIntArrayRef size, bool align_corners, at::Tensor & out) {
+       return at::_ops::affine_grid_generator_out::call(theta, size, align_corners, out);
+     }
    }
    
    // aten::bartlett_window.out(int window_length, *, Tensor(a!) out) -> Tensor(a!)
@@ -21300,22 +21556,92 @@ Program Listing for File Functions.h
      }
    }
    
-   // aten::_empty_affine_quantized.out(int[] size, *, float scale=1, int zero_point=0, MemoryFormat? memory_format=contiguous_format, Tensor(a!) out) -> Tensor(a!)
+   // aten::_empty_affine_quantized.out(SymInt[] size, *, float scale=1, int zero_point=0, MemoryFormat? memory_format=contiguous_format, Tensor(a!) out) -> Tensor(a!)
    inline at::Tensor & _empty_affine_quantized_out(at::Tensor & out, at::IntArrayRef size, double scale=1, int64_t zero_point=0, c10::optional<at::MemoryFormat> memory_format=MemoryFormat::Contiguous) {
-       return at::_ops::_empty_affine_quantized_out::call(size, scale, zero_point, memory_format, out);
+       return at::_ops::_empty_affine_quantized_out::call(c10::fromIntArrayRefSlow(size), scale, zero_point, memory_format, out);
    }
-   // aten::_empty_affine_quantized.out(int[] size, *, float scale=1, int zero_point=0, MemoryFormat? memory_format=contiguous_format, Tensor(a!) out) -> Tensor(a!)
-   inline at::Tensor & _empty_affine_quantized_outf(at::IntArrayRef size, double scale, int64_t zero_point, c10::optional<at::MemoryFormat> memory_format, at::Tensor & out) {
-       return at::_ops::_empty_affine_quantized_out::call(size, scale, zero_point, memory_format, out);
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, int64_t>::value>>
+     at::Tensor & _empty_affine_quantized_out(at::Tensor & out, at::IntArrayRef size, double scale=1, int64_t zero_point=0, c10::optional<at::MemoryFormat> memory_format=MemoryFormat::Contiguous) {
+       return at::_ops::_empty_affine_quantized_out::call(c10::fromIntArrayRefSlow(size), scale, zero_point, memory_format, out);
+     }
    }
    
-   // aten::_empty_per_channel_affine_quantized.out(int[] size, *, Tensor scales, Tensor zero_points, int axis, MemoryFormat? memory_format=contiguous_format, Tensor(a!) out) -> Tensor(a!)
+   // aten::_empty_affine_quantized.out(SymInt[] size, *, float scale=1, int zero_point=0, MemoryFormat? memory_format=contiguous_format, Tensor(a!) out) -> Tensor(a!)
+   inline at::Tensor & _empty_affine_quantized_outf(at::IntArrayRef size, double scale, int64_t zero_point, c10::optional<at::MemoryFormat> memory_format, at::Tensor & out) {
+       return at::_ops::_empty_affine_quantized_out::call(c10::fromIntArrayRefSlow(size), scale, zero_point, memory_format, out);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, int64_t>::value>>
+     at::Tensor & _empty_affine_quantized_outf(at::IntArrayRef size, double scale, int64_t zero_point, c10::optional<at::MemoryFormat> memory_format, at::Tensor & out) {
+       return at::_ops::_empty_affine_quantized_out::call(c10::fromIntArrayRefSlow(size), scale, zero_point, memory_format, out);
+     }
+   }
+   
+   // aten::_empty_affine_quantized.out(SymInt[] size, *, float scale=1, int zero_point=0, MemoryFormat? memory_format=contiguous_format, Tensor(a!) out) -> Tensor(a!)
+   inline at::Tensor & _empty_affine_quantized_symint_out(at::Tensor & out, c10::SymIntArrayRef size, double scale=1, int64_t zero_point=0, c10::optional<at::MemoryFormat> memory_format=MemoryFormat::Contiguous) {
+       return at::_ops::_empty_affine_quantized_out::call(size, scale, zero_point, memory_format, out);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, c10::SymInt>::value>>
+     at::Tensor & _empty_affine_quantized_out(at::Tensor & out, c10::SymIntArrayRef size, double scale=1, int64_t zero_point=0, c10::optional<at::MemoryFormat> memory_format=MemoryFormat::Contiguous) {
+       return at::_ops::_empty_affine_quantized_out::call(size, scale, zero_point, memory_format, out);
+     }
+   }
+   
+   // aten::_empty_affine_quantized.out(SymInt[] size, *, float scale=1, int zero_point=0, MemoryFormat? memory_format=contiguous_format, Tensor(a!) out) -> Tensor(a!)
+   inline at::Tensor & _empty_affine_quantized_symint_outf(c10::SymIntArrayRef size, double scale, int64_t zero_point, c10::optional<at::MemoryFormat> memory_format, at::Tensor & out) {
+       return at::_ops::_empty_affine_quantized_out::call(size, scale, zero_point, memory_format, out);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, c10::SymInt>::value>>
+     at::Tensor & _empty_affine_quantized_outf(c10::SymIntArrayRef size, double scale, int64_t zero_point, c10::optional<at::MemoryFormat> memory_format, at::Tensor & out) {
+       return at::_ops::_empty_affine_quantized_out::call(size, scale, zero_point, memory_format, out);
+     }
+   }
+   
+   // aten::_empty_per_channel_affine_quantized.out(SymInt[] size, *, Tensor scales, Tensor zero_points, int axis, MemoryFormat? memory_format=contiguous_format, Tensor(a!) out) -> Tensor(a!)
    inline at::Tensor & _empty_per_channel_affine_quantized_out(at::Tensor & out, at::IntArrayRef size, const at::Tensor & scales, const at::Tensor & zero_points, int64_t axis, c10::optional<at::MemoryFormat> memory_format=MemoryFormat::Contiguous) {
+       return at::_ops::_empty_per_channel_affine_quantized_out::call(c10::fromIntArrayRefSlow(size), scales, zero_points, axis, memory_format, out);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, int64_t>::value>>
+     at::Tensor & _empty_per_channel_affine_quantized_out(at::Tensor & out, at::IntArrayRef size, const at::Tensor & scales, const at::Tensor & zero_points, int64_t axis, c10::optional<at::MemoryFormat> memory_format=MemoryFormat::Contiguous) {
+       return at::_ops::_empty_per_channel_affine_quantized_out::call(c10::fromIntArrayRefSlow(size), scales, zero_points, axis, memory_format, out);
+     }
+   }
+   
+   // aten::_empty_per_channel_affine_quantized.out(SymInt[] size, *, Tensor scales, Tensor zero_points, int axis, MemoryFormat? memory_format=contiguous_format, Tensor(a!) out) -> Tensor(a!)
+   inline at::Tensor & _empty_per_channel_affine_quantized_outf(at::IntArrayRef size, const at::Tensor & scales, const at::Tensor & zero_points, int64_t axis, c10::optional<at::MemoryFormat> memory_format, at::Tensor & out) {
+       return at::_ops::_empty_per_channel_affine_quantized_out::call(c10::fromIntArrayRefSlow(size), scales, zero_points, axis, memory_format, out);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, int64_t>::value>>
+     at::Tensor & _empty_per_channel_affine_quantized_outf(at::IntArrayRef size, const at::Tensor & scales, const at::Tensor & zero_points, int64_t axis, c10::optional<at::MemoryFormat> memory_format, at::Tensor & out) {
+       return at::_ops::_empty_per_channel_affine_quantized_out::call(c10::fromIntArrayRefSlow(size), scales, zero_points, axis, memory_format, out);
+     }
+   }
+   
+   // aten::_empty_per_channel_affine_quantized.out(SymInt[] size, *, Tensor scales, Tensor zero_points, int axis, MemoryFormat? memory_format=contiguous_format, Tensor(a!) out) -> Tensor(a!)
+   inline at::Tensor & _empty_per_channel_affine_quantized_symint_out(at::Tensor & out, c10::SymIntArrayRef size, const at::Tensor & scales, const at::Tensor & zero_points, int64_t axis, c10::optional<at::MemoryFormat> memory_format=MemoryFormat::Contiguous) {
        return at::_ops::_empty_per_channel_affine_quantized_out::call(size, scales, zero_points, axis, memory_format, out);
    }
-   // aten::_empty_per_channel_affine_quantized.out(int[] size, *, Tensor scales, Tensor zero_points, int axis, MemoryFormat? memory_format=contiguous_format, Tensor(a!) out) -> Tensor(a!)
-   inline at::Tensor & _empty_per_channel_affine_quantized_outf(at::IntArrayRef size, const at::Tensor & scales, const at::Tensor & zero_points, int64_t axis, c10::optional<at::MemoryFormat> memory_format, at::Tensor & out) {
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, c10::SymInt>::value>>
+     at::Tensor & _empty_per_channel_affine_quantized_out(at::Tensor & out, c10::SymIntArrayRef size, const at::Tensor & scales, const at::Tensor & zero_points, int64_t axis, c10::optional<at::MemoryFormat> memory_format=MemoryFormat::Contiguous) {
        return at::_ops::_empty_per_channel_affine_quantized_out::call(size, scales, zero_points, axis, memory_format, out);
+     }
+   }
+   
+   // aten::_empty_per_channel_affine_quantized.out(SymInt[] size, *, Tensor scales, Tensor zero_points, int axis, MemoryFormat? memory_format=contiguous_format, Tensor(a!) out) -> Tensor(a!)
+   inline at::Tensor & _empty_per_channel_affine_quantized_symint_outf(c10::SymIntArrayRef size, const at::Tensor & scales, const at::Tensor & zero_points, int64_t axis, c10::optional<at::MemoryFormat> memory_format, at::Tensor & out) {
+       return at::_ops::_empty_per_channel_affine_quantized_out::call(size, scales, zero_points, axis, memory_format, out);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, c10::SymInt>::value>>
+     at::Tensor & _empty_per_channel_affine_quantized_outf(c10::SymIntArrayRef size, const at::Tensor & scales, const at::Tensor & zero_points, int64_t axis, c10::optional<at::MemoryFormat> memory_format, at::Tensor & out) {
+       return at::_ops::_empty_per_channel_affine_quantized_out::call(size, scales, zero_points, axis, memory_format, out);
+     }
    }
    
    // aten::resize.out(Tensor self, SymInt[] size, *, MemoryFormat? memory_format=None, Tensor(a!) out) -> Tensor(a!)
@@ -21384,18 +21710,70 @@ Program Listing for File Functions.h
      }
    }
    
-   // aten::_resize_output.out(Tensor self, int[] size, Device device, *, Tensor(a!) out) -> Tensor(a!)
+   // aten::_resize_output.out(Tensor self, SymInt[] size, Device device, *, Tensor(a!) out) -> Tensor(a!)
    inline const at::Tensor & _resize_output_out(const at::Tensor & out, const at::Tensor & self, at::IntArrayRef size, at::Device device) {
-       return at::_ops::_resize_output_out::call(self, size, device, out);
+       return at::_ops::_resize_output_out::call(self, c10::fromIntArrayRefSlow(size), device, out);
    }
-   // aten::_resize_output.out(Tensor self, int[] size, Device device, *, Tensor(a!) out) -> Tensor(a!)
-   inline const at::Tensor & _resize_output_outf(const at::Tensor & self, at::IntArrayRef size, at::Device device, const at::Tensor & out) {
-       return at::_ops::_resize_output_out::call(self, size, device, out);
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, int64_t>::value>>
+     const at::Tensor & _resize_output_out(const at::Tensor & out, const at::Tensor & self, at::IntArrayRef size, at::Device device) {
+       return at::_ops::_resize_output_out::call(self, c10::fromIntArrayRefSlow(size), device, out);
+     }
    }
    
-   // aten::_resize_output(Tensor self, int[] size, Device device) -> Tensor
+   // aten::_resize_output.out(Tensor self, SymInt[] size, Device device, *, Tensor(a!) out) -> Tensor(a!)
+   inline const at::Tensor & _resize_output_outf(const at::Tensor & self, at::IntArrayRef size, at::Device device, const at::Tensor & out) {
+       return at::_ops::_resize_output_out::call(self, c10::fromIntArrayRefSlow(size), device, out);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, int64_t>::value>>
+     const at::Tensor & _resize_output_outf(const at::Tensor & self, at::IntArrayRef size, at::Device device, const at::Tensor & out) {
+       return at::_ops::_resize_output_out::call(self, c10::fromIntArrayRefSlow(size), device, out);
+     }
+   }
+   
+   // aten::_resize_output.out(Tensor self, SymInt[] size, Device device, *, Tensor(a!) out) -> Tensor(a!)
+   inline const at::Tensor & _resize_output_symint_out(const at::Tensor & out, const at::Tensor & self, c10::SymIntArrayRef size, at::Device device) {
+       return at::_ops::_resize_output_out::call(self, size, device, out);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, c10::SymInt>::value>>
+     const at::Tensor & _resize_output_out(const at::Tensor & out, const at::Tensor & self, c10::SymIntArrayRef size, at::Device device) {
+       return at::_ops::_resize_output_out::call(self, size, device, out);
+     }
+   }
+   
+   // aten::_resize_output.out(Tensor self, SymInt[] size, Device device, *, Tensor(a!) out) -> Tensor(a!)
+   inline const at::Tensor & _resize_output_symint_outf(const at::Tensor & self, c10::SymIntArrayRef size, at::Device device, const at::Tensor & out) {
+       return at::_ops::_resize_output_out::call(self, size, device, out);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, c10::SymInt>::value>>
+     const at::Tensor & _resize_output_outf(const at::Tensor & self, c10::SymIntArrayRef size, at::Device device, const at::Tensor & out) {
+       return at::_ops::_resize_output_out::call(self, size, device, out);
+     }
+   }
+   
+   // aten::_resize_output(Tensor self, SymInt[] size, Device device) -> Tensor
    inline at::Tensor _resize_output(const at::Tensor & self, at::IntArrayRef size, at::Device device) {
+       return at::_ops::_resize_output::call(self, c10::fromIntArrayRefSlow(size), device);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, int64_t>::value>>
+     at::Tensor _resize_output(const at::Tensor & self, at::IntArrayRef size, at::Device device) {
+       return at::_ops::_resize_output::call(self, c10::fromIntArrayRefSlow(size), device);
+     }
+   }
+   
+   // aten::_resize_output(Tensor self, SymInt[] size, Device device) -> Tensor
+   inline at::Tensor _resize_output_symint(const at::Tensor & self, c10::SymIntArrayRef size, at::Device device) {
        return at::_ops::_resize_output::call(self, size, device);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, c10::SymInt>::value>>
+     at::Tensor _resize_output(const at::Tensor & self, c10::SymIntArrayRef size, at::Device device) {
+       return at::_ops::_resize_output::call(self, size, device);
+     }
    }
    
    // aten::empty_quantized.out(int[] size, Tensor qtensor, *, MemoryFormat? memory_format=None, Tensor(a!) out) -> Tensor(a!)
@@ -23356,13 +23734,48 @@ Program Listing for File Functions.h
        return at::_ops::zeros_names_out::call(size, names, out);
    }
    
-   // aten::_efficientzerotensor.out(int[] size, *, Tensor(a!) out) -> Tensor(a!)
+   // aten::_efficientzerotensor.out(SymInt[] size, *, Tensor(a!) out) -> Tensor(a!)
    inline at::Tensor & _efficientzerotensor_out(at::Tensor & out, at::IntArrayRef size) {
+       return at::_ops::_efficientzerotensor_out::call(c10::fromIntArrayRefSlow(size), out);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, int64_t>::value>>
+     at::Tensor & _efficientzerotensor_out(at::Tensor & out, at::IntArrayRef size) {
+       return at::_ops::_efficientzerotensor_out::call(c10::fromIntArrayRefSlow(size), out);
+     }
+   }
+   
+   // aten::_efficientzerotensor.out(SymInt[] size, *, Tensor(a!) out) -> Tensor(a!)
+   inline at::Tensor & _efficientzerotensor_outf(at::IntArrayRef size, at::Tensor & out) {
+       return at::_ops::_efficientzerotensor_out::call(c10::fromIntArrayRefSlow(size), out);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, int64_t>::value>>
+     at::Tensor & _efficientzerotensor_outf(at::IntArrayRef size, at::Tensor & out) {
+       return at::_ops::_efficientzerotensor_out::call(c10::fromIntArrayRefSlow(size), out);
+     }
+   }
+   
+   // aten::_efficientzerotensor.out(SymInt[] size, *, Tensor(a!) out) -> Tensor(a!)
+   inline at::Tensor & _efficientzerotensor_symint_out(at::Tensor & out, c10::SymIntArrayRef size) {
        return at::_ops::_efficientzerotensor_out::call(size, out);
    }
-   // aten::_efficientzerotensor.out(int[] size, *, Tensor(a!) out) -> Tensor(a!)
-   inline at::Tensor & _efficientzerotensor_outf(at::IntArrayRef size, at::Tensor & out) {
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, c10::SymInt>::value>>
+     at::Tensor & _efficientzerotensor_out(at::Tensor & out, c10::SymIntArrayRef size) {
        return at::_ops::_efficientzerotensor_out::call(size, out);
+     }
+   }
+   
+   // aten::_efficientzerotensor.out(SymInt[] size, *, Tensor(a!) out) -> Tensor(a!)
+   inline at::Tensor & _efficientzerotensor_symint_outf(c10::SymIntArrayRef size, at::Tensor & out) {
+       return at::_ops::_efficientzerotensor_out::call(size, out);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, c10::SymInt>::value>>
+     at::Tensor & _efficientzerotensor_outf(c10::SymIntArrayRef size, at::Tensor & out) {
+       return at::_ops::_efficientzerotensor_out::call(size, out);
+     }
    }
    
    // aten::zeros_like.out(Tensor self, *, MemoryFormat? memory_format=None, Tensor(a!) out) -> Tensor(a!)

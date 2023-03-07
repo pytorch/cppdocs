@@ -639,7 +639,9 @@ Program Listing for File TensorBody.h
      at::Tensor flatten(at::Dimname start_dim, at::Dimname end_dim, at::Dimname out_dim) const;
      at::Tensor flatten(at::DimnameList dims, at::Dimname out_dim) const;
      at::Tensor unflatten(int64_t dim, at::IntArrayRef sizes) const;
+     at::Tensor unflatten_symint(int64_t dim, c10::SymIntArrayRef sizes) const;
      at::Tensor unflatten(at::Dimname dim, at::IntArrayRef sizes, at::DimnameList names) const;
+     at::Tensor unflatten_symint(at::Dimname dim, c10::SymIntArrayRef sizes, at::DimnameList names) const;
      at::Tensor & fill_(const at::Scalar & value) const;
      at::Tensor & fill_(const at::Tensor & value) const;
      at::Tensor floor() const;
@@ -848,6 +850,7 @@ Program Listing for File TensorBody.h
      at::Tensor sum(at::DimnameList dim, bool keepdim=false, c10::optional<at::ScalarType> dtype=c10::nullopt) const;
      at::Tensor nansum(at::OptionalIntArrayRef dim=c10::nullopt, bool keepdim=false, c10::optional<at::ScalarType> dtype=c10::nullopt) const;
      at::Tensor sum_to_size(at::IntArrayRef size) const;
+     at::Tensor sum_to_size_symint(c10::SymIntArrayRef size) const;
      at::Tensor sqrt() const;
      at::Tensor & sqrt_() const;
      at::Tensor square() const;
@@ -2391,13 +2394,23 @@ Program Listing for File TensorBody.h
        return at::_ops::flatten_DimnameList::call(const_cast<Tensor&>(*this), dims, out_dim);
    }
    
-   // aten::unflatten.int(Tensor(a) self, int dim, int[] sizes) -> Tensor(a)
+   // aten::unflatten.int(Tensor(a) self, int dim, SymInt[] sizes) -> Tensor(a)
    inline at::Tensor Tensor::unflatten(int64_t dim, at::IntArrayRef sizes) const {
+       return at::_ops::unflatten_int::call(const_cast<Tensor&>(*this), dim, c10::fromIntArrayRefSlow(sizes));
+   }
+   
+   // aten::unflatten.int(Tensor(a) self, int dim, SymInt[] sizes) -> Tensor(a)
+   inline at::Tensor Tensor::unflatten_symint(int64_t dim, c10::SymIntArrayRef sizes) const {
        return at::_ops::unflatten_int::call(const_cast<Tensor&>(*this), dim, sizes);
    }
    
-   // aten::unflatten.Dimname(Tensor(a) self, Dimname dim, int[] sizes, Dimname[] names) -> Tensor(a)
+   // aten::unflatten.Dimname(Tensor(a) self, Dimname dim, SymInt[] sizes, Dimname[] names) -> Tensor(a)
    inline at::Tensor Tensor::unflatten(at::Dimname dim, at::IntArrayRef sizes, at::DimnameList names) const {
+       return at::_ops::unflatten_Dimname::call(const_cast<Tensor&>(*this), dim, c10::fromIntArrayRefSlow(sizes), names);
+   }
+   
+   // aten::unflatten.Dimname(Tensor(a) self, Dimname dim, SymInt[] sizes, Dimname[] names) -> Tensor(a)
+   inline at::Tensor Tensor::unflatten_symint(at::Dimname dim, c10::SymIntArrayRef sizes, at::DimnameList names) const {
        return at::_ops::unflatten_Dimname::call(const_cast<Tensor&>(*this), dim, sizes, names);
    }
    
@@ -3436,8 +3449,13 @@ Program Listing for File TensorBody.h
        return at::_ops::nansum::call(const_cast<Tensor&>(*this), dim, keepdim, dtype);
    }
    
-   // aten::sum_to_size(Tensor self, int[] size) -> Tensor
+   // aten::sum_to_size(Tensor self, SymInt[] size) -> Tensor
    inline at::Tensor Tensor::sum_to_size(at::IntArrayRef size) const {
+       return at::_ops::sum_to_size::call(const_cast<Tensor&>(*this), c10::fromIntArrayRefSlow(size));
+   }
+   
+   // aten::sum_to_size(Tensor self, SymInt[] size) -> Tensor
+   inline at::Tensor Tensor::sum_to_size_symint(c10::SymIntArrayRef size) const {
        return at::_ops::sum_to_size::call(const_cast<Tensor&>(*this), size);
    }
    
