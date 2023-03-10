@@ -639,9 +639,7 @@ Program Listing for File TensorBody.h
      at::Tensor flatten(at::Dimname start_dim, at::Dimname end_dim, at::Dimname out_dim) const;
      at::Tensor flatten(at::DimnameList dims, at::Dimname out_dim) const;
      at::Tensor unflatten(int64_t dim, at::IntArrayRef sizes) const;
-     at::Tensor unflatten_symint(int64_t dim, c10::SymIntArrayRef sizes) const;
      at::Tensor unflatten(at::Dimname dim, at::IntArrayRef sizes, at::DimnameList names) const;
-     at::Tensor unflatten_symint(at::Dimname dim, c10::SymIntArrayRef sizes, at::DimnameList names) const;
      at::Tensor & fill_(const at::Scalar & value) const;
      at::Tensor & fill_(const at::Tensor & value) const;
      at::Tensor floor() const;
@@ -850,16 +848,15 @@ Program Listing for File TensorBody.h
      at::Tensor sum(at::DimnameList dim, bool keepdim=false, c10::optional<at::ScalarType> dtype=c10::nullopt) const;
      at::Tensor nansum(at::OptionalIntArrayRef dim=c10::nullopt, bool keepdim=false, c10::optional<at::ScalarType> dtype=c10::nullopt) const;
      at::Tensor sum_to_size(at::IntArrayRef size) const;
-     at::Tensor sum_to_size_symint(c10::SymIntArrayRef size) const;
      at::Tensor sqrt() const;
      at::Tensor & sqrt_() const;
      at::Tensor square() const;
      at::Tensor & square_() const;
      at::Tensor std(bool unbiased) const;
      at::Tensor std(at::OptionalIntArrayRef dim, bool unbiased, bool keepdim=false) const;
-     at::Tensor std(at::OptionalIntArrayRef dim=c10::nullopt, const c10::optional<at::Scalar> & correction=c10::nullopt, bool keepdim=false) const;
+     at::Tensor std(at::OptionalIntArrayRef dim=c10::nullopt, c10::optional<int64_t> correction=c10::nullopt, bool keepdim=false) const;
      at::Tensor std(at::DimnameList dim, bool unbiased, bool keepdim=false) const;
-     at::Tensor std(at::DimnameList dim, const c10::optional<at::Scalar> & correction=c10::nullopt, bool keepdim=false) const;
+     at::Tensor std(at::DimnameList dim, c10::optional<int64_t> correction=c10::nullopt, bool keepdim=false) const;
      at::Tensor prod(c10::optional<at::ScalarType> dtype=c10::nullopt) const;
      at::Tensor prod(int64_t dim, bool keepdim=false, c10::optional<at::ScalarType> dtype=c10::nullopt) const;
      at::Tensor prod(at::Dimname dim, bool keepdim=false, c10::optional<at::ScalarType> dtype=c10::nullopt) const;
@@ -890,9 +887,9 @@ Program Listing for File TensorBody.h
      at::Tensor & unsqueeze_(int64_t dim) const;
      at::Tensor var(bool unbiased) const;
      at::Tensor var(at::OptionalIntArrayRef dim, bool unbiased, bool keepdim=false) const;
-     at::Tensor var(at::OptionalIntArrayRef dim=c10::nullopt, const c10::optional<at::Scalar> & correction=c10::nullopt, bool keepdim=false) const;
+     at::Tensor var(at::OptionalIntArrayRef dim=c10::nullopt, c10::optional<int64_t> correction=c10::nullopt, bool keepdim=false) const;
      at::Tensor var(at::DimnameList dim, bool unbiased, bool keepdim=false) const;
-     at::Tensor var(at::DimnameList dim, const c10::optional<at::Scalar> & correction=c10::nullopt, bool keepdim=false) const;
+     at::Tensor var(at::DimnameList dim, c10::optional<int64_t> correction=c10::nullopt, bool keepdim=false) const;
      at::Tensor view_as(const at::Tensor & other) const;
      at::Tensor where(const at::Tensor & condition, const at::Tensor & other) const;
      at::Tensor where(const at::Tensor & condition, const at::Scalar & other) const;
@@ -1206,7 +1203,6 @@ Program Listing for File TensorBody.h
      at::Tensor argsort(bool stable, int64_t dim=-1, bool descending=false) const;
      at::Tensor argsort(at::Dimname dim, bool descending=false) const;
      ::std::tuple<at::Tensor,at::Tensor> topk(int64_t k, int64_t dim=-1, bool largest=true, bool sorted=true) const;
-     ::std::tuple<at::Tensor,at::Tensor> topk_symint(c10::SymInt k, int64_t dim=-1, bool largest=true, bool sorted=true) const;
      at::Tensor all() const;
      at::Tensor any() const;
      at::Tensor renorm(const at::Scalar & p, int64_t dim, const at::Scalar & maxnorm) const;
@@ -2394,23 +2390,13 @@ Program Listing for File TensorBody.h
        return at::_ops::flatten_DimnameList::call(const_cast<Tensor&>(*this), dims, out_dim);
    }
    
-   // aten::unflatten.int(Tensor(a) self, int dim, SymInt[] sizes) -> Tensor(a)
+   // aten::unflatten.int(Tensor(a) self, int dim, int[] sizes) -> Tensor(a)
    inline at::Tensor Tensor::unflatten(int64_t dim, at::IntArrayRef sizes) const {
-       return at::_ops::unflatten_int::call(const_cast<Tensor&>(*this), dim, c10::fromIntArrayRefSlow(sizes));
-   }
-   
-   // aten::unflatten.int(Tensor(a) self, int dim, SymInt[] sizes) -> Tensor(a)
-   inline at::Tensor Tensor::unflatten_symint(int64_t dim, c10::SymIntArrayRef sizes) const {
        return at::_ops::unflatten_int::call(const_cast<Tensor&>(*this), dim, sizes);
    }
    
-   // aten::unflatten.Dimname(Tensor(a) self, Dimname dim, SymInt[] sizes, Dimname[] names) -> Tensor(a)
+   // aten::unflatten.Dimname(Tensor(a) self, Dimname dim, int[] sizes, Dimname[] names) -> Tensor(a)
    inline at::Tensor Tensor::unflatten(at::Dimname dim, at::IntArrayRef sizes, at::DimnameList names) const {
-       return at::_ops::unflatten_Dimname::call(const_cast<Tensor&>(*this), dim, c10::fromIntArrayRefSlow(sizes), names);
-   }
-   
-   // aten::unflatten.Dimname(Tensor(a) self, Dimname dim, SymInt[] sizes, Dimname[] names) -> Tensor(a)
-   inline at::Tensor Tensor::unflatten_symint(at::Dimname dim, c10::SymIntArrayRef sizes, at::DimnameList names) const {
        return at::_ops::unflatten_Dimname::call(const_cast<Tensor&>(*this), dim, sizes, names);
    }
    
@@ -3449,13 +3435,8 @@ Program Listing for File TensorBody.h
        return at::_ops::nansum::call(const_cast<Tensor&>(*this), dim, keepdim, dtype);
    }
    
-   // aten::sum_to_size(Tensor self, SymInt[] size) -> Tensor
+   // aten::sum_to_size(Tensor self, int[] size) -> Tensor
    inline at::Tensor Tensor::sum_to_size(at::IntArrayRef size) const {
-       return at::_ops::sum_to_size::call(const_cast<Tensor&>(*this), c10::fromIntArrayRefSlow(size));
-   }
-   
-   // aten::sum_to_size(Tensor self, SymInt[] size) -> Tensor
-   inline at::Tensor Tensor::sum_to_size_symint(c10::SymIntArrayRef size) const {
        return at::_ops::sum_to_size::call(const_cast<Tensor&>(*this), size);
    }
    
@@ -3489,8 +3470,8 @@ Program Listing for File TensorBody.h
        return at::_ops::std_dim::call(const_cast<Tensor&>(*this), dim, unbiased, keepdim);
    }
    
-   // aten::std.correction(Tensor self, int[1]? dim=None, *, Scalar? correction=None, bool keepdim=False) -> Tensor
-   inline at::Tensor Tensor::std(at::OptionalIntArrayRef dim, const c10::optional<at::Scalar> & correction, bool keepdim) const {
+   // aten::std.correction(Tensor self, int[1]? dim=None, *, int? correction=None, bool keepdim=False) -> Tensor
+   inline at::Tensor Tensor::std(at::OptionalIntArrayRef dim, c10::optional<int64_t> correction, bool keepdim) const {
        return at::_ops::std_correction::call(const_cast<Tensor&>(*this), dim, correction, keepdim);
    }
    
@@ -3499,8 +3480,8 @@ Program Listing for File TensorBody.h
        return at::_ops::std_names_dim::call(const_cast<Tensor&>(*this), dim, unbiased, keepdim);
    }
    
-   // aten::std.correction_names(Tensor self, Dimname[1] dim, *, Scalar? correction=None, bool keepdim=False) -> Tensor
-   inline at::Tensor Tensor::std(at::DimnameList dim, const c10::optional<at::Scalar> & correction, bool keepdim) const {
+   // aten::std.correction_names(Tensor self, Dimname[1] dim, *, int? correction=None, bool keepdim=False) -> Tensor
+   inline at::Tensor Tensor::std(at::DimnameList dim, c10::optional<int64_t> correction, bool keepdim) const {
        return at::_ops::std_correction_names::call(const_cast<Tensor&>(*this), dim, correction, keepdim);
    }
    
@@ -3654,8 +3635,8 @@ Program Listing for File TensorBody.h
        return at::_ops::var_dim::call(const_cast<Tensor&>(*this), dim, unbiased, keepdim);
    }
    
-   // aten::var.correction(Tensor self, int[1]? dim=None, *, Scalar? correction=None, bool keepdim=False) -> Tensor
-   inline at::Tensor Tensor::var(at::OptionalIntArrayRef dim, const c10::optional<at::Scalar> & correction, bool keepdim) const {
+   // aten::var.correction(Tensor self, int[1]? dim=None, *, int? correction=None, bool keepdim=False) -> Tensor
+   inline at::Tensor Tensor::var(at::OptionalIntArrayRef dim, c10::optional<int64_t> correction, bool keepdim) const {
        return at::_ops::var_correction::call(const_cast<Tensor&>(*this), dim, correction, keepdim);
    }
    
@@ -3664,8 +3645,8 @@ Program Listing for File TensorBody.h
        return at::_ops::var_names_dim::call(const_cast<Tensor&>(*this), dim, unbiased, keepdim);
    }
    
-   // aten::var.correction_names(Tensor self, Dimname[1] dim, *, Scalar? correction=None, bool keepdim=False) -> Tensor
-   inline at::Tensor Tensor::var(at::DimnameList dim, const c10::optional<at::Scalar> & correction, bool keepdim) const {
+   // aten::var.correction_names(Tensor self, Dimname[1] dim, *, int? correction=None, bool keepdim=False) -> Tensor
+   inline at::Tensor Tensor::var(at::DimnameList dim, c10::optional<int64_t> correction, bool keepdim) const {
        return at::_ops::var_correction_names::call(const_cast<Tensor&>(*this), dim, correction, keepdim);
    }
    
@@ -5229,13 +5210,8 @@ Program Listing for File TensorBody.h
        return at::_ops::argsort_dimname::call(const_cast<Tensor&>(*this), dim, descending);
    }
    
-   // aten::topk(Tensor self, SymInt k, int dim=-1, bool largest=True, bool sorted=True) -> (Tensor values, Tensor indices)
+   // aten::topk(Tensor self, int k, int dim=-1, bool largest=True, bool sorted=True) -> (Tensor values, Tensor indices)
    inline ::std::tuple<at::Tensor,at::Tensor> Tensor::topk(int64_t k, int64_t dim, bool largest, bool sorted) const {
-       return at::_ops::topk::call(const_cast<Tensor&>(*this), k, dim, largest, sorted);
-   }
-   
-   // aten::topk(Tensor self, SymInt k, int dim=-1, bool largest=True, bool sorted=True) -> (Tensor values, Tensor indices)
-   inline ::std::tuple<at::Tensor,at::Tensor> Tensor::topk_symint(c10::SymInt k, int64_t dim, bool largest, bool sorted) const {
        return at::_ops::topk::call(const_cast<Tensor&>(*this), k, dim, largest, sorted);
    }
    
