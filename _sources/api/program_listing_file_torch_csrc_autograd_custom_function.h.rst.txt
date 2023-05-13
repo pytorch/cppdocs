@@ -15,7 +15,6 @@ Program Listing for File custom_function.h
    #pragma once
    
    #include <ATen/core/ivalue.h>
-   #include <c10/core/SymInt.h>
    #include <c10/util/flat_hash_map.h>
    #include <c10/util/irange.h>
    #include <torch/csrc/autograd/function.h>
@@ -34,8 +33,7 @@ Program Listing for File custom_function.h
        const std::unordered_set<at::TensorImpl*>& dirty_inputs,
        const at::ArrayRef<c10::optional<Variable>> raw_outputs,
        const std::shared_ptr<Node>& cdata,
-       _jvp_fn_t jvp_user_function,
-       const std::unordered_set<at::TensorImpl*>& to_save_if_setup_context);
+       _jvp_fn_t jvp_user_function);
    
    TORCH_API void check_variable_result(
        const at::TensorBase& original,
@@ -108,7 +106,7 @@ Program Listing for File custom_function.h
      at::Layout layout = at::Layout::Strided;
      at::Device device = at::kCPU;
      at::ScalarType scalar_type = at::kFloat;
-     std::vector<c10::SymInt> size;
+     std::vector<int64_t> size;
      bool requires_grad;
      bool is_empty;
    };
@@ -252,8 +250,7 @@ Program Listing for File custom_function.h
          node->ctx_.get_and_bump_dirty(),
          to_optional(outputs),
          is_executable ? node : nullptr,
-         jvp_fn,
-         {});
+         jvp_fn);
    
      node->output_info_.reserve(wrapped_outputs.size());
      for (auto& output : wrapped_outputs) {
