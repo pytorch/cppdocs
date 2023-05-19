@@ -4328,6 +4328,11 @@ Program Listing for File Functions.h
        return at::_ops::linear_out::call(input, weight, bias, out);
    }
    
+   // aten::_structured_sparse_linear(Tensor a, Tensor b, Tensor mask_or_meta) -> (Tensor, Tensor)
+   inline ::std::tuple<at::Tensor,at::Tensor> _structured_sparse_linear(const at::Tensor & a, const at::Tensor & b, const at::Tensor & mask_or_meta) {
+       return at::_ops::_structured_sparse_linear::call(a, b, mask_or_meta);
+   }
+   
    // aten::mkldnn_linear(Tensor self, Tensor weight, Tensor? bias=None) -> Tensor
    inline at::Tensor mkldnn_linear(const at::Tensor & self, const at::Tensor & weight, const c10::optional<at::Tensor> & bias={}) {
        return at::_ops::mkldnn_linear::call(self, weight, bias);
@@ -4346,11 +4351,6 @@ Program Listing for File Functions.h
    // aten::mkldnn_linear_backward(Tensor self, Tensor grad_output, Tensor weight, bool[3] output_mask) -> (Tensor, Tensor, Tensor)
    inline ::std::tuple<at::Tensor,at::Tensor,at::Tensor> mkldnn_linear_backward(const at::Tensor & self, const at::Tensor & grad_output, const at::Tensor & weight, ::std::array<bool,3> output_mask) {
        return at::_ops::mkldnn_linear_backward::call(self, grad_output, weight, output_mask);
-   }
-   
-   // aten::_structured_sparse_linear(Tensor input, Tensor weight, Tensor mask_or_meta, *, Tensor? bias=None) -> (Tensor, Tensor)
-   inline ::std::tuple<at::Tensor,at::Tensor> _structured_sparse_linear(const at::Tensor & input, const at::Tensor & weight, const at::Tensor & mask_or_meta, const c10::optional<at::Tensor> & bias={}) {
-       return at::_ops::_structured_sparse_linear::call(input, weight, mask_or_meta, bias);
    }
    
    // aten::fbgemm_linear_int8_weight_fp32_activation(Tensor input, Tensor weight, Tensor packed, Tensor col_offsets, Scalar weight_scale, Scalar weight_zero_point, Tensor bias) -> Tensor
@@ -20888,7 +20888,7 @@ Program Listing for File Functions.h
        return at::_ops::_scaled_dot_product_flash_attention_backward::call(grad_out, query, key, value, out, logsumexp, cum_seq_q, cum_seq_k, max_q, max_k, dropout_p, is_causal, philox_seed, philox_offset, scale);
    }
    
-   // aten::_scaled_dot_product_efficient_attention(Tensor query, Tensor key, Tensor value, bool compute_log_sumexp, bool is_causal=False, *, float? scale=None) -> (Tensor, Tensor)
+   // aten::_scaled_dot_product_efficient_attention(Tensor query, Tensor key, Tensor value, bool compute_log_sumexp, bool is_causal=False, *, float? scale=None) -> (Tensor output, Tensor log_sumexp)
    inline ::std::tuple<at::Tensor,at::Tensor> _scaled_dot_product_efficient_attention(const at::Tensor & query, const at::Tensor & key, const at::Tensor & value, bool compute_log_sumexp, bool is_causal=false, c10::optional<double> scale=c10::nullopt) {
        return at::_ops::_scaled_dot_product_efficient_attention::call(query, key, value, compute_log_sumexp, is_causal, scale);
    }
@@ -20913,14 +20913,14 @@ Program Listing for File Functions.h
        return at::_ops::_flash_attention_backward::call(grad_out, query, key, value, out, logsumexp, cum_seq_q, cum_seq_k, max_q, max_k, dropout_p, is_causal, philox_seed, philox_offset, scale);
    }
    
-   // aten::_efficient_attention_forward(Tensor query, Tensor key, Tensor value, Tensor? cu_seqlens_q, Tensor? cu_seqlens_k, int? max_seqlen_q, bool compute_log_sumexp=False, bool causal=False, *, float? scale=None) -> (Tensor, Tensor)
-   inline ::std::tuple<at::Tensor,at::Tensor> _efficient_attention_forward(const at::Tensor & query, const at::Tensor & key, const at::Tensor & value, const c10::optional<at::Tensor> & cu_seqlens_q, const c10::optional<at::Tensor> & cu_seqlens_k, c10::optional<int64_t> max_seqlen_q, bool compute_log_sumexp=false, bool causal=false, c10::optional<double> scale=c10::nullopt) {
-       return at::_ops::_efficient_attention_forward::call(query, key, value, cu_seqlens_q, cu_seqlens_k, max_seqlen_q, compute_log_sumexp, causal, scale);
+   // aten::_efficient_attention_forward(Tensor query, Tensor key, Tensor value, Tensor? bias, Tensor? cu_seqlens_q, Tensor? cu_seqlens_k, int? max_seqlen_q, float dropout_p, int custom_mask_type, bool compute_log_sumexp=False, *, float? scale=None, Tensor? causal_diagonal=None, Tensor? seqlen_k=None) -> (Tensor output, Tensor logsumexp)
+   inline ::std::tuple<at::Tensor,at::Tensor> _efficient_attention_forward(const at::Tensor & query, const at::Tensor & key, const at::Tensor & value, const c10::optional<at::Tensor> & bias, const c10::optional<at::Tensor> & cu_seqlens_q, const c10::optional<at::Tensor> & cu_seqlens_k, c10::optional<int64_t> max_seqlen_q, double dropout_p, int64_t custom_mask_type, bool compute_log_sumexp=false, c10::optional<double> scale=c10::nullopt, const c10::optional<at::Tensor> & causal_diagonal={}, const c10::optional<at::Tensor> & seqlen_k={}) {
+       return at::_ops::_efficient_attention_forward::call(query, key, value, bias, cu_seqlens_q, cu_seqlens_k, max_seqlen_q, dropout_p, custom_mask_type, compute_log_sumexp, scale, causal_diagonal, seqlen_k);
    }
    
-   // aten::_efficient_attention_backward(Tensor grad_out_, Tensor query, Tensor key, Tensor value, Tensor out, Tensor logsumexp, bool is_causal=False, bool chunk_grad_outputs=False, *, float? scale=None) -> (Tensor, Tensor, Tensor)
-   inline ::std::tuple<at::Tensor,at::Tensor,at::Tensor> _efficient_attention_backward(const at::Tensor & grad_out_, const at::Tensor & query, const at::Tensor & key, const at::Tensor & value, const at::Tensor & out, const at::Tensor & logsumexp, bool is_causal=false, bool chunk_grad_outputs=false, c10::optional<double> scale=c10::nullopt) {
-       return at::_ops::_efficient_attention_backward::call(grad_out_, query, key, value, out, logsumexp, is_causal, chunk_grad_outputs, scale);
+   // aten::_efficient_attention_backward(Tensor grad_out_, Tensor query, Tensor key, Tensor value, Tensor? bias, Tensor out, Tensor? cu_seqlens_q, Tensor? cu_seqlens_k, int max_seqlen_k, int max_seqlen_q, Tensor logsumexp, float dropout_p, Tensor rng_seed, Tensor rng_offset, int custom_mask_type, *, float? scale=None) -> (Tensor, Tensor, Tensor, Tensor)
+   inline ::std::tuple<at::Tensor,at::Tensor,at::Tensor,at::Tensor> _efficient_attention_backward(const at::Tensor & grad_out_, const at::Tensor & query, const at::Tensor & key, const at::Tensor & value, const c10::optional<at::Tensor> & bias, const at::Tensor & out, const c10::optional<at::Tensor> & cu_seqlens_q, const c10::optional<at::Tensor> & cu_seqlens_k, int64_t max_seqlen_k, int64_t max_seqlen_q, const at::Tensor & logsumexp, double dropout_p, const at::Tensor & rng_seed, const at::Tensor & rng_offset, int64_t custom_mask_type, c10::optional<double> scale=c10::nullopt) {
+       return at::_ops::_efficient_attention_backward::call(grad_out_, query, key, value, bias, out, cu_seqlens_q, cu_seqlens_k, max_seqlen_k, max_seqlen_q, logsumexp, dropout_p, rng_seed, rng_offset, custom_mask_type, scale);
    }
    
    // aten::_triton_scaled_dot_attention(Tensor q, Tensor k, Tensor v, float dropout_p=0.0) -> Tensor
