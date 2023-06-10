@@ -347,6 +347,7 @@
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/csrc/autograd/edge.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/csrc/autograd/forward_grad.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/csrc/autograd/function_hook.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/csrc/profiler/combined_traceback.h&gt;</span><span class="cp"></span>
 
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;ATen/NamedTensorUtils.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;ATen/core/Tensor.h&gt;</span><span class="cp"></span>
@@ -632,6 +633,7 @@
 
 <span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">attr_version_</span><span class="p">;</span><span class="w"></span>
 <span class="w">  </span><span class="n">CreationMeta</span><span class="w"> </span><span class="n">creation_meta_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">torch</span><span class="o">::</span><span class="n">CapturedTraceback</span><span class="o">&gt;</span><span class="w"> </span><span class="n">creation_traceback_</span><span class="p">;</span><span class="w"></span>
 
 <span class="w"> </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
 <span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">requires_grad</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
@@ -671,17 +673,18 @@
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">creation_meta_</span><span class="p">;</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
-<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">set_creation_meta</span><span class="p">(</span><span class="n">CreationMeta</span><span class="w"> </span><span class="n">new_creation_meta</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">TORCH_CHECK</span><span class="p">(</span><span class="w"></span>
-<span class="w">        </span><span class="n">has_bw_view</span><span class="p">(),</span><span class="w"> </span><span class="s">&quot;creation_meta can only exist for backward views.&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="n">creation_meta_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">new_creation_meta</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">torch</span><span class="o">::</span><span class="n">CapturedTraceback</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">get_creation_traceback</span><span class="p">()</span><span class="w"></span>
+<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">creation_traceback_</span><span class="p">;</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">has_fw_view</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">set_creation_meta</span><span class="p">(</span><span class="n">CreationMeta</span><span class="w"> </span><span class="n">new_creation_meta</span><span class="p">);</span><span class="w"></span>
+
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="nf">has_fw_view</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">shared_view_info_</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">forward_info_</span><span class="p">.</span><span class="n">has_value</span><span class="p">();</span><span class="w"></span>
 <span class="w">  </span><span class="p">}</span><span class="w"></span>
 
-<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">ViewInfo</span><span class="o">&amp;</span><span class="w"> </span><span class="n">get_forward_view</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">ViewInfo</span><span class="o">&amp;</span><span class="w"> </span><span class="nf">get_forward_view</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">    </span><span class="n">TORCH_CHECK</span><span class="p">(</span><span class="w"></span>
 <span class="w">        </span><span class="n">has_fw_view</span><span class="p">(),</span><span class="w"> </span><span class="s">&quot;forward view info can only exist for forward views.&quot;</span><span class="p">);</span><span class="w"></span>
 <span class="w">    </span><span class="n">TORCH_CHECK</span><span class="p">(</span><span class="w"></span>
