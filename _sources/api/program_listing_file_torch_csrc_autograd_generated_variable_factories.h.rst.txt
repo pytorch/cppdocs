@@ -28,6 +28,7 @@ Program Listing for File variable_factories.h
    #include <ATen/Functions.h>
    #else
    #include <ATen/ops/from_blob.h>
+   #include <ATen/ops/_make_dep_token.h>
    #include <ATen/ops/_cudnn_init_dropout_state.h>
    #include <ATen/ops/arange.h>
    #include <ATen/ops/arange.h>
@@ -189,6 +190,10 @@ Program Listing for File variable_factories.h
      return autograd::make_variable(tensor, options.requires_grad());
    }
    
+   inline at::Tensor _make_dep_token(at::TensorOptions options = {}, c10::optional<at::MemoryFormat> memory_format = c10::nullopt) {
+     at::AutoDispatchBelowADInplaceOrView guard;
+     return autograd::make_variable(at::_make_dep_token(at::TensorOptions(options).requires_grad(c10::nullopt), memory_format), /*requires_grad=*/options.requires_grad());
+   }
    inline at::Tensor _cudnn_init_dropout_state(double dropout, bool train, int64_t dropout_seed, at::TensorOptions options) {
      at::AutoDispatchBelowADInplaceOrView guard;
      return autograd::make_variable(at::_cudnn_init_dropout_state(dropout, train, dropout_seed, at::TensorOptions(options).requires_grad(c10::nullopt)), /*requires_grad=*/options.requires_grad());
