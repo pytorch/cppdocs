@@ -353,6 +353,7 @@
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/C++17.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/TypeSafeSignMath.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/complex.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/floating_point_utils.h&gt;</span><span class="cp"></span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;type_traits&gt;</span><span class="cp"></span>
 
 <span class="cp">#if defined(__cplusplus) &amp;&amp; (__cplusplus &gt;= 201103L)</span>
@@ -391,50 +392,11 @@
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;sycl/sycl.hpp&gt;</span><span class="c1"> // for SYCL 2020</span><span class="cp"></span>
 <span class="cp">#endif</span>
 
-<span class="c1">// Standard check for compiling CUDA with clang</span>
-<span class="cp">#if defined(__clang__) &amp;&amp; defined(__CUDA__) &amp;&amp; defined(__CUDA_ARCH__)</span>
-<span class="cp">#define C10_DEVICE_HOST_FUNCTION __device__ __host__</span>
-<span class="cp">#else</span>
-<span class="cp">#define C10_DEVICE_HOST_FUNCTION</span>
-<span class="cp">#endif</span>
-
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;typeinfo&gt;</span><span class="c1"> // operator typeid</span><span class="cp"></span>
 
 <span class="k">namespace</span><span class="w"> </span><span class="nn">c10</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 
 <span class="k">namespace</span><span class="w"> </span><span class="nn">detail</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-
-<span class="n">C10_DEVICE_HOST_FUNCTION</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">fp32_from_bits</span><span class="p">(</span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">w</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="cp">#if defined(__OPENCL_VERSION__)</span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">as_float</span><span class="p">(</span><span class="n">w</span><span class="p">);</span><span class="w"></span>
-<span class="cp">#elif defined(__CUDA_ARCH__)</span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">__uint_as_float</span><span class="p">((</span><span class="kt">unsigned</span><span class="w"> </span><span class="kt">int</span><span class="p">)</span><span class="n">w</span><span class="p">);</span><span class="w"></span>
-<span class="cp">#elif defined(__INTEL_COMPILER)</span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">_castu32_f32</span><span class="p">(</span><span class="n">w</span><span class="p">);</span><span class="w"></span>
-<span class="cp">#else</span>
-<span class="w">  </span><span class="k">union</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">as_bits</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="kt">float</span><span class="w"> </span><span class="n">as_value</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="n">fp32</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="n">w</span><span class="p">};</span><span class="w"></span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">fp32</span><span class="p">.</span><span class="n">as_value</span><span class="p">;</span><span class="w"></span>
-<span class="cp">#endif</span>
-<span class="p">}</span><span class="w"></span>
-
-<span class="n">C10_DEVICE_HOST_FUNCTION</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">fp32_to_bits</span><span class="p">(</span><span class="kt">float</span><span class="w"> </span><span class="n">f</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="cp">#if defined(__OPENCL_VERSION__)</span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">as_uint</span><span class="p">(</span><span class="n">f</span><span class="p">);</span><span class="w"></span>
-<span class="cp">#elif defined(__CUDA_ARCH__)</span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="kt">uint32_t</span><span class="p">)</span><span class="n">__float_as_uint</span><span class="p">(</span><span class="n">f</span><span class="p">);</span><span class="w"></span>
-<span class="cp">#elif defined(__INTEL_COMPILER)</span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">_castf32_u32</span><span class="p">(</span><span class="n">f</span><span class="p">);</span><span class="w"></span>
-<span class="cp">#else</span>
-<span class="w">  </span><span class="k">union</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="kt">float</span><span class="w"> </span><span class="n">as_value</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">as_bits</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"> </span><span class="n">fp32</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{</span><span class="n">f</span><span class="p">};</span><span class="w"></span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">fp32</span><span class="p">.</span><span class="n">as_bits</span><span class="p">;</span><span class="w"></span>
-<span class="cp">#endif</span>
-<span class="p">}</span><span class="w"></span>
 
 <span class="cm">/*</span>
 <span class="cm"> * Convert a 16-bit floating-point number in IEEE half-precision format, in bit</span>
@@ -443,7 +405,7 @@
 <span class="cm"> *</span>
 <span class="cm"> * @note The implementation doesn&#39;t use any floating-point operations.</span>
 <span class="cm"> */</span><span class="w"></span>
-<span class="kr">inline</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">fp16_ieee_to_fp32_bits</span><span class="p">(</span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">h</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="kr">inline</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="nf">fp16_ieee_to_fp32_bits</span><span class="p">(</span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">h</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">  </span><span class="cm">/*</span>
 <span class="cm">   * Extend the half-precision floating-point number to 32 bits and shift to the</span>
 <span class="cm">   * upper part of the 32-bit word:</span>
@@ -541,7 +503,7 @@
 <span class="cm"> * mode and no operations on denormals) floating-point operations and bitcasts</span>
 <span class="cm"> * between integer and floating-point variables.</span>
 <span class="cm"> */</span><span class="w"></span>
-<span class="kr">inline</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">fp16_ieee_to_fp32_value</span><span class="p">(</span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">h</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="n">C10_HOST_DEVICE</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">fp16_ieee_to_fp32_value</span><span class="p">(</span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">h</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
 <span class="w">  </span><span class="cm">/*</span>
 <span class="cm">   * Extend the half-precision floating-point number to 32 bits and shift to the</span>
 <span class="cm">   * upper part of the 32-bit word:</span>
