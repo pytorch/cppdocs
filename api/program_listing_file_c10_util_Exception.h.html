@@ -349,161 +349,161 @@
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#ifndef C10_UTIL_EXCEPTION_H_</span>
 <span class="cp">#define C10_UTIL_EXCEPTION_H_</span>
 
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/macros/Macros.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/StringUtil.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/variant.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/macros/Macros.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/StringUtil.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/variant.h&gt;</span>
 
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cstddef&gt;</span><span class="cp"></span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;exception&gt;</span><span class="cp"></span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string&gt;</span><span class="cp"></span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;vector&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cstddef&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;exception&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;vector&gt;</span>
 
 <span class="cp">#if defined(_MSC_VER) &amp;&amp; _MSC_VER &lt;= 1900</span>
 <span class="cp">#define __func__ __FUNCTION__</span>
 <span class="cp">#endif</span>
 
-<span class="k">namespace</span><span class="w"> </span><span class="nn">c10</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">c10</span><span class="w"> </span><span class="p">{</span>
 
-<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">exception</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">exception</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="c1">// The actual error message.</span>
-<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">msg_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">msg_</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// Context for the message (in order of decreasing specificity).  Context will</span>
 <span class="w">  </span><span class="c1">// be automatically formatted appropriately, so it is not necessary to add</span>
 <span class="w">  </span><span class="c1">// extra leading/trailing newlines to strings inside this vector</span>
-<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">context_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">context_</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// The C++ backtrace at the point when this exception was raised.  This</span>
 <span class="w">  </span><span class="c1">// may be empty if there is no valid backtrace.  (We don&#39;t use optional</span>
 <span class="w">  </span><span class="c1">// here to reduce the dependencies this file has.)</span>
-<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">backtrace_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">backtrace_</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// These two are derived fields from msg_stack_ and backtrace_, but we need</span>
 <span class="w">  </span><span class="c1">// fields for the strings so that we can return a const char* (as the</span>
 <span class="w">  </span><span class="c1">// signature of std::exception requires).  Currently, the invariant</span>
 <span class="w">  </span><span class="c1">// is that these fields are ALWAYS populated consistently with respect</span>
 <span class="w">  </span><span class="c1">// to msg_stack_ and backtrace_.</span>
-<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">what_</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">what_without_backtrace_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">what_</span><span class="p">;</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">what_without_backtrace_</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// This is a little debugging trick: you can stash a relevant pointer</span>
 <span class="w">  </span><span class="c1">// in caller, and then when you catch the exception, you can compare</span>
 <span class="w">  </span><span class="c1">// against pointers you have on hand to get more information about</span>
 <span class="w">  </span><span class="c1">// where the exception came from.  In Caffe2, this is used to figure</span>
 <span class="w">  </span><span class="c1">// out which operator raised an exception.</span>
-<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">caller_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">caller_</span><span class="p">;</span>
 
-<span class="w"> </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
+<span class="w"> </span><span class="k">public</span><span class="o">:</span>
 <span class="w">  </span><span class="c1">// PyTorch-style Error constructor.  NB: the implementation of this</span>
 <span class="w">  </span><span class="c1">// is actually in Logging.cpp</span>
-<span class="w">  </span><span class="n">Error</span><span class="p">(</span><span class="n">SourceLocation</span><span class="w"> </span><span class="n">source_location</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">msg</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">Error</span><span class="p">(</span><span class="n">SourceLocation</span><span class="w"> </span><span class="n">source_location</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">msg</span><span class="p">);</span>
 
 <span class="w">  </span><span class="c1">// Caffe2-style error message</span>
-<span class="w">  </span><span class="n">Error</span><span class="p">(</span><span class="w"></span>
-<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">file</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">line</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">condition</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">msg</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">backtrace</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">caller</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">Error</span><span class="p">(</span>
+<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">file</span><span class="p">,</span>
+<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">line</span><span class="p">,</span>
+<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">condition</span><span class="p">,</span>
+<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">msg</span><span class="p">,</span>
+<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">backtrace</span><span class="p">,</span>
+<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">caller</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">);</span>
 
 <span class="w">  </span><span class="c1">// Base constructor</span>
-<span class="w">  </span><span class="n">Error</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">msg</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">backtrace</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">caller</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">Error</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">msg</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">backtrace</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">caller</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">);</span>
 
 <span class="w">  </span><span class="c1">// Add some new context to the message stack.  The last added context</span>
 <span class="w">  </span><span class="c1">// will be formatted at the end of the context list upon printing.</span>
 <span class="w">  </span><span class="c1">// WARNING: This method is O(n) in the size of the stack, so don&#39;t go</span>
 <span class="w">  </span><span class="c1">// wild adding a ridiculous amount of context to error messages.</span>
-<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">add_context</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">msg</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">add_context</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">msg</span><span class="p">);</span>
 
-<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="nf">msg</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">msg_</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="nf">msg</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">msg_</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">context</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">context_</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">context</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">context_</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">backtrace</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">backtrace_</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">backtrace</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">backtrace_</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">what</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">what_</span><span class="p">.</span><span class="n">c_str</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">what</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">what_</span><span class="p">.</span><span class="n">c_str</span><span class="p">();</span>
+<span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">caller</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">caller_</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">caller</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">caller_</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">what_without_backtrace</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">what_without_backtrace_</span><span class="p">.</span><span class="n">c_str</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">what_without_backtrace</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">what_without_backtrace_</span><span class="p">.</span><span class="n">c_str</span><span class="p">();</span>
+<span class="w">  </span><span class="p">}</span>
 
-<span class="w"> </span><span class="k">private</span><span class="o">:</span><span class="w"></span>
-<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">refresh_what</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="nf">compute_what</span><span class="p">(</span><span class="kt">bool</span><span class="w"> </span><span class="n">include_backtrace</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
-<span class="p">};</span><span class="w"></span>
+<span class="w"> </span><span class="k">private</span><span class="o">:</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">refresh_what</span><span class="p">();</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="nf">compute_what</span><span class="p">(</span><span class="kt">bool</span><span class="w"> </span><span class="n">include_backtrace</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="p">;</span>
+<span class="p">};</span>
 
-<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">Warning</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w"> </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
-<span class="w">  </span><span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">UserWarning</span><span class="w"> </span><span class="p">{};</span><span class="w"></span>
-<span class="w">  </span><span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">DeprecationWarning</span><span class="w"> </span><span class="p">{};</span><span class="w"></span>
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">Warning</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="k">public</span><span class="o">:</span>
+<span class="w">  </span><span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">UserWarning</span><span class="w"> </span><span class="p">{};</span>
+<span class="w">  </span><span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">DeprecationWarning</span><span class="w"> </span><span class="p">{};</span>
 
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">warning_variant_t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">variant</span><span class="o">&lt;</span><span class="n">UserWarning</span><span class="p">,</span><span class="w"> </span><span class="n">DeprecationWarning</span><span class="o">&gt;</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">warning_variant_t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">variant</span><span class="o">&lt;</span><span class="n">UserWarning</span><span class="p">,</span><span class="w"> </span><span class="n">DeprecationWarning</span><span class="o">&gt;</span><span class="p">;</span>
 
-<span class="w">  </span><span class="n">Warning</span><span class="p">(</span><span class="w"></span>
-<span class="w">      </span><span class="n">warning_variant_t</span><span class="w"> </span><span class="n">type</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="n">SourceLocation</span><span class="o">&amp;</span><span class="w"> </span><span class="n">source_location</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">msg</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="kt">bool</span><span class="w"> </span><span class="n">verbatim</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">Warning</span><span class="p">(</span>
+<span class="w">      </span><span class="n">warning_variant_t</span><span class="w"> </span><span class="n">type</span><span class="p">,</span>
+<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="n">SourceLocation</span><span class="o">&amp;</span><span class="w"> </span><span class="n">source_location</span><span class="p">,</span>
+<span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">msg</span><span class="p">,</span>
+<span class="w">      </span><span class="kt">bool</span><span class="w"> </span><span class="n">verbatim</span><span class="p">);</span>
 
-<span class="w">  </span><span class="n">Warning</span><span class="p">(</span><span class="w"></span>
-<span class="w">      </span><span class="n">warning_variant_t</span><span class="w"> </span><span class="n">type</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="n">SourceLocation</span><span class="w"> </span><span class="n">source_location</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">msg</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="kt">bool</span><span class="w"> </span><span class="n">verbatim</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">Warning</span><span class="p">(</span>
+<span class="w">      </span><span class="n">warning_variant_t</span><span class="w"> </span><span class="n">type</span><span class="p">,</span>
+<span class="w">      </span><span class="n">SourceLocation</span><span class="w"> </span><span class="n">source_location</span><span class="p">,</span>
+<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">msg</span><span class="p">,</span>
+<span class="w">      </span><span class="kt">bool</span><span class="w"> </span><span class="n">verbatim</span><span class="p">);</span>
 
-<span class="w">  </span><span class="n">Warning</span><span class="p">(</span><span class="w"></span>
-<span class="w">      </span><span class="n">warning_variant_t</span><span class="w"> </span><span class="n">type</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="n">SourceLocation</span><span class="w"> </span><span class="n">source_location</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="o">::</span><span class="n">c10</span><span class="o">::</span><span class="n">detail</span><span class="o">::</span><span class="n">CompileTimeEmptyString</span><span class="w"> </span><span class="n">msg</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="kt">bool</span><span class="w"> </span><span class="n">verbatim</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">Warning</span><span class="p">(</span>
+<span class="w">      </span><span class="n">warning_variant_t</span><span class="w"> </span><span class="n">type</span><span class="p">,</span>
+<span class="w">      </span><span class="n">SourceLocation</span><span class="w"> </span><span class="n">source_location</span><span class="p">,</span>
+<span class="w">      </span><span class="o">::</span><span class="n">c10</span><span class="o">::</span><span class="n">detail</span><span class="o">::</span><span class="n">CompileTimeEmptyString</span><span class="w"> </span><span class="n">msg</span><span class="p">,</span>
+<span class="w">      </span><span class="kt">bool</span><span class="w"> </span><span class="n">verbatim</span><span class="p">);</span>
 
 <span class="w">  </span><span class="c1">// Getters for members</span>
-<span class="w">  </span><span class="n">warning_variant_t</span><span class="w"> </span><span class="nf">type</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">SourceLocation</span><span class="o">&amp;</span><span class="w"> </span><span class="nf">source_location</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="nf">msg</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="nf">verbatim</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">warning_variant_t</span><span class="w"> </span><span class="nf">type</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">SourceLocation</span><span class="o">&amp;</span><span class="w"> </span><span class="nf">source_location</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="nf">msg</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="nf">verbatim</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span>
 
-<span class="w"> </span><span class="k">private</span><span class="o">:</span><span class="w"></span>
+<span class="w"> </span><span class="k">private</span><span class="o">:</span>
 <span class="w">  </span><span class="c1">// The type of warning</span>
-<span class="w">  </span><span class="n">warning_variant_t</span><span class="w"> </span><span class="n">type_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">warning_variant_t</span><span class="w"> </span><span class="n">type_</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// Where the warning happened.</span>
-<span class="w">  </span><span class="n">SourceLocation</span><span class="w"> </span><span class="n">source_location_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">SourceLocation</span><span class="w"> </span><span class="n">source_location_</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// The actual warning message.</span>
-<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">msg_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">msg_</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// See note: [Verbatim Warnings]</span>
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">verbatim_</span><span class="p">;</span><span class="w"></span>
-<span class="p">};</span><span class="w"></span>
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">verbatim_</span><span class="p">;</span>
+<span class="p">};</span>
 
-<span class="k">using</span><span class="w"> </span><span class="n">UserWarning</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Warning</span><span class="o">::</span><span class="n">UserWarning</span><span class="p">;</span><span class="w"></span>
-<span class="k">using</span><span class="w"> </span><span class="n">DeprecationWarning</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Warning</span><span class="o">::</span><span class="n">DeprecationWarning</span><span class="p">;</span><span class="w"></span>
+<span class="k">using</span><span class="w"> </span><span class="n">UserWarning</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Warning</span><span class="o">::</span><span class="n">UserWarning</span><span class="p">;</span>
+<span class="k">using</span><span class="w"> </span><span class="n">DeprecationWarning</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">Warning</span><span class="o">::</span><span class="n">DeprecationWarning</span><span class="p">;</span>
 
 <span class="c1">// Issue a warning with a given message. Dispatched to the current</span>
 <span class="c1">// warning handler.</span>
-<span class="kt">void</span><span class="w"> </span><span class="n">C10_API</span><span class="w"> </span><span class="nf">warn</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Warning</span><span class="o">&amp;</span><span class="w"> </span><span class="n">warning</span><span class="p">);</span><span class="w"></span>
+<span class="kt">void</span><span class="w"> </span><span class="n">C10_API</span><span class="w"> </span><span class="nf">warn</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Warning</span><span class="o">&amp;</span><span class="w"> </span><span class="n">warning</span><span class="p">);</span>
 
-<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">WarningHandler</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w"> </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
-<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="o">~</span><span class="n">WarningHandler</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Warning</span><span class="o">&amp;</span><span class="w"> </span><span class="n">warning</span><span class="p">);</span><span class="w"></span>
-<span class="p">};</span><span class="w"></span>
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">WarningHandler</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="k">public</span><span class="o">:</span>
+<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="o">~</span><span class="n">WarningHandler</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span>
+<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">process</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Warning</span><span class="o">&amp;</span><span class="w"> </span><span class="n">warning</span><span class="p">);</span>
+<span class="p">};</span>
 
-<span class="k">namespace</span><span class="w"> </span><span class="nn">WarningUtils</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">WarningUtils</span><span class="w"> </span><span class="p">{</span>
 
 <span class="c1">// Note: [Verbatim Warnings]</span>
 <span class="c1">// Warnings originating in C++ code can appear out-of-place to Python users:</span>
@@ -518,94 +518,94 @@
 <span class="c1">// context in their warnings should set verbatim to true so their warnings</span>
 <span class="c1">// appear without modification.</span>
 
-<span class="n">C10_API</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">set_warning_handler</span><span class="p">(</span><span class="n">WarningHandler</span><span class="o">*</span><span class="w"> </span><span class="n">handler</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span><span class="w"></span>
-<span class="n">C10_API</span><span class="w"> </span><span class="n">WarningHandler</span><span class="o">*</span><span class="w"> </span><span class="n">get_warning_handler</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span><span class="w"></span>
+<span class="n">C10_API</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">set_warning_handler</span><span class="p">(</span><span class="n">WarningHandler</span><span class="o">*</span><span class="w"> </span><span class="n">handler</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>
+<span class="n">C10_API</span><span class="w"> </span><span class="n">WarningHandler</span><span class="o">*</span><span class="w"> </span><span class="n">get_warning_handler</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>
 
-<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">WarningHandlerGuard</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="n">WarningHandler</span><span class="o">*</span><span class="w"> </span><span class="n">prev_handler_</span><span class="p">;</span><span class="w"></span>
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">WarningHandlerGuard</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">WarningHandler</span><span class="o">*</span><span class="w"> </span><span class="n">prev_handler_</span><span class="p">;</span>
 
-<span class="w"> </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
-<span class="w">  </span><span class="n">WarningHandlerGuard</span><span class="p">(</span><span class="n">WarningHandler</span><span class="o">*</span><span class="w"> </span><span class="n">new_handler</span><span class="p">)</span><span class="w"></span>
-<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">prev_handler_</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">WarningUtils</span><span class="o">::</span><span class="n">get_warning_handler</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">c10</span><span class="o">::</span><span class="n">WarningUtils</span><span class="o">::</span><span class="n">set_warning_handler</span><span class="p">(</span><span class="n">new_handler</span><span class="p">);</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="o">~</span><span class="n">WarningHandlerGuard</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">c10</span><span class="o">::</span><span class="n">WarningUtils</span><span class="o">::</span><span class="n">set_warning_handler</span><span class="p">(</span><span class="n">prev_handler_</span><span class="p">);</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="p">};</span><span class="w"></span>
+<span class="w"> </span><span class="k">public</span><span class="o">:</span>
+<span class="w">  </span><span class="n">WarningHandlerGuard</span><span class="p">(</span><span class="n">WarningHandler</span><span class="o">*</span><span class="w"> </span><span class="n">new_handler</span><span class="p">)</span>
+<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">prev_handler_</span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">WarningUtils</span><span class="o">::</span><span class="n">get_warning_handler</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">c10</span><span class="o">::</span><span class="n">WarningUtils</span><span class="o">::</span><span class="n">set_warning_handler</span><span class="p">(</span><span class="n">new_handler</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="o">~</span><span class="n">WarningHandlerGuard</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">c10</span><span class="o">::</span><span class="n">WarningUtils</span><span class="o">::</span><span class="n">set_warning_handler</span><span class="p">(</span><span class="n">prev_handler_</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">};</span>
 
-<span class="n">C10_API</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">set_warnAlways</span><span class="p">(</span><span class="kt">bool</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span><span class="w"></span>
-<span class="n">C10_API</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">get_warnAlways</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span><span class="w"></span>
+<span class="n">C10_API</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">set_warnAlways</span><span class="p">(</span><span class="kt">bool</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>
+<span class="n">C10_API</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">get_warnAlways</span><span class="p">(</span><span class="kt">void</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="p">(</span><span class="nb">true</span><span class="p">);</span>
 
 <span class="c1">// A RAII guard that sets warn_always (not thread-local) on</span>
 <span class="c1">// construction, and sets it back to the original value upon destruction.</span>
-<span class="k">struct</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">WarnAlways</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w"> </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
-<span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="n">WarnAlways</span><span class="p">(</span><span class="kt">bool</span><span class="w"> </span><span class="n">setting</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span><span class="w"></span>
-<span class="w">  </span><span class="o">~</span><span class="n">WarnAlways</span><span class="p">();</span><span class="w"></span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">WarnAlways</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="k">public</span><span class="o">:</span>
+<span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="n">WarnAlways</span><span class="p">(</span><span class="kt">bool</span><span class="w"> </span><span class="n">setting</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span>
+<span class="w">  </span><span class="o">~</span><span class="n">WarnAlways</span><span class="p">();</span>
 
-<span class="w"> </span><span class="k">private</span><span class="o">:</span><span class="w"></span>
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">prev_setting</span><span class="p">;</span><span class="w"></span>
-<span class="p">};</span><span class="w"></span>
+<span class="w"> </span><span class="k">private</span><span class="o">:</span>
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">prev_setting</span><span class="p">;</span>
+<span class="p">};</span>
 
 <span class="p">}</span><span class="w"> </span><span class="c1">// namespace WarningUtils</span>
 
 <span class="c1">// Used in ATen for out-of-bound indices that can reasonably only be detected</span>
 <span class="c1">// lazily inside a kernel (See: advanced indexing).  These turn into</span>
 <span class="c1">// IndexError when they cross to Python.</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">IndexError</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span><span class="w"></span>
-<span class="p">};</span><span class="w"></span>
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">IndexError</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span>
+<span class="p">};</span>
 
 <span class="c1">// Used in ATen for invalid values.  These turn into</span>
 <span class="c1">// ValueError when they cross to Python.</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">ValueError</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span><span class="w"></span>
-<span class="p">};</span><span class="w"></span>
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">ValueError</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span>
+<span class="p">};</span>
 
 <span class="c1">// Used in ATen for invalid types.  These turn into</span>
 <span class="c1">// TypeError when they cross to Python.</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">TypeError</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span><span class="w"></span>
-<span class="p">};</span><span class="w"></span>
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">TypeError</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span>
+<span class="p">};</span>
 
 <span class="c1">// Used in ATen for functionality that is not implemented.  These turn into</span>
 <span class="c1">// NotImplementedError when they cross to Python.</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">NotImplementedError</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span><span class="w"></span>
-<span class="p">};</span><span class="w"></span>
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">NotImplementedError</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span>
+<span class="p">};</span>
 
 <span class="c1">// Used in ATen for non finite indices.  These turn into</span>
 <span class="c1">// ExitException when they cross to Python.</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">EnforceFiniteError</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span><span class="w"></span>
-<span class="p">};</span><span class="w"></span>
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">EnforceFiniteError</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span>
+<span class="p">};</span>
 
 <span class="c1">// Used in Onnxifi backend lowering.  These turn into</span>
 <span class="c1">// ExitException when they cross to Python.</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">OnnxfiBackendSystemError</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span><span class="w"></span>
-<span class="p">};</span><span class="w"></span>
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">OnnxfiBackendSystemError</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span>
+<span class="p">};</span>
 
 <span class="c1">// Used for numerical errors from the linalg module. These</span>
 <span class="c1">// turn into LinAlgError when they cross into Python.</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">LinAlgError</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span><span class="w"></span>
-<span class="p">};</span><span class="w"></span>
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">LinAlgError</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span>
+<span class="p">};</span>
 
-<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">OutOfMemoryError</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span><span class="w"></span>
-<span class="p">};</span><span class="w"></span>
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">OutOfMemoryError</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span>
+<span class="p">};</span>
 
 <span class="c1">// Used for collective communication library errors from the distributed module.</span>
 <span class="c1">// These turn into DistBackendError when they cross into Python.</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">DistBackendError</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span><span class="w"></span>
-<span class="p">};</span><span class="w"></span>
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">DistBackendError</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span>
+<span class="p">};</span>
 
 <span class="c1">// A utility function to return an exception std::string by prepending its</span>
 <span class="c1">// exception type before its what() content</span>
-<span class="n">C10_API</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">GetExceptionString</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">exception</span><span class="o">&amp;</span><span class="w"> </span><span class="n">e</span><span class="p">);</span><span class="w"></span>
+<span class="n">C10_API</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">GetExceptionString</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">exception</span><span class="o">&amp;</span><span class="w"> </span><span class="n">e</span><span class="p">);</span>
 
 <span class="p">}</span><span class="w"> </span><span class="c1">// namespace c10</span>
 
@@ -740,21 +740,21 @@
 <span class="cp">    C10_THROW_ERROR(Error, TORCH_CHECK_MSG(cond, type, __VA_ARGS__)); \</span>
 <span class="cp">  }</span>
 <span class="cp">#else</span>
-<span class="k">namespace</span><span class="w"> </span><span class="nn">c10</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="k">namespace</span><span class="w"> </span><span class="nn">detail</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="p">...</span><span class="w"> </span><span class="n">Args</span><span class="o">&gt;</span><span class="w"></span>
-<span class="k">decltype</span><span class="p">(</span><span class="k">auto</span><span class="p">)</span><span class="w"> </span><span class="n">torchCheckMsgImpl</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="cm">/*msg*/</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">Args</span><span class="o">&amp;</span><span class="p">...</span><span class="w"> </span><span class="n">args</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="o">::</span><span class="n">c10</span><span class="o">::</span><span class="n">str</span><span class="p">(</span><span class="n">args</span><span class="p">...);</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
-<span class="kr">inline</span><span class="w"> </span><span class="n">C10_API</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">torchCheckMsgImpl</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">msg</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">msg</span><span class="p">;</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">c10</span><span class="w"> </span><span class="p">{</span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">detail</span><span class="w"> </span><span class="p">{</span>
+<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="p">...</span><span class="w"> </span><span class="n">Args</span><span class="o">&gt;</span>
+<span class="k">decltype</span><span class="p">(</span><span class="k">auto</span><span class="p">)</span><span class="w"> </span><span class="n">torchCheckMsgImpl</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="cm">/*msg*/</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">Args</span><span class="o">&amp;</span><span class="p">...</span><span class="w"> </span><span class="n">args</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="o">::</span><span class="n">c10</span><span class="o">::</span><span class="n">str</span><span class="p">(</span><span class="n">args</span><span class="p">...);</span>
+<span class="p">}</span>
+<span class="kr">inline</span><span class="w"> </span><span class="n">C10_API</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">torchCheckMsgImpl</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">msg</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">msg</span><span class="p">;</span>
+<span class="p">}</span>
 <span class="c1">// If there is just 1 user-provided C-string argument, use it.</span>
-<span class="kr">inline</span><span class="w"> </span><span class="n">C10_API</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">torchCheckMsgImpl</span><span class="p">(</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="cm">/*msg*/</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">args</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">args</span><span class="p">;</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
+<span class="kr">inline</span><span class="w"> </span><span class="n">C10_API</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">torchCheckMsgImpl</span><span class="p">(</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="cm">/*msg*/</span><span class="p">,</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">args</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">args</span><span class="p">;</span>
+<span class="p">}</span>
 <span class="p">}</span><span class="w"> </span><span class="c1">// namespace detail</span>
 <span class="p">}</span><span class="w"> </span><span class="c1">// namespace c10</span>
 
@@ -771,45 +771,45 @@
 <span class="cp">  }</span>
 <span class="cp">#endif</span>
 
-<span class="k">namespace</span><span class="w"> </span><span class="nn">c10</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="k">namespace</span><span class="w"> </span><span class="nn">detail</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">c10</span><span class="w"> </span><span class="p">{</span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">detail</span><span class="w"> </span><span class="p">{</span>
 
-<span class="p">[[</span><span class="n">noreturn</span><span class="p">]]</span><span class="w"> </span><span class="n">C10_API</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">torchCheckFail</span><span class="p">(</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">func</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">file</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">line</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">msg</span><span class="p">);</span><span class="w"></span>
-<span class="p">[[</span><span class="n">noreturn</span><span class="p">]]</span><span class="w"> </span><span class="n">C10_API</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">torchCheckFail</span><span class="p">(</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">func</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">file</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">line</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">msg</span><span class="p">);</span><span class="w"></span>
+<span class="p">[[</span><span class="n">noreturn</span><span class="p">]]</span><span class="w"> </span><span class="n">C10_API</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">torchCheckFail</span><span class="p">(</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">func</span><span class="p">,</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">file</span><span class="p">,</span>
+<span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">line</span><span class="p">,</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">msg</span><span class="p">);</span>
+<span class="p">[[</span><span class="n">noreturn</span><span class="p">]]</span><span class="w"> </span><span class="n">C10_API</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">torchCheckFail</span><span class="p">(</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">func</span><span class="p">,</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">file</span><span class="p">,</span>
+<span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">line</span><span class="p">,</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">msg</span><span class="p">);</span>
 
 <span class="c1">// The c10::str() call that creates userMsg can have 1 of 3 return</span>
 <span class="c1">// types depending on the number and types of arguments passed to</span>
 <span class="c1">// TORCH_INTERNAL_ASSERT.  0 arguments will get a</span>
 <span class="c1">// CompileTimeEmptyString, 1 const char * will be passed straight</span>
 <span class="c1">// through, and anything else will get converted to std::string.</span>
-<span class="p">[[</span><span class="n">noreturn</span><span class="p">]]</span><span class="w"> </span><span class="n">C10_API</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">torchInternalAssertFail</span><span class="p">(</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">func</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">file</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">line</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">condMsg</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">userMsg</span><span class="p">);</span><span class="w"></span>
-<span class="p">[[</span><span class="n">noreturn</span><span class="p">]]</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="n">C10_API</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">torchInternalAssertFail</span><span class="p">(</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">func</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">file</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">line</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">condMsg</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="o">::</span><span class="n">c10</span><span class="o">::</span><span class="n">detail</span><span class="o">::</span><span class="n">CompileTimeEmptyString</span><span class="w"> </span><span class="cm">/*userMsg*/</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="n">torchCheckFail</span><span class="p">(</span><span class="n">func</span><span class="p">,</span><span class="w"> </span><span class="n">file</span><span class="p">,</span><span class="w"> </span><span class="n">line</span><span class="p">,</span><span class="w"> </span><span class="n">condMsg</span><span class="p">);</span><span class="w"></span>
-<span class="p">}</span><span class="w"></span>
-<span class="p">[[</span><span class="n">noreturn</span><span class="p">]]</span><span class="w"> </span><span class="n">C10_API</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">torchInternalAssertFail</span><span class="p">(</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">func</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">file</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">line</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">condMsg</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">userMsg</span><span class="p">);</span><span class="w"></span>
+<span class="p">[[</span><span class="n">noreturn</span><span class="p">]]</span><span class="w"> </span><span class="n">C10_API</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">torchInternalAssertFail</span><span class="p">(</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">func</span><span class="p">,</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">file</span><span class="p">,</span>
+<span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">line</span><span class="p">,</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">condMsg</span><span class="p">,</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">userMsg</span><span class="p">);</span>
+<span class="p">[[</span><span class="n">noreturn</span><span class="p">]]</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="n">C10_API</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">torchInternalAssertFail</span><span class="p">(</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">func</span><span class="p">,</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">file</span><span class="p">,</span>
+<span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">line</span><span class="p">,</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">condMsg</span><span class="p">,</span>
+<span class="w">    </span><span class="o">::</span><span class="n">c10</span><span class="o">::</span><span class="n">detail</span><span class="o">::</span><span class="n">CompileTimeEmptyString</span><span class="w"> </span><span class="cm">/*userMsg*/</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">torchCheckFail</span><span class="p">(</span><span class="n">func</span><span class="p">,</span><span class="w"> </span><span class="n">file</span><span class="p">,</span><span class="w"> </span><span class="n">line</span><span class="p">,</span><span class="w"> </span><span class="n">condMsg</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="p">[[</span><span class="n">noreturn</span><span class="p">]]</span><span class="w"> </span><span class="n">C10_API</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">torchInternalAssertFail</span><span class="p">(</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">func</span><span class="p">,</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">file</span><span class="p">,</span>
+<span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">line</span><span class="p">,</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">condMsg</span><span class="p">,</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">userMsg</span><span class="p">);</span>
 
 <span class="p">}</span><span class="w"> </span><span class="c1">// namespace detail</span>
 <span class="p">}</span><span class="w"> </span><span class="c1">// namespace c10</span>
@@ -936,15 +936,15 @@
 <span class="c1">// Deprecated macros</span>
 <span class="c1">// ----------------------------------------------------------------------------</span>
 
-<span class="k">namespace</span><span class="w"> </span><span class="nn">c10</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="k">namespace</span><span class="w"> </span><span class="nn">detail</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">c10</span><span class="w"> </span><span class="p">{</span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">detail</span><span class="w"> </span><span class="p">{</span>
 
 <span class="cm">/*</span>
 <span class="cm">// Deprecation disabled until we fix sites in our codebase</span>
 <span class="cm">C10_DEPRECATED_MESSAGE(&quot;AT_ERROR(msg) is deprecated, use TORCH_CHECK(false, msg)</span>
 <span class="cm">instead.&quot;)</span>
-<span class="cm">*/</span><span class="w"></span>
-<span class="kr">inline</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">deprecated_AT_ERROR</span><span class="p">()</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+<span class="cm">*/</span>
+<span class="kr">inline</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">deprecated_AT_ERROR</span><span class="p">()</span><span class="w"> </span><span class="p">{}</span>
 
 <span class="cm">/*</span>
 <span class="cm">// Deprecation disabled until we fix sites in our codebase</span>
@@ -953,8 +953,8 @@
 <span class="cm">                       &quot;TORCH_INTERNAL_ASSERT instead; if you mean to do user</span>
 <span class="cm">error checking, use &quot; \ &quot;TORCH_CHECK.  See</span>
 <span class="cm">https://github.com/pytorch/pytorch/issues/20287 for more details.&quot;)</span>
-<span class="cm">*/</span><span class="w"></span>
-<span class="kr">inline</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">deprecated_AT_ASSERT</span><span class="p">()</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+<span class="cm">*/</span>
+<span class="kr">inline</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">deprecated_AT_ASSERT</span><span class="p">()</span><span class="w"> </span><span class="p">{}</span>
 
 <span class="cm">/*</span>
 <span class="cm">// Deprecation disabled until we fix sites in our codebase</span>
@@ -963,8 +963,8 @@
 <span class="cm">                       &quot;TORCH_INTERNAL_ASSERT instead; if you mean to do user</span>
 <span class="cm">error checking, use &quot; \ &quot;TORCH_CHECK.  See</span>
 <span class="cm">https://github.com/pytorch/pytorch/issues/20287 for more details.&quot;)</span>
-<span class="cm">*/</span><span class="w"></span>
-<span class="kr">inline</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">deprecated_AT_ASSERTM</span><span class="p">()</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+<span class="cm">*/</span>
+<span class="kr">inline</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">deprecated_AT_ASSERTM</span><span class="p">()</span><span class="w"> </span><span class="p">{}</span>
 
 <span class="p">}</span><span class="w"> </span><span class="c1">// namespace detail</span>
 <span class="p">}</span><span class="w"> </span><span class="c1">// namespace c10</span>

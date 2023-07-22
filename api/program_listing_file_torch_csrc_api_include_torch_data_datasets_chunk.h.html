@@ -348,165 +348,165 @@
 <p>↰ <a class="reference internal" href="file_torch_csrc_api_include_torch_data_datasets_chunk.h.html#file-torch-csrc-api-include-torch-data-datasets-chunk-h"><span class="std std-ref">Return to documentation for file</span></a> (<code class="docutils literal notranslate"><span class="pre">torch/csrc/api/include/torch/data/datasets/chunk.h</span></code>)</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#pragma once</span>
 
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/irange.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/arg.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/csrc/utils/memory.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/data/datasets/stateful.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/data/samplers.h&gt;</span><span class="cp"></span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;queue&gt;</span><span class="cp"></span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;thread&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/irange.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/arg.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/csrc/utils/memory.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/data/datasets/stateful.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/data/samplers.h&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;queue&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;thread&gt;</span>
 
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/serialize.h&gt;</span><span class="cp"></span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/serialize.h&gt;</span>
 
-<span class="k">namespace</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="k">namespace</span><span class="w"> </span><span class="nn">data</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="k">namespace</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="p">{</span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">data</span><span class="w"> </span><span class="p">{</span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="p">{</span>
 
-<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="w"></span>
-<span class="w">    </span><span class="k">typename</span><span class="w"> </span><span class="nc">ExampleType_</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="k">typename</span><span class="w"> </span><span class="nc">ChunkType_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">ExampleType_</span><span class="o">&gt;&gt;</span><span class="w"></span>
-<span class="k">class</span><span class="w"> </span><span class="nc">ChunkDataReader</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w"> </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
-<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="o">~</span><span class="n">ChunkDataReader</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span><span class="w"></span>
+<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span>
+<span class="w">    </span><span class="k">typename</span><span class="w"> </span><span class="nc">ExampleType_</span><span class="p">,</span>
+<span class="w">    </span><span class="k">typename</span><span class="w"> </span><span class="nc">ChunkType_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">ExampleType_</span><span class="o">&gt;&gt;</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ChunkDataReader</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="k">public</span><span class="o">:</span>
+<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="o">~</span><span class="n">ChunkDataReader</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span>
 
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">ChunkType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ChunkType_</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">ExampleType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ExampleType_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">ChunkType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ChunkType_</span><span class="p">;</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">ExampleType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ExampleType_</span><span class="p">;</span>
 
-<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="n">ChunkType</span><span class="w"> </span><span class="nf">read_chunk</span><span class="p">(</span><span class="kt">size_t</span><span class="w"> </span><span class="n">chunk_index</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="n">ChunkType</span><span class="w"> </span><span class="nf">read_chunk</span><span class="p">(</span><span class="kt">size_t</span><span class="w"> </span><span class="n">chunk_index</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
 
-<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="nf">chunk_count</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="kt">size_t</span><span class="w"> </span><span class="nf">chunk_count</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
 
-<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">reset</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
-<span class="p">};</span><span class="w"></span>
+<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">reset</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="p">};</span>
 
-<span class="k">namespace</span><span class="w"> </span><span class="nn">detail</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="w"></span>
-<span class="w">    </span><span class="k">typename</span><span class="w"> </span><span class="nc">UnwrappedBatch</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="k">typename</span><span class="w"> </span><span class="nc">ExampleSampler</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">samplers</span><span class="o">::</span><span class="n">RandomSampler</span><span class="o">&gt;</span><span class="w"></span>
-<span class="k">class</span><span class="w"> </span><span class="nc">BatchDataBuffer</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w"> </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">UnwrappedBatchType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">UnwrappedBatch</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">BatchType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">UnwrappedBatchType</span><span class="o">&gt;</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">BatchRequestType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">ExampleSampler</span><span class="o">::</span><span class="n">BatchRequestType</span><span class="p">;</span><span class="w"></span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">detail</span><span class="w"> </span><span class="p">{</span>
+<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span>
+<span class="w">    </span><span class="k">typename</span><span class="w"> </span><span class="nc">UnwrappedBatch</span><span class="p">,</span>
+<span class="w">    </span><span class="k">typename</span><span class="w"> </span><span class="nc">ExampleSampler</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">samplers</span><span class="o">::</span><span class="n">RandomSampler</span><span class="o">&gt;</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">BatchDataBuffer</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="k">public</span><span class="o">:</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">UnwrappedBatchType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">UnwrappedBatch</span><span class="p">;</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">BatchType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">UnwrappedBatchType</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">BatchRequestType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">ExampleSampler</span><span class="o">::</span><span class="n">BatchRequestType</span><span class="p">;</span>
 
-<span class="w">  </span><span class="n">BatchDataBuffer</span><span class="p">(</span><span class="w"></span>
-<span class="w">      </span><span class="kt">size_t</span><span class="w"> </span><span class="n">batch_size</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="n">ExampleSampler</span><span class="o">&amp;</span><span class="w"> </span><span class="n">example_sampler</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="kt">size_t</span><span class="w"> </span><span class="n">queue_capacity</span><span class="p">)</span><span class="w"></span>
-<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">batch_size_</span><span class="p">(</span><span class="n">batch_size</span><span class="p">),</span><span class="w"></span>
-<span class="w">        </span><span class="n">example_sampler_</span><span class="p">(</span><span class="n">example_sampler</span><span class="p">),</span><span class="w"></span>
-<span class="w">        </span><span class="n">queue_capacity_</span><span class="p">(</span><span class="n">queue_capacity</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+<span class="w">  </span><span class="n">BatchDataBuffer</span><span class="p">(</span>
+<span class="w">      </span><span class="kt">size_t</span><span class="w"> </span><span class="n">batch_size</span><span class="p">,</span>
+<span class="w">      </span><span class="n">ExampleSampler</span><span class="o">&amp;</span><span class="w"> </span><span class="n">example_sampler</span><span class="p">,</span>
+<span class="w">      </span><span class="kt">size_t</span><span class="w"> </span><span class="n">queue_capacity</span><span class="p">)</span>
+<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">batch_size_</span><span class="p">(</span><span class="n">batch_size</span><span class="p">),</span>
+<span class="w">        </span><span class="n">example_sampler_</span><span class="p">(</span><span class="n">example_sampler</span><span class="p">),</span>
+<span class="w">        </span><span class="n">queue_capacity_</span><span class="p">(</span><span class="n">queue_capacity</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span>
 
-<span class="w">  </span><span class="n">BatchType</span><span class="w"> </span><span class="n">get_batch</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span><span class="w"> </span><span class="n">lock</span><span class="p">(</span><span class="n">queue_mutex_</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="n">cv_read_</span><span class="p">.</span><span class="n">wait</span><span class="p">(</span><span class="n">lock</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="k">this</span><span class="p">]</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="n">BatchType</span><span class="w"> </span><span class="n">get_batch</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span><span class="w"> </span><span class="n">lock</span><span class="p">(</span><span class="n">queue_mutex_</span><span class="p">);</span>
+<span class="w">    </span><span class="n">cv_read_</span><span class="p">.</span><span class="n">wait</span><span class="p">(</span><span class="n">lock</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="k">this</span><span class="p">]</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="c1">// wait till there is available data in the queue or if all chunks are</span>
 <span class="w">      </span><span class="c1">// loaded (i.e. the dataset is exhausted for this epoch)</span>
-<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
-<span class="w">          </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">total_example_count_in_queue_</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">batch_size_</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">stop_</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="p">});</span><span class="w"></span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">batch_queue_</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">      </span><span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">stop_</span><span class="p">);</span><span class="w"></span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="p">(</span>
+<span class="w">          </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">total_example_count_in_queue_</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">batch_size_</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">stop_</span><span class="p">);</span>
+<span class="w">    </span><span class="p">});</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">batch_queue_</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">stop_</span><span class="p">);</span>
 <span class="w">      </span><span class="c1">// All batches have been retrieved. Return an empty batch.</span>
-<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">nullopt</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">nullopt</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
 
-<span class="w">    </span><span class="n">UnwrappedBatchData</span><span class="w"> </span><span class="n">batch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">batch_queue_</span><span class="p">.</span><span class="n">front</span><span class="p">());</span><span class="w"></span>
-<span class="w">    </span><span class="n">batch_queue_</span><span class="p">.</span><span class="n">pop</span><span class="p">();</span><span class="w"></span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">batch</span><span class="p">.</span><span class="n">exception</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">      </span><span class="k">throw</span><span class="w"> </span><span class="n">WorkerException</span><span class="p">(</span><span class="n">batch</span><span class="p">.</span><span class="n">exception</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">UnwrappedBatchData</span><span class="w"> </span><span class="n">batch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">batch_queue_</span><span class="p">.</span><span class="n">front</span><span class="p">());</span>
+<span class="w">    </span><span class="n">batch_queue_</span><span class="p">.</span><span class="n">pop</span><span class="p">();</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">batch</span><span class="p">.</span><span class="n">exception</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="k">throw</span><span class="w"> </span><span class="n">WorkerException</span><span class="p">(</span><span class="n">batch</span><span class="p">.</span><span class="n">exception</span><span class="p">);</span>
+<span class="w">    </span><span class="p">}</span>
 
-<span class="w">    </span><span class="n">total_example_count_in_queue_</span><span class="w"> </span><span class="o">-=</span><span class="w"> </span><span class="n">batch</span><span class="p">.</span><span class="n">batch_data</span><span class="p">.</span><span class="n">size</span><span class="p">();</span><span class="w"></span>
-<span class="w">    </span><span class="n">lock</span><span class="p">.</span><span class="n">unlock</span><span class="p">();</span><span class="w"></span>
-<span class="w">    </span><span class="n">cv_write_</span><span class="p">.</span><span class="n">notify_all</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="n">total_example_count_in_queue_</span><span class="w"> </span><span class="o">-=</span><span class="w"> </span><span class="n">batch</span><span class="p">.</span><span class="n">batch_data</span><span class="p">.</span><span class="n">size</span><span class="p">();</span>
+<span class="w">    </span><span class="n">lock</span><span class="p">.</span><span class="n">unlock</span><span class="p">();</span>
+<span class="w">    </span><span class="n">cv_write_</span><span class="p">.</span><span class="n">notify_all</span><span class="p">();</span>
 
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">batch</span><span class="p">.</span><span class="n">batch_data</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">batch</span><span class="p">.</span><span class="n">batch_data</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">add_chunk_data</span><span class="p">(</span><span class="n">UnwrappedBatchType</span><span class="w"> </span><span class="n">data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span><span class="w"> </span><span class="n">lock</span><span class="p">(</span><span class="n">queue_mutex_</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="n">cv_write_</span><span class="p">.</span><span class="n">wait</span><span class="p">(</span><span class="n">lock</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="k">this</span><span class="p">]</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">add_chunk_data</span><span class="p">(</span><span class="n">UnwrappedBatchType</span><span class="w"> </span><span class="n">data</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span><span class="w"> </span><span class="n">lock</span><span class="p">(</span><span class="n">queue_mutex_</span><span class="p">);</span>
+<span class="w">    </span><span class="n">cv_write_</span><span class="p">.</span><span class="n">wait</span><span class="p">(</span><span class="n">lock</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="k">this</span><span class="p">]</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="c1">// stop loading if we have preloaded enough data.</span>
-<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">total_example_count_in_queue_</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">queue_capacity_</span><span class="w"> </span><span class="o">||</span><span class="w"></span>
-<span class="w">          </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">stop_</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="p">});</span><span class="w"></span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">stop_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">total_example_count_in_queue_</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">queue_capacity_</span><span class="w"> </span><span class="o">||</span>
+<span class="w">          </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">stop_</span><span class="p">;</span>
+<span class="w">    </span><span class="p">});</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">stop_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="c1">// When stop_ is true, it means no further chunk loading is necessary.</span>
 <span class="w">      </span><span class="c1">// Return without any further processing.</span>
-<span class="w">      </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">      </span><span class="k">return</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
 
-<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">data_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">.</span><span class="n">size</span><span class="p">();</span><span class="w"></span>
-<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">remaining_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data_size</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="n">example_sampler_</span><span class="p">.</span><span class="n">reset</span><span class="p">(</span><span class="n">data_size</span><span class="p">);</span><span class="w"></span>
+<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">data_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">.</span><span class="n">size</span><span class="p">();</span>
+<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">remaining_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data_size</span><span class="p">;</span>
+<span class="w">    </span><span class="n">example_sampler_</span><span class="p">.</span><span class="n">reset</span><span class="p">(</span><span class="n">data_size</span><span class="p">);</span>
 
-<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">fill_batch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="o">&amp;</span><span class="p">](</span><span class="kt">size_t</span><span class="w"> </span><span class="n">example_count</span><span class="p">,</span><span class="w"> </span><span class="n">UnwrappedBatchType</span><span class="o">&amp;</span><span class="w"> </span><span class="n">batch</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">      </span><span class="k">auto</span><span class="w"> </span><span class="n">batch_example_indices</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">example_sampler_</span><span class="p">.</span><span class="n">next</span><span class="p">(</span><span class="n">example_count</span><span class="p">);</span><span class="w"></span>
-<span class="w">      </span><span class="n">AT_ASSERT</span><span class="p">(</span><span class="w"></span>
-<span class="w">          </span><span class="n">batch_example_indices</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"></span>
-<span class="w">          </span><span class="n">batch_example_indices</span><span class="p">.</span><span class="n">value</span><span class="p">().</span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">example_count</span><span class="p">);</span><span class="w"></span>
-<span class="w">      </span><span class="n">BatchRequestType</span><span class="o">&amp;</span><span class="w"> </span><span class="n">indices</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">batch_example_indices</span><span class="p">.</span><span class="n">value</span><span class="p">();</span><span class="w"></span>
-<span class="w">      </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">size_t</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">indices</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">data_size</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Index out of range&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">        </span><span class="n">batch</span><span class="p">.</span><span class="n">emplace_back</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]));</span><span class="w"></span>
-<span class="w">      </span><span class="p">}</span><span class="w"></span>
-<span class="w">      </span><span class="n">remaining_size</span><span class="w"> </span><span class="o">-=</span><span class="w"> </span><span class="n">example_count</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="p">};</span><span class="w"></span>
+<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">fill_batch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">[</span><span class="o">&amp;</span><span class="p">](</span><span class="kt">size_t</span><span class="w"> </span><span class="n">example_count</span><span class="p">,</span><span class="w"> </span><span class="n">UnwrappedBatchType</span><span class="o">&amp;</span><span class="w"> </span><span class="n">batch</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="k">auto</span><span class="w"> </span><span class="n">batch_example_indices</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">example_sampler_</span><span class="p">.</span><span class="n">next</span><span class="p">(</span><span class="n">example_count</span><span class="p">);</span>
+<span class="w">      </span><span class="n">AT_ASSERT</span><span class="p">(</span>
+<span class="w">          </span><span class="n">batch_example_indices</span><span class="w"> </span><span class="o">&amp;&amp;</span>
+<span class="w">          </span><span class="n">batch_example_indices</span><span class="p">.</span><span class="n">value</span><span class="p">().</span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">example_count</span><span class="p">);</span>
+<span class="w">      </span><span class="n">BatchRequestType</span><span class="o">&amp;</span><span class="w"> </span><span class="n">indices</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">batch_example_indices</span><span class="p">.</span><span class="n">value</span><span class="p">();</span>
+<span class="w">      </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">size_t</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">indices</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">TORCH_CHECK</span><span class="p">(</span><span class="n">i</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">data_size</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Index out of range&quot;</span><span class="p">);</span>
+<span class="w">        </span><span class="n">batch</span><span class="p">.</span><span class="n">emplace_back</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">]));</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">      </span><span class="n">remaining_size</span><span class="w"> </span><span class="o">-=</span><span class="w"> </span><span class="n">example_count</span><span class="p">;</span>
+<span class="w">    </span><span class="p">};</span>
 
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">batch_queue_</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">batch_queue_</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="c1">// if the queue has existing data, and the last batch doesn&#39;t have enough</span>
 <span class="w">      </span><span class="c1">// examples to fill a batch_size batch, add more example to this batch</span>
 <span class="w">      </span><span class="c1">// first.</span>
-<span class="w">      </span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">batch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">batch_queue_</span><span class="p">.</span><span class="n">back</span><span class="p">();</span><span class="w"></span>
-<span class="w">      </span><span class="kt">size_t</span><span class="w"> </span><span class="n">current_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">batch</span><span class="p">.</span><span class="n">batch_data</span><span class="p">.</span><span class="n">size</span><span class="p">();</span><span class="w"></span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">current_count</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">batch_size_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="k">auto</span><span class="w"> </span><span class="n">example_count</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
-<span class="w">            </span><span class="n">std</span><span class="o">::</span><span class="n">min</span><span class="p">(</span><span class="n">remaining_size</span><span class="p">,</span><span class="w"> </span><span class="n">batch_size_</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">current_count</span><span class="p">);</span><span class="w"></span>
-<span class="w">        </span><span class="n">fill_batch</span><span class="p">(</span><span class="n">example_count</span><span class="p">,</span><span class="w"> </span><span class="n">batch</span><span class="p">.</span><span class="n">batch_data</span><span class="p">);</span><span class="w"></span>
-<span class="w">      </span><span class="p">}</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">      </span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">batch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">batch_queue_</span><span class="p">.</span><span class="n">back</span><span class="p">();</span>
+<span class="w">      </span><span class="kt">size_t</span><span class="w"> </span><span class="n">current_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">batch</span><span class="p">.</span><span class="n">batch_data</span><span class="p">.</span><span class="n">size</span><span class="p">();</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">current_count</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">batch_size_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">auto</span><span class="w"> </span><span class="n">example_count</span><span class="w"> </span><span class="o">=</span>
+<span class="w">            </span><span class="n">std</span><span class="o">::</span><span class="n">min</span><span class="p">(</span><span class="n">remaining_size</span><span class="p">,</span><span class="w"> </span><span class="n">batch_size_</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">current_count</span><span class="p">);</span>
+<span class="w">        </span><span class="n">fill_batch</span><span class="p">(</span><span class="n">example_count</span><span class="p">,</span><span class="w"> </span><span class="n">batch</span><span class="p">.</span><span class="n">batch_data</span><span class="p">);</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="c1">// If we still have data remaining after filling the last pushed batch, add</span>
 <span class="w">    </span><span class="c1">// them to the queue too.</span>
 <span class="w">    </span><span class="c1">// NOLINTNEXTLINE(bugprone-infinite-loop)</span>
-<span class="w">    </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">remaining_size</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">      </span><span class="n">UnwrappedBatchType</span><span class="w"> </span><span class="n">current_batch</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="n">remaining_size</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">UnwrappedBatchType</span><span class="w"> </span><span class="n">current_batch</span><span class="p">;</span>
 
 <span class="w">      </span><span class="c1">// Allocate the batch memory ahead of time.</span>
-<span class="w">      </span><span class="n">current_batch</span><span class="p">.</span><span class="n">reserve</span><span class="p">(</span><span class="n">batch_size_</span><span class="p">);</span><span class="w"></span>
+<span class="w">      </span><span class="n">current_batch</span><span class="p">.</span><span class="n">reserve</span><span class="p">(</span><span class="n">batch_size_</span><span class="p">);</span>
 
-<span class="w">      </span><span class="k">auto</span><span class="w"> </span><span class="n">example_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">min</span><span class="p">(</span><span class="n">remaining_size</span><span class="p">,</span><span class="w"> </span><span class="n">batch_size_</span><span class="p">);</span><span class="w"></span>
-<span class="w">      </span><span class="n">fill_batch</span><span class="p">(</span><span class="n">example_count</span><span class="p">,</span><span class="w"> </span><span class="n">current_batch</span><span class="p">);</span><span class="w"></span>
-<span class="w">      </span><span class="n">batch_queue_</span><span class="p">.</span><span class="n">emplace</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">current_batch</span><span class="p">));</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
-<span class="w">    </span><span class="n">total_example_count_in_queue_</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">data_size</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="n">lock</span><span class="p">.</span><span class="n">unlock</span><span class="p">();</span><span class="w"></span>
-<span class="w">    </span><span class="n">cv_read_</span><span class="p">.</span><span class="n">notify_all</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">      </span><span class="k">auto</span><span class="w"> </span><span class="n">example_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">min</span><span class="p">(</span><span class="n">remaining_size</span><span class="p">,</span><span class="w"> </span><span class="n">batch_size_</span><span class="p">);</span>
+<span class="w">      </span><span class="n">fill_batch</span><span class="p">(</span><span class="n">example_count</span><span class="p">,</span><span class="w"> </span><span class="n">current_batch</span><span class="p">);</span>
+<span class="w">      </span><span class="n">batch_queue_</span><span class="p">.</span><span class="n">emplace</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">current_batch</span><span class="p">));</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="n">total_example_count_in_queue_</span><span class="w"> </span><span class="o">+=</span><span class="w"> </span><span class="n">data_size</span><span class="p">;</span>
+<span class="w">    </span><span class="n">lock</span><span class="p">.</span><span class="n">unlock</span><span class="p">();</span>
+<span class="w">    </span><span class="n">cv_read_</span><span class="p">.</span><span class="n">notify_all</span><span class="p">();</span>
+<span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">add_chunk_data</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">exception_ptr</span><span class="w"> </span><span class="n">e_ptr</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span><span class="w"> </span><span class="n">lock</span><span class="p">(</span><span class="n">queue_mutex_</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="n">cv_write_</span><span class="p">.</span><span class="n">wait</span><span class="p">(</span><span class="n">lock</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="k">this</span><span class="p">]</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">add_chunk_data</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">exception_ptr</span><span class="w"> </span><span class="n">e_ptr</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">unique_lock</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span><span class="w"> </span><span class="n">lock</span><span class="p">(</span><span class="n">queue_mutex_</span><span class="p">);</span>
+<span class="w">    </span><span class="n">cv_write_</span><span class="p">.</span><span class="n">wait</span><span class="p">(</span><span class="n">lock</span><span class="p">,</span><span class="w"> </span><span class="p">[</span><span class="k">this</span><span class="p">]</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="c1">// stop loading if we have preloaded enough data.</span>
-<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="w"></span>
-<span class="w">          </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">total_example_count_in_queue_</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">queue_capacity_</span><span class="w"> </span><span class="o">||</span><span class="w"></span>
-<span class="w">          </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">stop_</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="p">});</span><span class="w"></span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">stop_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="p">(</span>
+<span class="w">          </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">total_example_count_in_queue_</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">queue_capacity_</span><span class="w"> </span><span class="o">||</span>
+<span class="w">          </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">stop_</span><span class="p">);</span>
+<span class="w">    </span><span class="p">});</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">stop_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="c1">// When stop_ is true, it means this current thread needs to be tore down,</span>
 <span class="w">      </span><span class="c1">// the batch buffer will be discarded, so no need to enqueue any new</span>
 <span class="w">      </span><span class="c1">// exceptions.</span>
-<span class="w">      </span><span class="k">return</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">      </span><span class="k">return</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
 
-<span class="w">    </span><span class="n">batch_queue_</span><span class="p">.</span><span class="n">emplace</span><span class="p">(</span><span class="n">e_ptr</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="n">lock</span><span class="p">.</span><span class="n">unlock</span><span class="p">();</span><span class="w"></span>
-<span class="w">    </span><span class="n">cv_read_</span><span class="p">.</span><span class="n">notify_all</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">batch_queue_</span><span class="p">.</span><span class="n">emplace</span><span class="p">(</span><span class="n">e_ptr</span><span class="p">);</span>
+<span class="w">    </span><span class="n">lock</span><span class="p">.</span><span class="n">unlock</span><span class="p">();</span>
+<span class="w">    </span><span class="n">cv_read_</span><span class="p">.</span><span class="n">notify_all</span><span class="p">();</span>
+<span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">stop</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">stop</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="p">{</span>
 <span class="w">      </span><span class="c1">// Hold the lock before changing stop_ to prevent a race condition which</span>
 <span class="w">      </span><span class="c1">// can cause a deadlock. To be more specific, conditional variable</span>
 <span class="w">      </span><span class="c1">// cv_write_ waits on predicate stop_ in add_chunk_data(). The wait</span>
@@ -518,43 +518,43 @@
 <span class="w">      </span><span class="c1">// cv_write_ will sleep forever. By taking a lock before changing</span>
 <span class="w">      </span><span class="c1">// predicate stop_, it is ensured updating and evaluating stop_ always</span>
 <span class="w">      </span><span class="c1">// happen in a synchronized way</span>
-<span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span><span class="w"> </span><span class="n">lock</span><span class="p">(</span><span class="n">queue_mutex_</span><span class="p">);</span><span class="w"></span>
-<span class="w">      </span><span class="n">stop_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span><span class="w"> </span><span class="n">lock</span><span class="p">(</span><span class="n">queue_mutex_</span><span class="p">);</span>
+<span class="w">      </span><span class="n">stop_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="c1">// notify all writers, wake them from wait to exit current method.</span>
-<span class="w">    </span><span class="n">cv_write_</span><span class="p">.</span><span class="n">notify_all</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="n">cv_write_</span><span class="p">.</span><span class="n">notify_all</span><span class="p">();</span>
 <span class="w">    </span><span class="c1">// notify all readers too.</span>
-<span class="w">    </span><span class="n">cv_read_</span><span class="p">.</span><span class="n">notify_all</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="kt">size_t</span><span class="w"> </span><span class="n">batch_size_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">cv_read_</span><span class="p">.</span><span class="n">notify_all</span><span class="p">();</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="kt">size_t</span><span class="w"> </span><span class="n">batch_size_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
 
-<span class="w">  </span><span class="kt">size_t</span><span class="w"> </span><span class="n">total_example_count_in_queue_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="kt">size_t</span><span class="w"> </span><span class="n">total_example_count_in_queue_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
 
-<span class="w">  </span><span class="k">struct</span><span class="w"> </span><span class="nc">UnwrappedBatchData</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">explicit</span><span class="w"> </span><span class="n">UnwrappedBatchData</span><span class="p">(</span><span class="n">UnwrappedBatchType</span><span class="w"> </span><span class="n">data</span><span class="p">)</span><span class="w"></span>
-<span class="w">        </span><span class="o">:</span><span class="w"> </span><span class="n">batch_data</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">data</span><span class="p">))</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+<span class="w">  </span><span class="k">struct</span><span class="w"> </span><span class="nc">UnwrappedBatchData</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">explicit</span><span class="w"> </span><span class="n">UnwrappedBatchData</span><span class="p">(</span><span class="n">UnwrappedBatchType</span><span class="w"> </span><span class="n">data</span><span class="p">)</span>
+<span class="w">        </span><span class="o">:</span><span class="w"> </span><span class="n">batch_data</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">data</span><span class="p">))</span><span class="w"> </span><span class="p">{}</span>
 
 <span class="w">    </span><span class="c1">// NOLINTNEXTLINE(modernize-pass-by-value)</span>
-<span class="w">    </span><span class="k">explicit</span><span class="w"> </span><span class="n">UnwrappedBatchData</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">exception_ptr</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">exception</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+<span class="w">    </span><span class="k">explicit</span><span class="w"> </span><span class="n">UnwrappedBatchData</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">exception_ptr</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">exception</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span>
 
-<span class="w">    </span><span class="n">UnwrappedBatchType</span><span class="w"> </span><span class="n">batch_data</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">UnwrappedBatchType</span><span class="w"> </span><span class="n">batch_data</span><span class="p">;</span>
 
-<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">exception_ptr</span><span class="w"> </span><span class="n">exception</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="p">};</span><span class="w"></span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">exception_ptr</span><span class="w"> </span><span class="n">exception</span><span class="p">;</span>
+<span class="w">  </span><span class="p">};</span>
 
-<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">queue</span><span class="o">&lt;</span><span class="n">UnwrappedBatchData</span><span class="o">&gt;</span><span class="w"> </span><span class="n">batch_queue_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">queue</span><span class="o">&lt;</span><span class="n">UnwrappedBatchData</span><span class="o">&gt;</span><span class="w"> </span><span class="n">batch_queue_</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// sync batch_queue_ update.</span>
-<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="w"> </span><span class="n">queue_mutex_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="w"> </span><span class="n">queue_mutex_</span><span class="p">;</span>
 
-<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">condition_variable</span><span class="w"> </span><span class="n">cv_read_</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">condition_variable</span><span class="w"> </span><span class="n">cv_write_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">condition_variable</span><span class="w"> </span><span class="n">cv_read_</span><span class="p">;</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">condition_variable</span><span class="w"> </span><span class="n">cv_write_</span><span class="p">;</span>
 
-<span class="w">  </span><span class="n">ExampleSampler</span><span class="o">&amp;</span><span class="w"> </span><span class="n">example_sampler_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">ExampleSampler</span><span class="o">&amp;</span><span class="w"> </span><span class="n">example_sampler_</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// configurable maximun number of elements the queue can hold at one time.</span>
-<span class="w">  </span><span class="kt">size_t</span><span class="w"> </span><span class="n">queue_capacity_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="kt">size_t</span><span class="w"> </span><span class="n">queue_capacity_</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// When set to true, it wakes the writer threads from the wait and exit</span>
 <span class="w">  </span><span class="c1">// current function call. This is needed when ChunkDataSet.Reset is called</span>
@@ -562,44 +562,44 @@
 <span class="w">  </span><span class="c1">// its preloader to finish previous work before tearing down the thread, the</span>
 <span class="w">  </span><span class="c1">// preloader could be still waiting for the conditional variable, thus cause</span>
 <span class="w">  </span><span class="c1">// the program to hang. This boolean is used to break this waiting condition.</span>
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">stop_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
-<span class="p">};</span><span class="w"></span>
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">stop_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+<span class="p">};</span>
 <span class="p">}</span><span class="w"> </span><span class="c1">// namespace detail</span>
 
-<span class="k">struct</span><span class="w"> </span><span class="nc">ChunkDatasetOptions</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">  </span><span class="n">ChunkDatasetOptions</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="n">ChunkDatasetOptions</span><span class="p">(</span><span class="w"></span>
-<span class="w">      </span><span class="kt">size_t</span><span class="w"> </span><span class="n">preloader_count</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="kt">size_t</span><span class="w"> </span><span class="n">batch_size</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="kt">size_t</span><span class="w"> </span><span class="n">cache_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2048</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="kt">size_t</span><span class="w"> </span><span class="n">cross_chunk_shuffle_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span><span class="w"></span>
-<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">preloader_count_</span><span class="p">(</span><span class="n">preloader_count</span><span class="p">),</span><span class="w"></span>
-<span class="w">        </span><span class="n">batch_size_</span><span class="p">(</span><span class="n">batch_size</span><span class="p">),</span><span class="w"></span>
-<span class="w">        </span><span class="n">cache_size_</span><span class="p">(</span><span class="n">cache_size</span><span class="p">),</span><span class="w"></span>
-<span class="w">        </span><span class="n">cross_chunk_shuffle_count_</span><span class="p">(</span><span class="n">cross_chunk_shuffle_count</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">TORCH_CHECK</span><span class="p">(</span><span class="w"></span>
-<span class="w">        </span><span class="n">preloader_count_</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"></span>
-<span class="w">        </span><span class="s">&quot;Preloader count is 0. At least one preloader needs to be specified.&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="n">TORCH_CHECK</span><span class="p">(</span><span class="w"></span>
-<span class="w">        </span><span class="n">batch_size_</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"></span>
-<span class="w">        </span><span class="s">&quot;Batch size is 0. A positive batch size needs to be specified.&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="n">TORCH_CHECK</span><span class="p">(</span><span class="w"></span>
-<span class="w">        </span><span class="n">cache_size_</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"></span>
-<span class="w">        </span><span class="s">&quot;Cache size is 0. A positive cache size needs to be specified.&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="n">TORCH_CHECK</span><span class="p">(</span><span class="w"></span>
-<span class="w">        </span><span class="n">cache_size_</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">batch_size_</span><span class="p">,</span><span class="w"></span>
-<span class="w">        </span><span class="s">&quot;Cache size is less than batch size. Cache needs to be large enough to &quot;</span><span class="w"></span>
-<span class="w">        </span><span class="s">&quot;hold at least one batch.&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="n">TORCH_CHECK</span><span class="p">(</span><span class="w"></span>
-<span class="w">        </span><span class="n">cross_chunk_shuffle_count_</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"></span>
-<span class="w">        </span><span class="s">&quot;cross_chunk_shuffle_count needs to be greater than 0.&quot;</span><span class="p">);</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="k">struct</span><span class="w"> </span><span class="nc">ChunkDatasetOptions</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">ChunkDatasetOptions</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">delete</span><span class="p">;</span>
+<span class="w">  </span><span class="n">ChunkDatasetOptions</span><span class="p">(</span>
+<span class="w">      </span><span class="kt">size_t</span><span class="w"> </span><span class="n">preloader_count</span><span class="p">,</span>
+<span class="w">      </span><span class="kt">size_t</span><span class="w"> </span><span class="n">batch_size</span><span class="p">,</span>
+<span class="w">      </span><span class="kt">size_t</span><span class="w"> </span><span class="n">cache_size</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2048</span><span class="p">,</span>
+<span class="w">      </span><span class="kt">size_t</span><span class="w"> </span><span class="n">cross_chunk_shuffle_count</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">)</span>
+<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">preloader_count_</span><span class="p">(</span><span class="n">preloader_count</span><span class="p">),</span>
+<span class="w">        </span><span class="n">batch_size_</span><span class="p">(</span><span class="n">batch_size</span><span class="p">),</span>
+<span class="w">        </span><span class="n">cache_size_</span><span class="p">(</span><span class="n">cache_size</span><span class="p">),</span>
+<span class="w">        </span><span class="n">cross_chunk_shuffle_count_</span><span class="p">(</span><span class="n">cross_chunk_shuffle_count</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">TORCH_CHECK</span><span class="p">(</span>
+<span class="w">        </span><span class="n">preloader_count_</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;Preloader count is 0. At least one preloader needs to be specified.&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">TORCH_CHECK</span><span class="p">(</span>
+<span class="w">        </span><span class="n">batch_size_</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;Batch size is 0. A positive batch size needs to be specified.&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">TORCH_CHECK</span><span class="p">(</span>
+<span class="w">        </span><span class="n">cache_size_</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;Cache size is 0. A positive cache size needs to be specified.&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">TORCH_CHECK</span><span class="p">(</span>
+<span class="w">        </span><span class="n">cache_size_</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="n">batch_size_</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;Cache size is less than batch size. Cache needs to be large enough to &quot;</span>
+<span class="w">        </span><span class="s">&quot;hold at least one batch.&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">TORCH_CHECK</span><span class="p">(</span>
+<span class="w">        </span><span class="n">cross_chunk_shuffle_count_</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;cross_chunk_shuffle_count needs to be greater than 0.&quot;</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">size_t</span><span class="p">,</span><span class="w"> </span><span class="n">preloader_count</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">size_t</span><span class="p">,</span><span class="w"> </span><span class="n">preloader_count</span><span class="p">);</span>
 
-<span class="w">  </span><span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">size_t</span><span class="p">,</span><span class="w"> </span><span class="n">batch_size</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">size_t</span><span class="p">,</span><span class="w"> </span><span class="n">batch_size</span><span class="p">);</span>
 
-<span class="w">  </span><span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">size_t</span><span class="p">,</span><span class="w"> </span><span class="n">cache_size</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2048</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">size_t</span><span class="p">,</span><span class="w"> </span><span class="n">cache_size</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2048</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// The number of chunks to perfrom cross-chunk shuffling. Default to 1 meaning</span>
 <span class="w">  </span><span class="c1">// no cross-chunk shuffling. When it is equal to n (n &gt; 1), n random</span>
@@ -610,188 +610,188 @@
 <span class="w">  </span><span class="c1">// you know cross-shuffle is needed in your case. Also there is a performance</span>
 <span class="w">  </span><span class="c1">// penalty when this value is greater than 1, as we need to do extra merge</span>
 <span class="w">  </span><span class="c1">// between multiple chunks before performing example sampling.</span>
-<span class="w">  </span><span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">size_t</span><span class="p">,</span><span class="w"> </span><span class="n">cross_chunk_shuffle_count</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"></span>
-<span class="p">};</span><span class="w"></span>
+<span class="w">  </span><span class="n">TORCH_ARG</span><span class="p">(</span><span class="kt">size_t</span><span class="p">,</span><span class="w"> </span><span class="n">cross_chunk_shuffle_count</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span>
+<span class="p">};</span>
 
-<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="w"></span>
-<span class="w">    </span><span class="k">typename</span><span class="w"> </span><span class="nc">ChunkReader</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="k">typename</span><span class="w"> </span><span class="nc">ChunkSampler</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">samplers</span><span class="o">::</span><span class="n">RandomSampler</span><span class="p">,</span><span class="w"></span>
-<span class="w">    </span><span class="k">typename</span><span class="w"> </span><span class="nc">ExampleSampler</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">samplers</span><span class="o">::</span><span class="n">RandomSampler</span><span class="o">&gt;</span><span class="w"></span>
-<span class="k">class</span><span class="w"> </span><span class="nc">ChunkDataset</span><span class="w"> </span><span class="k">final</span><span class="w"></span>
-<span class="w">    </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">StatefulDataset</span><span class="o">&lt;</span><span class="w"></span>
-<span class="w">          </span><span class="n">ChunkDataset</span><span class="o">&lt;</span><span class="n">ChunkReader</span><span class="p">,</span><span class="w"> </span><span class="n">ChunkSampler</span><span class="p">,</span><span class="w"> </span><span class="n">ExampleSampler</span><span class="o">&gt;</span><span class="p">,</span><span class="w"></span>
-<span class="w">          </span><span class="k">typename</span><span class="w"> </span><span class="nc">ChunkReader</span><span class="o">::</span><span class="n">BatchType</span><span class="p">,</span><span class="w"></span>
-<span class="w">          </span><span class="kt">size_t</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w"> </span><span class="k">public</span><span class="o">:</span><span class="w"></span>
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">BatchType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">ChunkReader</span><span class="o">::</span><span class="n">BatchType</span><span class="o">&gt;</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">UnwrappedBatchType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">ChunkReader</span><span class="o">::</span><span class="n">BatchType</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">BatchRequestType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">size_t</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">ChunkSamplerType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ChunkSampler</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">ExampleSamplerType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ExampleSampler</span><span class="p">;</span><span class="w"></span>
+<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span>
+<span class="w">    </span><span class="k">typename</span><span class="w"> </span><span class="nc">ChunkReader</span><span class="p">,</span>
+<span class="w">    </span><span class="k">typename</span><span class="w"> </span><span class="nc">ChunkSampler</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">samplers</span><span class="o">::</span><span class="n">RandomSampler</span><span class="p">,</span>
+<span class="w">    </span><span class="k">typename</span><span class="w"> </span><span class="nc">ExampleSampler</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">samplers</span><span class="o">::</span><span class="n">RandomSampler</span><span class="o">&gt;</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">ChunkDataset</span><span class="w"> </span><span class="k">final</span>
+<span class="w">    </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">StatefulDataset</span><span class="o">&lt;</span>
+<span class="w">          </span><span class="n">ChunkDataset</span><span class="o">&lt;</span><span class="n">ChunkReader</span><span class="p">,</span><span class="w"> </span><span class="n">ChunkSampler</span><span class="p">,</span><span class="w"> </span><span class="n">ExampleSampler</span><span class="o">&gt;</span><span class="p">,</span>
+<span class="w">          </span><span class="k">typename</span><span class="w"> </span><span class="nc">ChunkReader</span><span class="o">::</span><span class="n">BatchType</span><span class="p">,</span>
+<span class="w">          </span><span class="kt">size_t</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="k">public</span><span class="o">:</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">BatchType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">ChunkReader</span><span class="o">::</span><span class="n">BatchType</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">UnwrappedBatchType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">ChunkReader</span><span class="o">::</span><span class="n">BatchType</span><span class="p">;</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">BatchRequestType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="kt">size_t</span><span class="p">;</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">ChunkSamplerType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ChunkSampler</span><span class="p">;</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">ExampleSamplerType</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ExampleSampler</span><span class="p">;</span>
 
-<span class="w">  </span><span class="n">ChunkDataset</span><span class="p">(</span><span class="w"></span>
-<span class="w">      </span><span class="n">ChunkReader</span><span class="w"> </span><span class="n">chunk_reader</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="n">ChunkSampler</span><span class="w"> </span><span class="n">chunk_sampler</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="n">ExampleSampler</span><span class="w"> </span><span class="n">example_sampler</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="n">ChunkDatasetOptions</span><span class="w"> </span><span class="n">options</span><span class="p">,</span><span class="w"></span>
-<span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">(</span><span class="n">UnwrappedBatchType</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;</span><span class="w"> </span><span class="n">preprocessing_policy</span><span class="w"> </span><span class="o">=</span><span class="w"></span>
-<span class="w">          </span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">(</span><span class="n">UnwrappedBatchType</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;</span><span class="p">())</span><span class="w"></span>
-<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">chunk_reader_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">chunk_reader</span><span class="p">)),</span><span class="w"></span>
-<span class="w">        </span><span class="n">chunk_sampler_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">chunk_sampler</span><span class="p">)),</span><span class="w"></span>
-<span class="w">        </span><span class="n">example_sampler_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">example_sampler</span><span class="p">)),</span><span class="w"></span>
-<span class="w">        </span><span class="n">options_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">options</span><span class="p">)),</span><span class="w"></span>
-<span class="w">        </span><span class="n">preprocessing_policy_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">preprocessing_policy</span><span class="p">)),</span><span class="w"></span>
-<span class="w">        </span><span class="n">quit_worker_</span><span class="p">(</span><span class="nb">false</span><span class="p">),</span><span class="w"></span>
-<span class="w">        </span><span class="n">running_preloaders_</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span><span class="w"></span>
-<span class="w">        </span><span class="n">load_checkpoint_</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span><span class="w"></span>
+<span class="w">  </span><span class="n">ChunkDataset</span><span class="p">(</span>
+<span class="w">      </span><span class="n">ChunkReader</span><span class="w"> </span><span class="n">chunk_reader</span><span class="p">,</span>
+<span class="w">      </span><span class="n">ChunkSampler</span><span class="w"> </span><span class="n">chunk_sampler</span><span class="p">,</span>
+<span class="w">      </span><span class="n">ExampleSampler</span><span class="w"> </span><span class="n">example_sampler</span><span class="p">,</span>
+<span class="w">      </span><span class="n">ChunkDatasetOptions</span><span class="w"> </span><span class="n">options</span><span class="p">,</span>
+<span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">(</span><span class="n">UnwrappedBatchType</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;</span><span class="w"> </span><span class="n">preprocessing_policy</span><span class="w"> </span><span class="o">=</span>
+<span class="w">          </span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">(</span><span class="n">UnwrappedBatchType</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;</span><span class="p">())</span>
+<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">chunk_reader_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">chunk_reader</span><span class="p">)),</span>
+<span class="w">        </span><span class="n">chunk_sampler_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">chunk_sampler</span><span class="p">)),</span>
+<span class="w">        </span><span class="n">example_sampler_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">example_sampler</span><span class="p">)),</span>
+<span class="w">        </span><span class="n">options_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">options</span><span class="p">)),</span>
+<span class="w">        </span><span class="n">preprocessing_policy_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">preprocessing_policy</span><span class="p">)),</span>
+<span class="w">        </span><span class="n">quit_worker_</span><span class="p">(</span><span class="nb">false</span><span class="p">),</span>
+<span class="w">        </span><span class="n">running_preloaders_</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
+<span class="w">        </span><span class="n">load_checkpoint_</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span>
 
-<span class="w">  </span><span class="o">~</span><span class="n">ChunkDataset</span><span class="p">()</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="o">~</span><span class="n">ChunkDataset</span><span class="p">()</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="c1">// stop batch buffer first.</span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">batch_buffer_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">      </span><span class="n">batch_buffer_</span><span class="o">-&gt;</span><span class="n">stop</span><span class="p">();</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
-<span class="w">    </span><span class="n">free_workers</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">batch_buffer_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">batch_buffer_</span><span class="o">-&gt;</span><span class="n">stop</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="n">free_workers</span><span class="p">();</span>
+<span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="n">BatchType</span><span class="w"> </span><span class="n">get_batch</span><span class="p">(</span><span class="kt">size_t</span><span class="w"> </span><span class="n">batch_size</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">TORCH_CHECK</span><span class="p">(</span><span class="w"></span>
-<span class="w">        </span><span class="n">batch_buffer_</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">,</span><span class="w"></span>
-<span class="w">        </span><span class="s">&quot;Dataset needs to call reset() before calling get_batch().&quot;</span><span class="p">);</span><span class="w"></span>
+<span class="w">  </span><span class="n">BatchType</span><span class="w"> </span><span class="n">get_batch</span><span class="p">(</span><span class="kt">size_t</span><span class="w"> </span><span class="n">batch_size</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">TORCH_CHECK</span><span class="p">(</span>
+<span class="w">        </span><span class="n">batch_buffer_</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;Dataset needs to call reset() before calling get_batch().&quot;</span><span class="p">);</span>
 
-<span class="w">    </span><span class="n">TORCH_CHECK</span><span class="p">(</span><span class="w"></span>
-<span class="w">        </span><span class="n">batch_size</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">options_</span><span class="p">.</span><span class="n">batch_size</span><span class="p">(),</span><span class="w"></span>
-<span class="w">        </span><span class="s">&quot;The requested batch size does not match with the initialized batch size.</span><span class="se">\n</span><span class="s">&quot;</span><span class="w"></span>
-<span class="w">        </span><span class="s">&quot; The requested batch size is &quot;</span><span class="p">,</span><span class="w"></span>
-<span class="w">        </span><span class="n">batch_size</span><span class="p">,</span><span class="w"></span>
-<span class="w">        </span><span class="s">&quot;, while the dataset is created with batch size equal to &quot;</span><span class="p">,</span><span class="w"></span>
-<span class="w">        </span><span class="n">options_</span><span class="p">.</span><span class="n">batch_size</span><span class="p">());</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">batch_buffer_</span><span class="o">-&gt;</span><span class="n">get_batch</span><span class="p">();</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">TORCH_CHECK</span><span class="p">(</span>
+<span class="w">        </span><span class="n">batch_size</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">options_</span><span class="p">.</span><span class="n">batch_size</span><span class="p">(),</span>
+<span class="w">        </span><span class="s">&quot;The requested batch size does not match with the initialized batch size.</span><span class="se">\n</span><span class="s">&quot;</span>
+<span class="w">        </span><span class="s">&quot; The requested batch size is &quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="n">batch_size</span><span class="p">,</span>
+<span class="w">        </span><span class="s">&quot;, while the dataset is created with batch size equal to &quot;</span><span class="p">,</span>
+<span class="w">        </span><span class="n">options_</span><span class="p">.</span><span class="n">batch_size</span><span class="p">());</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">batch_buffer_</span><span class="o">-&gt;</span><span class="n">get_batch</span><span class="p">();</span>
+<span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="n">BatchType</span><span class="w"> </span><span class="n">get_batch</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">get_batch</span><span class="p">(</span><span class="n">options_</span><span class="p">.</span><span class="n">batch_size</span><span class="p">());</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="n">BatchType</span><span class="w"> </span><span class="n">get_batch</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">get_batch</span><span class="p">(</span><span class="n">options_</span><span class="p">.</span><span class="n">batch_size</span><span class="p">());</span>
+<span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">reset</span><span class="p">()</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">reset</span><span class="p">()</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="c1">// We need this to support partial data reads via dataloader iterator.</span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">batch_buffer_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">      </span><span class="n">batch_buffer_</span><span class="o">-&gt;</span><span class="n">stop</span><span class="p">();</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">batch_buffer_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">batch_buffer_</span><span class="o">-&gt;</span><span class="n">stop</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
 <span class="w">    </span><span class="c1">// free workers from previous reset if there is any.</span>
-<span class="w">    </span><span class="n">free_workers</span><span class="p">();</span><span class="w"></span>
-<span class="w">    </span><span class="n">preload_threads_</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span><span class="w"></span>
+<span class="w">    </span><span class="n">free_workers</span><span class="p">();</span>
+<span class="w">    </span><span class="n">preload_threads_</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span>
 
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">load_checkpoint_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">      </span><span class="n">chunk_reader_</span><span class="p">.</span><span class="n">reset</span><span class="p">();</span><span class="w"></span>
-<span class="w">      </span><span class="n">chunk_sampler_</span><span class="p">.</span><span class="n">reset</span><span class="p">(</span><span class="n">chunk_reader_</span><span class="p">.</span><span class="n">chunk_count</span><span class="p">());</span><span class="w"></span>
-<span class="w">      </span><span class="n">load_checkpoint_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">load_checkpoint_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">chunk_reader_</span><span class="p">.</span><span class="n">reset</span><span class="p">();</span>
+<span class="w">      </span><span class="n">chunk_sampler_</span><span class="p">.</span><span class="n">reset</span><span class="p">(</span><span class="n">chunk_reader_</span><span class="p">.</span><span class="n">chunk_count</span><span class="p">());</span>
+<span class="w">      </span><span class="n">load_checkpoint_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
 
 <span class="w">    </span><span class="c1">// Throw out any existing cached batch in the buffer and re-creates a new</span>
 <span class="w">    </span><span class="c1">// chunk buffer.</span>
-<span class="w">    </span><span class="n">batch_buffer_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="w"></span>
-<span class="w">        </span><span class="n">detail</span><span class="o">::</span><span class="n">BatchDataBuffer</span><span class="o">&lt;</span><span class="n">UnwrappedBatchType</span><span class="p">,</span><span class="w"> </span><span class="n">ExampleSamplerType</span><span class="o">&gt;&gt;</span><span class="p">(</span><span class="w"></span>
-<span class="w">        </span><span class="n">options_</span><span class="p">.</span><span class="n">batch_size</span><span class="p">(),</span><span class="w"> </span><span class="n">example_sampler_</span><span class="p">,</span><span class="w"> </span><span class="n">options_</span><span class="p">.</span><span class="n">cache_size</span><span class="p">());</span><span class="w"></span>
+<span class="w">    </span><span class="n">batch_buffer_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span>
+<span class="w">        </span><span class="n">detail</span><span class="o">::</span><span class="n">BatchDataBuffer</span><span class="o">&lt;</span><span class="n">UnwrappedBatchType</span><span class="p">,</span><span class="w"> </span><span class="n">ExampleSamplerType</span><span class="o">&gt;&gt;</span><span class="p">(</span>
+<span class="w">        </span><span class="n">options_</span><span class="p">.</span><span class="n">batch_size</span><span class="p">(),</span><span class="w"> </span><span class="n">example_sampler_</span><span class="p">,</span><span class="w"> </span><span class="n">options_</span><span class="p">.</span><span class="n">cache_size</span><span class="p">());</span>
 
 <span class="w">    </span><span class="c1">// create new workers for this new epoch.</span>
-<span class="w">    </span><span class="n">quit_worker_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span><span class="w"></span>
+<span class="w">    </span><span class="n">quit_worker_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
 
-<span class="w">    </span><span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">running_preloaders_</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="n">running_preloaders_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">options_</span><span class="p">.</span><span class="n">preloader_count</span><span class="p">();</span><span class="w"></span>
-<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">irange</span><span class="p">(</span><span class="n">options_</span><span class="p">.</span><span class="n">preloader_count</span><span class="p">()))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">      </span><span class="n">preload_threads_</span><span class="p">.</span><span class="n">emplace_back</span><span class="p">([</span><span class="k">this</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">]()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">preloader</span><span class="p">(</span><span class="n">i</span><span class="p">);</span><span class="w"> </span><span class="p">});</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">    </span><span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">running_preloaders_</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="w">    </span><span class="n">running_preloaders_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">options_</span><span class="p">.</span><span class="n">preloader_count</span><span class="p">();</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">irange</span><span class="p">(</span><span class="n">options_</span><span class="p">.</span><span class="n">preloader_count</span><span class="p">()))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">preload_threads_</span><span class="p">.</span><span class="n">emplace_back</span><span class="p">([</span><span class="k">this</span><span class="p">,</span><span class="w"> </span><span class="n">i</span><span class="p">]()</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">preloader</span><span class="p">(</span><span class="n">i</span><span class="p">);</span><span class="w"> </span><span class="p">});</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="n">optional</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="n">optional</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">size</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
 
 <span class="w">  </span><span class="c1">// provide a references to chunk sampler. Used mainly in distributed data</span>
 <span class="w">  </span><span class="c1">// loading to set the epoch number for the sampler.</span>
-<span class="w">  </span><span class="n">ChunkSamplerType</span><span class="o">&amp;</span><span class="w"> </span><span class="n">chunk_sampler</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">chunk_sampler_</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="n">ChunkSamplerType</span><span class="o">&amp;</span><span class="w"> </span><span class="n">chunk_sampler</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">chunk_sampler_</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">save</span><span class="p">(</span><span class="n">serialize</span><span class="o">::</span><span class="n">OutputArchive</span><span class="o">&amp;</span><span class="w"> </span><span class="n">archive</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span><span class="w"> </span><span class="n">lock</span><span class="p">(</span><span class="n">chunk_index_guard_</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="n">chunk_sampler_</span><span class="p">.</span><span class="n">save</span><span class="p">(</span><span class="n">archive</span><span class="p">);</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">save</span><span class="p">(</span><span class="n">serialize</span><span class="o">::</span><span class="n">OutputArchive</span><span class="o">&amp;</span><span class="w"> </span><span class="n">archive</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span><span class="w"> </span><span class="n">lock</span><span class="p">(</span><span class="n">chunk_index_guard_</span><span class="p">);</span>
+<span class="w">    </span><span class="n">chunk_sampler_</span><span class="p">.</span><span class="n">save</span><span class="p">(</span><span class="n">archive</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">load</span><span class="p">(</span><span class="n">serialize</span><span class="o">::</span><span class="n">InputArchive</span><span class="o">&amp;</span><span class="w"> </span><span class="n">archive</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span><span class="w"> </span><span class="n">lock</span><span class="p">(</span><span class="n">chunk_index_guard_</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="n">chunk_sampler_</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">archive</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="n">load_checkpoint_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">load</span><span class="p">(</span><span class="n">serialize</span><span class="o">::</span><span class="n">InputArchive</span><span class="o">&amp;</span><span class="w"> </span><span class="n">archive</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span><span class="w"> </span><span class="n">lock</span><span class="p">(</span><span class="n">chunk_index_guard_</span><span class="p">);</span>
+<span class="w">    </span><span class="n">chunk_sampler_</span><span class="p">.</span><span class="n">load</span><span class="p">(</span><span class="n">archive</span><span class="p">);</span>
+<span class="w">    </span><span class="n">load_checkpoint_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
 
-<span class="w"> </span><span class="k">private</span><span class="o">:</span><span class="w"></span>
-<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">preloader</span><span class="p">(</span><span class="kt">size_t</span><span class="w"> </span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">quit_worker_</span><span class="p">.</span><span class="n">load</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">      </span><span class="k">try</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">chunk_idx</span><span class="p">;</span><span class="w"></span>
-<span class="w">        </span><span class="p">{</span><span class="w"></span>
-<span class="w">          </span><span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span><span class="w"> </span><span class="n">lock</span><span class="p">(</span><span class="n">chunk_index_guard_</span><span class="p">);</span><span class="w"></span>
-<span class="w">          </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">chunk_sampler_result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chunk_sampler_</span><span class="p">.</span><span class="n">next</span><span class="p">(</span><span class="w"></span>
-<span class="w">                  </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">options_</span><span class="p">.</span><span class="n">cross_chunk_shuffle_count</span><span class="p">()))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">            </span><span class="n">chunk_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chunk_sampler_result</span><span class="p">.</span><span class="n">value</span><span class="p">();</span><span class="w"></span>
-<span class="w">          </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">            </span><span class="k">break</span><span class="p">;</span><span class="w"></span>
-<span class="w">          </span><span class="p">}</span><span class="w"></span>
-<span class="w">        </span><span class="p">}</span><span class="w"></span>
-<span class="w">        </span><span class="n">UnwrappedBatchType</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chunk_reader_</span><span class="p">.</span><span class="n">read_chunk</span><span class="p">(</span><span class="n">chunk_idx</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span><span class="w"></span>
-<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">irange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">chunk_idx</span><span class="p">.</span><span class="n">size</span><span class="p">()))</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">          </span><span class="k">auto</span><span class="w"> </span><span class="n">chunk_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chunk_reader_</span><span class="p">.</span><span class="n">read_chunk</span><span class="p">(</span><span class="n">chunk_idx</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span><span class="w"></span>
-<span class="w">          </span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="w"></span>
-<span class="w">              </span><span class="n">chunk_data</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">chunk_data</span><span class="p">.</span><span class="n">end</span><span class="p">(),</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">back_inserter</span><span class="p">(</span><span class="n">data</span><span class="p">));</span><span class="w"></span>
-<span class="w">        </span><span class="p">}</span><span class="w"></span>
-<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">preprocessing_policy_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">          </span><span class="n">preprocessing_policy_</span><span class="p">(</span><span class="n">data</span><span class="p">);</span><span class="w"></span>
-<span class="w">        </span><span class="p">}</span><span class="w"></span>
+<span class="w"> </span><span class="k">private</span><span class="o">:</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">preloader</span><span class="p">(</span><span class="kt">size_t</span><span class="w"> </span><span class="n">id</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">while</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">quit_worker_</span><span class="p">.</span><span class="n">load</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="k">try</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">chunk_idx</span><span class="p">;</span>
+<span class="w">        </span><span class="p">{</span>
+<span class="w">          </span><span class="n">std</span><span class="o">::</span><span class="n">lock_guard</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="o">&gt;</span><span class="w"> </span><span class="n">lock</span><span class="p">(</span><span class="n">chunk_index_guard_</span><span class="p">);</span>
+<span class="w">          </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="w"> </span><span class="n">chunk_sampler_result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chunk_sampler_</span><span class="p">.</span><span class="n">next</span><span class="p">(</span>
+<span class="w">                  </span><span class="k">this</span><span class="o">-&gt;</span><span class="n">options_</span><span class="p">.</span><span class="n">cross_chunk_shuffle_count</span><span class="p">()))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="n">chunk_idx</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chunk_sampler_result</span><span class="p">.</span><span class="n">value</span><span class="p">();</span>
+<span class="w">          </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">            </span><span class="k">break</span><span class="p">;</span>
+<span class="w">          </span><span class="p">}</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="n">UnwrappedBatchType</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chunk_reader_</span><span class="p">.</span><span class="n">read_chunk</span><span class="p">(</span><span class="n">chunk_idx</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
+<span class="w">        </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">irange</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="n">chunk_idx</span><span class="p">.</span><span class="n">size</span><span class="p">()))</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="k">auto</span><span class="w"> </span><span class="n">chunk_data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">chunk_reader_</span><span class="p">.</span><span class="n">read_chunk</span><span class="p">(</span><span class="n">chunk_idx</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
+<span class="w">          </span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span>
+<span class="w">              </span><span class="n">chunk_data</span><span class="p">.</span><span class="n">begin</span><span class="p">(),</span><span class="w"> </span><span class="n">chunk_data</span><span class="p">.</span><span class="n">end</span><span class="p">(),</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">back_inserter</span><span class="p">(</span><span class="n">data</span><span class="p">));</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">preprocessing_policy_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">          </span><span class="n">preprocessing_policy_</span><span class="p">(</span><span class="n">data</span><span class="p">);</span>
+<span class="w">        </span><span class="p">}</span>
 <span class="w">        </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">data</span><span class="p">.</span><span class="n">empty</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"> </span><span class="c1">// skip empty chunks.</span>
-<span class="w">          </span><span class="n">batch_buffer_</span><span class="o">-&gt;</span><span class="n">add_chunk_data</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">data</span><span class="p">));</span><span class="w"></span>
-<span class="w">        </span><span class="p">}</span><span class="w"></span>
-<span class="w">      </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(...)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="n">batch_buffer_</span><span class="o">-&gt;</span><span class="n">add_chunk_data</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">current_exception</span><span class="p">());</span><span class="w"></span>
-<span class="w">      </span><span class="p">}</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
-<span class="w">    </span><span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">running_preloaders_</span><span class="p">.</span><span class="n">load</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span><span class="w"></span>
-<span class="w">    </span><span class="o">--</span><span class="n">running_preloaders_</span><span class="p">;</span><span class="w"></span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">running_preloaders_</span><span class="p">.</span><span class="n">load</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
+<span class="w">          </span><span class="n">batch_buffer_</span><span class="o">-&gt;</span><span class="n">add_chunk_data</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">data</span><span class="p">));</span>
+<span class="w">        </span><span class="p">}</span>
+<span class="w">      </span><span class="p">}</span><span class="w"> </span><span class="k">catch</span><span class="w"> </span><span class="p">(...)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">batch_buffer_</span><span class="o">-&gt;</span><span class="n">add_chunk_data</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">current_exception</span><span class="p">());</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="n">AT_ASSERT</span><span class="p">(</span><span class="n">running_preloaders_</span><span class="p">.</span><span class="n">load</span><span class="p">()</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="w">    </span><span class="o">--</span><span class="n">running_preloaders_</span><span class="p">;</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">running_preloaders_</span><span class="p">.</span><span class="n">load</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="c1">// all preloaders are completed, so we can notify the batch_buffer.</span>
-<span class="w">      </span><span class="n">batch_buffer_</span><span class="o">-&gt;</span><span class="n">stop</span><span class="p">();</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">      </span><span class="n">batch_buffer_</span><span class="o">-&gt;</span><span class="n">stop</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">free_workers</span><span class="p">()</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">quit_worker_</span><span class="p">.</span><span class="n">load</span><span class="p">())</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">      </span><span class="n">quit_worker_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span><span class="w"></span>
-<span class="w">      </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">worker_thread</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">preload_threads_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span><span class="w"></span>
-<span class="w">        </span><span class="n">worker_thread</span><span class="p">.</span><span class="n">join</span><span class="p">();</span><span class="w"></span>
-<span class="w">      </span><span class="p">}</span><span class="w"></span>
-<span class="w">    </span><span class="p">}</span><span class="w"></span>
-<span class="w">  </span><span class="p">}</span><span class="w"></span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">free_workers</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">quit_worker_</span><span class="p">.</span><span class="n">load</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">quit_worker_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+<span class="w">      </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">worker_thread</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">preload_threads_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">worker_thread</span><span class="p">.</span><span class="n">join</span><span class="p">();</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
 
-<span class="w"> </span><span class="k">private</span><span class="o">:</span><span class="w"></span>
+<span class="w"> </span><span class="k">private</span><span class="o">:</span>
 <span class="w">  </span><span class="c1">// Templated class that defines what is a chunk and how to read chunk data.</span>
 <span class="w">  </span><span class="c1">// When a chunk is returned by chunk_reader_, ChunkDataset split it into</span>
 <span class="w">  </span><span class="c1">// batches and caches them in batch_buffer_.</span>
-<span class="w">  </span><span class="n">ChunkReader</span><span class="w"> </span><span class="n">chunk_reader_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">ChunkReader</span><span class="w"> </span><span class="n">chunk_reader_</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// chunk sampler to shuffle different chunks</span>
-<span class="w">  </span><span class="n">ChunkSamplerType</span><span class="w"> </span><span class="n">chunk_sampler_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">ChunkSamplerType</span><span class="w"> </span><span class="n">chunk_sampler_</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// example sampler to shuffle examples in a specific chunk</span>
-<span class="w">  </span><span class="n">ExampleSamplerType</span><span class="w"> </span><span class="n">example_sampler_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">ExampleSamplerType</span><span class="w"> </span><span class="n">example_sampler_</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// batch data buffer which holds chunk data from preloading thread.</span>
-<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="w"></span>
-<span class="w">      </span><span class="n">detail</span><span class="o">::</span><span class="n">BatchDataBuffer</span><span class="o">&lt;</span><span class="n">UnwrappedBatchType</span><span class="p">,</span><span class="w"> </span><span class="n">ExampleSamplerType</span><span class="o">&gt;&gt;</span><span class="w"></span>
-<span class="w">      </span><span class="n">batch_buffer_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span>
+<span class="w">      </span><span class="n">detail</span><span class="o">::</span><span class="n">BatchDataBuffer</span><span class="o">&lt;</span><span class="n">UnwrappedBatchType</span><span class="p">,</span><span class="w"> </span><span class="n">ExampleSamplerType</span><span class="o">&gt;&gt;</span>
+<span class="w">      </span><span class="n">batch_buffer_</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// worker thread pool</span>
-<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="kr">thread</span><span class="o">&gt;</span><span class="w"> </span><span class="n">preload_threads_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="kr">thread</span><span class="o">&gt;</span><span class="w"> </span><span class="n">preload_threads_</span><span class="p">;</span>
 
-<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">ChunkDatasetOptions</span><span class="w"> </span><span class="n">options_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">ChunkDatasetOptions</span><span class="w"> </span><span class="n">options_</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// function pointer wrapper to apply custom processing over chunk data. This</span>
 <span class="w">  </span><span class="c1">// is considered an advanced parameter for developers who want to apply a</span>
@@ -803,22 +803,22 @@
 <span class="w">  </span><span class="c1">// perform pre-processing (like bucketing) to the chunk data before</span>
 <span class="w">  </span><span class="c1">// example sampler samples the data. By default it&#39;s an empty pointer and no</span>
 <span class="w">  </span><span class="c1">// action will be taken.</span>
-<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">(</span><span class="n">UnwrappedBatchType</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;</span><span class="w"> </span><span class="n">preprocessing_policy_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="kt">void</span><span class="p">(</span><span class="n">UnwrappedBatchType</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;</span><span class="w"> </span><span class="n">preprocessing_policy_</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// indicate whether the worker thread can be teared down</span>
-<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;</span><span class="w"> </span><span class="n">quit_worker_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;</span><span class="w"> </span><span class="n">quit_worker_</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// keep track of running preloaders to notify batch buffer. A value 0</span>
 <span class="w">  </span><span class="c1">// indicates that the chunk loading is completed.</span>
-<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">running_preloaders_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">atomic</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="o">&gt;</span><span class="w"> </span><span class="n">running_preloaders_</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// mutex to synchronize chunk sampler next() call.</span>
-<span class="w">  </span><span class="k">mutable</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="w"> </span><span class="n">chunk_index_guard_</span><span class="p">;</span><span class="w"></span>
+<span class="w">  </span><span class="k">mutable</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="w"> </span><span class="n">chunk_index_guard_</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// boolean value to indicate whether we need to load the checkpoint for</span>
 <span class="w">  </span><span class="c1">// chunk_sampler_.</span>
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">load_checkpoint_</span><span class="p">;</span><span class="w"></span>
-<span class="p">};</span><span class="w"></span>
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">load_checkpoint_</span><span class="p">;</span>
+<span class="p">};</span>
 <span class="p">}</span><span class="w"> </span><span class="c1">// namespace datasets</span>
 <span class="p">}</span><span class="w"> </span><span class="c1">// namespace data</span>
 <span class="p">}</span><span class="w"> </span><span class="c1">// namespace torch</span>
