@@ -377,12 +377,19 @@
 <span class="n">C10_CLANG_DIAGNOSTIC_IGNORE</span><span class="p">(</span><span class="s">&quot;-Wshorten-64-to-32&quot;</span><span class="p">)</span>
 <span class="cp">#endif</span>
 
+<span class="cp">#ifndef _WIN32</span>
+<span class="c1">// Windows build fails due to 65536 symbol limit</span>
+<span class="cp">#define TORCH_COMPILED_AUTOGRAD</span>
+<span class="cp">#endif</span>
+
 <span class="k">namespace</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="p">{</span>
 <span class="k">namespace</span><span class="w"> </span><span class="nn">autograd</span><span class="w"> </span><span class="p">{</span>
 
 <span class="k">struct</span><span class="w"> </span><span class="nc">Edge</span><span class="p">;</span>
 <span class="k">struct</span><span class="w"> </span><span class="nc">FunctionPostHook</span><span class="p">;</span>
 <span class="k">struct</span><span class="w"> </span><span class="nc">FunctionPreHook</span><span class="p">;</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">CompiledNodeArgs</span><span class="p">;</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">SwapSavedVariables</span><span class="p">;</span>
 
 <span class="k">using</span><span class="w"> </span><span class="n">tensor_list</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&gt;</span><span class="p">;</span>
 <span class="k">using</span><span class="w"> </span><span class="n">variable_list</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Variable</span><span class="o">&gt;</span><span class="p">;</span>
@@ -828,6 +835,38 @@
 <span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">passes_state_transparently</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
 <span class="w">  </span><span class="p">}</span>
+
+<span class="cp">#ifdef TORCH_COMPILED_AUTOGRAD</span>
+<span class="w">  </span><span class="c1">// see [Note: Compiled Autograd]</span>
+<span class="w">  </span><span class="c1">// Used by compiled autograd to</span>
+<span class="w">  </span><span class="c1">//   1) Extract tensors/symint args</span>
+<span class="w">  </span><span class="c1">//   2) Collect node information for specialization and caching</span>
+<span class="w">  </span><span class="c1">// Implementations in subclasses should call args.collect() with all node</span>
+<span class="w">  </span><span class="c1">// attrs. These functions are only called durring backward.</span>
+<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">compiled_args</span><span class="p">(</span><span class="n">CompiledNodeArgs</span><span class="o">&amp;</span><span class="w"> </span><span class="n">args</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">throw</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">runtime_error</span><span class="p">(</span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">(</span><span class="s">&quot;compiled_args not implemented: &quot;</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">name</span><span class="p">());</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="c1">// Used by compiled autograd to call apply() with different saved tensors</span>
+<span class="w">  </span><span class="c1">// Implementations should call saved.before() on all attrs, then apply(), then</span>
+<span class="w">  </span><span class="c1">// saved.after() on all attrs.</span>
+<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="n">variable_list</span><span class="w"> </span><span class="n">apply_with_saved</span><span class="p">(</span>
+<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="n">variable_list</span><span class="o">&amp;</span><span class="w"> </span><span class="n">inputs</span><span class="p">,</span>
+<span class="w">      </span><span class="n">SwapSavedVariables</span><span class="o">&amp;</span><span class="w"> </span><span class="n">saved</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">throw</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">runtime_error</span><span class="p">(</span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">(</span><span class="s">&quot;apply_with_saved not implemented: &quot;</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">name</span><span class="p">());</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="cp">#else</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">compiled_args</span><span class="p">(</span><span class="n">CompiledNodeArgs</span><span class="o">&amp;</span><span class="w"> </span><span class="n">args</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">TORCH_CHECK</span><span class="p">(</span><span class="nb">false</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Windows is not supported for compiled autograd&quot;</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="n">variable_list</span><span class="w"> </span><span class="n">apply_with_saved</span><span class="p">(</span>
+<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="n">variable_list</span><span class="o">&amp;</span><span class="w"> </span><span class="n">inputs</span><span class="p">,</span>
+<span class="w">      </span><span class="n">SwapSavedVariables</span><span class="o">&amp;</span><span class="w"> </span><span class="n">saved</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">TORCH_CHECK</span><span class="p">(</span><span class="nb">false</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Windows is not supported for compiled autograd&quot;</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="cp">#endif</span>
 
 <span class="w"> </span><span class="k">protected</span><span class="o">:</span>
 <span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="n">variable_list</span><span class="w"> </span><span class="n">apply</span><span class="p">(</span><span class="n">variable_list</span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">inputs</span><span class="p">)</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
