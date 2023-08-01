@@ -504,8 +504,15 @@
 <span class="w">    </span><span class="kt">int</span><span class="w"> </span><span class="n">least_priority</span><span class="p">,</span><span class="w"> </span><span class="n">greatest_priority</span><span class="p">;</span>
 <span class="w">    </span><span class="n">C10_CUDA_CHECK</span><span class="p">(</span>
 <span class="w">        </span><span class="n">cudaDeviceGetStreamPriorityRange</span><span class="p">(</span><span class="o">&amp;</span><span class="n">least_priority</span><span class="p">,</span><span class="w"> </span><span class="o">&amp;</span><span class="n">greatest_priority</span><span class="p">));</span>
+<span class="cp">#ifdef USE_ROCM</span>
+<span class="w">    </span><span class="c1">// See Note [HIP stream priorities]</span>
+<span class="w">    </span><span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span>
+<span class="w">        </span><span class="n">least_priority</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">1</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Unexpected HIP stream priority range&quot;</span><span class="p">);</span>
+<span class="w">    </span><span class="n">least_priority</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
+<span class="cp">#else</span>
 <span class="w">    </span><span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span>
 <span class="w">        </span><span class="n">least_priority</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="mi">0</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Unexpected CUDA stream priority range&quot;</span><span class="p">);</span>
+<span class="cp">#endif</span>
 <span class="w">    </span><span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span>
 <span class="w">        </span><span class="n">greatest_priority</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">-1</span><span class="p">,</span><span class="w"> </span><span class="s">&quot;Unexpected CUDA stream priority range&quot;</span><span class="p">);</span>
 <span class="w">    </span><span class="n">greatest_priority</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">max</span><span class="p">(</span>
