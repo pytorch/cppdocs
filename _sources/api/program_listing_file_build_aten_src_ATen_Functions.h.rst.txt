@@ -8608,9 +8608,26 @@ Program Listing for File Functions.h
        return at::_ops::threshold_backward::call(grad_output, self, threshold);
    }
    
-   // aten::tile(Tensor self, int[] dims) -> Tensor
+   // aten::tile(Tensor self, SymInt[] dims) -> Tensor
    inline at::Tensor tile(const at::Tensor & self, at::IntArrayRef dims) {
+       return at::_ops::tile::call(self, c10::fromIntArrayRefSlow(dims));
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, int64_t>::value>>
+     at::Tensor tile(const at::Tensor & self, at::IntArrayRef dims) {
+       return at::_ops::tile::call(self, c10::fromIntArrayRefSlow(dims));
+     }
+   }
+   
+   // aten::tile(Tensor self, SymInt[] dims) -> Tensor
+   inline at::Tensor tile_symint(const at::Tensor & self, c10::SymIntArrayRef dims) {
        return at::_ops::tile::call(self, dims);
+   }
+   namespace symint {
+     template <typename T, typename = std::enable_if_t<std::is_same<T, c10::SymInt>::value>>
+     at::Tensor tile(const at::Tensor & self, c10::SymIntArrayRef dims) {
+       return at::_ops::tile::call(self, dims);
+     }
    }
    
    // aten::transpose.int(Tensor(a) self, int dim0, int dim1) -> Tensor(a)
@@ -12692,16 +12709,6 @@ Program Listing for File Functions.h
    // aten::_foreach_div_.ScalarList(Tensor(a!)[] self, Scalar[] scalars) -> ()
    inline void _foreach_div_(at::TensorList self, at::ArrayRef<at::Scalar> scalars) {
        return at::_ops::_foreach_div__ScalarList::call(self, scalars);
-   }
-   
-   // aten::_foreach_clamp(Tensor[] self, Scalar? min=None, Scalar? max=None) -> Tensor[]
-   inline ::std::vector<at::Tensor> _foreach_clamp(at::TensorList self, const c10::optional<at::Scalar> & min, const c10::optional<at::Scalar> & max=c10::nullopt) {
-       return at::_ops::_foreach_clamp::call(self, min, max);
-   }
-   
-   // aten::_foreach_clamp_(Tensor(a!)[] self, Scalar? min=None, Scalar? max=None) -> ()
-   inline void _foreach_clamp_(at::TensorList self, const c10::optional<at::Scalar> & min, const c10::optional<at::Scalar> & max=c10::nullopt) {
-       return at::_ops::_foreach_clamp_::call(self, min, max);
    }
    
    // aten::_foreach_clamp_max.Scalar(Tensor[] self, Scalar scalar) -> Tensor[]
@@ -27012,15 +27019,6 @@ Program Listing for File Functions.h
    // aten::_foreach_div.ScalarList_out(Tensor[] self, Scalar[] scalars, *, Tensor(a!)[] out) -> ()
    inline void _foreach_div_outf(at::TensorList self, at::ArrayRef<at::Scalar> scalars, at::TensorList out) {
        return at::_ops::_foreach_div_ScalarList_out::call(self, scalars, out);
-   }
-   
-   // aten::_foreach_clamp.out(Tensor[] self, Scalar? min=None, Scalar? max=None, *, Tensor(a!)[] out) -> ()
-   inline void _foreach_clamp_out(at::TensorList out, at::TensorList self, const c10::optional<at::Scalar> & min=c10::nullopt, const c10::optional<at::Scalar> & max=c10::nullopt) {
-       return at::_ops::_foreach_clamp_out::call(self, min, max, out);
-   }
-   // aten::_foreach_clamp.out(Tensor[] self, Scalar? min=None, Scalar? max=None, *, Tensor(a!)[] out) -> ()
-   inline void _foreach_clamp_outf(at::TensorList self, const c10::optional<at::Scalar> & min, const c10::optional<at::Scalar> & max, at::TensorList out) {
-       return at::_ops::_foreach_clamp_out::call(self, min, max, out);
    }
    
    // aten::_foreach_clamp_max.Scalar_out(Tensor[] self, Scalar scalar, *, Tensor(a!)[] out) -> ()
