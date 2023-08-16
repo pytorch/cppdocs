@@ -359,6 +359,32 @@ seq-&gt;forward(1);
 If MImpl&#39;s forward() method has default arguments, please make sure
 the forward() method is declared with a corresponding
 `FORWARD_HAS_DEFAULT_ARGS` macro.
+ public:
+  explicit MImpl(int value_) : value(value_) {}
+  torch::Tensor forward(int a, int b = 2, double c = 3.0) {
+    return torch::tensor(a + b + c);
+  }
+ protected:
+  /*
+  NOTE: looking at the argument list of `forward`:
+  `forward(int a, int b = 2, double c = 3.0)`
+  we saw the following default arguments:
+  ----------------------------------------------------------------
+  0-based index of default |         Default value of arg
+  arg in forward arg list  |  (wrapped by `torch::nn::AnyValue()`)
+  ----------------------------------------------------------------
+              1            |       torch::nn::AnyValue(2)
+              2            |       torch::nn::AnyValue(3.0)
+  ----------------------------------------------------------------
+  Thus we pass the following arguments to the `FORWARD_HAS_DEFAULT_ARGS`
+  macro:
+  *&amp;zwj;/
+  FORWARD_HAS_DEFAULT_ARGS({1, torch::nn::AnyValue(2)}, {2,
+  torch::nn::AnyValue(3.0)})
+ private:
+  int value;
+};
+TORCH_MODULE(M);
 #pragma once
 
 #define FORWARD_HAS_DEFAULT_ARGS(...)                                         \

@@ -384,7 +384,41 @@ the forward() method is declared with a corresponding
 </pre></div>
 </div>
 </p>
-<p>The right way to fix this error is to use the <code class="docutils literal notranslate"><span class="pre">FORWARD_HAS_DEFAULT_ARGS</span></code> macro when declaring the module: ``` struct MImpl : <a class="reference internal" href="classtorch_1_1nn_1_1_module.html#classtorch_1_1nn_1_1_module"><span class="std std-ref">torch::nn::Module</span></a> { public: explicit MImpl(int value_) : value(value_) {} torch::Tensor forward(int a, int b = 2, double c = 3.0) { return <a class="reference internal" href="function_namespacetorch_1abd1bdb34b2ec311bca5c2bb674a742f3.html#namespacetorch_1abd1bdb34b2ec311bca5c2bb674a742f3"><span class="std std-ref">torch::tensor</span></a>(a + b + c); } protected: /* NOTE: looking at the argument list of <code class="docutils literal notranslate"><span class="pre">forward</span></code>: <code class="docutils literal notranslate"><span class="pre">forward(int</span> <span class="pre">a,</span> <span class="pre">int</span> <span class="pre">b</span> <span class="pre">=</span> <span class="pre">2,</span> <span class="pre">double</span> <span class="pre">c</span> <span class="pre">=</span> <span class="pre">3.0)</span></code> </p>
+<p>The right way to fix this error is to use the <code class="docutils literal notranslate"><span class="pre">FORWARD_HAS_DEFAULT_ARGS</span></code> macro when declaring the module: <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">struct</span><span class="w"> </span><span class="nc">MImpl</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">nn</span><span class="o">::</span><span class="n">Module</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="k">public</span><span class="o">:</span>
+<span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="n">MImpl</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">value_</span><span class="p">)</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">value</span><span class="p">(</span><span class="n">value_</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span>
+<span class="w">  </span><span class="n">torch</span><span class="o">::</span><span class="n">Tensor</span><span class="w"> </span><span class="n">forward</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">a</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="kt">double</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">3.0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">tensor</span><span class="p">(</span><span class="n">a</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">c</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="w"> </span><span class="k">protected</span><span class="o">:</span>
+<span class="w">  </span><span class="cm">/*</span>
+<span class="cm">  NOTE: looking at the argument list of `forward`:</span>
+<span class="cm">  `forward(int a, int b = 2, double c = 3.0)`</span>
+<span class="cm">  we saw the following default arguments:</span>
+<span class="cm">  ----------------------------------------------------------------</span>
+<span class="cm">  0-based index of default |         Default value of arg</span>
+<span class="cm">  arg in forward arg list  |  (wrapped by `torch::nn::AnyValue()`)</span>
+<span class="cm">  ----------------------------------------------------------------</span>
+<span class="cm">              1            |       torch::nn::AnyValue(2)</span>
+<span class="cm">              2            |       torch::nn::AnyValue(3.0)</span>
+<span class="cm">  ----------------------------------------------------------------</span>
+<span class="cm">  Thus we pass the following arguments to the `FORWARD_HAS_DEFAULT_ARGS`</span>
+<span class="cm">  macro:</span>
+<span class="cm">  *&amp;zwj;/</span>
+<span class="cm">  FORWARD_HAS_DEFAULT_ARGS({1, torch::nn::AnyValue(2)}, {2,</span>
+<span class="cm">  torch::nn::AnyValue(3.0)})</span>
+<span class="cm"> private:</span>
+<span class="cm">  int value;</span>
+<span class="cm">};</span>
+<span class="cm">TORCH_MODULE(M);</span>
+</pre></div>
+</div>
+ Now, running the following would work: <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span>torch::nn::Sequential seq(M(1));
+seq-&gt;forward(1);  // This correctly populates the default arguments for
+`MImpl::forward`
+</pre></div>
+</div>
+ </p>
 </dd></dl>
 
 </div>
