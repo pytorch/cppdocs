@@ -446,6 +446,12 @@
 <span class="n">TORCH_API</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FunctionPreHook</span><span class="o">&gt;&gt;&amp;</span><span class="w"> </span><span class="n">hooks</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Variable</span><span class="o">&amp;</span><span class="p">);</span>
 <span class="n">TORCH_API</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">clear_hooks</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">TensorBase</span><span class="o">&amp;</span><span class="p">);</span>
 
+<span class="n">TORCH_API</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">set_post_acc_grad_hooks</span><span class="p">(</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">TensorBase</span><span class="o">&amp;</span><span class="p">,</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">PostAccumulateGradHook</span><span class="o">&gt;</span><span class="w"> </span><span class="n">dict</span><span class="p">);</span>
+<span class="n">TORCH_API</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">PostAccumulateGradHook</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">post_acc_grad_hooks</span><span class="p">(</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">Variable</span><span class="o">&amp;</span><span class="p">);</span>
+
 <span class="n">TORCH_API</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="n">create_cpp_hook</span><span class="p">(</span>
 <span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">TensorBase</span><span class="o">&amp;</span><span class="p">,</span>
 <span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_retains_grad_hooks</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">);</span>
@@ -486,6 +492,12 @@
 <span class="w">  </span><span class="c1">// each other, so using both is not defined behavior.</span>
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FunctionPreHook</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">hooks_</span><span class="p">;</span>
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">hooks_list</span><span class="o">&gt;</span><span class="w"> </span><span class="n">cpp_hooks_list_</span><span class="p">;</span>
+
+<span class="w">  </span><span class="c1">// The post_acc_grad_hooks_ field stores only Python hooks</span>
+<span class="w">  </span><span class="c1">// (PyFunctionTensorPostAccGradHooks) that are called after the</span>
+<span class="w">  </span><span class="c1">// .grad field has been accumulated into. This is less complicated</span>
+<span class="w">  </span><span class="c1">// than the hooks_ field, which encapsulates a lot more.</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">PostAccumulateGradHook</span><span class="o">&gt;</span><span class="w"> </span><span class="n">post_acc_grad_hooks_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// Only meaningful on leaf variables (must be false otherwise)</span>
 <span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">requires_grad_</span><span class="p">{</span><span class="nb">false</span><span class="p">};</span>
