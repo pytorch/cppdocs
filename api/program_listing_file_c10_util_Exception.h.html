@@ -436,7 +436,7 @@
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">caller_</span><span class="p">;</span>
 <span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">what_without_backtrace</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">what_without_backtrace</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">what_without_backtrace_</span><span class="p">.</span><span class="n">c_str</span><span class="p">();</span>
 <span class="w">  </span><span class="p">}</span>
 
@@ -549,6 +549,15 @@
 <span class="p">};</span>
 
 <span class="p">}</span><span class="w"> </span><span class="c1">// namespace WarningUtils</span>
+
+<span class="c1">// Like Error, but we always report the C++ backtrace, instead of only</span>
+<span class="c1">// reporting when TORCH_SHOW_CPP_STACKTRACES</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">ErrorAlwaysShowCppStacktrace</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="nf">what_without_backtrace</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">what</span><span class="p">();</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">};</span>
 
 <span class="c1">// Used in ATen for out-of-bound indices that can reasonably only be detected</span>
 <span class="c1">// lazily inside a kernel (See: advanced indexing).  These turn into</span>
@@ -897,6 +906,9 @@
 <span class="c1">// Like TORCH_CHECK, but raises NotImplementedErrors instead of Errors.</span>
 <span class="cp">#define TORCH_CHECK_NOT_IMPLEMENTED(cond, ...) \</span>
 <span class="cp">  TORCH_CHECK_WITH_MSG(NotImplementedError, cond, &quot;TYPE&quot;, __VA_ARGS__)</span>
+
+<span class="cp">#define TORCH_CHECK_ALWAYS_SHOW_CPP_STACKTRACE(cond, ...) \</span>
+<span class="cp">  TORCH_CHECK_WITH_MSG(ErrorAlwaysShowCppStacktrace, cond, &quot;TYPE&quot;, __VA_ARGS__)</span>
 
 <span class="cp">#ifdef STRIP_ERROR_MESSAGES</span>
 <span class="cp">#define WARNING_MESSAGE_STRING(...) \</span>
