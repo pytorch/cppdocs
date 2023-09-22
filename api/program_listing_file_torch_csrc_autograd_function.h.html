@@ -372,6 +372,11 @@
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;utility&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;vector&gt;</span>
 
+<span class="n">C10_CLANG_DIAGNOSTIC_PUSH</span><span class="p">()</span>
+<span class="cp">#if C10_CLANG_HAS_WARNING(&quot;-Wshorten-64-to-32&quot;)</span>
+<span class="n">C10_CLANG_DIAGNOSTIC_IGNORE</span><span class="p">(</span><span class="s">&quot;-Wshorten-64-to-32&quot;</span><span class="p">)</span>
+<span class="cp">#endif</span>
+
 <span class="k">namespace</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="p">{</span>
 <span class="k">namespace</span><span class="w"> </span><span class="nn">autograd</span><span class="w"> </span><span class="p">{</span>
 
@@ -516,9 +521,9 @@
 <span class="w">            </span><span class="n">name</span><span class="p">(),</span>
 <span class="w">            </span><span class="n">c10</span><span class="o">::</span><span class="n">ArrayRef</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">IValue</span><span class="o">&gt;</span><span class="p">(</span>
 <span class="w">                </span><span class="n">inputs_vec</span><span class="p">.</span><span class="n">data</span><span class="p">(),</span><span class="w"> </span><span class="n">inputs_vec</span><span class="p">.</span><span class="n">size</span><span class="p">()),</span>
-<span class="w">            </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">sequence_nr</span><span class="p">()));</span>
+<span class="w">            </span><span class="n">sequence_nr</span><span class="p">());</span>
 <span class="w">      </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
-<span class="w">        </span><span class="n">guard</span><span class="p">.</span><span class="n">before</span><span class="p">(</span><span class="n">name</span><span class="p">(),</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">int64_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">sequence_nr</span><span class="p">()));</span>
+<span class="w">        </span><span class="n">guard</span><span class="p">.</span><span class="n">before</span><span class="p">(</span><span class="n">name</span><span class="p">(),</span><span class="w"> </span><span class="n">sequence_nr</span><span class="p">());</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">apply</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">inputs</span><span class="p">));</span>
 <span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
@@ -538,22 +543,23 @@
 <span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="nf">add_input_metadata</span><span class="p">(</span>
 <span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">TensorOptions</span><span class="o">&amp;</span><span class="w"> </span><span class="n">options</span><span class="p">,</span>
 <span class="w">      </span><span class="n">c10</span><span class="o">::</span><span class="n">SymIntArrayRef</span><span class="w"> </span><span class="n">shape</span><span class="p">,</span>
-<span class="w">      </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_tensor_subclass</span><span class="p">,</span>
-<span class="w">      </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_nested</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_tensor_subclass</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-init-variables)</span>
 <span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">input_nr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">input_metadata_</span><span class="p">.</span><span class="n">size</span><span class="p">();</span>
-<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">meta_shape</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MetadataShape</span><span class="p">{</span><span class="n">std</span><span class="o">::</span><span class="n">in_place_type</span><span class="o">&lt;</span><span class="n">SymIntSmallVec</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">shape</span><span class="p">};</span>
-<span class="w">    </span><span class="n">input_metadata_</span><span class="p">.</span><span class="n">emplace_back</span><span class="p">(</span>
-<span class="w">        </span><span class="n">options</span><span class="p">,</span><span class="w"> </span><span class="n">meta_shape</span><span class="p">,</span><span class="w"> </span><span class="n">is_tensor_subclass</span><span class="p">,</span><span class="w"> </span><span class="n">is_nested</span><span class="p">);</span>
+<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">meta_shape</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MetadataShape</span><span class="p">{</span><span class="n">c10</span><span class="o">::</span><span class="n">in_place_type</span><span class="o">&lt;</span><span class="n">SymIntSmallVec</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">shape</span><span class="p">};</span>
+<span class="w">    </span><span class="n">input_metadata_</span><span class="p">.</span><span class="n">emplace_back</span><span class="p">(</span><span class="n">options</span><span class="p">,</span><span class="w"> </span><span class="n">meta_shape</span><span class="p">,</span><span class="w"> </span><span class="n">is_tensor_subclass</span><span class="p">);</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">input_nr</span><span class="p">;</span>
 <span class="w">  </span><span class="p">}</span>
 
 <span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="nf">add_input_metadata</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">t</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-init-variables)</span>
 <span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">input_nr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">input_metadata_</span><span class="p">.</span><span class="n">size</span><span class="p">();</span>
 <span class="w">    </span><span class="n">input_metadata_</span><span class="p">.</span><span class="n">emplace_back</span><span class="p">(</span><span class="n">t</span><span class="p">);</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">input_nr</span><span class="p">;</span>
 <span class="w">  </span><span class="p">}</span>
 
 <span class="w">  </span><span class="kt">uint32_t</span><span class="w"> </span><span class="nf">add_input_metadata</span><span class="p">(</span><span class="n">undefined_input</span><span class="w"> </span><span class="n">u</span><span class="p">)</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-init-variables)</span>
 <span class="w">    </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">input_nr</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">input_metadata_</span><span class="p">.</span><span class="n">size</span><span class="p">();</span>
 <span class="w">    </span><span class="n">input_metadata_</span><span class="p">.</span><span class="n">emplace_back</span><span class="p">();</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">input_nr</span><span class="p">;</span>
@@ -781,11 +787,11 @@
 
 <span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">add_retains_grad_hook</span><span class="p">(</span>
 <span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FunctionPreHook</span><span class="o">&gt;&amp;&amp;</span><span class="w"> </span><span class="n">pre_hook</span><span class="p">,</span>
-<span class="w">      </span><span class="kt">size_t</span><span class="w"> </span><span class="n">output_idx</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="kt">int</span><span class="w"> </span><span class="n">output_idx</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">retains_grad_hooks_</span><span class="p">[</span><span class="n">output_idx</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">pre_hook</span><span class="p">);</span>
 <span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FunctionPreHook</span><span class="o">&gt;</span><span class="w"> </span><span class="n">pop_retains_grad_hook</span><span class="p">(</span><span class="kt">size_t</span><span class="w"> </span><span class="n">output_idx</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FunctionPreHook</span><span class="o">&gt;</span><span class="w"> </span><span class="n">pop_retains_grad_hook</span><span class="p">(</span><span class="kt">int</span><span class="w"> </span><span class="n">output_idx</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">ret</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">retains_grad_hooks_</span><span class="p">[</span><span class="n">output_idx</span><span class="p">]);</span>
 <span class="w">    </span><span class="n">retains_grad_hooks_</span><span class="p">.</span><span class="n">erase</span><span class="p">(</span><span class="n">output_idx</span><span class="p">);</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">ret</span><span class="p">;</span>
@@ -811,7 +817,7 @@
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">empty</span><span class="p">;</span>
 <span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">unordered_map</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FunctionPreHook</span><span class="o">&gt;&gt;&amp;</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">unordered_map</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FunctionPreHook</span><span class="o">&gt;&gt;&amp;</span>
 <span class="w">  </span><span class="n">retains_grad_hooks</span><span class="p">()</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">retains_grad_hooks_</span><span class="p">;</span>
 <span class="w">  </span><span class="p">}</span>
@@ -859,18 +865,21 @@
 
 <span class="w">  </span><span class="c1">// Sequence number used to correlate backward nodes with forward ops in the</span>
 <span class="w">  </span><span class="c1">// profiler and provide determinism in the engine.</span>
-<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)</span>
+<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
 <span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">sequence_nr_</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// See NOTE [ Topological Number ]</span>
+<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
 <span class="w">  </span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">topological_nr_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// Tracks whether this node has been added as the next_edge of another node</span>
 <span class="w">  </span><span class="c1">// via set_next_edge(s), which always calls topological_nr() of all its</span>
 <span class="w">  </span><span class="c1">// children See NOTE [ Topological Number ] for why we need this.</span>
+<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
 <span class="w">  </span><span class="k">mutable</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">has_parent_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// Id of the thread that created the instance</span>
+<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
 <span class="w">  </span><span class="kt">uint64_t</span><span class="w"> </span><span class="n">thread_id_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">0</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// Note [Thread Safety on Autograd Node]</span>
@@ -915,10 +924,14 @@
 <span class="w">  </span><span class="c1">// hooks are automatically thread safe), we rely on the user to write thread</span>
 <span class="w">  </span><span class="c1">// safe C++ hooks if they want the hook to be correctly applied in</span>
 <span class="w">  </span><span class="c1">// multithreading environment.</span>
+<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="w"> </span><span class="n">mutex_</span><span class="p">;</span>
 
+<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
 <span class="w">  </span><span class="n">edge_list</span><span class="w"> </span><span class="n">next_edges_</span><span class="p">;</span>
+<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
 <span class="w">  </span><span class="n">PyObject</span><span class="o">*</span><span class="w"> </span><span class="n">pyobj_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span><span class="w"> </span><span class="c1">// weak reference</span>
+<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">AnomalyMetadata</span><span class="o">&gt;</span><span class="w"> </span><span class="n">anomaly_metadata_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// NOTE [Hooks ordering]</span>
@@ -931,11 +944,15 @@
 <span class="w">  </span><span class="c1">//   even if that node won&#39;t be executed.</span>
 <span class="w">  </span><span class="c1">// - retains_grad_hook are like tensor_pre_hooks except they are always</span>
 <span class="w">  </span><span class="c1">//   ordered after all other tensor pre hooks</span>
+<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FunctionPreHook</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">pre_hooks_</span><span class="p">;</span>
+<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FunctionPreHook</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">tensor_pre_hooks_</span><span class="p">;</span>
-<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">unordered_map</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FunctionPreHook</span><span class="o">&gt;&gt;</span>
-<span class="w">      </span><span class="n">retains_grad_hooks_</span><span class="p">;</span>
+<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">unordered_map</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FunctionPreHook</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">retains_grad_hooks_</span><span class="p">;</span>
+<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">FunctionPostHook</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="n">post_hooks_</span><span class="p">;</span>
+<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)</span>
 <span class="w">  </span><span class="n">at</span><span class="o">::</span><span class="n">SmallVector</span><span class="o">&lt;</span><span class="n">InputMetadata</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="o">&gt;</span><span class="w"> </span><span class="n">input_metadata_</span><span class="p">;</span>
 <span class="p">};</span>
 
@@ -956,6 +973,7 @@
 <span class="w">  </span><span class="n">edge_list</span><span class="w"> </span><span class="n">next_edges</span><span class="p">;</span>
 <span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">IterArgs</span><span class="o">&lt;</span><span class="n">MakeNextFunctionList</span><span class="o">&gt;::</span><span class="k">operator</span><span class="p">();</span>
 <span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">operator</span><span class="p">()(</span><span class="k">const</span><span class="w"> </span><span class="n">Variable</span><span class="o">&amp;</span><span class="w"> </span><span class="n">variable</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// NOLINTNEXTLINE(bugprone-branch-clone)</span>
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">variable</span><span class="p">.</span><span class="n">defined</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="n">next_edges</span><span class="p">.</span><span class="n">emplace_back</span><span class="p">(</span><span class="n">impl</span><span class="o">::</span><span class="n">gradient_edge</span><span class="p">(</span><span class="n">variable</span><span class="p">));</span>
 <span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
@@ -963,11 +981,17 @@
 <span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">operator</span><span class="p">()(</span><span class="k">const</span><span class="w"> </span><span class="n">Variable</span><span class="o">*</span><span class="w"> </span><span class="n">variable</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">operator</span><span class="p">()(</span><span class="o">*</span><span class="n">variable</span><span class="p">);</span>
+<span class="w">    </span><span class="c1">// NOLINTNEXTLINE(bugprone-branch-clone)</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">variable</span><span class="o">-&gt;</span><span class="n">defined</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">next_edges</span><span class="p">.</span><span class="n">emplace_back</span><span class="p">(</span><span class="n">impl</span><span class="o">::</span><span class="n">gradient_edge</span><span class="p">(</span><span class="o">*</span><span class="n">variable</span><span class="p">));</span>
+<span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">next_edges</span><span class="p">.</span><span class="n">emplace_back</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
 <span class="w">  </span><span class="p">}</span>
 <span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">operator</span><span class="p">()(</span><span class="k">const</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Variable</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">variable</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">variable</span><span class="p">.</span><span class="n">has_value</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="k">operator</span><span class="p">()(</span><span class="o">*</span><span class="n">variable</span><span class="p">);</span>
+<span class="w">    </span><span class="c1">// NOLINTNEXTLINE(bugprone-branch-clone)</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">variable</span><span class="p">.</span><span class="n">has_value</span><span class="p">()</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">variable</span><span class="o">-&gt;</span><span class="n">defined</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">next_edges</span><span class="p">.</span><span class="n">emplace_back</span><span class="p">(</span><span class="n">impl</span><span class="o">::</span><span class="n">gradient_edge</span><span class="p">(</span><span class="o">*</span><span class="n">variable</span><span class="p">));</span>
 <span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="n">next_edges</span><span class="p">.</span><span class="n">emplace_back</span><span class="p">();</span>
 <span class="w">    </span><span class="p">}</span>
@@ -1013,6 +1037,8 @@
 
 <span class="p">}</span><span class="w"> </span><span class="c1">// namespace autograd</span>
 <span class="p">}</span><span class="w"> </span><span class="c1">// namespace torch</span>
+
+<span class="n">C10_CLANG_DIAGNOSTIC_POP</span><span class="p">()</span>
 </pre></div>
 </div>
 </div>
