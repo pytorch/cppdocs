@@ -102,7 +102,7 @@ Program Listing for File Exception.h
        return caller_;
      }
    
-     const char* what_without_backtrace() const noexcept {
+     virtual const char* what_without_backtrace() const noexcept {
        return what_without_backtrace_.c_str();
      }
    
@@ -216,6 +216,15 @@ Program Listing for File Exception.h
    
    } // namespace WarningUtils
    
+   // Like Error, but we always report the C++ backtrace, instead of only
+   // reporting when TORCH_SHOW_CPP_STACKTRACES
+   class C10_API ErrorAlwaysShowCppStacktrace : public Error {
+     using Error::Error;
+     const char* what_without_backtrace() const noexcept override {
+       return what();
+     }
+   };
+   
    // Used in ATen for out-of-bound indices that can reasonably only be detected
    // lazily inside a kernel (See: advanced indexing).  These turn into
    // IndexError when they cross to Python.
@@ -263,10 +272,28 @@ Program Listing for File Exception.h
      using Error::Error;
    };
    
+   // Base error type for all distributed errors.
+   // These turn into DistError when they cross into Python.
+   class C10_API DistError : public Error {
+     using Error::Error;
+   };
+   
    // Used for collective communication library errors from the distributed module.
    // These turn into DistBackendError when they cross into Python.
-   class C10_API DistBackendError : public Error {
-     using Error::Error;
+   class C10_API DistBackendError : public DistError {
+     using DistError::DistError;
+   };
+   
+   // Used for errors originating from the store.
+   // These turn into DistStoreError when they cross into Python.
+   class C10_API DistStoreError : public DistError {
+     using DistError::DistError;
+   };
+   
+   // Used for errors originating from the TCP/IP stack and not from collective
+   // libraries. These turn into DistNetworkError when they cross into Python.
+   class C10_API DistNetworkError : public DistError {
+     using DistError::DistError;
    };
    
    // A utility function to return an exception std::string by prepending its
@@ -545,6 +572,9 @@ Program Listing for File Exception.h
    // Like TORCH_CHECK, but raises NotImplementedErrors instead of Errors.
    #define TORCH_CHECK_NOT_IMPLEMENTED(cond, ...) \
      TORCH_CHECK_WITH_MSG(NotImplementedError, cond, "TYPE", __VA_ARGS__)
+   
+   #define TORCH_CHECK_ALWAYS_SHOW_CPP_STACKTRACE(cond, ...) \
+     TORCH_CHECK_WITH_MSG(ErrorAlwaysShowCppStacktrace, cond, "TYPE", __VA_ARGS__)
    
    #ifdef STRIP_ERROR_MESSAGES
    #define WARNING_MESSAGE_STRING(...) \

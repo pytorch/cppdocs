@@ -54,6 +54,7 @@ Program Listing for File library.h
    
    #include <ATen/core/op_registration/infer_schema.h>
    #include <ATen/core/op_registration/op_allowlist.h>
+   #include <ATen/core/dispatch/Dispatcher.h>
    #include <c10/core/DispatchKey.h>
    #include <torch/csrc/jit/frontend/function_schema_parser.h>
    
@@ -452,6 +453,15 @@ Program Listing for File library.h
        c10::FunctionSchema s = schema(std::forward<Schema>(raw_schema));
        return _def(std::move(s), nullptr, tags, rv);
      }
+   
+     Library& impl_abstract_pystub(const char* name, const char* pymodule, const char* context = "") {
+       at::OperatorName opname = _parseNameForLib(name);
+       registrars_.emplace_back(
+         c10::Dispatcher::singleton().registerAbstractImplPyStub(opname, pymodule, context)
+         );
+       return *this;
+     }
+   
      template <typename NameOrSchema, typename Func>
      Library& def(NameOrSchema&& raw_name_or_schema, Func&& raw_f) & {
        CppFunction f(std::forward<Func>(raw_f));
