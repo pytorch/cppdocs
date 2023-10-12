@@ -267,7 +267,7 @@ Program Listing for File loss.h
        const Tensor& input,
        const Tensor& target,
        SmoothL1LossFuncOptions::reduction_t reduction,
-       double beta = 1.) {
+       c10::optional<double> beta_opt = c10::nullopt) {
      if (target.sizes() != input.sizes()) {
        TORCH_WARN(
            "Using a target size (",
@@ -278,6 +278,7 @@ Program Listing for File loss.h
            "This will likely lead to incorrect results due to broadcasting. ",
            "Please ensure they have the same size.");
      }
+     double beta = beta_opt.value_or(1.0);
    
      std::vector<Tensor> expanded_tensors =
          torch::broadcast_tensors({input, target});
@@ -293,8 +294,20 @@ Program Listing for File loss.h
    inline Tensor smooth_l1_loss(
        const Tensor& input,
        const Tensor& target,
-       const SmoothL1LossFuncOptions& options = {},
-       double beta = 1.) {
+       const SmoothL1LossFuncOptions& options = {}) {
+     return detail::smooth_l1_loss(
+         input, target, options.reduction(), options.beta());
+   }
+   
+   inline Tensor smooth_l1_loss(
+       const Tensor& input,
+       const Tensor& target,
+       const SmoothL1LossFuncOptions& options,
+       double beta) {
+     TORCH_CHECK(
+         options.beta() == c10::nullopt,
+         "expected beta not to be provided in 'options', but got ",
+         options.beta().value());
      return detail::smooth_l1_loss(input, target, options.reduction(), beta);
    }
    

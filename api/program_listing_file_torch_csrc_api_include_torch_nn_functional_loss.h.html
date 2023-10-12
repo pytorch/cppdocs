@@ -601,7 +601,7 @@
 <span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">input</span><span class="p">,</span>
 <span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">target</span><span class="p">,</span>
 <span class="w">    </span><span class="n">SmoothL1LossFuncOptions</span><span class="o">::</span><span class="n">reduction_t</span><span class="w"> </span><span class="n">reduction</span><span class="p">,</span>
-<span class="w">    </span><span class="kt">double</span><span class="w"> </span><span class="n">beta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span><span class="w"> </span><span class="n">beta_opt</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">target</span><span class="p">.</span><span class="n">sizes</span><span class="p">()</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">input</span><span class="p">.</span><span class="n">sizes</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">TORCH_WARN</span><span class="p">(</span>
 <span class="w">        </span><span class="s">&quot;Using a target size (&quot;</span><span class="p">,</span>
@@ -612,6 +612,7 @@
 <span class="w">        </span><span class="s">&quot;This will likely lead to incorrect results due to broadcasting. &quot;</span><span class="p">,</span>
 <span class="w">        </span><span class="s">&quot;Please ensure they have the same size.&quot;</span><span class="p">);</span>
 <span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="kt">double</span><span class="w"> </span><span class="n">beta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">beta_opt</span><span class="p">.</span><span class="n">value_or</span><span class="p">(</span><span class="mf">1.0</span><span class="p">);</span>
 
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">Tensor</span><span class="o">&gt;</span><span class="w"> </span><span class="n">expanded_tensors</span><span class="w"> </span><span class="o">=</span>
 <span class="w">      </span><span class="n">torch</span><span class="o">::</span><span class="n">broadcast_tensors</span><span class="p">({</span><span class="n">input</span><span class="p">,</span><span class="w"> </span><span class="n">target</span><span class="p">});</span>
@@ -627,8 +628,20 @@
 <span class="kr">inline</span><span class="w"> </span><span class="n">Tensor</span><span class="w"> </span><span class="n">smooth_l1_loss</span><span class="p">(</span>
 <span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">input</span><span class="p">,</span>
 <span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">target</span><span class="p">,</span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">SmoothL1LossFuncOptions</span><span class="o">&amp;</span><span class="w"> </span><span class="n">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{},</span>
-<span class="w">    </span><span class="kt">double</span><span class="w"> </span><span class="n">beta</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mf">1.</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">SmoothL1LossFuncOptions</span><span class="o">&amp;</span><span class="w"> </span><span class="n">options</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">{})</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">detail</span><span class="o">::</span><span class="n">smooth_l1_loss</span><span class="p">(</span>
+<span class="w">      </span><span class="n">input</span><span class="p">,</span><span class="w"> </span><span class="n">target</span><span class="p">,</span><span class="w"> </span><span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">(),</span><span class="w"> </span><span class="n">options</span><span class="p">.</span><span class="n">beta</span><span class="p">());</span>
+<span class="p">}</span>
+
+<span class="kr">inline</span><span class="w"> </span><span class="n">Tensor</span><span class="w"> </span><span class="n">smooth_l1_loss</span><span class="p">(</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">input</span><span class="p">,</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">target</span><span class="p">,</span>
+<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">SmoothL1LossFuncOptions</span><span class="o">&amp;</span><span class="w"> </span><span class="n">options</span><span class="p">,</span>
+<span class="w">    </span><span class="kt">double</span><span class="w"> </span><span class="n">beta</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">TORCH_CHECK</span><span class="p">(</span>
+<span class="w">      </span><span class="n">options</span><span class="p">.</span><span class="n">beta</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">,</span>
+<span class="w">      </span><span class="s">&quot;expected beta not to be provided in &#39;options&#39;, but got &quot;</span><span class="p">,</span>
+<span class="w">      </span><span class="n">options</span><span class="p">.</span><span class="n">beta</span><span class="p">().</span><span class="n">value</span><span class="p">());</span>
 <span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">detail</span><span class="o">::</span><span class="n">smooth_l1_loss</span><span class="p">(</span><span class="n">input</span><span class="p">,</span><span class="w"> </span><span class="n">target</span><span class="p">,</span><span class="w"> </span><span class="n">options</span><span class="p">.</span><span class="n">reduction</span><span class="p">(),</span><span class="w"> </span><span class="n">beta</span><span class="p">);</span>
 <span class="p">}</span>
 
