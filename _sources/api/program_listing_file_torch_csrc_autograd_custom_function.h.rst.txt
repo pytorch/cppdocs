@@ -27,7 +27,6 @@ Program Listing for File custom_function.h
    
    using optional_variable_list = std::vector<c10::optional<Variable>>;
    using _jvp_fn_t = std::function<variable_list(variable_list, variable_list)>;
-   using _view_as_self_fn_t = std::function<at::Tensor(at::Tensor)>;
    
    TORCH_API std::vector<c10::optional<Variable>> _wrap_outputs(
        const variable_list& input_vars,
@@ -35,14 +34,13 @@ Program Listing for File custom_function.h
        const std::unordered_set<at::TensorImpl*>& dirty_inputs,
        const at::ArrayRef<c10::optional<Variable>> raw_outputs,
        const std::shared_ptr<Node>& cdata,
-       const _jvp_fn_t& jvp_user_function,
-       const std::unordered_set<at::TensorImpl*>& to_save_if_setup_context,
-       const _view_as_self_fn_t& view_as_self_fn);
+       _jvp_fn_t jvp_user_function,
+       const std::unordered_set<at::TensorImpl*>& to_save_if_setup_context);
    
    TORCH_API void check_variable_result(
        const at::TensorBase& original,
        const at::TensorBase& result,
-       const std::string& hook_name);
+       std::string hook_name);
    
    // Get the return type of the forward function of the custom Function class X
    template <typename X, typename... Args>
@@ -256,10 +254,6 @@ Program Listing for File custom_function.h
            "Please open a feature request on GitHub if you need this.");
      };
    
-     auto view_as_self_fn = [](const at::Tensor& x) -> at::Tensor {
-       return x.view_as(x);
-     };
-   
      auto wrapped_outputs = _wrap_outputs(
          input_vars,
          node->ctx_.get_non_differentiable(),
@@ -267,8 +261,7 @@ Program Listing for File custom_function.h
          to_optional(outputs),
          is_executable ? node : nullptr,
          jvp_fn,
-         {},
-         view_as_self_fn);
+         {});
    
      node->output_info_.reserve(wrapped_outputs.size());
      for (auto& output : wrapped_outputs) {

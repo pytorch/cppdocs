@@ -54,7 +54,6 @@ Program Listing for File library.h
    
    #include <ATen/core/op_registration/infer_schema.h>
    #include <ATen/core/op_registration/op_allowlist.h>
-   #include <ATen/core/dispatch/Dispatcher.h>
    #include <c10/core/DispatchKey.h>
    #include <torch/csrc/jit/frontend/function_schema_parser.h>
    
@@ -321,20 +320,19 @@ Program Listing for File library.h
    
    namespace detail {
    
-   inline std::variant<c10::OperatorName, c10::FunctionSchema> constructSchemaOrName(
+   inline c10::either<c10::OperatorName, c10::FunctionSchema> constructSchemaOrName(
        c10::FunctionSchema&& s) {
-     return std::move(s);
+     return c10::make_right<c10::OperatorName, c10::FunctionSchema>(std::move(s));
    }
-   inline std::variant<c10::OperatorName, c10::FunctionSchema> constructSchemaOrName(
+   inline c10::either<c10::OperatorName, c10::FunctionSchema> constructSchemaOrName(
        c10::OperatorName&& n) {
-     return std::move(n);
+     return c10::make_left<c10::OperatorName, c10::FunctionSchema>(std::move(n));
    }
-   inline std::variant<c10::OperatorName, c10::FunctionSchema>
-   constructSchemaOrName(const char* str) {
+   inline c10::either<c10::OperatorName, c10::FunctionSchema> constructSchemaOrName(
+       const char* str) {
      auto s = torch::jit::parseSchemaOrName(str);
-     if (std::holds_alternative<c10::FunctionSchema>(s)) {
-       std::get<c10::FunctionSchema>(s).setAliasAnalysis(
-           c10::AliasAnalysisKind::FROM_SCHEMA);
+     if (s.is_right()) {
+       s.right().setAliasAnalysis(c10::AliasAnalysisKind::FROM_SCHEMA);
      }
      return s;
    }
@@ -454,22 +452,12 @@ Program Listing for File library.h
        c10::FunctionSchema s = schema(std::forward<Schema>(raw_schema));
        return _def(std::move(s), nullptr, tags, rv);
      }
-   
-     Library& impl_abstract_pystub(const char* name, const char* pymodule, const char* context = "") {
-       at::OperatorName opname = _parseNameForLib(name);
-       registrars_.emplace_back(
-         c10::Dispatcher::singleton().registerAbstractImplPyStub(opname, pymodule, context)
-         );
-       return *this;
-     }
-   
      template <typename NameOrSchema, typename Func>
      Library& def(NameOrSchema&& raw_name_or_schema, Func&& raw_f) & {
        CppFunction f(std::forward<Func>(raw_f));
-       return _def(
-           detail::constructSchemaOrName(
-               ::std::forward<NameOrSchema>(raw_name_or_schema)),
-           ::std::move(f));
+       auto name_or_schema = detail::constructSchemaOrName(
+           std::forward<NameOrSchema>(raw_name_or_schema));
+       return _def(std::move(name_or_schema), std::move(f));
      }
    
      template <typename Name, typename Func>
@@ -625,7 +613,7 @@ Program Listing for File library.h
          const std::vector<at::Tag>& tags = {},
          _RegisterOrVerify rv = _RegisterOrVerify::REGISTER) &;
      Library& _def(
-         std::variant<c10::OperatorName, c10::FunctionSchema>&&,
+         c10::either<c10::OperatorName, c10::FunctionSchema>&&,
          CppFunction&& f) &;
      Library& _impl(
          const char* name,
