@@ -85,7 +85,19 @@
           </li>
 
           <li>
-            <a href="https://pytorch.org/mobile">Mobile</a>
+          <div id="resourcesDropdownButton" data-toggle="resources-dropdown" class="resources-dropdown">
+              <a class="resource-option with-down-arrow">
+                PyTorch Edge
+              </a>
+              <div class="resources-dropdown-menu">
+                <a class="nav-dropdown-item" href="https://pytorch.org/edge">
+                  <span class="dropdown-title">About PyTorch Edge</span>
+                </a>
+                <a class="nav-dropdown-item" href="https://pytorch.org/executorch">
+                  <span class="dropdown-title">ExecuTorch</span>
+                </a>
+              </div>
+            </div>  
           </li>
 
           <li>
@@ -351,11 +363,11 @@
 
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/macros/Macros.h&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/StringUtil.h&gt;</span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/variant.h&gt;</span>
 
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cstddef&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;exception&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;variant&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;vector&gt;</span>
 
 <span class="cp">#if defined(_MSC_VER) &amp;&amp; _MSC_VER &lt;= 1900</span>
@@ -436,7 +448,7 @@
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">caller_</span><span class="p">;</span>
 <span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">what_without_backtrace</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">what_without_backtrace</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">what_without_backtrace_</span><span class="p">.</span><span class="n">c_str</span><span class="p">();</span>
 <span class="w">  </span><span class="p">}</span>
 
@@ -450,7 +462,7 @@
 <span class="w">  </span><span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">UserWarning</span><span class="w"> </span><span class="p">{};</span>
 <span class="w">  </span><span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">DeprecationWarning</span><span class="w"> </span><span class="p">{};</span>
 
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">warning_variant_t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">variant</span><span class="o">&lt;</span><span class="n">UserWarning</span><span class="p">,</span><span class="w"> </span><span class="n">DeprecationWarning</span><span class="o">&gt;</span><span class="p">;</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">warning_variant_t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">variant</span><span class="o">&lt;</span><span class="n">UserWarning</span><span class="p">,</span><span class="w"> </span><span class="n">DeprecationWarning</span><span class="o">&gt;</span><span class="p">;</span>
 
 <span class="w">  </span><span class="n">Warning</span><span class="p">(</span>
 <span class="w">      </span><span class="n">warning_variant_t</span><span class="w"> </span><span class="n">type</span><span class="p">,</span>
@@ -550,6 +562,15 @@
 
 <span class="p">}</span><span class="w"> </span><span class="c1">// namespace WarningUtils</span>
 
+<span class="c1">// Like Error, but we always report the C++ backtrace, instead of only</span>
+<span class="c1">// reporting when TORCH_SHOW_CPP_STACKTRACES</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">ErrorAlwaysShowCppStacktrace</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="nf">what_without_backtrace</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">what</span><span class="p">();</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">};</span>
+
 <span class="c1">// Used in ATen for out-of-bound indices that can reasonably only be detected</span>
 <span class="c1">// lazily inside a kernel (See: advanced indexing).  These turn into</span>
 <span class="c1">// IndexError when they cross to Python.</span>
@@ -597,10 +618,28 @@
 <span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span>
 <span class="p">};</span>
 
+<span class="c1">// Base error type for all distributed errors.</span>
+<span class="c1">// These turn into DistError when they cross into Python.</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">DistError</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span>
+<span class="p">};</span>
+
 <span class="c1">// Used for collective communication library errors from the distributed module.</span>
 <span class="c1">// These turn into DistBackendError when they cross into Python.</span>
-<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">DistBackendError</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">DistBackendError</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">DistError</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">DistError</span><span class="o">::</span><span class="n">DistError</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="c1">// Used for errors originating from the store.</span>
+<span class="c1">// These turn into DistStoreError when they cross into Python.</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">DistStoreError</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">DistError</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">DistError</span><span class="o">::</span><span class="n">DistError</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="c1">// Used for errors originating from the TCP/IP stack and not from collective</span>
+<span class="c1">// libraries. These turn into DistNetworkError when they cross into Python.</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">DistNetworkError</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">DistError</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">DistError</span><span class="o">::</span><span class="n">DistError</span><span class="p">;</span>
 <span class="p">};</span>
 
 <span class="c1">// A utility function to return an exception std::string by prepending its</span>
@@ -621,6 +660,9 @@
 <span class="cp">#define C10_THROW_ERROR(err_type, msg) \</span>
 <span class="cp">  throw ::c10::err_type(               \</span>
 <span class="cp">      {__func__, __FILE__, static_cast&lt;uint32_t&gt;(__LINE__)}, msg)</span>
+
+<span class="cp">#define C10_BUILD_ERROR(err_type, msg) \</span>
+<span class="cp">  ::c10::err_type({__func__, __FILE__, static_cast&lt;uint32_t&gt;(__LINE__)}, msg)</span>
 
 <span class="c1">// Private helper macro for workaround MSVC misexpansion of nested macro</span>
 <span class="c1">// invocations involving __VA_ARGS__.  See</span>
@@ -879,6 +921,10 @@
 <span class="c1">// Like TORCH_CHECK, but raises NotImplementedErrors instead of Errors.</span>
 <span class="cp">#define TORCH_CHECK_NOT_IMPLEMENTED(cond, ...) \</span>
 <span class="cp">  TORCH_CHECK_WITH_MSG(NotImplementedError, cond, &quot;TYPE&quot;, __VA_ARGS__)</span>
+
+<span class="cp">#define TORCH_CHECK_ALWAYS_SHOW_CPP_STACKTRACE(cond, ...) \</span>
+<span class="cp">  TORCH_CHECK_WITH_MSG(                                   \</span>
+<span class="cp">      ErrorAlwaysShowCppStacktrace, cond, &quot;TYPE&quot;, ##__VA_ARGS__)</span>
 
 <span class="cp">#ifdef STRIP_ERROR_MESSAGES</span>
 <span class="cp">#define WARNING_MESSAGE_STRING(...) \</span>
@@ -1167,9 +1213,9 @@
         <div class="copyright">
         <p>© Copyright The Linux Foundation. The PyTorch Foundation is a project of The Linux Foundation.
           For web site terms of use, trademark policy and other policies applicable to The PyTorch Foundation please see
-          <a href="www.linuxfoundation.org/policies/">www.linuxfoundation.org/policies/</a>. The PyTorch Foundation supports the PyTorch open source
+          <a href="https://www.linuxfoundation.org/policies/">www.linuxfoundation.org/policies/</a>. The PyTorch Foundation supports the PyTorch open source
           project, which has been established as PyTorch Project a Series of LF Projects, LLC. For policies applicable to the PyTorch Project a Series of LF Projects, LLC,
-          please see <a href="www.lfprojects.org/policies/">www.lfprojects.org/policies/</a>.</p>
+          please see <a href="https://www.lfprojects.org/policies/">www.lfprojects.org/policies/</a>.</p>
       </div>
      </div>
 
@@ -1208,7 +1254,7 @@
           </li>
             
           <li>
-            <a href="https://pytorch.org/mobile">Mobile</a>
+            <a href="">Mobile</a>
           </li>
 
           <li>
