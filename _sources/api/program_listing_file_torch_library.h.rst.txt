@@ -54,7 +54,6 @@ Program Listing for File library.h
    
    #include <ATen/core/op_registration/infer_schema.h>
    #include <ATen/core/op_registration/op_allowlist.h>
-   #include <ATen/core/dispatch/Dispatcher.h>
    #include <c10/core/DispatchKey.h>
    #include <torch/csrc/jit/frontend/function_schema_parser.h>
    
@@ -68,15 +67,11 @@ Program Listing for File library.h
    struct NoInferSchemaTag {};
    #endif
    
-   #define HAS_PT2_COMPLIANT_TAG
-   
    // For multipy/torchdeploy use case
    enum class _RegisterOrVerify { REGISTER, VERIFY };
    
    template <class CurClass>
    class class_;
-   
-   #define HAS_IMPL_ABSTRACT_PYSTUB
    
    class TORCH_API CppFunction final {
      // TODO: This is morally the same thing as KernelRegistrationConfig, but it's
@@ -325,20 +320,19 @@ Program Listing for File library.h
    
    namespace detail {
    
-   inline std::variant<c10::OperatorName, c10::FunctionSchema> constructSchemaOrName(
+   inline c10::either<c10::OperatorName, c10::FunctionSchema> constructSchemaOrName(
        c10::FunctionSchema&& s) {
-     return std::move(s);
+     return c10::make_right<c10::OperatorName, c10::FunctionSchema>(std::move(s));
    }
-   inline std::variant<c10::OperatorName, c10::FunctionSchema> constructSchemaOrName(
+   inline c10::either<c10::OperatorName, c10::FunctionSchema> constructSchemaOrName(
        c10::OperatorName&& n) {
-     return std::move(n);
+     return c10::make_left<c10::OperatorName, c10::FunctionSchema>(std::move(n));
    }
-   inline std::variant<c10::OperatorName, c10::FunctionSchema>
-   constructSchemaOrName(const char* str) {
+   inline c10::either<c10::OperatorName, c10::FunctionSchema> constructSchemaOrName(
+       const char* str) {
      auto s = torch::jit::parseSchemaOrName(str);
-     if (std::holds_alternative<c10::FunctionSchema>(s)) {
-       std::get<c10::FunctionSchema>(s).setAliasAnalysis(
-           c10::AliasAnalysisKind::FROM_SCHEMA);
+     if (s.is_right()) {
+       s.right().setAliasAnalysis(c10::AliasAnalysisKind::FROM_SCHEMA);
      }
      return s;
    }
@@ -458,20 +452,12 @@ Program Listing for File library.h
        c10::FunctionSchema s = schema(std::forward<Schema>(raw_schema));
        return _def(std::move(s), nullptr, tags, rv);
      }
-   
-     Library& impl_abstract_pystub(const char* pymodule, const char* context = "") {
-       impl_abstract_pystub_ = {pymodule, context};
-       return *this;
-     }
-   
      template <typename NameOrSchema, typename Func>
-     Library& def(NameOrSchema&& raw_name_or_schema, Func&& raw_f,
-         const std::vector<at::Tag>& tags = {}) & {
+     Library& def(NameOrSchema&& raw_name_or_schema, Func&& raw_f) & {
        CppFunction f(std::forward<Func>(raw_f));
-       return _def(
-           detail::constructSchemaOrName(
-               ::std::forward<NameOrSchema>(raw_name_or_schema)),
-           ::std::move(f), tags);
+       auto name_or_schema = detail::constructSchemaOrName(
+           std::forward<NameOrSchema>(raw_name_or_schema));
+       return _def(std::move(name_or_schema), std::move(f));
      }
    
      template <typename Name, typename Func>
@@ -528,20 +514,20 @@ Program Listing for File library.h
      // These overloads cover cases when a SelectiveStr (see Note [Selective
      // build]) has been disabled at compile time.  In that case, don't generate
      // any code referencing the passed in functions at all.
-     Library& def(detail::SelectiveStr<false>, const std::vector<at::Tag>& tags = {}) & {
+     Library& def(detail::SelectiveStr<false>) & {
        return *this;
      }
-     Library& def(detail::SelectiveStr<true> raw_schema, const std::vector<at::Tag>& tags = {}) & {
-       return def(raw_schema.operator const char*(), tags);
+     Library& def(detail::SelectiveStr<true> raw_schema) & {
+       return def(raw_schema.operator const char*());
      }
      template <typename Func>
-     Library& def(detail::SelectiveStr<false>, Func&& /*raw_f*/, const std::vector<at::Tag>& tags = {}) & {
+     Library& def(detail::SelectiveStr<false>, Func&& /*raw_f*/) & {
        return *this;
      }
      template <typename Func>
-     Library& def(detail::SelectiveStr<true> raw_name_or_schema, Func&& raw_f, const std::vector<at::Tag>& tags = {}) & {
+     Library& def(detail::SelectiveStr<true> raw_name_or_schema, Func&& raw_f) & {
        return def(
-           raw_name_or_schema.operator const char*(), std::forward<Func>(raw_f), tags);
+           raw_name_or_schema.operator const char*(), std::forward<Func>(raw_f));
      }
    
      template <typename Func>
@@ -612,7 +598,6 @@ Program Listing for File library.h
      Kind kind_;
      c10::optional<std::string> ns_;
      c10::optional<c10::DispatchKey> dispatch_key_;
-     c10::optional<std::pair<const char*, const char*>> impl_abstract_pystub_;
      const char* file_;
      uint32_t line_;
    
@@ -628,9 +613,8 @@ Program Listing for File library.h
          const std::vector<at::Tag>& tags = {},
          _RegisterOrVerify rv = _RegisterOrVerify::REGISTER) &;
      Library& _def(
-         std::variant<c10::OperatorName, c10::FunctionSchema>&&,
-         CppFunction&& f,
-         const std::vector<at::Tag>& tags = {}) &;
+         c10::either<c10::OperatorName, c10::FunctionSchema>&&,
+         CppFunction&& f) &;
      Library& _impl(
          const char* name,
          CppFunction&& f,
