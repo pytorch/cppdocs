@@ -85,19 +85,7 @@
           </li>
 
           <li>
-          <div id="resourcesDropdownButton" data-toggle="resources-dropdown" class="resources-dropdown">
-              <a class="resource-option with-down-arrow">
-                PyTorch Edge
-              </a>
-              <div class="resources-dropdown-menu">
-                <a class="nav-dropdown-item" href="https://pytorch.org/edge">
-                  <span class="dropdown-title">About PyTorch Edge</span>
-                </a>
-                <a class="nav-dropdown-item" href="https://pytorch.org/executorch">
-                  <span class="dropdown-title">ExecuTorch</span>
-                </a>
-              </div>
-            </div>  
+            <a href="https://pytorch.org/mobile">Mobile</a>
           </li>
 
           <li>
@@ -490,7 +478,7 @@
 <span class="w">  </span><span class="c1">//     shared by multiple Tensors. See Note [ Using ForwardGrad ]</span>
 <span class="w">  </span><span class="c1">// Any transition from not_initialized to initialized</span>
 <span class="w">  </span><span class="c1">// must be protected by mutex_</span>
-<span class="w">  </span><span class="k">mutable</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ForwardGrad</span><span class="o">&gt;</span><span class="w"> </span><span class="n">fw_grad_</span><span class="p">;</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ForwardGrad</span><span class="o">&gt;</span><span class="w"> </span><span class="n">fw_grad_</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// The hooks_ field is actually reused by both python and cpp logic</span>
 <span class="w">  </span><span class="c1">// For both cases, we have a data structure, cpp_hooks_list_ (cpp)</span>
@@ -532,7 +520,8 @@
 <span class="w">  </span><span class="c1">// version of this class for the functions above</span>
 <span class="w">  </span><span class="k">mutable</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">mutex</span><span class="w"> </span><span class="n">mutex_</span><span class="p">;</span>
 
-<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">set_requires_grad</span><span class="p">(</span><span class="kt">bool</span><span class="w"> </span><span class="n">requires_grad</span><span class="p">,</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="o">*</span><span class="w"> </span><span class="n">self_impl</span><span class="p">)</span><span class="w"> </span><span class="k">final</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">set_requires_grad</span><span class="p">(</span><span class="kt">bool</span><span class="w"> </span><span class="n">requires_grad</span><span class="p">,</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">TensorImpl</span><span class="o">*</span><span class="w"> </span><span class="n">self_impl</span><span class="p">)</span>
+<span class="w">      </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">TORCH_CHECK</span><span class="p">(</span>
 <span class="w">        </span><span class="o">!</span><span class="n">requires_grad</span><span class="w"> </span><span class="o">||</span>
 <span class="w">            </span><span class="n">isDifferentiableType</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">typeMetaToScalarType</span><span class="p">(</span><span class="n">self_impl</span><span class="o">-&gt;</span><span class="n">dtype</span><span class="p">())),</span>
@@ -571,6 +560,7 @@
 <span class="w">    </span><span class="c1">// set_requires_grad also checks error conditions.</span>
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">requires_grad</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span><span class="n">self_impl</span><span class="p">);</span>
+<span class="w">      </span><span class="c1">// NOLINTNEXTLINE(clang-analyzer-optin.cplusplus.VirtualCall)</span>
 <span class="w">      </span><span class="n">set_requires_grad</span><span class="p">(</span><span class="n">requires_grad</span><span class="p">,</span><span class="w"> </span><span class="n">self_impl</span><span class="p">);</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="w">    </span><span class="n">TORCH_CHECK</span><span class="p">(</span>
@@ -775,7 +765,7 @@
 <span class="c1">// See NOTE [ Autograd View Variables ] for details.</span>
 <span class="c1">// Non-differentiable view. Just share version counter.</span>
 <span class="kr">inline</span><span class="w"> </span><span class="n">Variable</span><span class="w"> </span><span class="nf">make_variable_non_differentiable_view</span><span class="p">(</span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">Variable</span><span class="o">&amp;</span><span class="w"> </span><span class="n">base</span><span class="p">,</span>
+<span class="w">    </span><span class="n">Variable</span><span class="w"> </span><span class="n">base</span><span class="p">,</span>
 <span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">data</span><span class="p">,</span>
 <span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="n">allow_tensor_metadata_change</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">defined</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
@@ -800,6 +790,7 @@
 <span class="w">        </span><span class="n">data</span><span class="p">.</span><span class="n">getIntrusivePtr</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">unique_version</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="k">auto</span><span class="w"> </span><span class="n">data_impl</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">.</span><span class="n">unsafeReleaseIntrusivePtr</span><span class="p">();</span>
 <span class="w">      </span><span class="n">data_impl</span><span class="o">-&gt;</span><span class="n">set_allow_tensor_metadata_change</span><span class="p">(</span><span class="n">allow_tensor_metadata_change</span><span class="p">);</span>
+<span class="w">      </span><span class="c1">// NOLINTNEXTLINE(bugprone-branch-clone)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">requires_grad</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="n">data_impl</span><span class="o">-&gt;</span><span class="n">set_autograd_meta</span><span class="p">(</span>
 <span class="w">            </span><span class="n">std</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">AutogradMeta</span><span class="o">&gt;</span><span class="p">(</span><span class="n">data_impl</span><span class="p">.</span><span class="n">get</span><span class="p">(),</span><span class="w"> </span><span class="n">requires_grad</span><span class="p">));</span>
@@ -811,6 +802,7 @@
 <span class="w">      </span><span class="k">auto</span><span class="w"> </span><span class="n">data_impl_copy</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">data</span><span class="p">.</span><span class="n">getIntrusivePtr</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">shallow_copy_and_detach</span><span class="p">(</span>
 <span class="w">          </span><span class="cm">/*version_counter=*/</span><span class="mi">0</span><span class="p">,</span>
 <span class="w">          </span><span class="cm">/*allow_tensor_metadata_change=*/</span><span class="n">allow_tensor_metadata_change</span><span class="p">);</span>
+<span class="w">      </span><span class="c1">// NOLINTNEXTLINE(bugprone-branch-clone)</span>
 <span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">requires_grad</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">        </span><span class="n">data_impl_copy</span><span class="o">-&gt;</span><span class="n">set_autograd_meta</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">AutogradMeta</span><span class="o">&gt;</span><span class="p">(</span>
 <span class="w">            </span><span class="n">data_impl_copy</span><span class="p">.</span><span class="n">get</span><span class="p">(),</span><span class="w"> </span><span class="n">requires_grad</span><span class="p">));</span>
@@ -824,7 +816,7 @@
 <span class="p">}</span>
 
 <span class="kr">inline</span><span class="w"> </span><span class="n">Variable</span><span class="w"> </span><span class="nf">make_variable</span><span class="p">(</span>
-<span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="o">&amp;</span><span class="w"> </span><span class="n">data</span><span class="p">,</span>
+<span class="w">    </span><span class="n">at</span><span class="o">::</span><span class="n">Tensor</span><span class="w"> </span><span class="n">data</span><span class="p">,</span>
 <span class="w">    </span><span class="n">Edge</span><span class="w"> </span><span class="n">gradient_edge</span><span class="p">,</span>
 <span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="n">allow_tensor_metadata_change</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">defined</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
@@ -1044,9 +1036,9 @@
         <div class="copyright">
         <p>© Copyright The Linux Foundation. The PyTorch Foundation is a project of The Linux Foundation.
           For web site terms of use, trademark policy and other policies applicable to The PyTorch Foundation please see
-          <a href="https://www.linuxfoundation.org/policies/">www.linuxfoundation.org/policies/</a>. The PyTorch Foundation supports the PyTorch open source
+          <a href="www.linuxfoundation.org/policies/">www.linuxfoundation.org/policies/</a>. The PyTorch Foundation supports the PyTorch open source
           project, which has been established as PyTorch Project a Series of LF Projects, LLC. For policies applicable to the PyTorch Project a Series of LF Projects, LLC,
-          please see <a href="https://www.lfprojects.org/policies/">www.lfprojects.org/policies/</a>.</p>
+          please see <a href="www.lfprojects.org/policies/">www.lfprojects.org/policies/</a>.</p>
       </div>
      </div>
 
@@ -1085,7 +1077,7 @@
           </li>
             
           <li>
-            <a href="">Mobile</a>
+            <a href="https://pytorch.org/mobile">Mobile</a>
           </li>
 
           <li>

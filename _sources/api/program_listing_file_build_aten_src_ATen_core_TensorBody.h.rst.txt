@@ -473,11 +473,9 @@ Program Listing for File TensorBody.h
      at::Tensor _is_all_true() const;
      at::Tensor _is_any_true() const;
      at::Tensor all(int64_t dim, bool keepdim=false) const;
-     at::Tensor all(at::OptionalIntArrayRef dim, bool keepdim=false) const;
      at::Tensor all(at::Dimname dim, bool keepdim=false) const;
      bool allclose(const at::Tensor & other, double rtol=1e-05, double atol=1e-08, bool equal_nan=false) const;
      at::Tensor any(int64_t dim, bool keepdim=false) const;
-     at::Tensor any(at::OptionalIntArrayRef dim, bool keepdim=false) const;
      at::Tensor any(at::Dimname dim, bool keepdim=false) const;
      at::Tensor argmax(c10::optional<int64_t> dim=c10::nullopt, bool keepdim=false) const;
      at::Tensor argmin(c10::optional<int64_t> dim=c10::nullopt, bool keepdim=false) const;
@@ -775,9 +773,8 @@ Program Listing for File TensorBody.h
      at::Tensor repeat(at::IntArrayRef repeats) const;
      at::Tensor repeat_symint(c10::SymIntArrayRef repeats) const;
      at::Tensor repeat_interleave(const at::Tensor & repeats, c10::optional<int64_t> dim=c10::nullopt, c10::optional<int64_t> output_size=c10::nullopt) const;
-     at::Tensor repeat_interleave_symint(const at::Tensor & repeats, c10::optional<int64_t> dim=c10::nullopt, c10::optional<c10::SymInt> output_size=c10::nullopt) const;
      at::Tensor repeat_interleave(int64_t repeats, c10::optional<int64_t> dim=c10::nullopt, c10::optional<int64_t> output_size=c10::nullopt) const;
-     at::Tensor repeat_interleave_symint(c10::SymInt repeats, c10::optional<int64_t> dim=c10::nullopt, c10::optional<c10::SymInt> output_size=c10::nullopt) const;
+     at::Tensor repeat_interleave_symint(c10::SymInt repeats, c10::optional<int64_t> dim=c10::nullopt, c10::optional<int64_t> output_size=c10::nullopt) const;
      at::Tensor reshape(at::IntArrayRef shape) const;
      at::Tensor reshape_symint(c10::SymIntArrayRef shape) const;
      at::Tensor _reshape_alias(at::IntArrayRef size, at::IntArrayRef stride) const;
@@ -1570,11 +1567,6 @@ Program Listing for File TensorBody.h
        return at::_ops::all_dim::call(const_cast<Tensor&>(*this), dim, keepdim);
    }
    
-   // aten::all.dims(Tensor self, int[]? dim=None, bool keepdim=False) -> Tensor
-   inline at::Tensor Tensor::all(at::OptionalIntArrayRef dim, bool keepdim) const {
-       return at::_ops::all_dims::call(const_cast<Tensor&>(*this), dim, keepdim);
-   }
-   
    // aten::all.dimname(Tensor self, Dimname dim, bool keepdim=False) -> Tensor
    inline at::Tensor Tensor::all(at::Dimname dim, bool keepdim) const {
        return at::_ops::all_dimname::call(const_cast<Tensor&>(*this), dim, keepdim);
@@ -1588,11 +1580,6 @@ Program Listing for File TensorBody.h
    // aten::any.dim(Tensor self, int dim, bool keepdim=False) -> Tensor
    inline at::Tensor Tensor::any(int64_t dim, bool keepdim) const {
        return at::_ops::any_dim::call(const_cast<Tensor&>(*this), dim, keepdim);
-   }
-   
-   // aten::any.dims(Tensor self, int[]? dim=None, bool keepdim=False) -> Tensor
-   inline at::Tensor Tensor::any(at::OptionalIntArrayRef dim, bool keepdim) const {
-       return at::_ops::any_dims::call(const_cast<Tensor&>(*this), dim, keepdim);
    }
    
    // aten::any.dimname(Tensor self, Dimname dim, bool keepdim=False) -> Tensor
@@ -3075,23 +3062,18 @@ Program Listing for File TensorBody.h
        return at::_ops::repeat::call(const_cast<Tensor&>(*this), repeats);
    }
    
-   // aten::repeat_interleave.self_Tensor(Tensor self, Tensor repeats, int? dim=None, *, SymInt? output_size=None) -> Tensor
+   // aten::repeat_interleave.self_Tensor(Tensor self, Tensor repeats, int? dim=None, *, int? output_size=None) -> Tensor
    inline at::Tensor Tensor::repeat_interleave(const at::Tensor & repeats, c10::optional<int64_t> dim, c10::optional<int64_t> output_size) const {
-       return at::_ops::repeat_interleave_self_Tensor::call(const_cast<Tensor&>(*this), repeats, dim, output_size.has_value() ? c10::make_optional(c10::SymInt(*output_size)) : c10::nullopt);
-   }
-   
-   // aten::repeat_interleave.self_Tensor(Tensor self, Tensor repeats, int? dim=None, *, SymInt? output_size=None) -> Tensor
-   inline at::Tensor Tensor::repeat_interleave_symint(const at::Tensor & repeats, c10::optional<int64_t> dim, c10::optional<c10::SymInt> output_size) const {
        return at::_ops::repeat_interleave_self_Tensor::call(const_cast<Tensor&>(*this), repeats, dim, output_size);
    }
    
-   // aten::repeat_interleave.self_int(Tensor self, SymInt repeats, int? dim=None, *, SymInt? output_size=None) -> Tensor
+   // aten::repeat_interleave.self_int(Tensor self, SymInt repeats, int? dim=None, *, int? output_size=None) -> Tensor
    inline at::Tensor Tensor::repeat_interleave(int64_t repeats, c10::optional<int64_t> dim, c10::optional<int64_t> output_size) const {
-       return at::_ops::repeat_interleave_self_int::call(const_cast<Tensor&>(*this), repeats, dim, output_size.has_value() ? c10::make_optional(c10::SymInt(*output_size)) : c10::nullopt);
+       return at::_ops::repeat_interleave_self_int::call(const_cast<Tensor&>(*this), repeats, dim, output_size);
    }
    
-   // aten::repeat_interleave.self_int(Tensor self, SymInt repeats, int? dim=None, *, SymInt? output_size=None) -> Tensor
-   inline at::Tensor Tensor::repeat_interleave_symint(c10::SymInt repeats, c10::optional<int64_t> dim, c10::optional<c10::SymInt> output_size) const {
+   // aten::repeat_interleave.self_int(Tensor self, SymInt repeats, int? dim=None, *, int? output_size=None) -> Tensor
+   inline at::Tensor Tensor::repeat_interleave_symint(c10::SymInt repeats, c10::optional<int64_t> dim, c10::optional<int64_t> output_size) const {
        return at::_ops::repeat_interleave_self_int::call(const_cast<Tensor&>(*this), repeats, dim, output_size);
    }
    

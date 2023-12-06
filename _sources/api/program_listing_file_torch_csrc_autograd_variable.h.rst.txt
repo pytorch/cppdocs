@@ -144,7 +144,7 @@ Program Listing for File variable.h
      //     shared by multiple Tensors. See Note [ Using ForwardGrad ]
      // Any transition from not_initialized to initialized
      // must be protected by mutex_
-     mutable std::shared_ptr<ForwardGrad> fw_grad_;
+     std::shared_ptr<ForwardGrad> fw_grad_;
    
      // The hooks_ field is actually reused by both python and cpp logic
      // For both cases, we have a data structure, cpp_hooks_list_ (cpp)
@@ -186,7 +186,8 @@ Program Listing for File variable.h
      // version of this class for the functions above
      mutable std::mutex mutex_;
    
-     void set_requires_grad(bool requires_grad, at::TensorImpl* self_impl) final {
+     void set_requires_grad(bool requires_grad, at::TensorImpl* self_impl)
+         override {
        TORCH_CHECK(
            !requires_grad ||
                isDifferentiableType(at::typeMetaToScalarType(self_impl->dtype())),
@@ -225,6 +226,7 @@ Program Listing for File variable.h
        // set_requires_grad also checks error conditions.
        if (requires_grad) {
          TORCH_INTERNAL_ASSERT(self_impl);
+         // NOLINTNEXTLINE(clang-analyzer-optin.cplusplus.VirtualCall)
          set_requires_grad(requires_grad, self_impl);
        }
        TORCH_CHECK(
@@ -429,7 +431,7 @@ Program Listing for File variable.h
    // See NOTE [ Autograd View Variables ] for details.
    // Non-differentiable view. Just share version counter.
    inline Variable make_variable_non_differentiable_view(
-       const Variable& base,
+       Variable base,
        const at::Tensor& data,
        bool allow_tensor_metadata_change = true) {
      if (data.defined()) {
@@ -454,6 +456,7 @@ Program Listing for File variable.h
            data.getIntrusivePtr()->unique_version()) {
          auto data_impl = data.unsafeReleaseIntrusivePtr();
          data_impl->set_allow_tensor_metadata_change(allow_tensor_metadata_change);
+         // NOLINTNEXTLINE(bugprone-branch-clone)
          if (requires_grad) {
            data_impl->set_autograd_meta(
                std::make_unique<AutogradMeta>(data_impl.get(), requires_grad));
@@ -465,6 +468,7 @@ Program Listing for File variable.h
          auto data_impl_copy = data.getIntrusivePtr()->shallow_copy_and_detach(
              /*version_counter=*/0,
              /*allow_tensor_metadata_change=*/allow_tensor_metadata_change);
+         // NOLINTNEXTLINE(bugprone-branch-clone)
          if (requires_grad) {
            data_impl_copy->set_autograd_meta(std::make_unique<AutogradMeta>(
                data_impl_copy.get(), requires_grad));
@@ -478,7 +482,7 @@ Program Listing for File variable.h
    }
    
    inline Variable make_variable(
-       const at::Tensor& data,
+       at::Tensor data,
        Edge gradient_edge,
        bool allow_tensor_metadata_change = true) {
      if (data.defined()) {
