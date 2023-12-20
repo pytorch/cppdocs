@@ -84,9 +84,9 @@ Program Listing for File ArrayRef.h
    
      template <
          typename Container,
-         typename = std::enable_if_t<std::is_same<
+         typename = std::enable_if_t<std::is_same_v<
              std::remove_const_t<decltype(std::declval<Container>().data())>,
-             T*>::value>>
+             T*>>>
      /* implicit */ ArrayRef(const Container& container)
          : Data(container.data()), Length(container.size()) {
        debugCheckNullptrInvariant();
@@ -201,12 +201,12 @@ Program Listing for File ArrayRef.h
      }
    
      template <typename U>
-     typename std::enable_if<std::is_same<U, T>::value, ArrayRef<T>>::type&
-     operator=(U&& Temporary) = delete;
+     std::enable_if_t<std::is_same_v<U, T>, ArrayRef<T>>& operator=(
+         U&& Temporary) = delete;
    
      template <typename U>
-     typename std::enable_if<std::is_same<U, T>::value, ArrayRef<T>>::type&
-     operator=(std::initializer_list<U>) = delete;
+     std::enable_if_t<std::is_same_v<U, T>, ArrayRef<T>>& operator=(
+         std::initializer_list<U>) = delete;
    
      std::vector<T> vec() const {
        return std::vector<T>(Data, Data + Length);
