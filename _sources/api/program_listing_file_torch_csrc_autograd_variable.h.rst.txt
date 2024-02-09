@@ -30,15 +30,18 @@ Program Listing for File variable.h
    #include <cstdint>
    #include <memory>
    #include <mutex>
+   #include <stdexcept>
    #include <string>
    #include <utility>
    #include <vector>
    
-   namespace torch::autograd {
+   namespace torch {
+   namespace autograd {
    
    using Variable = at::Tensor;
    
-   } // namespace torch::autograd
+   } // namespace autograd
+   } // namespace torch
    
    // The following are all internal APIs and should not be shown in libtorch docs.
    // Therefore, we wrap the following code with `#ifndef DOXYGEN_SHOULD_SKIP_THIS
@@ -46,7 +49,8 @@ Program Listing for File variable.h
    
    #ifndef DOXYGEN_SHOULD_SKIP_THIS
    
-   namespace torch::autograd {
+   namespace torch {
+   namespace autograd {
    
    static inline bool isDifferentiableType(at::ScalarType t) {
      return isFloatingType(t) || isComplexType(t);
@@ -244,10 +248,8 @@ Program Listing for File variable.h
      Variable base_;
    
      std::function<Variable(const Variable&)> view_fn_;
-     std::function<Variable(const Variable&)> rev_view_fn_;
    
      bool has_view_fn() const {
-       // assume either BOTH or NEITHER of view_fn_ and rev_view_fn_ exist
        return view_fn_ != nullptr;
      }
    
@@ -257,26 +259,13 @@ Program Listing for File variable.h
        return view_fn_;
      }
    
-     std::function<Variable(const Variable&)> rev_view_fn() const {
-       TORCH_CHECK(
-           has_view_fn(),
-           "Can only access the reverse view function if it exists.");
-       return rev_view_fn_;
-     }
-   
      ViewInfo chain(
          const Variable& base,
          const Variable& tensor,
-         std::function<Variable(const Variable&)> view_func = nullptr,
-         std::function<Variable(const Variable&)> rev_view_func = nullptr) const;
+         std::function<Variable(const Variable&)> view_func = nullptr) const;
    
-     ViewInfo(
-         Variable base,
-         std::function<Variable(const Variable&)> view_fn,
-         std::function<Variable(const Variable&)> rev_view_fn)
-         : base_(std::move(base)),
-           view_fn_(std::move(view_fn)),
-           rev_view_fn_(std::move(rev_view_fn)) {
+     ViewInfo(Variable base, std::function<Variable(const Variable&)> view_fn)
+         : base_(std::move(base)), view_fn_(std::move(view_fn)) {
        TORCH_CHECK(base_.defined(), "base is undefined");
      }
    };
@@ -542,6 +531,7 @@ Program Listing for File variable.h
    TORCH_API bool has_same_meta(const Variable& base, const Variable& other);
    
    } // namespace utils
-   } // namespace torch::autograd
+   } // namespace autograd
+   } // namespace torch
    
    #endif /* DOXYGEN_SHOULD_SKIP_THIS */
