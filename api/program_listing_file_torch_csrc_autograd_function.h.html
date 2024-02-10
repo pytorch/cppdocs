@@ -384,8 +384,7 @@
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;utility&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;vector&gt;</span>
 
-<span class="k">namespace</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="p">{</span>
-<span class="k">namespace</span><span class="w"> </span><span class="nn">autograd</span><span class="w"> </span><span class="p">{</span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">torch</span><span class="o">::</span><span class="nn">autograd</span><span class="w"> </span><span class="p">{</span>
 
 <span class="k">struct</span><span class="w"> </span><span class="nc">Edge</span><span class="p">;</span>
 <span class="k">struct</span><span class="w"> </span><span class="nc">FunctionPostHook</span><span class="p">;</span>
@@ -424,7 +423,7 @@
 <span class="c1">// or more input `Variable`s and producing zero or more output `Variable`s. All</span>
 <span class="c1">// functions in PyTorch&#39;s autograd machinery derive from this class and</span>
 <span class="c1">// override its `apply` method. Instances of such subclasses will then be</span>
-<span class="c1">// invokeable via the call operator.</span>
+<span class="c1">// invokable via the call operator.</span>
 <span class="c1">//</span>
 <span class="c1">//                    Nodes in the Autograd Graph</span>
 <span class="c1">//~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</span>
@@ -584,9 +583,13 @@
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">input_metadata_</span><span class="p">[</span><span class="n">index</span><span class="p">];</span>
 <span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">Stream</span><span class="o">&gt;</span><span class="w"> </span><span class="n">stream</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">DeviceType</span><span class="w"> </span><span class="n">device_type</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">Stream</span><span class="o">&gt;</span><span class="w"> </span><span class="n">stream</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">opt_device_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">getAccelerator</span><span class="p">();</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">opt_device_type</span><span class="p">.</span><span class="n">has_value</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
 <span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">metadata</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">input_metadata_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">metadata</span><span class="p">.</span><span class="n">device</span><span class="p">().</span><span class="n">type</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">device_type</span><span class="p">)</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">metadata</span><span class="p">.</span><span class="n">device</span><span class="p">().</span><span class="n">type</span><span class="p">()</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">opt_device_type</span><span class="p">.</span><span class="n">value</span><span class="p">())</span>
 <span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">metadata</span><span class="p">.</span><span class="n">stream</span><span class="p">();</span>
 <span class="w">    </span><span class="p">}</span>
 
@@ -1025,8 +1028,7 @@
 <span class="w">  </span><span class="n">at</span><span class="o">::</span><span class="n">TensorOptions</span><span class="w"> </span><span class="n">options</span><span class="p">;</span>
 <span class="p">};</span>
 
-<span class="p">}</span><span class="w"> </span><span class="c1">// namespace autograd</span>
-<span class="p">}</span><span class="w"> </span><span class="c1">// namespace torch</span>
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace torch::autograd</span>
 </pre></div>
 </div>
 </div>
