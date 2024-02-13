@@ -21,7 +21,6 @@ Program Listing for File variable.h
    #include <torch/csrc/autograd/edge.h>
    #include <torch/csrc/autograd/forward_grad.h>
    #include <torch/csrc/autograd/function_hook.h>
-   #include <torch/csrc/autograd/generated/ViewFuncs.h>
    
    #include <ATen/NamedTensorUtils.h>
    #include <ATen/core/Tensor.h>
@@ -244,8 +243,7 @@ Program Listing for File variable.h
    struct TORCH_API ViewInfo {
      Variable base_;
    
-     std::unique_ptr<ViewFunc> view_fn_;
-   
+     std::function<Variable(const Variable&)> view_fn_;
      std::function<Variable(const Variable&)> rev_view_fn_;
    
      bool has_view_fn() const {
@@ -253,10 +251,10 @@ Program Listing for File variable.h
        return view_fn_ != nullptr;
      }
    
-     const ViewFunc& view_fn() const {
+     std::function<Variable(const Variable&)> view_fn() const {
        TORCH_CHECK(
            has_view_fn(), "Can only access the view function if it exists.");
-       return *view_fn_;
+       return view_fn_;
      }
    
      std::function<Variable(const Variable&)> rev_view_fn() const {
@@ -269,12 +267,12 @@ Program Listing for File variable.h
      ViewInfo chain(
          const Variable& base,
          const Variable& tensor,
-         std::unique_ptr<ViewFunc> view_func = nullptr,
+         std::function<Variable(const Variable&)> view_func = nullptr,
          std::function<Variable(const Variable&)> rev_view_func = nullptr) const;
    
      ViewInfo(
          Variable base,
-         std::unique_ptr<ViewFunc> view_fn,
+         std::function<Variable(const Variable&)> view_fn,
          std::function<Variable(const Variable&)> rev_view_fn)
          : base_(std::move(base)),
            view_fn_(std::move(view_fn)),

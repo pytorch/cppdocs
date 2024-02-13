@@ -367,7 +367,6 @@
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/csrc/autograd/edge.h&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/csrc/autograd/forward_grad.h&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/csrc/autograd/function_hook.h&gt;</span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/csrc/autograd/generated/ViewFuncs.h&gt;</span>
 
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;ATen/NamedTensorUtils.h&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;ATen/core/Tensor.h&gt;</span>
@@ -590,8 +589,7 @@
 <span class="k">struct</span><span class="w"> </span><span class="nc">TORCH_API</span><span class="w"> </span><span class="n">ViewInfo</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">Variable</span><span class="w"> </span><span class="n">base_</span><span class="p">;</span>
 
-<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">ViewFunc</span><span class="o">&gt;</span><span class="w"> </span><span class="n">view_fn_</span><span class="p">;</span>
-
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">Variable</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Variable</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;</span><span class="w"> </span><span class="n">view_fn_</span><span class="p">;</span>
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">Variable</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Variable</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;</span><span class="w"> </span><span class="n">rev_view_fn_</span><span class="p">;</span>
 
 <span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="nf">has_view_fn</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span>
@@ -599,10 +597,10 @@
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">view_fn_</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">;</span>
 <span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">ViewFunc</span><span class="o">&amp;</span><span class="w"> </span><span class="nf">view_fn</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">Variable</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Variable</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;</span><span class="w"> </span><span class="n">view_fn</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">TORCH_CHECK</span><span class="p">(</span>
 <span class="w">        </span><span class="n">has_view_fn</span><span class="p">(),</span><span class="w"> </span><span class="s">&quot;Can only access the view function if it exists.&quot;</span><span class="p">);</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="o">*</span><span class="n">view_fn_</span><span class="p">;</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">view_fn_</span><span class="p">;</span>
 <span class="w">  </span><span class="p">}</span>
 
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">Variable</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Variable</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;</span><span class="w"> </span><span class="n">rev_view_fn</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span>
@@ -615,12 +613,12 @@
 <span class="w">  </span><span class="n">ViewInfo</span><span class="w"> </span><span class="n">chain</span><span class="p">(</span>
 <span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="n">Variable</span><span class="o">&amp;</span><span class="w"> </span><span class="n">base</span><span class="p">,</span>
 <span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="n">Variable</span><span class="o">&amp;</span><span class="w"> </span><span class="n">tensor</span><span class="p">,</span>
-<span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">ViewFunc</span><span class="o">&gt;</span><span class="w"> </span><span class="n">view_func</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">,</span>
+<span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">Variable</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Variable</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;</span><span class="w"> </span><span class="n">view_func</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">,</span>
 <span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">Variable</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Variable</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;</span><span class="w"> </span><span class="n">rev_view_func</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="p">;</span>
 
 <span class="w">  </span><span class="n">ViewInfo</span><span class="p">(</span>
 <span class="w">      </span><span class="n">Variable</span><span class="w"> </span><span class="n">base</span><span class="p">,</span>
-<span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">unique_ptr</span><span class="o">&lt;</span><span class="n">ViewFunc</span><span class="o">&gt;</span><span class="w"> </span><span class="n">view_fn</span><span class="p">,</span>
+<span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">Variable</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Variable</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;</span><span class="w"> </span><span class="n">view_fn</span><span class="p">,</span>
 <span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">Variable</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Variable</span><span class="o">&amp;</span><span class="p">)</span><span class="o">&gt;</span><span class="w"> </span><span class="n">rev_view_fn</span><span class="p">)</span>
 <span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">base_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">base</span><span class="p">)),</span>
 <span class="w">        </span><span class="n">view_fn_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">view_fn</span><span class="p">)),</span>
