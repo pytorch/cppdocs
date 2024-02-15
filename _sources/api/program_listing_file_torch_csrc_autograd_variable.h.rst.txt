@@ -240,10 +240,75 @@ Program Listing for File variable.h
      }
    };
    
+   struct TORCH_API ViewFunc {
+     virtual ~ViewFunc() {}
+     virtual std::vector<c10::SymInt> get_symints() const {
+       return {};
+     }
+     virtual size_t num_symints() const {
+       return 0;
+     }
+     virtual std::vector<at::Tensor> get_tensors() const {
+       return {};
+     }
+     virtual size_t num_tensors() const {
+       return 0;
+     }
+     virtual at::Tensor operator()(const at::Tensor&) const = 0;
+     virtual std::unique_ptr<ViewFunc> clone_and_set(
+         std::optional<std::vector<c10::SymInt>> = c10::nullopt,
+         std::optional<std::vector<at::Tensor>> = c10::nullopt) const = 0;
+   
+    protected:
+     virtual void set_symints(std::vector<c10::SymInt>) {}
+     virtual void set_tensors(std::vector<at::Tensor>) {}
+   };
+   
+   struct ChainedViewFunc : public ViewFunc {
+     ChainedViewFunc(
+         std::unique_ptr<ViewFunc> first,
+         std::unique_ptr<ViewFunc> second)
+         : first(std::move(first)), second(std::move(second)) {}
+     virtual ~ChainedViewFunc() override{};
+     virtual std::vector<c10::SymInt> get_symints() const override;
+     virtual size_t num_symints() const override {
+       return first->num_symints() + second->num_symints();
+     }
+     virtual std::vector<at::Tensor> get_tensors() const override;
+     virtual size_t num_tensors() const override {
+       return first->num_tensors() + second->num_tensors();
+     }
+     virtual at::Tensor operator()(const at::Tensor&) const override;
+     virtual std::unique_ptr<ViewFunc> clone_and_set(
+         std::optional<std::vector<c10::SymInt>> = c10::nullopt,
+         std::optional<std::vector<at::Tensor>> = c10::nullopt) const override;
+   
+    private:
+     std::unique_ptr<ViewFunc> first;
+     std::unique_ptr<ViewFunc> second;
+   };
+   
+   struct ErroringViewFunc : public ViewFunc {
+     ErroringViewFunc(const std::string& error_msg) : error_msg(error_msg) {}
+     virtual ~ErroringViewFunc() override{};
+     virtual at::Tensor operator()(const at::Tensor&) const override {
+       TORCH_CHECK(false, error_msg);
+     }
+     virtual std::unique_ptr<ViewFunc> clone_and_set(
+         std::optional<std::vector<c10::SymInt>> = c10::nullopt,
+         std::optional<std::vector<at::Tensor>> = c10::nullopt) const override {
+       return std::make_unique<ErroringViewFunc>(error_msg);
+     }
+   
+    private:
+     std::string error_msg;
+   };
+   
    struct TORCH_API ViewInfo {
      Variable base_;
    
-     std::function<Variable(const Variable&)> view_fn_;
+     std::unique_ptr<ViewFunc> view_fn_;
+   
      std::function<Variable(const Variable&)> rev_view_fn_;
    
      bool has_view_fn() const {
@@ -251,10 +316,10 @@ Program Listing for File variable.h
        return view_fn_ != nullptr;
      }
    
-     std::function<Variable(const Variable&)> view_fn() const {
+     const ViewFunc& view_fn() const {
        TORCH_CHECK(
            has_view_fn(), "Can only access the view function if it exists.");
-       return view_fn_;
+       return *view_fn_;
      }
    
      std::function<Variable(const Variable&)> rev_view_fn() const {
@@ -267,12 +332,12 @@ Program Listing for File variable.h
      ViewInfo chain(
          const Variable& base,
          const Variable& tensor,
-         std::function<Variable(const Variable&)> view_func = nullptr,
+         std::unique_ptr<ViewFunc> view_func = nullptr,
          std::function<Variable(const Variable&)> rev_view_func = nullptr) const;
    
      ViewInfo(
          Variable base,
-         std::function<Variable(const Variable&)> view_fn,
+         std::unique_ptr<ViewFunc> view_fn,
          std::function<Variable(const Variable&)> rev_view_fn)
          : base_(std::move(base)),
            view_fn_(std::move(view_fn)),
