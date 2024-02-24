@@ -678,6 +678,15 @@
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
 <span class="cp">#else</span>
+<span class="w">    </span><span class="n">cudaDeviceProp</span><span class="o">*</span><span class="w"> </span><span class="n">prop</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">getCurrentDeviceProperties</span><span class="p">();</span>
+<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">math_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CUDNN_DEFAULT_MATH</span><span class="p">;</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">prop</span><span class="o">-&gt;</span><span class="n">major</span><span class="w"> </span><span class="o">&gt;=</span><span class="w"> </span><span class="mi">7</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">input_type</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">CUDNN_DATA_HALF</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">math_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CUDNN_TENSOR_OP_MATH</span><span class="p">;</span>
+<span class="w">      </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">allow_tf32</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="n">math_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CUDNN_FMA_MATH</span><span class="p">;</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
 <span class="w">    </span><span class="n">AT_CUDNN_CHECK</span><span class="p">(</span><span class="n">cudnnSetRNNDescriptor_v8</span><span class="p">(</span>
 <span class="w">          </span><span class="n">mut_desc</span><span class="p">(),</span>
 <span class="w">          </span><span class="n">algo</span><span class="p">,</span>
@@ -687,7 +696,7 @@
 <span class="w">          </span><span class="n">input_mode</span><span class="p">,</span>
 <span class="w">          </span><span class="n">input_type</span><span class="p">,</span>
 <span class="w">          </span><span class="n">datatype</span><span class="p">,</span>
-<span class="w">          </span><span class="n">allow_tf32</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">CUDNN_DEFAULT_MATH</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">CUDNN_FMA_MATH</span><span class="p">,</span>
+<span class="w">          </span><span class="n">math_type</span><span class="p">,</span>
 <span class="w">          </span><span class="n">input_size</span><span class="p">,</span>
 <span class="w">          </span><span class="n">hidden_size</span><span class="p">,</span>
 <span class="w">          </span><span class="n">proj_size</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">proj_size</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">hidden_size</span><span class="p">,</span>
