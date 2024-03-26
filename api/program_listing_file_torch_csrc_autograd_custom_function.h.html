@@ -366,11 +366,10 @@
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/irange.h&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/csrc/autograd/function.h&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/csrc/autograd/variable.h&gt;</span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/csrc/autograd/variable_info.h&gt;</span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/csrc/dynamo/compiled_autograd.h&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;vector&gt;</span>
 
-<span class="k">namespace</span><span class="w"> </span><span class="nn">torch</span><span class="o">::</span><span class="nn">autograd</span><span class="w"> </span><span class="p">{</span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="p">{</span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">autograd</span><span class="w"> </span><span class="p">{</span>
 
 <span class="k">using</span><span class="w"> </span><span class="n">optional_variable_list</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Variable</span><span class="o">&gt;&gt;</span><span class="p">;</span>
 <span class="k">using</span><span class="w"> </span><span class="n">_jvp_fn_t</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">function</span><span class="o">&lt;</span><span class="n">variable_list</span><span class="p">(</span><span class="n">variable_list</span><span class="p">,</span><span class="w"> </span><span class="n">variable_list</span><span class="p">)</span><span class="o">&gt;</span><span class="p">;</span>
@@ -404,16 +403,7 @@
 <span class="w">  </span><span class="c1">// the parameter X.</span>
 <span class="w">  </span><span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">X</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="p">...</span><span class="w"> </span><span class="n">Args</span><span class="o">&gt;</span>
 <span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="n">apply</span><span class="p">(</span><span class="n">Args</span><span class="o">&amp;&amp;</span><span class="p">...</span><span class="w"> </span><span class="n">args</span><span class="p">)</span>
-<span class="w">      </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">enable_if_t</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">is_same_v</span><span class="o">&lt;</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">forward_t</span><span class="o">&lt;</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="n">Args</span><span class="p">...</span><span class="o">&gt;&gt;</span><span class="p">;</span>
-
-<span class="w">  </span><span class="c1">// This flag is for an experimental feature: compiled autograd. Not all</span>
-<span class="w">  </span><span class="c1">// built-in APIs are supported at the moment e.g. mark_dirty and</span>
-<span class="w">  </span><span class="c1">// mark_non_differentiable. Before setting this flag to enable tracing for</span>
-<span class="w">  </span><span class="c1">// your custom function &lt;T&gt;, you need to ensure that the backward function is</span>
-<span class="w">  </span><span class="c1">// traceable i.e. any variables accessed in the backward other than the input</span>
-<span class="w">  </span><span class="c1">// arguments must be handled in a similar manner to built-ins in</span>
-<span class="w">  </span><span class="c1">// CppNode::compiled_args and CppNode::apply_with_saved.</span>
-<span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_traceable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
+<span class="w">      </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">enable_if_t</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">is_same</span><span class="o">&lt;</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">forward_t</span><span class="o">&lt;</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="n">Args</span><span class="p">...</span><span class="o">&gt;&gt;</span><span class="p">;</span>
 <span class="p">};</span>
 
 <span class="k">struct</span><span class="w"> </span><span class="nc">TORCH_API</span><span class="w"> </span><span class="n">AutogradContext</span><span class="w"> </span><span class="p">{</span>
@@ -457,6 +447,20 @@
 <span class="w">  </span><span class="k">friend</span><span class="w"> </span><span class="k">struct</span><span class="w"> </span><span class="nc">CppNode</span><span class="p">;</span>
 <span class="p">};</span>
 
+<span class="k">struct</span><span class="w"> </span><span class="nc">TORCH_API</span><span class="w"> </span><span class="n">VariableInfo</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="n">VariableInfo</span><span class="p">();</span>
+<span class="w">  </span><span class="k">explicit</span><span class="w"> </span><span class="n">VariableInfo</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Variable</span><span class="o">&amp;</span><span class="w"> </span><span class="n">var</span><span class="p">);</span>
+
+<span class="w">  </span><span class="n">Variable</span><span class="w"> </span><span class="nf">zeros</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">OptionalDeviceGuard</span><span class="o">&amp;</span><span class="w"> </span><span class="n">device_guard</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="p">;</span>
+
+<span class="w">  </span><span class="n">at</span><span class="o">::</span><span class="n">Layout</span><span class="w"> </span><span class="n">layout</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">Layout</span><span class="o">::</span><span class="n">Strided</span><span class="p">;</span>
+<span class="w">  </span><span class="n">at</span><span class="o">::</span><span class="n">Device</span><span class="w"> </span><span class="n">device</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">kCPU</span><span class="p">;</span>
+<span class="w">  </span><span class="n">at</span><span class="o">::</span><span class="n">ScalarType</span><span class="w"> </span><span class="n">scalar_type</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">kFloat</span><span class="p">;</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">SymInt</span><span class="o">&gt;</span><span class="w"> </span><span class="n">size</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">requires_grad</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_empty</span><span class="p">;</span>
+<span class="p">};</span>
+
 <span class="c1">// CppNode&lt;T&gt; is the Node in the autograd graph that represents the user defined</span>
 <span class="c1">// backward function for Function&lt;T&gt;. Calls to CppNode::apply are forward to</span>
 <span class="c1">// T::backward().</span>
@@ -472,62 +476,10 @@
 
 <span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">set_ctx_grad_fn</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">Node</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">node</span><span class="p">);</span>
 <span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">save_variables_to_ctx</span><span class="p">();</span>
-
-<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">compiled_args</span><span class="p">(</span><span class="n">CompiledNodeArgs</span><span class="o">&amp;</span><span class="w"> </span><span class="n">args</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">T</span><span class="o">::</span><span class="n">is_traceable</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="k">throw</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">runtime_error</span><span class="p">(</span>
-<span class="w">          </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">(</span>
-<span class="w">              </span><span class="s">&quot;compiled_args not implemented for non-traceable node: &quot;</span><span class="p">)</span><span class="w"> </span><span class="o">+</span>
-<span class="w">          </span><span class="n">name</span><span class="p">());</span>
-<span class="w">    </span><span class="p">}</span>
-
-<span class="w">    </span><span class="c1">// although neither of the 2 methods below have uniqueness guarantees</span>
-<span class="w">    </span><span class="c1">// it is unlikely for them to collide at the same time</span>
-<span class="w">    </span><span class="n">args</span><span class="p">.</span><span class="n">collect</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint64_t</span><span class="o">&gt;</span><span class="p">(</span><span class="k">typeid</span><span class="p">(</span><span class="n">T</span><span class="p">).</span><span class="n">hash_code</span><span class="p">()));</span>
-<span class="w">    </span><span class="n">args</span><span class="p">.</span><span class="n">collect</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">(</span><span class="k">typeid</span><span class="p">(</span><span class="n">T</span><span class="p">).</span><span class="n">name</span><span class="p">()));</span>
-
-<span class="w">    </span><span class="n">args</span><span class="p">.</span><span class="n">collect</span><span class="p">(</span><span class="n">ctx_</span><span class="p">.</span><span class="n">saved_data</span><span class="p">);</span>
-<span class="w">    </span><span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span><span class="n">ctx_</span><span class="p">.</span><span class="n">non_differentiable_</span><span class="p">.</span><span class="n">empty</span><span class="p">());</span>
-<span class="w">    </span><span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span><span class="n">ctx_</span><span class="p">.</span><span class="n">dirty_inputs_</span><span class="p">.</span><span class="n">empty</span><span class="p">());</span>
-<span class="w">    </span><span class="n">args</span><span class="p">.</span><span class="n">collect</span><span class="p">(</span><span class="n">ctx_</span><span class="p">.</span><span class="n">saved_variables_</span><span class="p">);</span>
-<span class="w">    </span><span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span><span class="n">ctx_</span><span class="p">.</span><span class="n">to_save_</span><span class="p">.</span><span class="n">empty</span><span class="p">());</span>
-<span class="w">    </span><span class="n">args</span><span class="p">.</span><span class="n">collect</span><span class="p">(</span><span class="n">ctx_</span><span class="p">.</span><span class="n">materialize_grads_</span><span class="p">);</span>
-<span class="w">    </span><span class="n">args</span><span class="p">.</span><span class="n">collect</span><span class="p">(</span><span class="n">ctx_</span><span class="p">.</span><span class="n">has_freed_buffers_</span><span class="p">);</span>
-<span class="w">    </span><span class="n">args</span><span class="p">.</span><span class="n">collect</span><span class="p">(</span><span class="n">is_variable_input_</span><span class="p">);</span>
-<span class="w">    </span><span class="n">args</span><span class="p">.</span><span class="n">collect</span><span class="p">(</span><span class="n">input_info_</span><span class="p">);</span>
-<span class="w">    </span><span class="n">args</span><span class="p">.</span><span class="n">collect</span><span class="p">(</span><span class="n">output_info_</span><span class="p">);</span>
-<span class="w">  </span><span class="p">}</span>
-
-<span class="w">  </span><span class="n">variable_list</span><span class="w"> </span><span class="nf">apply_with_saved</span><span class="p">(</span>
-<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="n">variable_list</span><span class="o">&amp;</span><span class="w"> </span><span class="n">inputs</span><span class="p">,</span>
-<span class="w">      </span><span class="n">SwapSavedVariables</span><span class="o">&amp;</span><span class="w"> </span><span class="n">saved</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">saved</span><span class="p">.</span><span class="n">before</span><span class="p">(</span><span class="n">ctx_</span><span class="p">.</span><span class="n">saved_data</span><span class="p">);</span>
-<span class="w">    </span><span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span><span class="n">ctx_</span><span class="p">.</span><span class="n">non_differentiable_</span><span class="p">.</span><span class="n">empty</span><span class="p">());</span>
-<span class="w">    </span><span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span><span class="n">ctx_</span><span class="p">.</span><span class="n">dirty_inputs_</span><span class="p">.</span><span class="n">empty</span><span class="p">());</span>
-<span class="w">    </span><span class="n">saved</span><span class="p">.</span><span class="n">before</span><span class="p">(</span><span class="n">ctx_</span><span class="p">.</span><span class="n">saved_variables_</span><span class="p">);</span>
-<span class="w">    </span><span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span><span class="n">ctx_</span><span class="p">.</span><span class="n">to_save_</span><span class="p">.</span><span class="n">empty</span><span class="p">());</span>
-<span class="w">    </span><span class="n">saved</span><span class="p">.</span><span class="n">before</span><span class="p">(</span><span class="n">ctx_</span><span class="p">.</span><span class="n">materialize_grads_</span><span class="p">);</span>
-<span class="w">    </span><span class="n">saved</span><span class="p">.</span><span class="n">before</span><span class="p">(</span><span class="n">ctx_</span><span class="p">.</span><span class="n">has_freed_buffers_</span><span class="p">);</span>
-<span class="w">    </span><span class="n">saved</span><span class="p">.</span><span class="n">before</span><span class="p">(</span><span class="n">input_info_</span><span class="p">);</span>
-<span class="w">    </span><span class="n">saved</span><span class="p">.</span><span class="n">before</span><span class="p">(</span><span class="n">output_info_</span><span class="p">);</span>
-<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">results</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">apply</span><span class="p">(</span><span class="n">variable_list</span><span class="p">(</span><span class="n">inputs</span><span class="p">));</span>
-<span class="w">    </span><span class="n">saved</span><span class="p">.</span><span class="n">after</span><span class="p">(</span><span class="n">ctx_</span><span class="p">.</span><span class="n">saved_data</span><span class="p">);</span>
-<span class="w">    </span><span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span><span class="n">ctx_</span><span class="p">.</span><span class="n">non_differentiable_</span><span class="p">.</span><span class="n">empty</span><span class="p">());</span>
-<span class="w">    </span><span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span><span class="n">ctx_</span><span class="p">.</span><span class="n">dirty_inputs_</span><span class="p">.</span><span class="n">empty</span><span class="p">());</span>
-<span class="w">    </span><span class="n">saved</span><span class="p">.</span><span class="n">after</span><span class="p">(</span><span class="n">ctx_</span><span class="p">.</span><span class="n">saved_variables_</span><span class="p">);</span>
-<span class="w">    </span><span class="n">TORCH_INTERNAL_ASSERT</span><span class="p">(</span><span class="n">ctx_</span><span class="p">.</span><span class="n">to_save_</span><span class="p">.</span><span class="n">empty</span><span class="p">());</span>
-<span class="w">    </span><span class="n">saved</span><span class="p">.</span><span class="n">after</span><span class="p">(</span><span class="n">ctx_</span><span class="p">.</span><span class="n">materialize_grads_</span><span class="p">);</span>
-<span class="w">    </span><span class="n">saved</span><span class="p">.</span><span class="n">after</span><span class="p">(</span><span class="n">ctx_</span><span class="p">.</span><span class="n">has_freed_buffers_</span><span class="p">);</span>
-<span class="w">    </span><span class="n">saved</span><span class="p">.</span><span class="n">after</span><span class="p">(</span><span class="n">input_info_</span><span class="p">);</span>
-<span class="w">    </span><span class="n">saved</span><span class="p">.</span><span class="n">after</span><span class="p">(</span><span class="n">output_info_</span><span class="p">);</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">results</span><span class="p">;</span>
-<span class="w">  </span><span class="p">}</span>
 <span class="p">};</span>
 
 <span class="k">struct</span><span class="w"> </span><span class="nc">ExtractVariables</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">IterArgs</span><span class="o">&lt;</span><span class="n">ExtractVariables</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)</span>
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">is_var_</span><span class="p">;</span>
-<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)</span>
 <span class="w">  </span><span class="n">variable_list</span><span class="o">&amp;</span><span class="w"> </span><span class="n">list_</span><span class="p">;</span>
 <span class="w">  </span><span class="n">ExtractVariables</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="kt">bool</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">is_var</span><span class="p">,</span><span class="w"> </span><span class="n">variable_list</span><span class="o">&amp;</span><span class="w"> </span><span class="n">list</span><span class="p">)</span>
 <span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">is_var_</span><span class="p">(</span><span class="n">is_var</span><span class="p">),</span><span class="w"> </span><span class="n">list_</span><span class="p">(</span><span class="n">list</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span>
@@ -565,8 +517,8 @@
 <span class="p">}</span>
 
 <span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span>
-<span class="n">std</span><span class="o">::</span><span class="n">enable_if_t</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">is_same_v</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">variable_list</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="n">to_output_type</span><span class="p">(</span>
-<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Variable</span><span class="o">&gt;&gt;&amp;</span><span class="w"> </span><span class="n">output_list</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="k">typename</span><span class="w"> </span><span class="nc">std</span><span class="o">::</span><span class="n">enable_if</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">is_same</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">variable_list</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;::</span><span class="n">type</span>
+<span class="n">to_output_type</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Variable</span><span class="o">&gt;&gt;&amp;</span><span class="w"> </span><span class="n">output_list</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-init-variables)</span>
 <span class="w">  </span><span class="n">variable_list</span><span class="w"> </span><span class="n">result</span><span class="p">;</span>
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">transform</span><span class="p">(</span>
@@ -578,8 +530,8 @@
 <span class="p">}</span>
 
 <span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span>
-<span class="n">std</span><span class="o">::</span><span class="n">enable_if_t</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">is_same_v</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">Variable</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="n">to_output_type</span><span class="p">(</span>
-<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Variable</span><span class="o">&gt;&gt;&amp;</span><span class="w"> </span><span class="n">output_list</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="k">typename</span><span class="w"> </span><span class="nc">std</span><span class="o">::</span><span class="n">enable_if</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">is_same</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">Variable</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;::</span><span class="n">type</span>
+<span class="n">to_output_type</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">c10</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">Variable</span><span class="o">&gt;&gt;&amp;</span><span class="w"> </span><span class="n">output_list</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="o">*</span><span class="n">output_list</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
 <span class="p">}</span>
 
@@ -601,7 +553,7 @@
 <span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">class</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span>
 <span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">X</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="p">...</span><span class="w"> </span><span class="n">Args</span><span class="o">&gt;</span>
 <span class="k">auto</span><span class="w"> </span><span class="n">Function</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">apply</span><span class="p">(</span><span class="n">Args</span><span class="o">&amp;&amp;</span><span class="p">...</span><span class="w"> </span><span class="n">args</span><span class="p">)</span>
-<span class="w">    </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">enable_if_t</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">is_same_v</span><span class="o">&lt;</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="n">forward_t</span><span class="o">&lt;</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="n">Args</span><span class="p">...</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="o">-&gt;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">enable_if_t</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">is_same</span><span class="o">&lt;</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="n">forward_t</span><span class="o">&lt;</span><span class="n">X</span><span class="p">,</span><span class="w"> </span><span class="n">Args</span><span class="p">...</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">functorch_tls</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">functorch</span><span class="o">::</span><span class="n">functorchTLSAccessor</span><span class="p">();</span>
 <span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">functorch_tls</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="c1">// Function support for functorch is handled in Python.</span>
@@ -685,17 +637,17 @@
 <span class="c1">// The logic here is the same as PyNode::apply, so changes to it should be done</span>
 <span class="c1">// in both the places</span>
 <span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">class</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span>
-<span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)</span>
 <span class="n">variable_list</span><span class="w"> </span><span class="n">CppNode</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">apply</span><span class="p">(</span><span class="n">variable_list</span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">inputs</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">at</span><span class="o">::</span><span class="n">OptionalDeviceGuard</span><span class="w"> </span><span class="n">_device_guard</span><span class="p">;</span>
 
-<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">num_inputs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">inputs</span><span class="p">.</span><span class="n">size</span><span class="p">();</span>
+<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-init-variables)</span>
+<span class="w">  </span><span class="kt">int</span><span class="w"> </span><span class="n">num_inputs</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">inputs</span><span class="p">.</span><span class="n">size</span><span class="p">();</span>
 <span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-init-variables)</span>
 <span class="w">  </span><span class="n">variable_list</span><span class="w"> </span><span class="n">backward_inputs</span><span class="p">;</span>
 <span class="w">  </span><span class="n">backward_inputs</span><span class="p">.</span><span class="n">reserve</span><span class="p">(</span><span class="n">num_inputs</span><span class="p">);</span>
 <span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="k">auto</span><span class="w"> </span><span class="n">i</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">irange</span><span class="p">(</span><span class="n">num_inputs</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">inputs</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">defined</span><span class="p">()</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="o">!</span><span class="n">ctx_</span><span class="p">.</span><span class="n">materialize_grads_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="n">backward_inputs</span><span class="p">.</span><span class="n">emplace_back</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">inputs</span><span class="p">[</span><span class="n">i</span><span class="p">]));</span>
+<span class="w">      </span><span class="n">backward_inputs</span><span class="p">.</span><span class="n">emplace_back</span><span class="p">(</span><span class="n">inputs</span><span class="p">[</span><span class="n">i</span><span class="p">]);</span>
 <span class="w">    </span><span class="p">}</span><span class="w"> </span><span class="k">else</span><span class="w"> </span><span class="p">{</span>
 <span class="w">      </span><span class="n">backward_inputs</span><span class="p">.</span><span class="n">emplace_back</span><span class="p">(</span><span class="n">output_info_</span><span class="p">[</span><span class="n">i</span><span class="p">].</span><span class="n">zeros</span><span class="p">(</span><span class="n">_device_guard</span><span class="p">));</span>
 <span class="w">    </span><span class="p">}</span>
@@ -771,7 +723,8 @@
 <span class="w">  </span><span class="n">ctx_</span><span class="p">.</span><span class="n">grad_fn_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">node</span><span class="p">;</span>
 <span class="p">}</span>
 
-<span class="p">}</span><span class="w"> </span><span class="c1">// namespace torch::autograd</span>
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace autograd</span>
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace torch</span>
 </pre></div>
 </div>
 </div>
