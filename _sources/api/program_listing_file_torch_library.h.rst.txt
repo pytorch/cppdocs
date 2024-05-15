@@ -232,9 +232,9 @@ Program Listing for File library.h
      }
    
     private:
-     std::optional<c10::DispatchKey> dispatch_key_;
+     c10::optional<c10::DispatchKey> dispatch_key_;
      c10::KernelFunction func_;
-     std::optional<c10::impl::CppSignature> cpp_signature_;
+     c10::optional<c10::impl::CppSignature> cpp_signature_;
      std::unique_ptr<c10::FunctionSchema> schema_;
      std::string debug_;
    
@@ -249,7 +249,7 @@ Program Listing for File library.h
    
      CppFunction(
          c10::KernelFunction func,
-         std::optional<c10::impl::CppSignature> cpp_signature,
+         c10::optional<c10::impl::CppSignature> cpp_signature,
          std::unique_ptr<c10::FunctionSchema> schema);
    };
    
@@ -288,8 +288,8 @@ Program Listing for File library.h
            return c10::DispatchKey::Meta;
          case c10::DeviceType::HIP:
            return c10::DispatchKey::HIP;
-         case c10::DeviceType::MAIA:
-           return c10::DispatchKey::MAIA;
+         case c10::DeviceType::ORT:
+           return c10::DispatchKey::ORT;
          case c10::DeviceType::HPU:
            return c10::DispatchKey::HPU;
          case c10::DeviceType::MTIA:
@@ -418,7 +418,7 @@ Program Listing for File library.h
      Library(
          Kind kind,
          std::string ns,
-         std::optional<c10::DispatchKey> k,
+         c10::optional<c10::DispatchKey> k,
          const char* file,
          uint32_t line);
    
@@ -459,13 +459,9 @@ Program Listing for File library.h
        return _def(std::move(s), nullptr, tags, rv);
      }
    
-     Library& set_python_module(const char* pymodule, const char* context = "") {
-       python_module_ = {pymodule, context};
-       return *this;
-     }
-   
      Library& impl_abstract_pystub(const char* pymodule, const char* context = "") {
-       return set_python_module(pymodule, context);
+       impl_abstract_pystub_ = {pymodule, context};
+       return *this;
      }
    
      template <typename NameOrSchema, typename Func>
@@ -617,9 +613,9 @@ Program Listing for File library.h
    
     private:
      Kind kind_;
-     std::optional<std::string> ns_;
-     std::optional<c10::DispatchKey> dispatch_key_;
-     std::optional<std::pair<const char*, const char*>> python_module_;
+     c10::optional<std::string> ns_;
+     c10::optional<c10::DispatchKey> dispatch_key_;
+     c10::optional<std::pair<const char*, const char*>> impl_abstract_pystub_;
      const char* file_;
      uint32_t line_;
    
@@ -659,7 +655,7 @@ Program Listing for File library.h
          Library::Kind kind,
          InitFn* fn,
          const char* ns,
-         std::optional<c10::DispatchKey> k,
+         c10::optional<c10::DispatchKey> k,
          const char* file,
          uint32_t line)
          : lib_(kind, ns, k, file, line) {
