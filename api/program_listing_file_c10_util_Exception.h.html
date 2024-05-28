@@ -401,13 +401,10 @@
 
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/macros/Export.h&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/macros/Macros.h&gt;</span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/Backtrace.h&gt;</span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/Lazy.h&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/StringUtil.h&gt;</span>
 
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cstdint&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;exception&gt;</span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;memory&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;variant&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;vector&gt;</span>
@@ -419,7 +416,6 @@
 <span class="k">namespace</span><span class="w"> </span><span class="nn">c10</span><span class="w"> </span><span class="p">{</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">exception</span><span class="w"> </span><span class="p">{</span>
-<span class="w"> </span><span class="k">private</span><span class="o">:</span>
 <span class="w">  </span><span class="c1">// The actual error message.</span>
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">msg_</span><span class="p">;</span>
 
@@ -431,14 +427,14 @@
 <span class="w">  </span><span class="c1">// The C++ backtrace at the point when this exception was raised.  This</span>
 <span class="w">  </span><span class="c1">// may be empty if there is no valid backtrace.  (We don&#39;t use optional</span>
 <span class="w">  </span><span class="c1">// here to reduce the dependencies this file has.)</span>
-<span class="w">  </span><span class="n">Backtrace</span><span class="w"> </span><span class="n">backtrace_</span><span class="p">;</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">backtrace_</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// These two are derived fields from msg_stack_ and backtrace_, but we need</span>
 <span class="w">  </span><span class="c1">// fields for the strings so that we can return a const char* (as the</span>
 <span class="w">  </span><span class="c1">// signature of std::exception requires).  Currently, the invariant</span>
 <span class="w">  </span><span class="c1">// is that these fields are ALWAYS populated consistently with respect</span>
 <span class="w">  </span><span class="c1">// to msg_stack_ and backtrace_.</span>
-<span class="w">  </span><span class="k">mutable</span><span class="w"> </span><span class="n">OptimisticLazy</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&gt;</span><span class="w"> </span><span class="n">what_</span><span class="p">;</span>
+<span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">what_</span><span class="p">;</span>
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">what_without_backtrace_</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// This is a little debugging trick: you can stash a relevant pointer</span>
@@ -459,14 +455,11 @@
 <span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">line</span><span class="p">,</span>
 <span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">condition</span><span class="p">,</span>
 <span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">msg</span><span class="p">,</span>
-<span class="w">      </span><span class="n">Backtrace</span><span class="w"> </span><span class="n">backtrace</span><span class="p">,</span>
+<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">backtrace</span><span class="p">,</span>
 <span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">caller</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">);</span>
 
 <span class="w">  </span><span class="c1">// Base constructor</span>
-<span class="w">  </span><span class="n">Error</span><span class="p">(</span>
-<span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">msg</span><span class="p">,</span>
-<span class="w">      </span><span class="n">Backtrace</span><span class="w"> </span><span class="n">backtrace</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">,</span>
-<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">caller</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">);</span>
+<span class="w">  </span><span class="n">Error</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">msg</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">backtrace</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">caller</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">nullptr</span><span class="p">);</span>
 
 <span class="w">  </span><span class="c1">// Add some new context to the message stack.  The last added context</span>
 <span class="w">  </span><span class="c1">// will be formatted at the end of the context list upon printing.</span>
@@ -482,15 +475,19 @@
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">context_</span><span class="p">;</span>
 <span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">Backtrace</span><span class="o">&amp;</span><span class="w"> </span><span class="n">backtrace</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="p">;</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">backtrace</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">backtrace_</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="nf">what</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="k">override</span><span class="p">;</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">what</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">what_</span><span class="p">.</span><span class="n">c_str</span><span class="p">();</span>
+<span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="nf">caller</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="kt">void</span><span class="o">*</span><span class="w"> </span><span class="n">caller</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">caller_</span><span class="p">;</span>
 <span class="w">  </span><span class="p">}</span>
 
-<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="nf">what_without_backtrace</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">virtual</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">what_without_backtrace</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="k">noexcept</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">what_without_backtrace_</span><span class="p">.</span><span class="n">c_str</span><span class="p">();</span>
 <span class="w">  </span><span class="p">}</span>
 
