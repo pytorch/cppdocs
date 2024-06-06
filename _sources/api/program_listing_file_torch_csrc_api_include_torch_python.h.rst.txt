@@ -193,8 +193,8 @@ Program Listing for File python.h
    }
    
    template <typename ModuleType, bool force_enable = false>
-   torch::disable_if_t<
-       torch::detail::has_forward<ModuleType>::value && !force_enable,
+   std::enable_if_t<
+       !torch::detail::has_forward<ModuleType>::value || force_enable,
        detail::PyModuleClass<ModuleType>>
    bind_module(py::module module, const char* name) {
      py::module cpp = module.def_submodule("cpp");
@@ -206,8 +206,7 @@ Program Listing for File python.h
    
    template <
        typename ModuleType,
-       typename =
-           torch::enable_if_t<torch::detail::has_forward<ModuleType>::value>>
+       typename = std::enable_if_t<torch::detail::has_forward<ModuleType>::value>>
    detail::PyModuleClass<ModuleType> bind_module(
        py::module module,
        const char* name) {

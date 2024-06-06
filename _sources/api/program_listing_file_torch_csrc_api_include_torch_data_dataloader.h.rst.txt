@@ -30,8 +30,8 @@ Program Listing for File dataloader.h
    namespace data {
    
    template <typename Dataset, typename Sampler>
-   torch::disable_if_t<
-       Dataset::is_stateful,
+   std::enable_if_t<
+       !Dataset::is_stateful,
        std::unique_ptr<StatelessDataLoader<Dataset, Sampler>>>
    make_data_loader(Dataset dataset, Sampler sampler, DataLoaderOptions options) {
      return std::make_unique<StatelessDataLoader<Dataset, Sampler>>(
@@ -39,8 +39,8 @@ Program Listing for File dataloader.h
    }
    
    template <typename Sampler = samplers::RandomSampler, typename Dataset>
-   torch::disable_if_t<
-       Dataset::is_stateful || !std::is_constructible<Sampler, size_t>::value,
+   std::enable_if_t<
+       !Dataset::is_stateful && std::is_constructible_v<Sampler, size_t>,
        std::unique_ptr<StatelessDataLoader<Dataset, Sampler>>>
    make_data_loader(
        Dataset dataset,
@@ -54,7 +54,7 @@ Program Listing for File dataloader.h
          std::move(dataset), Sampler(*size), std::move(options));
    }
    
-   template <typename Dataset, typename = torch::enable_if_t<Dataset::is_stateful>>
+   template <typename Dataset, typename = std::enable_if_t<Dataset::is_stateful>>
    std::unique_ptr<StatefulDataLoader<Dataset>> make_data_loader(
        Dataset dataset,
        DataLoaderOptions options = DataLoaderOptions()) {
