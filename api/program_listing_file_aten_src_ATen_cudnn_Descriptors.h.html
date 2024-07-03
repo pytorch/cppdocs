@@ -755,6 +755,24 @@
 <span class="w">    </span><span class="n">AT_CUDNN_CHECK</span><span class="p">(</span>
 <span class="w">        </span><span class="n">cudnnSetCTCLossDescriptorEx</span><span class="p">(</span><span class="n">mut_desc</span><span class="p">(),</span><span class="w"> </span><span class="n">datatype</span><span class="p">,</span><span class="w"> </span><span class="n">normMode</span><span class="p">,</span><span class="w"> </span><span class="n">gradMode</span><span class="p">));</span>
 <span class="w">  </span><span class="p">}</span>
+<span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">set_v8_v9</span><span class="p">(</span>
+<span class="w">      </span><span class="n">cudnnDataType_t</span><span class="w"> </span><span class="n">datatype</span><span class="p">,</span>
+<span class="w">      </span><span class="n">cudnnLossNormalizationMode_t</span><span class="w"> </span><span class="n">normMode</span><span class="p">,</span>
+<span class="w">      </span><span class="n">cudnnNanPropagation_t</span><span class="w"> </span><span class="n">gradMode</span><span class="p">,</span>
+<span class="w">      </span><span class="kt">int</span><span class="w"> </span><span class="n">maxLabelLength</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="cp">#if defined(CUDNN_VERSION) &amp;&amp; CUDNN_VERSION &gt;= 90000</span>
+<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">gradModev9</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CUDNN_CTC_ZERO_OOB_GRADIENTS</span><span class="p">;</span>
+<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">gradMode</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="n">cudnnNanPropagation_t</span><span class="o">::</span><span class="n">CUDNN_PROPAGATE_NAN</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">gradModev9</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">CUDNN_CTC_SKIP_OOB_GRADIENTS</span><span class="p">;</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="n">AT_CUDNN_CHECK</span><span class="p">(</span>
+<span class="w">        </span><span class="n">cudnnSetCTCLossDescriptor_v9</span><span class="p">(</span><span class="n">mut_desc</span><span class="p">(),</span><span class="w"> </span><span class="n">datatype</span><span class="p">,</span><span class="w"> </span><span class="n">normMode</span><span class="p">,</span><span class="w"> </span><span class="n">gradModev9</span><span class="p">,</span><span class="w"> </span><span class="n">maxLabelLength</span><span class="p">));</span>
+<span class="cp">#else</span>
+<span class="w">    </span><span class="n">AT_CUDNN_CHECK</span><span class="p">(</span>
+<span class="w">        </span><span class="n">cudnnSetCTCLossDescriptor_v8</span><span class="p">(</span><span class="n">mut_desc</span><span class="p">(),</span><span class="w"> </span><span class="n">datatype</span><span class="p">,</span><span class="w"> </span><span class="n">normMode</span><span class="p">,</span><span class="w"> </span><span class="n">gradMode</span><span class="p">,</span><span class="w"> </span><span class="n">maxLabelLength</span><span class="p">));</span>
+<span class="cp">#endif</span>
+<span class="w">  </span><span class="p">}</span>
+
 <span class="p">};</span>
 
 <span class="k">struct</span><span class="w"> </span><span class="nc">TORCH_CUDA_CPP_API</span><span class="w"> </span><span class="n">ActivationDescriptor</span>
