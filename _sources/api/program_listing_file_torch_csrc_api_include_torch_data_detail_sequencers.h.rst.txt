@@ -28,7 +28,7 @@ Program Listing for File sequencers.h
    template <typename Result>
    bool buffer_contains_result(const std::vector<optional<Result>>& buffer) {
      return std::any_of(
-         buffer.begin(), buffer.end(), [](const std::optional<Result>& result) {
+         buffer.begin(), buffer.end(), [](const optional<Result>& result) {
            return result.has_value();
          });
    }
@@ -38,13 +38,13 @@ Program Listing for File sequencers.h
    struct Sequencer {
      using ResultProducer = std::function<optional<Result>()>;
      virtual ~Sequencer() = default;
-     virtual std::optional<Result> next(ResultProducer next_result) = 0;
+     virtual optional<Result> next(ResultProducer next_result) = 0;
    };
    
    template <typename Result>
    struct NoSequencer final : public Sequencer<Result> {
      using typename Sequencer<Result>::ResultProducer;
-     std::optional<Result> next(ResultProducer next_result) override {
+     optional<Result> next(ResultProducer next_result) override {
        return next_result();
      }
    };
@@ -55,7 +55,7 @@ Program Listing for File sequencers.h
    
      explicit OrderedSequencer(size_t max_jobs) : buffer_(max_jobs) {}
    
-     std::optional<Result> next(ResultProducer next_result) override {
+     optional<Result> next(ResultProducer next_result) override {
        // If we already have the result for the next sqn, return it.
        if (auto& maybe_result = buffer(next_sequence_number_)) {
          auto result = std::move(*maybe_result);
@@ -83,7 +83,7 @@ Program Listing for File sequencers.h
        return nullopt;
      }
    
-     std::optional<Result>& buffer(size_t index) {
+     optional<Result>& buffer(size_t index) {
        return buffer_.at(index % buffer_.size());
      }
    
