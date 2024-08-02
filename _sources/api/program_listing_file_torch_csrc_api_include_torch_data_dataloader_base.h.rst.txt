@@ -105,8 +105,8 @@ Program Listing for File base.h
        Job(QuitWorker q, size_t sqn) : Sequenced(sqn), quit(q) {}
        Job(BatchRequest&& i, size_t sqn)
            : Sequenced(sqn), batch_request(std::move(i)) {}
-       optional<QuitWorker> quit;
-       optional<BatchRequest> batch_request;
+       std::optional<QuitWorker> quit;
+       std::optional<BatchRequest> batch_request;
      };
    
      struct Result : Sequenced {
@@ -115,11 +115,11 @@ Program Listing for File base.h
            : Sequenced(sqn), batch(std::move(b)) {}
        Result(std::exception_ptr exception, size_t sqn)
            : Sequenced(sqn), exception(std::move(exception)) {}
-       optional<Batch> batch;
+       std::optional<Batch> batch;
        std::exception_ptr exception;
      };
    
-     virtual optional<BatchRequestType> get_batch_request() = 0;
+     virtual std::optional<BatchRequestType> get_batch_request() = 0;
    
      virtual void reset() {
        shuttle_.drain();
@@ -143,7 +143,7 @@ Program Listing for File base.h
        prefetch(options_.max_jobs);
      }
    
-     optional<BatchType> next() {
+     std::optional<BatchType> next() {
        if (options_.workers > 0) {
          while (optional<Result> result = this->pop_result()) {
            if (result->exception) {
@@ -179,7 +179,7 @@ Program Listing for File base.h
        shuttle_.push_job({std::move(value), sequence_number_++});
      }
    
-     optional<Result> pop_result() {
+     std::optional<Result> pop_result() {
        return sequencer_->next(
            [this] { return this->shuttle_.pop_result(this->options_.timeout); });
      }
