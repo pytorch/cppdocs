@@ -53,7 +53,7 @@ Program Listing for File Half.h
    #include <sycl/sycl.hpp> // for SYCL 2020
    #endif
    
-   #if defined(__aarch64__) && !defined(__CUDACC__)
+   #if defined(__aarch64__) && !defined(C10_MOBILE) && !defined(__CUDACC__)
    #include <arm_neon.h>
    #endif
    
@@ -336,7 +336,7 @@ Program Listing for File Half.h
          (shl1_w > UINT32_C(0xFF000000) ? UINT16_C(0x7E00) : nonsign));
    }
    
-   #if defined(__aarch64__) && !defined(__CUDACC__)
+   #if defined(__aarch64__) && !defined(C10_MOBILE) && !defined(__CUDACC__)
    inline float16_t fp16_from_bits(uint16_t h) {
      return c10::bit_cast<float16_t>(h);
    }
@@ -345,7 +345,7 @@ Program Listing for File Half.h
      return c10::bit_cast<uint16_t>(f);
    }
    
-   // According to https://godbolt.org/z/frExdbsWG it would translate to single
+   // According to https://godbolt.org/z/8s14GvEjo it would translate to single
    // fcvt s0, h0
    inline float native_fp16_to_fp32_value(uint16_t h) {
      return static_cast<float>(fp16_from_bits(h));
@@ -374,7 +374,7 @@ Program Listing for File Half.h
    #endif
    
      constexpr C10_HOST_DEVICE Half(unsigned short bits, from_bits_t) : x(bits) {}
-   #if defined(__aarch64__) && !defined(__CUDACC__)
+   #if defined(__aarch64__) && !defined(C10_MOBILE) && !defined(__CUDACC__)
      inline Half(float16_t value);
      inline operator float16_t() const;
    #else
@@ -468,7 +468,7 @@ Program Listing for File Half.h
    template <typename To, typename From>
    std::enable_if_t<std::is_same_v<From, bool>, bool> overflows(
        From /*f*/,
-       bool strict_unsigned [[maybe_unused]] = false) {
+       bool strict_unsigned = false) {
      return false;
    }
    
@@ -493,7 +493,7 @@ Program Listing for File Half.h
    template <typename To, typename From>
    std::enable_if_t<std::is_floating_point_v<From>, bool> overflows(
        From f,
-       bool strict_unsigned [[maybe_unused]] = false) {
+       bool strict_unsigned = false) {
      using limit = std::numeric_limits<typename scalar_value_type<To>::type>;
      if (limit::has_infinity && std::isinf(static_cast<double>(f))) {
        return false;
@@ -525,10 +525,10 @@ Program Listing for File Half.h
      // able to figure it out.)
      return overflows<
                 typename scalar_value_type<To>::type,
-                typename From::value_type>(f.real(), strict_unsigned) ||
+                typename From::value_type>(f.real()) ||
          overflows<
                 typename scalar_value_type<To>::type,
-                typename From::value_type>(f.imag(), strict_unsigned);
+                typename From::value_type>(f.imag());
    }
    
    C10_API inline std::ostream& operator<<(std::ostream& out, const Half& value) {
