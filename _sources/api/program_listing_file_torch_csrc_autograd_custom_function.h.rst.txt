@@ -75,7 +75,6 @@ Program Listing for File custom_function.h
      AutogradContext(const AutogradContext& other) = delete;
      AutogradContext& operator=(const AutogradContext& other) = delete;
    
-     // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
      ska::flat_hash_map<std::string, at::IValue> saved_data;
    
      void save_for_backward(variable_list to_save);
@@ -128,6 +127,8 @@ Program Listing for File custom_function.h
      void save_variables_to_ctx();
    
      void compiled_args(CompiledNodeArgs& args) override {
+       static_assert(
+           std::is_same_v<std::remove_cv_t<decltype(T::is_traceable)>, bool>);
        if (!T::is_traceable) {
          throw std::runtime_error(
              std::string(
@@ -186,7 +187,6 @@ Program Listing for File custom_function.h
      ExtractVariables(std::vector<bool>& is_var, variable_list& list)
          : is_var_(is_var), list_(list) {}
      void operator()(const std::optional<at::Tensor>& x) {
-       // NOLINTNEXTLINE(bugprone-branch-clone)
        if (x.has_value() && x.value().defined()) {
          is_var_.push_back(true);
          list_.emplace_back(x.value());
@@ -221,7 +221,6 @@ Program Listing for File custom_function.h
    template <typename T>
    std::enable_if_t<std::is_same_v<T, variable_list>, T> to_output_type(
        std::vector<std::optional<Variable>>& output_list) {
-     // NOLINTNEXTLINE(cppcoreguidelines-init-variables)
      variable_list result;
      std::transform(
          output_list.begin(),
@@ -242,7 +241,6 @@ Program Listing for File custom_function.h
    }
    
    inline std::vector<std::optional<Variable>> to_optional(variable_list& output) {
-     // NOLINTNEXTLINE(cppcoreguidelines-init-variables)
      std::vector<std::optional<Variable>> result;
      std::transform(
          output.begin(),
@@ -265,7 +263,6 @@ Program Listing for File custom_function.h
      }
    
      std::shared_ptr<CppNode<T>> node(new CppNode<T>(), deleteNode);
-     // NOLINTNEXTLINE(cppcoreguidelines-init-variables)
      variable_list input_vars;
    
      const size_t num_inputs = sizeof...(Args);
@@ -274,7 +271,6 @@ Program Listing for File custom_function.h
      // TODO Add tracing here
      extract_vars(node->is_variable_input_, input_vars, args...);
    
-     // NOLINTNEXTLINE(cppcoreguidelines-init-variables)
      bool is_executable =
          GradMode::is_enabled() && any_variable_requires_grad(input_vars);
      auto next_edges =
@@ -289,7 +285,6 @@ Program Listing for File custom_function.h
      }
    
      using forward_return_t = forward_t<X, Args...>;
-     // NOLINTNEXTLINE(cppcoreguidelines-init-variables)
      forward_return_t outputs;
      {
        AutoGradMode grad_mode(false);
@@ -344,7 +339,6 @@ Program Listing for File custom_function.h
      at::OptionalDeviceGuard _device_guard;
    
      auto num_inputs = inputs.size();
-     // NOLINTNEXTLINE(cppcoreguidelines-init-variables)
      variable_list backward_inputs;
      backward_inputs.reserve(num_inputs);
      for (const auto i : c10::irange(num_inputs)) {
@@ -382,12 +376,11 @@ Program Listing for File custom_function.h
      if (num_outputs != num_forward_inputs) {
        std::string msg("function ");
        msg += name() + " returned an incorrect number of gradients (expected ";
-       msg += c10::to_string(num_forward_inputs) + ", got ";
-       msg += c10::to_string(num_outputs) + ")";
+       msg += std::to_string(num_forward_inputs) + ", got ";
+       msg += std::to_string(num_outputs) + ")";
        throw std::runtime_error(msg);
      }
    
-     // NOLINTNEXTLINE(cppcoreguidelines-init-variables)
      variable_list results;
      results.reserve(num_outputs);
      for (const auto i : c10::irange(num_outputs)) {
@@ -396,8 +389,8 @@ Program Listing for File custom_function.h
            std::string msg("function ");
            msg += name() +
                " returned a gradient different that is defined at position ";
-           msg += c10::to_string(i + 1) +
-               ", but the corresponding forward input was not a Variable";
+           msg += std::to_string(i + 1) +
+               ", std the corresponding forward input was not a Variable";
            throw std::runtime_error(msg);
          }
          continue;
