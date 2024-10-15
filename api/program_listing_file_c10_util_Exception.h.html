@@ -895,6 +895,43 @@
 
 <span class="p">}</span><span class="w"> </span><span class="c1">// namespace c10::detail</span>
 
+<span class="cp">#ifdef STANDALONE_TORCH_HEADER</span>
+
+<span class="c1">// TORCH_CHECK throws std::runtime_error instead of c10::Error which is</span>
+<span class="c1">// useful when certain headers are used in a libtorch-independent way,</span>
+<span class="c1">// e.g. when Vectorized&lt;T&gt; is used in AOTInductor generated code.</span>
+<span class="cp">#ifdef STRIP_ERROR_MESSAGES</span>
+<span class="cp">#define TORCH_CHECK(cond, ...)                \</span>
+<span class="cp">  if (C10_UNLIKELY_OR_CONST(!(cond))) {       \</span>
+<span class="cp">    throw std::runtime_error(TORCH_CHECK_MSG( \</span>
+<span class="cp">        cond,                                 \</span>
+<span class="cp">        &quot;&quot;,                                   \</span>
+<span class="cp">        __func__,                             \</span>
+<span class="cp">        &quot;, &quot;,                                 \</span>
+<span class="cp">        __FILE__,                             \</span>
+<span class="cp">        &quot;:&quot;,                                  \</span>
+<span class="cp">        __LINE__,                             \</span>
+<span class="cp">        &quot;, &quot;,                                 \</span>
+<span class="cp">        __VA_ARGS__));                        \</span>
+<span class="cp">  }</span>
+<span class="cp">#else</span>
+<span class="cp">#define TORCH_CHECK(cond, ...)                \</span>
+<span class="cp">  if (C10_UNLIKELY_OR_CONST(!(cond))) {       \</span>
+<span class="cp">    throw std::runtime_error(TORCH_CHECK_MSG( \</span>
+<span class="cp">        cond,                                 \</span>
+<span class="cp">        &quot;&quot;,                                   \</span>
+<span class="cp">        __func__,                             \</span>
+<span class="cp">        &quot;, &quot;,                                 \</span>
+<span class="cp">        __FILE__,                             \</span>
+<span class="cp">        &quot;:&quot;,                                  \</span>
+<span class="cp">        __LINE__,                             \</span>
+<span class="cp">        &quot;, &quot;,                                 \</span>
+<span class="cp">        ##__VA_ARGS__));                      \</span>
+<span class="cp">  }</span>
+<span class="cp">#endif</span>
+
+<span class="cp">#else</span>
+
 <span class="cp">#ifdef STRIP_ERROR_MESSAGES</span>
 <span class="cp">#define TORCH_CHECK(cond, ...)                   \</span>
 <span class="cp">  if (C10_UNLIKELY_OR_CONST(!(cond))) {          \</span>
@@ -913,6 +950,8 @@
 <span class="cp">        static_cast&lt;uint32_t&gt;(__LINE__),           \</span>
 <span class="cp">        TORCH_CHECK_MSG(cond, &quot;&quot;, ##__VA_ARGS__)); \</span>
 <span class="cp">  }</span>
+<span class="cp">#endif</span>
+
 <span class="cp">#endif</span>
 
 <span class="c1">// An utility macro that does what `TORCH_CHECK` does if compiled in the host</span>

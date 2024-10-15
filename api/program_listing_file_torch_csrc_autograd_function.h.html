@@ -634,6 +634,23 @@
 <span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span>
 <span class="w">  </span><span class="p">}</span>
 
+<span class="w">  </span><span class="c1">// Used by the engine to determine what device thread to run on</span>
+<span class="w">  </span><span class="n">at</span><span class="o">::</span><span class="n">Device</span><span class="w"> </span><span class="n">device</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="c1">// Since we pick the first non-CPU tensor, this won&#39;t work with</span>
+<span class="w">    </span><span class="c1">// mixed device-type operations (e.g., an op that is both CUDA</span>
+<span class="w">    </span><span class="c1">// and XLA).  This is *incredibly* unlikely, so we don&#39;t worry</span>
+<span class="w">    </span><span class="c1">// about it.</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">metadata</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">input_metadata_</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="k">auto</span><span class="w"> </span><span class="n">device</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">metadata</span><span class="p">.</span><span class="n">device</span><span class="p">();</span>
+<span class="w">      </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">device</span><span class="p">.</span><span class="n">type</span><span class="p">()</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">kCPU</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">        </span><span class="k">return</span><span class="w"> </span><span class="n">device</span><span class="p">;</span>
+<span class="w">      </span><span class="p">}</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="c1">// Only report to the CPU thread if there really were no tensors</span>
+<span class="w">    </span><span class="c1">// from other devices.</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">kCPU</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
+
 <span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="n">clear_input_metadata</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="n">input_metadata_</span><span class="p">.</span><span class="n">clear</span><span class="p">();</span>
 <span class="w">  </span><span class="p">}</span>
