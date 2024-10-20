@@ -404,12 +404,11 @@
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/data/samplers.h&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;queue&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;thread&gt;</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;utility&gt;</span>
 
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/serialize.h&gt;</span>
 
-<span class="k">namespace</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="p">{</span>
-<span class="k">namespace</span><span class="w"> </span><span class="nn">data</span><span class="w"> </span><span class="p">{</span>
-<span class="k">namespace</span><span class="w"> </span><span class="nn">datasets</span><span class="w"> </span><span class="p">{</span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">torch</span><span class="o">::</span><span class="nn">data</span><span class="o">::</span><span class="nn">datasets</span><span class="w"> </span><span class="p">{</span>
 
 <span class="k">template</span><span class="w"> </span><span class="o">&lt;</span>
 <span class="w">    </span><span class="k">typename</span><span class="w"> </span><span class="nc">ExampleType_</span><span class="p">,</span>
@@ -584,8 +583,8 @@
 <span class="w">    </span><span class="k">explicit</span><span class="w"> </span><span class="n">UnwrappedBatchData</span><span class="p">(</span><span class="n">UnwrappedBatchType</span><span class="w"> </span><span class="n">data</span><span class="p">)</span>
 <span class="w">        </span><span class="o">:</span><span class="w"> </span><span class="n">batch_data</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">data</span><span class="p">))</span><span class="w"> </span><span class="p">{}</span>
 
-<span class="w">    </span><span class="c1">// NOLINTNEXTLINE(modernize-pass-by-value)</span>
-<span class="w">    </span><span class="k">explicit</span><span class="w"> </span><span class="n">UnwrappedBatchData</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">exception_ptr</span><span class="w"> </span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">exception</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span>
+<span class="w">    </span><span class="k">explicit</span><span class="w"> </span><span class="n">UnwrappedBatchData</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">exception_ptr</span><span class="w"> </span><span class="n">e</span><span class="p">)</span>
+<span class="w">        </span><span class="o">:</span><span class="w"> </span><span class="n">exception</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">e</span><span class="p">))</span><span class="w"> </span><span class="p">{}</span>
 
 <span class="w">    </span><span class="n">UnwrappedBatchType</span><span class="w"> </span><span class="n">batch_data</span><span class="p">;</span>
 
@@ -600,6 +599,7 @@
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">condition_variable</span><span class="w"> </span><span class="n">cv_read_</span><span class="p">;</span>
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">condition_variable</span><span class="w"> </span><span class="n">cv_write_</span><span class="p">;</span>
 
+<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)</span>
 <span class="w">  </span><span class="n">ExampleSampler</span><span class="o">&amp;</span><span class="w"> </span><span class="n">example_sampler_</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// configurable maximun number of elements the queue can hold at one time.</span>
@@ -688,11 +688,10 @@
 <span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">chunk_reader_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">chunk_reader</span><span class="p">)),</span>
 <span class="w">        </span><span class="n">chunk_sampler_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">chunk_sampler</span><span class="p">)),</span>
 <span class="w">        </span><span class="n">example_sampler_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">example_sampler</span><span class="p">)),</span>
-<span class="w">        </span><span class="n">options_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">options</span><span class="p">)),</span>
+<span class="w">        </span><span class="n">options_</span><span class="p">(</span><span class="n">options</span><span class="p">),</span>
 <span class="w">        </span><span class="n">preprocessing_policy_</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">preprocessing_policy</span><span class="p">)),</span>
 <span class="w">        </span><span class="n">quit_worker_</span><span class="p">(</span><span class="nb">false</span><span class="p">),</span>
-<span class="w">        </span><span class="n">running_preloaders_</span><span class="p">(</span><span class="mi">0</span><span class="p">),</span>
-<span class="w">        </span><span class="n">load_checkpoint_</span><span class="p">(</span><span class="nb">false</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span>
+<span class="w">        </span><span class="n">running_preloaders_</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span>
 
 <span class="w">  </span><span class="o">~</span><span class="n">ChunkDataset</span><span class="p">()</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="c1">// stop batch buffer first.</span>
@@ -840,6 +839,7 @@
 <span class="w">  </span><span class="c1">// worker thread pool</span>
 <span class="w">  </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="kr">thread</span><span class="o">&gt;</span><span class="w"> </span><span class="n">preload_threads_</span><span class="p">;</span>
 
+<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)</span>
 <span class="w">  </span><span class="k">const</span><span class="w"> </span><span class="n">ChunkDatasetOptions</span><span class="w"> </span><span class="n">options_</span><span class="p">;</span>
 
 <span class="w">  </span><span class="c1">// function pointer wrapper to apply custom processing over chunk data. This</span>
@@ -866,11 +866,9 @@
 
 <span class="w">  </span><span class="c1">// boolean value to indicate whether we need to load the checkpoint for</span>
 <span class="w">  </span><span class="c1">// chunk_sampler_.</span>
-<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">load_checkpoint_</span><span class="p">;</span>
+<span class="w">  </span><span class="kt">bool</span><span class="w"> </span><span class="n">load_checkpoint_</span><span class="p">{</span><span class="nb">false</span><span class="p">};</span>
 <span class="p">};</span>
-<span class="p">}</span><span class="w"> </span><span class="c1">// namespace datasets</span>
-<span class="p">}</span><span class="w"> </span><span class="c1">// namespace data</span>
-<span class="p">}</span><span class="w"> </span><span class="c1">// namespace torch</span>
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace torch::data::datasets</span>
 </pre></div>
 </div>
 </div>

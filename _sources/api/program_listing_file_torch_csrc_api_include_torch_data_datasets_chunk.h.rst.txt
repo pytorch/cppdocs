@@ -20,12 +20,11 @@ Program Listing for File chunk.h
    #include <torch/data/samplers.h>
    #include <queue>
    #include <thread>
+   #include <utility>
    
    #include <torch/serialize.h>
    
-   namespace torch {
-   namespace data {
-   namespace datasets {
+   namespace torch::data::datasets {
    
    template <
        typename ExampleType_,
@@ -200,8 +199,8 @@ Program Listing for File chunk.h
        explicit UnwrappedBatchData(UnwrappedBatchType data)
            : batch_data(std::move(data)) {}
    
-       // NOLINTNEXTLINE(modernize-pass-by-value)
-       explicit UnwrappedBatchData(std::exception_ptr e) : exception(e) {}
+       explicit UnwrappedBatchData(std::exception_ptr e)
+           : exception(std::move(e)) {}
    
        UnwrappedBatchType batch_data;
    
@@ -216,6 +215,7 @@ Program Listing for File chunk.h
      std::condition_variable cv_read_;
      std::condition_variable cv_write_;
    
+     // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)
      ExampleSampler& example_sampler_;
    
      // configurable maximun number of elements the queue can hold at one time.
@@ -304,11 +304,10 @@ Program Listing for File chunk.h
          : chunk_reader_(std::move(chunk_reader)),
            chunk_sampler_(std::move(chunk_sampler)),
            example_sampler_(std::move(example_sampler)),
-           options_(std::move(options)),
+           options_(options),
            preprocessing_policy_(std::move(preprocessing_policy)),
            quit_worker_(false),
-           running_preloaders_(0),
-           load_checkpoint_(false) {}
+           running_preloaders_(0) {}
    
      ~ChunkDataset() override {
        // stop batch buffer first.
@@ -456,6 +455,7 @@ Program Listing for File chunk.h
      // worker thread pool
      std::vector<std::thread> preload_threads_;
    
+     // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)
      const ChunkDatasetOptions options_;
    
      // function pointer wrapper to apply custom processing over chunk data. This
@@ -482,8 +482,6 @@ Program Listing for File chunk.h
    
      // boolean value to indicate whether we need to load the checkpoint for
      // chunk_sampler_.
-     bool load_checkpoint_;
+     bool load_checkpoint_{false};
    };
-   } // namespace datasets
-   } // namespace data
-   } // namespace torch
+   } // namespace torch::data::datasets

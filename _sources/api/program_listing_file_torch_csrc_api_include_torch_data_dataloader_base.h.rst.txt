@@ -35,8 +35,7 @@ Program Listing for File base.h
    #include <utility>
    #include <vector>
    
-   namespace torch {
-   namespace data {
+   namespace torch::data {
    template <typename Dataset, typename Batch, typename BatchRequest>
    class DataLoaderBase {
     public:
@@ -46,7 +45,7 @@ Program Listing for File base.h
      DataLoaderBase(
          DataLoaderOptions options,
          std::unique_ptr<Dataset> main_thread_dataset = nullptr)
-         : options_(std::move(options)),
+         : options_(options),
            main_thread_dataset_(std::move(main_thread_dataset)),
            sequencer_(new_sequencer()) {}
    
@@ -77,7 +76,7 @@ Program Listing for File base.h
        // Send one 'quit' message per worker. Since a worker dies (exits its
        // thread) after receiving this message, each `QuitWorker()` message will be
        // read by exactly one worker.
-       for (C10_UNUSED const auto w : c10::irange(options_.workers)) {
+       for ([[maybe_unused]] const auto w : c10::irange(options_.workers)) {
          push_job(QuitWorker());
        }
        for (auto& worker : workers_) {
@@ -128,7 +127,7 @@ Program Listing for File base.h
      }
    
      void prefetch(size_t requested_jobs) {
-       for (C10_UNUSED const auto r : c10::irange(requested_jobs)) {
+       for ([[maybe_unused]] const auto r : c10::irange(requested_jobs)) {
          if (auto batch_request = get_batch_request()) {
            this->push_job(std::move(*batch_request));
          } else {
@@ -211,5 +210,4 @@ Program Listing for File base.h
      // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes)
      bool joined_ = false;
    };
-   } // namespace data
-   } // namespace torch
+   } // namespace torch::data

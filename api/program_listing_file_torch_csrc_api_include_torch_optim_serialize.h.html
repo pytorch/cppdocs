@@ -408,8 +408,7 @@
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;string&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;vector&gt;</span>
 
-<span class="k">namespace</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="p">{</span>
-<span class="k">namespace</span><span class="w"> </span><span class="nn">optim</span><span class="w"> </span><span class="p">{</span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">torch</span><span class="o">::</span><span class="nn">optim</span><span class="w"> </span><span class="p">{</span>
 <span class="k">namespace</span><span class="w"> </span><span class="nn">detail</span><span class="w"> </span><span class="p">{</span>
 <span class="c1">// Utility function to save state</span>
 <span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">DerivedOptimizerParamState</span><span class="o">&gt;</span>
@@ -422,7 +421,7 @@
 <span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="w"> </span><span class="n">tensorimpl_key</span><span class="w"> </span><span class="o">=</span>
 <span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">to_string</span><span class="p">(</span><span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="kt">size_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">item</span><span class="p">.</span><span class="n">first</span><span class="p">));</span>
 <span class="w">    </span><span class="k">const</span><span class="w"> </span><span class="n">DerivedOptimizerParamState</span><span class="o">&amp;</span><span class="w"> </span><span class="n">curr_state</span><span class="w"> </span><span class="o">=</span>
-<span class="w">        </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="n">DerivedOptimizerParamState</span><span class="o">&amp;&gt;</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="n">item</span><span class="p">.</span><span class="n">second</span><span class="p">.</span><span class="n">get</span><span class="p">()));</span>
+<span class="w">        </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="k">const</span><span class="w"> </span><span class="n">DerivedOptimizerParamState</span><span class="o">&amp;&gt;</span><span class="p">(</span><span class="o">*</span><span class="p">(</span><span class="n">item</span><span class="p">.</span><span class="n">second</span><span class="p">));</span>
 <span class="w">    </span><span class="n">curr_state</span><span class="p">.</span><span class="n">serialize</span><span class="p">(</span><span class="n">param_state_archive</span><span class="p">);</span>
 <span class="w">    </span><span class="n">archive</span><span class="p">.</span><span class="n">write</span><span class="p">(</span><span class="n">tensorimpl_key</span><span class="p">,</span><span class="w"> </span><span class="n">param_state_archive</span><span class="p">);</span>
 <span class="w">  </span><span class="p">}</span>
@@ -674,16 +673,16 @@
 <span class="cp">    archive.write(#name, ivalue);                              \</span>
 <span class="cp">  }</span>
 
-<span class="cp">#define _TORCH_OPTIM_DESERIALIZE_TORCH_ARG(T, name)                   \</span>
-<span class="cp">  {                                                                   \</span>
-<span class="cp">    c10::IValue ivalue;                                               \</span>
-<span class="cp">    bool exists = archive.try_read(#name, ivalue);                    \</span>
-<span class="cp">    if (exists) {                                                     \</span>
-<span class="cp">      name(ivalue.to&lt;T&gt;());                                           \</span>
-<span class="cp">    } else {                                                          \</span>
-<span class="cp">      bool is_tensor_type = std::is_base_of&lt;torch::Tensor, T&gt;::value; \</span>
-<span class="cp">      TORCH_INTERNAL_ASSERT(is_tensor_type);                          \</span>
-<span class="cp">    }                                                                 \</span>
+<span class="cp">#define _TORCH_OPTIM_DESERIALIZE_TORCH_ARG(T, name)                        \</span>
+<span class="cp">  {                                                                        \</span>
+<span class="cp">    c10::IValue ivalue;                                                    \</span>
+<span class="cp">    bool exists = archive.try_read(#name, ivalue);                         \</span>
+<span class="cp">    if (exists) {                                                          \</span>
+<span class="cp">      name(ivalue.to&lt;T&gt;());                                                \</span>
+<span class="cp">    } else {                                                               \</span>
+<span class="cp">      constexpr bool is_tensor_type = std::is_base_of_v&lt;torch::Tensor, T&gt;; \</span>
+<span class="cp">      TORCH_INTERNAL_ASSERT(is_tensor_type);                               \</span>
+<span class="cp">    }                                                                      \</span>
 <span class="cp">  }</span>
 
 <span class="cp">#define _TORCH_OPTIM_DESERIALIZE_TORCH_ARG_OPTIONAL(T, name) \</span>
@@ -703,8 +702,7 @@
 <span class="cp">    name(list_to_deque(list));                            \</span>
 <span class="cp">  }</span>
 
-<span class="p">}</span><span class="w"> </span><span class="c1">// namespace optim</span>
-<span class="p">}</span><span class="w"> </span><span class="c1">// namespace torch</span>
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace torch::optim</span>
 </pre></div>
 </div>
 </div>

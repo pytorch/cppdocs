@@ -398,26 +398,16 @@
 <p>↰ <a class="reference internal" href="file_torch_csrc_api_include_torch_nn_modules_container_any.h.html#file-torch-csrc-api-include-torch-nn-modules-container-any-h"><span class="std std-ref">Return to documentation for file</span></a> (<code class="docutils literal notranslate"><span class="pre">torch/csrc/api/include/torch/nn/modules/container/any.h</span></code>)</p>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#pragma once</span>
 
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/detail/static.h&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/nn/module.h&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/nn/modules/container/any_module_holder.h&gt;</span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/nn/modules/container/any_value.h&gt;</span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/nn/pimpl.h&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/types.h&gt;</span>
-
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/csrc/autograd/variable.h&gt;</span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/csrc/utils/variadic.h&gt;</span>
-
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;ATen/Device.h&gt;</span>
 
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;memory&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;type_traits&gt;</span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;typeinfo&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;utility&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;vector&gt;</span>
 
-<span class="k">namespace</span><span class="w"> </span><span class="nn">torch</span><span class="w"> </span><span class="p">{</span>
-<span class="k">namespace</span><span class="w"> </span><span class="nn">nn</span><span class="w"> </span><span class="p">{</span>
+<span class="k">namespace</span><span class="w"> </span><span class="nn">torch</span><span class="o">::</span><span class="nn">nn</span><span class="w"> </span><span class="p">{</span>
 
 <span class="k">class</span><span class="w"> </span><span class="nc">AnyModule</span><span class="w"> </span><span class="p">{</span>
 <span class="w"> </span><span class="k">public</span><span class="o">:</span>
@@ -540,8 +530,8 @@
 
 <span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">ModuleType</span><span class="o">&gt;</span>
 <span class="n">AnyModule</span><span class="o">&amp;</span><span class="w"> </span><span class="n">AnyModule</span><span class="o">::</span><span class="k">operator</span><span class="o">=</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">shared_ptr</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;</span><span class="w"> </span><span class="k">module</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="c1">// NOLINTNEXTLINE(cppcoreguidelines-c-copy-assignment-signature)</span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="p">(</span><span class="o">*</span><span class="k">this</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">AnyModule</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="k">module</span><span class="p">)));</span>
+<span class="w">  </span><span class="o">*</span><span class="k">this</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">AnyModule</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="k">module</span><span class="p">));</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="o">*</span><span class="k">this</span><span class="p">;</span>
 <span class="p">}</span>
 
 <span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="p">...</span><span class="w"> </span><span class="n">ArgumentTypes</span><span class="o">&gt;</span>
@@ -615,7 +605,7 @@
 <span class="w">      </span><span class="s">&quot;Modules stored inside AnyModule must not take references. &quot;</span>
 <span class="w">      </span><span class="s">&quot;Use pointers instead.&quot;</span><span class="p">);</span>
 <span class="w">  </span><span class="k">static_assert</span><span class="p">(</span>
-<span class="w">      </span><span class="o">!</span><span class="n">std</span><span class="o">::</span><span class="n">is_void</span><span class="o">&lt;</span><span class="n">ReturnType</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span>
+<span class="w">      </span><span class="o">!</span><span class="n">std</span><span class="o">::</span><span class="n">is_void_v</span><span class="o">&lt;</span><span class="n">ReturnType</span><span class="o">&gt;</span><span class="p">,</span>
 <span class="w">      </span><span class="s">&quot;AnyModule cannot store modules that return void &quot;</span>
 <span class="w">      </span><span class="s">&quot;(you can return a dummy value).&quot;</span><span class="p">);</span>
 <span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span>
@@ -625,7 +615,7 @@
 
 <span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">ModuleType</span><span class="o">&gt;</span>
 <span class="n">ModuleType</span><span class="o">&amp;</span><span class="w"> </span><span class="n">AnyModule</span><span class="o">::</span><span class="n">get_</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">M</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">std</span><span class="o">::</span><span class="n">remove_reference</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;::</span><span class="n">type</span><span class="p">;</span>
+<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">M</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">remove_reference_t</span><span class="o">&lt;</span><span class="n">ModuleType</span><span class="o">&gt;</span><span class="p">;</span>
 <span class="w">  </span><span class="k">static_assert</span><span class="p">(</span>
 <span class="w">      </span><span class="n">torch</span><span class="o">::</span><span class="n">detail</span><span class="o">::</span><span class="n">has_forward</span><span class="o">&lt;</span><span class="n">M</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span>
 <span class="w">      </span><span class="s">&quot;Can only call AnyModule::get&lt;T&gt; with a type T that has a forward method&quot;</span><span class="p">);</span>
@@ -647,8 +637,7 @@
 <span class="w">      </span><span class="n">c10</span><span class="o">::</span><span class="n">demangle</span><span class="p">(</span><span class="k">typeid</span><span class="p">(</span><span class="n">ModuleType</span><span class="p">).</span><span class="n">name</span><span class="p">()));</span>
 <span class="p">}</span>
 
-<span class="p">}</span><span class="w"> </span><span class="c1">// namespace nn</span>
-<span class="p">}</span><span class="w"> </span><span class="c1">// namespace torch</span>
+<span class="p">}</span><span class="w"> </span><span class="c1">// namespace torch::nn</span>
 </pre></div>
 </div>
 </div>
