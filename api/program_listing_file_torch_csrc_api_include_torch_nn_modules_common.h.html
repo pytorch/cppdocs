@@ -437,30 +437,32 @@ the forward() method is declared with a corresponding
 TORCH_MODULE(M);
 #pragma once
 
-#define FORWARD_HAS_DEFAULT_ARGS(...)                                         \
-  template &lt;typename ModuleType, typename... ArgumentTypes&gt;                   \
-  friend struct torch::nn::AnyModuleHolder;                                   \
-  bool _forward_has_default_args() override {                                 \
-    return true;                                                              \
-  }                                                                           \
-  unsigned int _forward_num_required_args() override {                        \
-    std::pair&lt;unsigned int, torch::nn::AnyValue&gt; args_info[] = {__VA_ARGS__}; \
-    return args_info[0].first;                                                \
-  }                                                                           \
-  std::vector&lt;torch::nn::AnyValue&gt; _forward_populate_default_args(            \
-      std::vector&lt;torch::nn::AnyValue&gt;&amp;&amp; arguments) override {                \
-    std::pair&lt;unsigned int, torch::nn::AnyValue&gt; args_info[] = {__VA_ARGS__}; \
-    unsigned int num_all_args = std::rbegin(args_info)-&gt;first + 1;            \
-    TORCH_INTERNAL_ASSERT(                                                    \
-        arguments.size() &gt;= _forward_num_required_args() &amp;&amp;                   \
-        arguments.size() &lt;= num_all_args);                                    \
-    std::vector&lt;torch::nn::AnyValue&gt; ret = std::move(arguments);              \
-    ret.reserve(num_all_args);                                                \
-    for (auto&amp; arg_info : args_info) {                                        \
-      if (arg_info.first &gt; ret.size() - 1)                                    \
-        ret.emplace_back(std::move(arg_info.second));                         \
-    }                                                                         \
-    return ret;                                                               \
+#define FORWARD_HAS_DEFAULT_ARGS(...)                                    \
+  template &lt;typename ModuleType, typename... ArgumentTypes&gt;              \
+  friend struct torch::nn::AnyModuleHolder;                              \
+  bool _forward_has_default_args() override {                            \
+    return true;                                                         \
+  }                                                                      \
+  unsigned int _forward_num_required_args() override {                   \
+    std::vector&lt;std::pair&lt;unsigned int, torch::nn::AnyValue&gt;&gt; args_info{ \
+        __VA_ARGS__};                                                    \
+    return std::begin(args_info)-&gt;first;                                 \
+  }                                                                      \
+  std::vector&lt;torch::nn::AnyValue&gt; _forward_populate_default_args(       \
+      std::vector&lt;torch::nn::AnyValue&gt;&amp;&amp; arguments) override {           \
+    std::vector&lt;std::pair&lt;unsigned int, torch::nn::AnyValue&gt;&gt; args_info{ \
+        __VA_ARGS__};                                                    \
+    unsigned int num_all_args = std::rbegin(args_info)-&gt;first + 1;       \
+    TORCH_INTERNAL_ASSERT(                                               \
+        arguments.size() &gt;= _forward_num_required_args() &amp;&amp;              \
+        arguments.size() &lt;= num_all_args);                               \
+    std::vector&lt;torch::nn::AnyValue&gt; ret = std::move(arguments);         \
+    ret.reserve(num_all_args);                                           \
+    for (auto&amp; arg_info : args_info) {                                   \
+      if (arg_info.first &gt; ret.size() - 1)                               \
+        ret.emplace_back(std::move(arg_info.second));                    \
+    }                                                                    \
+    return ret;                                                          \
   }
 </pre></div>
 </div>
