@@ -612,7 +612,7 @@ Program Listing for File ivalue.h
      IValue(c10::intrusive_ptr<ivalue::ConstantString> v);
      IValue(std::string v);
      IValue(const char* v) : IValue(std::string(v)) {}
-     IValue(c10::string_view v) : IValue(std::string(v)){};
+     IValue(c10::string_view v) : IValue(std::string(v)){}
      bool isString() const {
        return Tag::String == tag;
      }
@@ -1268,8 +1268,13 @@ Program Listing for File ivalue.h
            DeviceIndex index;
          } as_device;
        } u;
+       static_assert(std::is_trivially_copyable_v<TriviallyCopyablePayload>);
        at::Tensor as_tensor;
        Payload() : u() {}
+       Payload(const Payload&) = delete;
+       Payload(Payload&&) = delete;
+       Payload& operator=(const Payload&) = delete;
+       Payload& operator=(Payload&&) = delete;
        ~Payload() {}
      };
    
