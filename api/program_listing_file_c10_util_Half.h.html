@@ -401,9 +401,7 @@
 
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/macros/Export.h&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/macros/Macros.h&gt;</span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/TypeSafeSignMath.h&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/bit_cast.h&gt;</span>
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/complex.h&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/util/floating_point_utils.h&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;type_traits&gt;</span>
 
@@ -421,7 +419,9 @@
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cstring&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;iosfwd&gt;</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;limits&gt;</span>
+<span class="cp">#ifndef C10_EMBEDDED</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;ostream&gt;</span>
+<span class="cp">#endif </span><span class="c1">// C10_EMBEDDED</span>
 
 <span class="cp">#ifdef __CUDACC__</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;cuda_fp16.h&gt;</span>
@@ -440,6 +440,16 @@
 <span class="cp">#if defined(__aarch64__) &amp;&amp; !defined(__CUDACC__)</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;arm_neon.h&gt;</span>
 <span class="cp">#endif</span>
+
+<span class="cp">#if defined(__GNUC__) || defined(__clang__)</span>
+<span class="cp">#if defined(__x86_64__) || defined(_M_X64) || defined(__i386) || \</span>
+<span class="cp">    defined(_M_IX86)</span>
+<span class="cp">#if defined(__F16C__)</span>
+<span class="cp">#define X86_F16 1</span>
+<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;immintrin.h&gt;</span><span class="c1"> // import conversion ops from f16cintrin.h</span>
+<span class="cp">#endif </span><span class="c1">// defined(__F16C__)</span>
+<span class="cp">#endif </span><span class="c1">// __x86_64__ || _M_X64 || __i386 || _M_IX86</span>
+<span class="cp">#endif </span><span class="c1">// __GNUC__ || __clang__</span>
 
 <span class="k">namespace</span><span class="w"> </span><span class="nn">c10</span><span class="w"> </span><span class="p">{</span>
 
@@ -551,6 +561,9 @@
 <span class="cm"> * between integer and floating-point variables.</span>
 <span class="cm"> */</span>
 <span class="n">C10_HOST_DEVICE</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">fp16_ieee_to_fp32_value</span><span class="p">(</span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">h</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="cp">#ifdef X86_F16</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">_cvtsh_ss</span><span class="p">(</span><span class="n">h</span><span class="p">);</span>
+<span class="cp">#else</span>
 <span class="w">  </span><span class="cm">/*</span>
 <span class="cm">   * Extend the half-precision floating-point number to 32 bits and shift to the</span>
 <span class="cm">   * upper part of the 32-bit word:</span>
@@ -673,6 +686,7 @@
 <span class="w">      </span><span class="p">(</span><span class="n">two_w</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">denormalized_cutoff</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">fp32_to_bits</span><span class="p">(</span><span class="n">denormalized_value</span><span class="p">)</span>
 <span class="w">                                   </span><span class="o">:</span><span class="w"> </span><span class="n">fp32_to_bits</span><span class="p">(</span><span class="n">normalized_value</span><span class="p">));</span>
 <span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">fp32_from_bits</span><span class="p">(</span><span class="n">result</span><span class="p">);</span>
+<span class="cp">#endif </span><span class="c1">// X86_F16</span>
 <span class="p">}</span>
 
 <span class="cm">/*</span>
@@ -685,6 +699,9 @@
 <span class="cm"> * between integer and floating-point variables.</span>
 <span class="cm"> */</span>
 <span class="kr">inline</span><span class="w"> </span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">fp16_ieee_from_fp32_value</span><span class="p">(</span><span class="kt">float</span><span class="w"> </span><span class="n">f</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="cp">#ifdef X86_F16</span>
+<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">_cvtss_sh</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="n">_MM_FROUND_TO_NEAREST_INT</span><span class="p">);</span>
+<span class="cp">#else</span>
 <span class="w">  </span><span class="c1">// const float scale_to_inf = 0x1.0p+112f;</span>
 <span class="w">  </span><span class="c1">// const float scale_to_zero = 0x1.0p-110f;</span>
 <span class="w">  </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">uint32_t</span><span class="w"> </span><span class="n">scale_to_inf_bits</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="p">(</span><span class="kt">uint32_t</span><span class="p">)</span><span class="mi">239</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="mi">23</span><span class="p">;</span>
@@ -718,7 +735,12 @@
 <span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint16_t</span><span class="o">&gt;</span><span class="p">(</span>
 <span class="w">      </span><span class="p">(</span><span class="n">sign</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="mi">16</span><span class="p">)</span><span class="w"> </span><span class="o">|</span>
 <span class="w">      </span><span class="p">(</span><span class="n">shl1_w</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">UINT32_C</span><span class="p">(</span><span class="mh">0xFF000000</span><span class="p">)</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">UINT16_C</span><span class="p">(</span><span class="mh">0x7E00</span><span class="p">)</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">nonsign</span><span class="p">));</span>
+<span class="cp">#endif </span><span class="c1">// X86_F16</span>
 <span class="p">}</span>
+
+<span class="cp">#ifdef X86_F16</span>
+<span class="cp">#undef X86_F16</span>
+<span class="cp">#endif </span><span class="c1">// X86_F16</span>
 
 <span class="cp">#if defined(__aarch64__) &amp;&amp; !defined(__CUDACC__)</span>
 <span class="kr">inline</span><span class="w"> </span><span class="n">float16_t</span><span class="w"> </span><span class="n">fp16_from_bits</span><span class="p">(</span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">h</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
@@ -776,149 +798,12 @@
 <span class="cp">#endif</span>
 <span class="p">};</span>
 
-<span class="c1">// TODO : move to complex.h</span>
-<span class="k">template</span><span class="w"> </span><span class="o">&lt;&gt;</span>
-<span class="k">struct</span><span class="w"> </span><span class="nc">alignas</span><span class="p">(</span><span class="mi">4</span><span class="p">)</span><span class="w"> </span><span class="n">complex</span><span class="o">&lt;</span><span class="n">Half</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="n">Half</span><span class="w"> </span><span class="n">real_</span><span class="p">;</span>
-<span class="w">  </span><span class="n">Half</span><span class="w"> </span><span class="n">imag_</span><span class="p">;</span>
-
-<span class="w">  </span><span class="c1">// Constructors</span>
-<span class="w">  </span><span class="n">complex</span><span class="p">()</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">default</span><span class="p">;</span>
-<span class="w">  </span><span class="c1">// Half constructor is not constexpr so the following constructor can&#39;t</span>
-<span class="w">  </span><span class="c1">// be constexpr</span>
-<span class="w">  </span><span class="n">C10_HOST_DEVICE</span><span class="w"> </span><span class="k">explicit</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="n">complex</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">Half</span><span class="o">&amp;</span><span class="w"> </span><span class="n">real</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">Half</span><span class="o">&amp;</span><span class="w"> </span><span class="n">imag</span><span class="p">)</span>
-<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">real_</span><span class="p">(</span><span class="n">real</span><span class="p">),</span><span class="w"> </span><span class="n">imag_</span><span class="p">(</span><span class="n">imag</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span>
-<span class="w">  </span><span class="n">C10_HOST_DEVICE</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="n">complex</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">value</span><span class="p">)</span>
-<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">real_</span><span class="p">(</span><span class="n">value</span><span class="p">.</span><span class="n">real</span><span class="p">()),</span><span class="w"> </span><span class="n">imag_</span><span class="p">(</span><span class="n">value</span><span class="p">.</span><span class="n">imag</span><span class="p">())</span><span class="w"> </span><span class="p">{}</span>
-
-<span class="w">  </span><span class="c1">// Conversion operator</span>
-<span class="w">  </span><span class="kr">inline</span><span class="w"> </span><span class="n">C10_HOST_DEVICE</span><span class="w"> </span><span class="k">operator</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">complex</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">{</span><span class="n">real_</span><span class="p">,</span><span class="w"> </span><span class="n">imag_</span><span class="p">};</span>
-<span class="w">  </span><span class="p">}</span>
-
-<span class="w">  </span><span class="k">constexpr</span><span class="w"> </span><span class="n">C10_HOST_DEVICE</span><span class="w"> </span><span class="n">Half</span><span class="w"> </span><span class="n">real</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">real_</span><span class="p">;</span>
-<span class="w">  </span><span class="p">}</span>
-<span class="w">  </span><span class="k">constexpr</span><span class="w"> </span><span class="n">C10_HOST_DEVICE</span><span class="w"> </span><span class="n">Half</span><span class="w"> </span><span class="n">imag</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">imag_</span><span class="p">;</span>
-<span class="w">  </span><span class="p">}</span>
-
-<span class="w">  </span><span class="n">C10_HOST_DEVICE</span><span class="w"> </span><span class="n">complex</span><span class="o">&lt;</span><span class="n">Half</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">+=</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">complex</span><span class="o">&lt;</span><span class="n">Half</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">real_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="n">real_</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="n">other</span><span class="p">.</span><span class="n">real_</span><span class="p">);</span>
-<span class="w">    </span><span class="n">imag_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="n">imag_</span><span class="p">)</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="n">other</span><span class="p">.</span><span class="n">imag_</span><span class="p">);</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="o">*</span><span class="k">this</span><span class="p">;</span>
-<span class="w">  </span><span class="p">}</span>
-
-<span class="w">  </span><span class="n">C10_HOST_DEVICE</span><span class="w"> </span><span class="n">complex</span><span class="o">&lt;</span><span class="n">Half</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">-=</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">complex</span><span class="o">&lt;</span><span class="n">Half</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="n">real_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="n">real_</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="n">other</span><span class="p">.</span><span class="n">real_</span><span class="p">);</span>
-<span class="w">    </span><span class="n">imag_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="n">imag_</span><span class="p">)</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="n">other</span><span class="p">.</span><span class="n">imag_</span><span class="p">);</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="o">*</span><span class="k">this</span><span class="p">;</span>
-<span class="w">  </span><span class="p">}</span>
-
-<span class="w">  </span><span class="n">C10_HOST_DEVICE</span><span class="w"> </span><span class="n">complex</span><span class="o">&lt;</span><span class="n">Half</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">*=</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="n">complex</span><span class="o">&lt;</span><span class="n">Half</span><span class="o">&gt;&amp;</span><span class="w"> </span><span class="n">other</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="n">real_</span><span class="p">);</span>
-<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="n">imag_</span><span class="p">);</span>
-<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="n">other</span><span class="p">.</span><span class="n">real</span><span class="p">());</span>
-<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">float</span><span class="o">&gt;</span><span class="p">(</span><span class="n">other</span><span class="p">.</span><span class="n">imag</span><span class="p">());</span>
-<span class="w">    </span><span class="n">real_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">c</span><span class="w"> </span><span class="o">-</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">d</span><span class="p">;</span>
-<span class="w">    </span><span class="n">imag_</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">a</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">d</span><span class="w"> </span><span class="o">+</span><span class="w"> </span><span class="n">b</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="n">c</span><span class="p">;</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="o">*</span><span class="k">this</span><span class="p">;</span>
-<span class="w">  </span><span class="p">}</span>
-<span class="p">};</span>
-
-<span class="c1">// In some versions of MSVC, there will be a compiler error when building.</span>
-<span class="c1">// C4146: unary minus operator applied to unsigned type, result still unsigned</span>
-<span class="c1">// C4804: unsafe use of type &#39;bool&#39; in operation</span>
-<span class="c1">// It can be addressed by disabling the following warning.</span>
-<span class="cp">#ifdef _MSC_VER</span>
-<span class="cp">#pragma warning(push)</span>
-<span class="cp">#pragma warning(disable : 4146)</span>
-<span class="cp">#pragma warning(disable : 4804)</span>
-<span class="cp">#pragma warning(disable : 4018)</span>
-<span class="cp">#endif</span>
-
-<span class="c1">// The overflow checks may involve float to int conversion which may</span>
-<span class="c1">// trigger precision loss warning. Re-enable the warning once the code</span>
-<span class="c1">// is fixed. See T58053069.</span>
-<span class="n">C10_CLANG_DIAGNOSTIC_PUSH</span><span class="p">()</span>
-<span class="cp">#if C10_CLANG_HAS_WARNING(&quot;-Wimplicit-float-conversion&quot;)</span>
-<span class="n">C10_CLANG_DIAGNOSTIC_IGNORE</span><span class="p">(</span><span class="s">&quot;-Wimplicit-float-conversion&quot;</span><span class="p">)</span>
-<span class="cp">#endif</span>
-
-<span class="c1">// bool can be converted to any type.</span>
-<span class="c1">// Without specializing on bool, in pytorch_linux_trusty_py2_7_9_build:</span>
-<span class="c1">// `error: comparison of constant &#39;255&#39; with boolean expression is always false`</span>
-<span class="c1">// for `f &gt; limit::max()` below</span>
-<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">To</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">From</span><span class="o">&gt;</span>
-<span class="n">std</span><span class="o">::</span><span class="n">enable_if_t</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">is_same_v</span><span class="o">&lt;</span><span class="n">From</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="o">&gt;</span><span class="w"> </span><span class="n">overflows</span><span class="p">(</span>
-<span class="w">    </span><span class="n">From</span><span class="w"> </span><span class="cm">/*f*/</span><span class="p">,</span>
-<span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="n">strict_unsigned</span><span class="w"> </span><span class="p">[[</span><span class="n">maybe_unused</span><span class="p">]]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
-<span class="p">}</span>
-
-<span class="c1">// skip isnan and isinf check for integral types</span>
-<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">To</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">From</span><span class="o">&gt;</span>
-<span class="n">std</span><span class="o">::</span><span class="n">enable_if_t</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">is_integral_v</span><span class="o">&lt;</span><span class="n">From</span><span class="o">&gt;</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="o">!</span><span class="n">std</span><span class="o">::</span><span class="n">is_same_v</span><span class="o">&lt;</span><span class="n">From</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="o">&gt;</span>
-<span class="n">overflows</span><span class="p">(</span><span class="n">From</span><span class="w"> </span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">strict_unsigned</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">limit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">numeric_limits</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">scalar_value_type</span><span class="o">&lt;</span><span class="n">To</span><span class="o">&gt;::</span><span class="n">type</span><span class="o">&gt;</span><span class="p">;</span>
-<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">limit</span><span class="o">::</span><span class="n">is_signed</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">numeric_limits</span><span class="o">&lt;</span><span class="n">From</span><span class="o">&gt;::</span><span class="n">is_signed</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="c1">// allow for negative numbers to wrap using two&#39;s complement arithmetic.</span>
-<span class="w">    </span><span class="c1">// For example, with uint8, this allows for `a - b` to be treated as</span>
-<span class="w">    </span><span class="c1">// `a + 255 * b`.</span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">strict_unsigned</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="k">return</span><span class="w"> </span><span class="n">greater_than_max</span><span class="o">&lt;</span><span class="n">To</span><span class="o">&gt;</span><span class="p">(</span><span class="n">f</span><span class="p">)</span><span class="w"> </span><span class="o">||</span>
-<span class="w">          </span><span class="p">(</span><span class="n">c10</span><span class="o">::</span><span class="n">is_negative</span><span class="p">(</span><span class="n">f</span><span class="p">)</span><span class="w"> </span><span class="o">&amp;&amp;</span>
-<span class="w">           </span><span class="o">-</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint64_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">f</span><span class="p">)</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint64_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">limit</span><span class="o">::</span><span class="n">max</span><span class="p">()));</span>
-<span class="w">    </span><span class="p">}</span>
-<span class="w">  </span><span class="p">}</span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">less_than_lowest</span><span class="o">&lt;</span><span class="n">To</span><span class="o">&gt;</span><span class="p">(</span><span class="n">f</span><span class="p">)</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">greater_than_max</span><span class="o">&lt;</span><span class="n">To</span><span class="o">&gt;</span><span class="p">(</span><span class="n">f</span><span class="p">);</span>
-<span class="p">}</span>
-
-<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">To</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">From</span><span class="o">&gt;</span>
-<span class="n">std</span><span class="o">::</span><span class="n">enable_if_t</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">is_floating_point_v</span><span class="o">&lt;</span><span class="n">From</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="o">&gt;</span><span class="w"> </span><span class="n">overflows</span><span class="p">(</span>
-<span class="w">    </span><span class="n">From</span><span class="w"> </span><span class="n">f</span><span class="p">,</span>
-<span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="n">strict_unsigned</span><span class="w"> </span><span class="p">[[</span><span class="n">maybe_unused</span><span class="p">]]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">limit</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">numeric_limits</span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">scalar_value_type</span><span class="o">&lt;</span><span class="n">To</span><span class="o">&gt;::</span><span class="n">type</span><span class="o">&gt;</span><span class="p">;</span>
-<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">limit</span><span class="o">::</span><span class="n">has_infinity</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">isinf</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span><span class="p">(</span><span class="n">f</span><span class="p">)))</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nb">false</span><span class="p">;</span>
-<span class="w">  </span><span class="p">}</span>
-<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">limit</span><span class="o">::</span><span class="n">has_quiet_NaN</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="p">(</span><span class="n">f</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="n">f</span><span class="p">))</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
-<span class="w">  </span><span class="p">}</span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">limit</span><span class="o">::</span><span class="n">lowest</span><span class="p">()</span><span class="w"> </span><span class="o">||</span><span class="w"> </span><span class="n">f</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">limit</span><span class="o">::</span><span class="n">max</span><span class="p">();</span>
-<span class="p">}</span>
-
-<span class="n">C10_CLANG_DIAGNOSTIC_POP</span><span class="p">()</span>
-
-<span class="cp">#ifdef _MSC_VER</span>
-<span class="cp">#pragma warning(pop)</span>
-<span class="cp">#endif</span>
-
-<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">To</span><span class="p">,</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">From</span><span class="o">&gt;</span>
-<span class="n">std</span><span class="o">::</span><span class="n">enable_if_t</span><span class="o">&lt;</span><span class="n">is_complex</span><span class="o">&lt;</span><span class="n">From</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="o">&gt;</span><span class="w"> </span><span class="n">overflows</span><span class="p">(</span>
-<span class="w">    </span><span class="n">From</span><span class="w"> </span><span class="n">f</span><span class="p">,</span>
-<span class="w">    </span><span class="kt">bool</span><span class="w"> </span><span class="n">strict_unsigned</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">false</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="c1">// casts from complex to real are considered to overflow if the</span>
-<span class="w">  </span><span class="c1">// imaginary component is non-zero</span>
-<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">is_complex</span><span class="o">&lt;</span><span class="n">To</span><span class="o">&gt;::</span><span class="n">value</span><span class="w"> </span><span class="o">&amp;&amp;</span><span class="w"> </span><span class="n">f</span><span class="p">.</span><span class="n">imag</span><span class="p">()</span><span class="w"> </span><span class="o">!=</span><span class="w"> </span><span class="mi">0</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
-<span class="w">  </span><span class="p">}</span>
-<span class="w">  </span><span class="c1">// Check for overflow componentwise</span>
-<span class="w">  </span><span class="c1">// (Technically, the imag overflow check is guaranteed to be false</span>
-<span class="w">  </span><span class="c1">// when !is_complex&lt;To&gt;, but any optimizer worth its salt will be</span>
-<span class="w">  </span><span class="c1">// able to figure it out.)</span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">overflows</span><span class="o">&lt;</span>
-<span class="w">             </span><span class="k">typename</span><span class="w"> </span><span class="nc">scalar_value_type</span><span class="o">&lt;</span><span class="n">To</span><span class="o">&gt;::</span><span class="n">type</span><span class="p">,</span>
-<span class="w">             </span><span class="k">typename</span><span class="w"> </span><span class="nc">From</span><span class="o">::</span><span class="n">value_type</span><span class="o">&gt;</span><span class="p">(</span><span class="n">f</span><span class="p">.</span><span class="n">real</span><span class="p">(),</span><span class="w"> </span><span class="n">strict_unsigned</span><span class="p">)</span><span class="w"> </span><span class="o">||</span>
-<span class="w">      </span><span class="n">overflows</span><span class="o">&lt;</span>
-<span class="w">             </span><span class="k">typename</span><span class="w"> </span><span class="nc">scalar_value_type</span><span class="o">&lt;</span><span class="n">To</span><span class="o">&gt;::</span><span class="n">type</span><span class="p">,</span>
-<span class="w">             </span><span class="k">typename</span><span class="w"> </span><span class="nc">From</span><span class="o">::</span><span class="n">value_type</span><span class="o">&gt;</span><span class="p">(</span><span class="n">f</span><span class="p">.</span><span class="n">imag</span><span class="p">(),</span><span class="w"> </span><span class="n">strict_unsigned</span><span class="p">);</span>
-<span class="p">}</span>
-
+<span class="cp">#ifndef C10_EMBEDDED</span>
 <span class="n">C10_API</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">ostream</span><span class="o">&amp;</span><span class="w"> </span><span class="k">operator</span><span class="o">&lt;&lt;</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">ostream</span><span class="o">&amp;</span><span class="w"> </span><span class="n">out</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">Half</span><span class="o">&amp;</span><span class="w"> </span><span class="n">value</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="n">out</span><span class="w"> </span><span class="o">&lt;&lt;</span><span class="w"> </span><span class="p">(</span><span class="kt">float</span><span class="p">)</span><span class="n">value</span><span class="p">;</span>
 <span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">out</span><span class="p">;</span>
 <span class="p">}</span>
+<span class="cp">#endif </span><span class="c1">// C10_EMBEDDED</span>
 
 <span class="p">}</span><span class="w"> </span><span class="c1">// namespace c10</span>
 
