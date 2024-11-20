@@ -444,8 +444,9 @@
 <span class="cp">#if defined(__GNUC__) || defined(__clang__)</span>
 <span class="cp">#if defined(__x86_64__) || defined(_M_X64) || defined(__i386) || \</span>
 <span class="cp">    defined(_M_IX86)</span>
-<span class="cp">#if defined(__F16C__)</span>
-<span class="cp">#define X86_F16 1</span>
+<span class="cp">#if defined(__F16C__) &amp;&amp; \</span>
+<span class="cp">    !(defined(__CUDA_ARCH__) || defined(__HIP_DEVICE_COMPILE__))</span>
+<span class="cp">#define C10_X86_F16 1</span>
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;immintrin.h&gt;</span><span class="c1"> // import conversion ops from f16cintrin.h</span>
 <span class="cp">#endif </span><span class="c1">// defined(__F16C__)</span>
 <span class="cp">#endif </span><span class="c1">// __x86_64__ || _M_X64 || __i386 || _M_IX86</span>
@@ -561,7 +562,7 @@
 <span class="cm"> * between integer and floating-point variables.</span>
 <span class="cm"> */</span>
 <span class="n">C10_HOST_DEVICE</span><span class="w"> </span><span class="kr">inline</span><span class="w"> </span><span class="kt">float</span><span class="w"> </span><span class="n">fp16_ieee_to_fp32_value</span><span class="p">(</span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">h</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="cp">#ifdef X86_F16</span>
+<span class="cp">#ifdef C10_X86_F16</span>
 <span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">_cvtsh_ss</span><span class="p">(</span><span class="n">h</span><span class="p">);</span>
 <span class="cp">#else</span>
 <span class="w">  </span><span class="cm">/*</span>
@@ -686,7 +687,7 @@
 <span class="w">      </span><span class="p">(</span><span class="n">two_w</span><span class="w"> </span><span class="o">&lt;</span><span class="w"> </span><span class="n">denormalized_cutoff</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">fp32_to_bits</span><span class="p">(</span><span class="n">denormalized_value</span><span class="p">)</span>
 <span class="w">                                   </span><span class="o">:</span><span class="w"> </span><span class="n">fp32_to_bits</span><span class="p">(</span><span class="n">normalized_value</span><span class="p">));</span>
 <span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">fp32_from_bits</span><span class="p">(</span><span class="n">result</span><span class="p">);</span>
-<span class="cp">#endif </span><span class="c1">// X86_F16</span>
+<span class="cp">#endif </span><span class="c1">// C10_X86_F16</span>
 <span class="p">}</span>
 
 <span class="cm">/*</span>
@@ -699,7 +700,7 @@
 <span class="cm"> * between integer and floating-point variables.</span>
 <span class="cm"> */</span>
 <span class="kr">inline</span><span class="w"> </span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">fp16_ieee_from_fp32_value</span><span class="p">(</span><span class="kt">float</span><span class="w"> </span><span class="n">f</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="cp">#ifdef X86_F16</span>
+<span class="cp">#ifdef C10_X86_F16</span>
 <span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">_cvtss_sh</span><span class="p">(</span><span class="n">f</span><span class="p">,</span><span class="w"> </span><span class="n">_MM_FROUND_TO_NEAREST_INT</span><span class="p">);</span>
 <span class="cp">#else</span>
 <span class="w">  </span><span class="c1">// const float scale_to_inf = 0x1.0p+112f;</span>
@@ -735,12 +736,12 @@
 <span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint16_t</span><span class="o">&gt;</span><span class="p">(</span>
 <span class="w">      </span><span class="p">(</span><span class="n">sign</span><span class="w"> </span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="mi">16</span><span class="p">)</span><span class="w"> </span><span class="o">|</span>
 <span class="w">      </span><span class="p">(</span><span class="n">shl1_w</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="n">UINT32_C</span><span class="p">(</span><span class="mh">0xFF000000</span><span class="p">)</span><span class="w"> </span><span class="o">?</span><span class="w"> </span><span class="n">UINT16_C</span><span class="p">(</span><span class="mh">0x7E00</span><span class="p">)</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">nonsign</span><span class="p">));</span>
-<span class="cp">#endif </span><span class="c1">// X86_F16</span>
+<span class="cp">#endif </span><span class="c1">// C10_X86_F16</span>
 <span class="p">}</span>
 
-<span class="cp">#ifdef X86_F16</span>
-<span class="cp">#undef X86_F16</span>
-<span class="cp">#endif </span><span class="c1">// X86_F16</span>
+<span class="cp">#ifdef C10_X86_F16</span>
+<span class="cp">#undef C10_X86_F16</span>
+<span class="cp">#endif </span><span class="c1">// C10_X86_F16</span>
 
 <span class="cp">#if defined(__aarch64__) &amp;&amp; !defined(__CUDACC__)</span>
 <span class="kr">inline</span><span class="w"> </span><span class="n">float16_t</span><span class="w"> </span><span class="n">fp16_from_bits</span><span class="p">(</span><span class="kt">uint16_t</span><span class="w"> </span><span class="n">h</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
