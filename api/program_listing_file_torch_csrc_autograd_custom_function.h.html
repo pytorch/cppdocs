@@ -625,16 +625,6 @@
 <span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">save_variables_to_ctx</span><span class="p">();</span>
 
 <span class="w">  </span><span class="kt">void</span><span class="w"> </span><span class="nf">compiled_args</span><span class="p">(</span><span class="n">CompiledNodeArgs</span><span class="o">&amp;</span><span class="w"> </span><span class="n">args</span><span class="p">)</span><span class="w"> </span><span class="k">override</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">static_assert</span><span class="p">(</span>
-<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">is_same_v</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">remove_cv_t</span><span class="o">&lt;</span><span class="k">decltype</span><span class="p">(</span><span class="n">T</span><span class="o">::</span><span class="n">is_traceable</span><span class="p">)</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="o">&gt;</span><span class="p">);</span>
-<span class="w">    </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">T</span><span class="o">::</span><span class="n">is_traceable</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">      </span><span class="k">throw</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">runtime_error</span><span class="p">(</span>
-<span class="w">          </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">(</span>
-<span class="w">              </span><span class="s">&quot;Attempting to trace a potentially unsafe C++ autograd function: &quot;</span><span class="p">)</span><span class="w"> </span><span class="o">+</span>
-<span class="w">          </span><span class="n">name</span><span class="p">()</span><span class="w"> </span><span class="o">+</span>
-<span class="w">          </span><span class="s">&quot;. It may be possible to trace it safely, please refer to the instructions in: https://docs.google.com/document/d/11VucFBEewzqgkABIjebZIzMvrXr3BtcY1aGKpX61pJY/.&quot;</span><span class="p">);</span>
-<span class="w">    </span><span class="p">}</span>
-
 <span class="w">    </span><span class="c1">// although neither of the 2 methods below have uniqueness guarantees</span>
 <span class="w">    </span><span class="c1">// it is unlikely for them to collide at the same time</span>
 <span class="w">    </span><span class="n">args</span><span class="p">.</span><span class="n">collect</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">uint64_t</span><span class="o">&gt;</span><span class="p">(</span><span class="k">typeid</span><span class="p">(</span><span class="n">T</span><span class="p">).</span><span class="n">hash_code</span><span class="p">()));</span>
@@ -708,12 +698,15 @@
 <span class="w">        </span><span class="n">schema</span><span class="p">.</span><span class="n">emplace_back</span><span class="p">(</span><span class="n">ivalue</span><span class="p">.</span><span class="n">type</span><span class="p">());</span>
 <span class="w">      </span><span class="p">}</span>
 <span class="w">    </span><span class="p">}</span>
+<span class="w">    </span><span class="k">static_assert</span><span class="p">(</span>
+<span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">is_same_v</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">remove_cv_t</span><span class="o">&lt;</span><span class="k">decltype</span><span class="p">(</span><span class="n">T</span><span class="o">::</span><span class="n">is_traceable</span><span class="p">)</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="o">&gt;</span><span class="p">);</span>
 <span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">fn_name</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pyinterface</span><span class="o">-&gt;</span><span class="n">bind_function</span><span class="p">(</span>
 <span class="w">        </span><span class="n">saved</span><span class="p">.</span><span class="n">get_py_compiler</span><span class="p">(),</span>
 <span class="w">        </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="p">(</span><span class="k">typeid</span><span class="p">(</span><span class="n">T</span><span class="p">).</span><span class="n">name</span><span class="p">()),</span>
 <span class="w">        </span><span class="n">CppNode_apply_functional_ivalue</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="p">,</span>
 <span class="w">        </span><span class="n">schema</span><span class="p">,</span>
-<span class="w">        </span><span class="cm">/*is_custom_function*/</span><span class="w"> </span><span class="nb">true</span><span class="p">);</span>
+<span class="w">        </span><span class="cm">/*is_custom_function*/</span><span class="w"> </span><span class="nb">true</span><span class="p">,</span>
+<span class="w">        </span><span class="cm">/*is_traceable*/</span><span class="w"> </span><span class="n">T</span><span class="o">::</span><span class="n">is_traceable</span><span class="p">);</span>
 
 <span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">results</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pyinterface</span><span class="o">-&gt;</span><span class="n">call_function</span><span class="p">(</span>
 <span class="w">        </span><span class="n">saved</span><span class="p">.</span><span class="n">get_py_compiler</span><span class="p">(),</span>
