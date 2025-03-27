@@ -420,23 +420,12 @@
 
 <span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/csrc/inductor/aoti_torch/c/shim.h&gt;</span>
 
-<span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;optional&gt;</span>
-
 <span class="c1">// use anonymous namespace to avoid collisions between differing</span>
 <span class="c1">// versions of this file that may be included by different sources</span>
 <span class="k">namespace</span><span class="w"> </span><span class="p">{</span>
 
-<span class="k">namespace</span><span class="w"> </span><span class="nn">detail</span><span class="w"> </span><span class="p">{</span>
-<span class="c1">// utility functions to detect optional</span>
-<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">V</span><span class="o">&gt;</span>
-<span class="k">struct</span><span class="w"> </span><span class="nc">is_optional</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">false_type</span><span class="w"> </span><span class="p">{};</span>
-<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">V</span><span class="o">&gt;</span>
-<span class="k">struct</span><span class="w"> </span><span class="nc">is_optional</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">V</span><span class="o">&gt;&gt;</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">true_type</span><span class="w"> </span><span class="p">{};</span>
-<span class="p">}</span><span class="w"> </span><span class="c1">// namespace detail</span>
-
-<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span>
-<span class="w">    </span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="p">,</span>
-<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">enable_if_t</span><span class="o">&lt;!</span><span class="n">detail</span><span class="o">::</span><span class="n">is_optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="o">&gt;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="o">&gt;</span>
+<span class="c1">// helpers for converting between StableIValue and actual IValues</span>
+<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span>
 <span class="n">StableIValue</span><span class="w"> </span><span class="n">from</span><span class="p">(</span><span class="n">T</span><span class="w"> </span><span class="n">val</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="k">static_assert</span><span class="p">(</span>
 <span class="w">      </span><span class="k">sizeof</span><span class="p">(</span><span class="n">T</span><span class="p">)</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="k">sizeof</span><span class="p">(</span><span class="n">StableIValue</span><span class="p">),</span>
@@ -444,85 +433,9 @@
 <span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="o">*</span><span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="n">StableIValue</span><span class="o">*&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">val</span><span class="p">);</span>
 <span class="p">}</span>
 
-<span class="c1">// Specialization for std::nullopt_t</span>
-<span class="k">template</span><span class="w"> </span><span class="o">&lt;&gt;</span>
-<span class="n">StableIValue</span><span class="w"> </span><span class="n">from</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">nullopt_t</span><span class="w"> </span><span class="n">val</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">from</span><span class="p">(</span><span class="k">nullptr</span><span class="p">);</span>
-<span class="p">}</span>
-
-<span class="c1">// Specialization for std::optional</span>
-<span class="c1">// [Handling std::optional]</span>
-<span class="c1">// When the schema is represented by an optional type, say int?, then we</span>
-<span class="c1">// expect the custom extension representation to be a std::optional&lt;int&gt;</span>
-<span class="c1">// (critically NOT int!). In order for all parameters to be stably parsed and</span>
-<span class="c1">// handled by our dispatcher, we liaison custom extension parameters through</span>
-<span class="c1">// boxed kernels, meaning that every value will make its way to be an IValue:</span>
-<span class="c1">//</span>
-<span class="c1">// custom extension value --(from)-&gt; StableIValue --(to_ivalue)-&gt; IValue</span>
-<span class="c1">//</span>
-<span class="c1">// When the custom extension value is a literal that can be trivially</span>
-<span class="c1">// casted to StableIValue, e.g., an int, a float, a pointer, this route is</span>
-<span class="c1">// ...trivial. The below specialization is for a case when the custom</span>
-<span class="c1">// extension value would NOT fit within a StableIValue: a std::optional.</span>
-<span class="c1">//</span>
-<span class="c1">// If the std::optional has no value, it is treated as std::nullopt,</span>
-<span class="c1">// whose StableIValue representation is from(nullptr). Otherwise, we:</span>
-<span class="c1">// 1. unwrap the std::optional&lt;T&gt;</span>
-<span class="c1">// 2. recursively convert its value of type T to a StableIValue</span>
-<span class="c1">// 3. allocate heap space for said StableIValue</span>
-<span class="c1">// 4. convert the resulting StableIValue* into a StableIValue</span>
-<span class="c1">//</span>
-<span class="c1">// note that this allocates heap memory! which we expect to be cleaned</span>
-<span class="c1">// up in the to_ivalue() function defined in shim_common.cpp. We</span>
-<span class="c1">// purposefully hide this implementation detail from the user so that</span>
-<span class="c1">// all the user needs to know is:</span>
-<span class="c1">//</span>
-<span class="c1">// The schema requests an optional (T?) so I must call `from` on a</span>
-<span class="c1">// std::optional&lt;T&gt; or a std::nullopt.</span>
 <span class="k">template</span><span class="w"> </span><span class="o">&lt;</span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">&gt;</span>
-<span class="n">StableIValue</span><span class="w"> </span><span class="n">from</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;</span><span class="w"> </span><span class="n">val</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="o">!</span><span class="n">val</span><span class="p">.</span><span class="n">has_value</span><span class="p">())</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">from</span><span class="p">(</span><span class="n">std</span><span class="o">::</span><span class="n">nullopt</span><span class="p">);</span>
-<span class="w">  </span><span class="p">}</span>
-<span class="w">  </span><span class="n">StableIValue</span><span class="o">*</span><span class="w"> </span><span class="n">heap_val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">new</span><span class="w"> </span><span class="n">StableIValue</span><span class="p">(</span><span class="n">from</span><span class="p">(</span><span class="n">val</span><span class="p">.</span><span class="n">value</span><span class="p">()));</span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">from</span><span class="p">(</span><span class="n">heap_val</span><span class="p">);</span>
-<span class="p">}</span>
-
-<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span>
-<span class="w">    </span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="p">,</span>
-<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">enable_if_t</span><span class="o">&lt;!</span><span class="n">detail</span><span class="o">::</span><span class="n">is_optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="o">&gt;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="o">&gt;</span>
 <span class="n">T</span><span class="w"> </span><span class="n">to</span><span class="p">(</span><span class="n">StableIValue</span><span class="w"> </span><span class="n">val</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="o">*</span><span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="n">T</span><span class="o">*&gt;</span><span class="p">(</span><span class="o">&amp;</span><span class="n">val</span><span class="p">);</span>
-<span class="p">}</span>
-
-<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span>
-<span class="w">    </span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="p">,</span>
-<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">enable_if_t</span><span class="o">&lt;</span><span class="n">std</span><span class="o">::</span><span class="n">is_same_v</span><span class="o">&lt;</span><span class="n">T</span><span class="p">,</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">nullopt_t</span><span class="o">&gt;</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="o">&gt;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="o">&gt;</span>
-<span class="n">T</span><span class="w"> </span><span class="n">to</span><span class="p">(</span><span class="n">StableIValue</span><span class="w"> </span><span class="n">val</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="c1">// val should be equivalent to from(nullptr)</span>
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">nullopt</span><span class="p">;</span>
-<span class="p">}</span>
-
-<span class="c1">// Specialization for std::optional, see [Handling std::optional] above</span>
-<span class="c1">// as the semantic is the same but in reverse direction as we go from</span>
-<span class="c1">// IValue --(from_ivalue)-&gt; StableIValue --(to&lt;T&gt;)-&gt; T in custom extension</span>
-<span class="k">template</span><span class="w"> </span><span class="o">&lt;</span>
-<span class="w">    </span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="p">,</span>
-<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">enable_if_t</span><span class="o">&lt;</span><span class="n">detail</span><span class="o">::</span><span class="n">is_optional</span><span class="o">&lt;</span><span class="n">T</span><span class="o">&gt;::</span><span class="n">value</span><span class="p">,</span><span class="w"> </span><span class="kt">bool</span><span class="o">&gt;</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="o">&gt;</span>
-<span class="n">T</span><span class="w"> </span><span class="n">to</span><span class="p">(</span><span class="n">StableIValue</span><span class="w"> </span><span class="n">val</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">V</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="k">typename</span><span class="w"> </span><span class="nc">T</span><span class="o">::</span><span class="n">value_type</span><span class="p">;</span>
-<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">sivp</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">to</span><span class="o">&lt;</span><span class="n">StableIValue</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">val</span><span class="p">);</span>
-
-<span class="w">  </span><span class="c1">// sivp is either nullptr or a pointer to a StableIValue</span>
-<span class="w">  </span><span class="k">if</span><span class="w"> </span><span class="p">(</span><span class="n">sivp</span><span class="w"> </span><span class="o">==</span><span class="w"> </span><span class="k">nullptr</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
-<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">{};</span>
-<span class="w">  </span><span class="p">}</span>
-<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">inner_val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">to</span><span class="o">&lt;</span><span class="n">V</span><span class="o">&gt;</span><span class="p">(</span><span class="o">*</span><span class="n">sivp</span><span class="p">);</span>
-
-<span class="w">  </span><span class="c1">// free the memory associated with StableIValue* sivp</span>
-<span class="w">  </span><span class="k">delete</span><span class="w"> </span><span class="n">sivp</span><span class="p">;</span>
-
-<span class="w">  </span><span class="k">return</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">make_optional</span><span class="p">(</span><span class="n">inner_val</span><span class="p">);</span>
 <span class="p">}</span>
 <span class="c1">// end to helpers for converting between StableIValue and actual IValues</span>
 
