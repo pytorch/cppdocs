@@ -415,7 +415,7 @@ to be used when you are certain your operations will have no interactions
 with autograd (e.g. model training). Compared to <code class="docutils literal notranslate"><span class="pre">NoGradMode</span></code>, code run
 under this mode gets better performance by disabling autograd related work like
 view tracking and version counter bumps. However, tensors created inside
-<code class="docutils literal notranslate"><span class="pre">c10::InferenceMode</span></code> have more limitations when interacting with autograd system as well.</p>
+<code class="docutils literal notranslate"><span class="pre">c10::InferenceMode</span></code> has more limitation when interacting with autograd system as well.</p>
 <p><code class="docutils literal notranslate"><span class="pre">InferenceMode</span></code> can be enabled for a given block of code. Inside <code class="docutils literal notranslate"><span class="pre">InferenceMode</span></code>
 all newly allocated (non-view) tensors are marked as inference tensors. Inference tensors:</p>
 <ul class="simple">
@@ -427,7 +427,7 @@ all newly allocated (non-view) tensors are marked as inference tensors. Inferenc
 To work around you can make a clone outside <code class="docutils literal notranslate"><span class="pre">InferenceMode</span></code> to get a normal tensor before mutating.</p></li>
 </ul>
 <p>A non-view tensor is an inference tensor if and only if it was allocated inside <code class="docutils literal notranslate"><span class="pre">InferenceMode</span></code>.
-A view tensor is an inference tensor if and only if it is a view of an inference tensor.</p>
+A view tensor is an inference tensor if and only if the tensor it is a view of is an inference tensor.</p>
 <p>Inside an <code class="docutils literal notranslate"><span class="pre">InferenceMode</span></code> block, we make the following performance guarantees:</p>
 <ul class="simple">
 <li><p>Like <code class="docutils literal notranslate"><span class="pre">NoGradMode</span></code>, all operations do not record <code class="docutils literal notranslate"><span class="pre">grad_fn</span></code> even if their inputs have <code class="docutils literal notranslate"><span class="pre">requires_grad=True</span></code>.
@@ -470,7 +470,7 @@ users should pay additional attention to:</p>
 also affects tensor creation while <code class="docutils literal notranslate"><span class="pre">AutoNonVariableTypeMode</span></code> doesn’t. In other words, tensors created
 inside <code class="docutils literal notranslate"><span class="pre">InferenceMode</span></code> are marked as inference tensors so that certain limitation can be applied after
 exiting <code class="docutils literal notranslate"><span class="pre">InferenceMode</span></code>.</p></li>
-<li><p>Enabled/disabled <code class="docutils literal notranslate"><span class="pre">InferenceMode</span></code> states can be nested while <code class="docutils literal notranslate"><span class="pre">AutoNonVariableTypeMode</span></code> only allows enabled state.</p></li>
+<li><p>Enabled/disabled <code class="docutils literal notranslate"><span class="pre">InferenceMode</span></code> states can be nested while <code class="docutils literal notranslate"><span class="pre">AutoNonVariableTypeMode</span></code> only allows enabled state..</p></li>
 </ul>
 </div></blockquote>
 <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="p">{</span>
@@ -486,7 +486,7 @@ exiting <code class="docutils literal notranslate"><span class="pre">InferenceMo
 </pre></div>
 </div>
 <ol class="arabic simple" start="2">
-<li><p>Users trying to implement a customized kernel who want to redispatch under <code class="docutils literal notranslate"><span class="pre">Autograd</span></code> dispatch
+<li><p>Users trying to implement a customized kernel who wants to redispatch under <code class="docutils literal notranslate"><span class="pre">Autograd</span></code> dispatch
 keys should use <code class="docutils literal notranslate"><span class="pre">AutoDispatchBelowADInplaceOrView</span></code> instead. Note <code class="docutils literal notranslate"><span class="pre">AutoDispatchBelowADInplaceOrView</span></code> is just a new name
 of <code class="docutils literal notranslate"><span class="pre">AutoNonVariableTypeMode</span></code> since it explains the guard’s functionality better. We’re deprecating
 <code class="docutils literal notranslate"><span class="pre">AutoNonVariableTypeMode</span></code> and it’ll be removed in 1.10 release. See customized kernel
