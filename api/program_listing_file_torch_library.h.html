@@ -1056,13 +1056,19 @@
 <span class="w">  </span><span class="n">at</span><span class="o">::</span><span class="n">OperatorName</span><span class="w"> </span><span class="nf">_parseNameForLib</span><span class="p">(</span><span class="k">const</span><span class="w"> </span><span class="kt">char</span><span class="o">*</span><span class="w"> </span><span class="n">name_str</span><span class="p">)</span><span class="w"> </span><span class="k">const</span><span class="p">;</span>
 <span class="p">};</span>
 
-<span class="cp">#ifdef TORCH_LIBRARY_THREAD_UNSAFE_LAZY_INIT</span>
+<span class="cp">#if defined(TORCH_LIBRARY_THREAD_UNSAFE_LAZY_INIT) &amp;&amp; defined(C10_MOBILE)</span>
 <span class="kt">void</span><span class="w"> </span><span class="nf">initialize_torch_libraries</span><span class="p">();</span>
 <span class="cp">#endif</span>
 
 <span class="k">namespace</span><span class="w"> </span><span class="nn">detail</span><span class="w"> </span><span class="p">{</span>
 
-<span class="cp">#ifdef TORCH_LIBRARY_THREAD_UNSAFE_LAZY_INIT</span>
+<span class="cp">#if defined(TORCH_LIBRARY_THREAD_UNSAFE_LAZY_INIT) &amp;&amp; defined(C10_MOBILE)</span>
+<span class="c1">// This is an experimental feature to defer TorchLibraryInit cost to run either</span>
+<span class="c1">// at model load time, or when a client application explicitly calls</span>
+<span class="c1">// torch::initialize_torch_libraries().</span>
+<span class="c1">//</span>
+<span class="c1">// This is not thread safe, the client is required to ensure that libraries</span>
+<span class="c1">// containing TORCH_LIBRARY initializers are loaded in a thread safe manner.</span>
 <span class="k">extern</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">TorchLibraryInit</span><span class="o">*&gt;</span><span class="w"> </span><span class="n">torch_library_initializers</span><span class="p">;</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">TorchLibraryInit</span><span class="w"> </span><span class="k">final</span><span class="w"> </span><span class="p">{</span>
 <span class="w">    </span><span class="k">private</span><span class="o">:</span>
