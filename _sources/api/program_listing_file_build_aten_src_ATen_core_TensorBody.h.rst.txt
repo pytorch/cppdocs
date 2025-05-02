@@ -512,6 +512,7 @@ Program Listing for File TensorBody.h
      at::Tensor & bernoulli_(double p=0.5, ::std::optional<at::Generator> generator=::std::nullopt) const;
      at::Tensor bernoulli(double p, ::std::optional<at::Generator> generator=::std::nullopt) const;
      at::Tensor bincount(const ::std::optional<at::Tensor> & weights={}, int64_t minlength=0) const;
+     at::Tensor bincount_symint(const ::std::optional<at::Tensor> & weights={}, c10::SymInt minlength=0) const;
      at::Tensor bitwise_not() const;
      at::Tensor & bitwise_not_() const;
      at::Tensor copysign(const at::Tensor & other) const;
@@ -684,7 +685,9 @@ Program Listing for File TensorBody.h
      bool __dispatch_is_inference() const;
      at::Tensor kron(const at::Tensor & other) const;
      ::std::tuple<at::Tensor,at::Tensor> kthvalue(int64_t k, int64_t dim=-1, bool keepdim=false) const;
+     ::std::tuple<at::Tensor,at::Tensor> kthvalue_symint(c10::SymInt k, int64_t dim=-1, bool keepdim=false) const;
      ::std::tuple<at::Tensor,at::Tensor> kthvalue(int64_t k, at::Dimname dim, bool keepdim=false) const;
+     ::std::tuple<at::Tensor,at::Tensor> kthvalue_symint(c10::SymInt k, at::Dimname dim, bool keepdim=false) const;
      at::Tensor nan_to_num(::std::optional<double> nan=::std::nullopt, ::std::optional<double> posinf=::std::nullopt, ::std::optional<double> neginf=::std::nullopt) const;
      at::Tensor & nan_to_num_(::std::optional<double> nan=::std::nullopt, ::std::optional<double> posinf=::std::nullopt, ::std::optional<double> neginf=::std::nullopt) const;
      at::Tensor ldexp(const at::Tensor & other) const;
@@ -1765,8 +1768,13 @@ Program Listing for File TensorBody.h
        return at::_ops::bernoulli_p::call(const_cast<Tensor&>(*this), p, generator);
    }
    
-   // aten::bincount(Tensor self, Tensor? weights=None, int minlength=0) -> Tensor
+   // aten::bincount(Tensor self, Tensor? weights=None, SymInt minlength=0) -> Tensor
    inline at::Tensor Tensor::bincount(const ::std::optional<at::Tensor> & weights, int64_t minlength) const {
+       return at::_ops::bincount::call(const_cast<Tensor&>(*this), weights, minlength);
+   }
+   
+   // aten::bincount(Tensor self, Tensor? weights=None, SymInt minlength=0) -> Tensor
+   inline at::Tensor Tensor::bincount_symint(const ::std::optional<at::Tensor> & weights, c10::SymInt minlength) const {
        return at::_ops::bincount::call(const_cast<Tensor&>(*this), weights, minlength);
    }
    
@@ -2625,13 +2633,23 @@ Program Listing for File TensorBody.h
        return at::_ops::kron::call(const_cast<Tensor&>(*this), other);
    }
    
-   // aten::kthvalue(Tensor self, int k, int dim=-1, bool keepdim=False) -> (Tensor values, Tensor indices)
+   // aten::kthvalue(Tensor self, SymInt k, int dim=-1, bool keepdim=False) -> (Tensor values, Tensor indices)
    inline ::std::tuple<at::Tensor,at::Tensor> Tensor::kthvalue(int64_t k, int64_t dim, bool keepdim) const {
        return at::_ops::kthvalue::call(const_cast<Tensor&>(*this), k, dim, keepdim);
    }
    
-   // aten::kthvalue.dimname(Tensor self, int k, Dimname dim, bool keepdim=False) -> (Tensor values, Tensor indices)
+   // aten::kthvalue(Tensor self, SymInt k, int dim=-1, bool keepdim=False) -> (Tensor values, Tensor indices)
+   inline ::std::tuple<at::Tensor,at::Tensor> Tensor::kthvalue_symint(c10::SymInt k, int64_t dim, bool keepdim) const {
+       return at::_ops::kthvalue::call(const_cast<Tensor&>(*this), k, dim, keepdim);
+   }
+   
+   // aten::kthvalue.dimname(Tensor self, SymInt k, Dimname dim, bool keepdim=False) -> (Tensor values, Tensor indices)
    inline ::std::tuple<at::Tensor,at::Tensor> Tensor::kthvalue(int64_t k, at::Dimname dim, bool keepdim) const {
+       return at::_ops::kthvalue_dimname::call(const_cast<Tensor&>(*this), k, dim, keepdim);
+   }
+   
+   // aten::kthvalue.dimname(Tensor self, SymInt k, Dimname dim, bool keepdim=False) -> (Tensor values, Tensor indices)
+   inline ::std::tuple<at::Tensor,at::Tensor> Tensor::kthvalue_symint(c10::SymInt k, at::Dimname dim, bool keepdim) const {
        return at::_ops::kthvalue_dimname::call(const_cast<Tensor&>(*this), k, dim, keepdim);
    }
    
