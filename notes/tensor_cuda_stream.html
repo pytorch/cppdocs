@@ -104,6 +104,34 @@
    }
 </script>
 <!-- End Facebook Pixel Code -->
+<!-- Script to Fix scrolling -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Fix anchor scrolling
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        e.preventDefault();
+        const targetId = this.getAttribute('href').substring(1);
+        const targetElement = document.getElementById(targetId);
+
+        if (targetElement) {
+          const headerHeight =
+            (document.querySelector('.header-holder') ? document.querySelector('.header-holder').offsetHeight : 0) +
+            (document.querySelector('.bd-header') ? document.querySelector('.bd-header').offsetHeight : 0) + 20;
+
+          const targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset - headerHeight;
+          window.scrollTo({
+            top: targetPosition,
+            behavior: 'smooth'
+          });
+
+          // Update URL hash without scrolling
+          history.pushState(null, null, '#' + targetId);
+        }
+      });
+    });
+  });
+</script>
 
 <script async src="https://cse.google.com/cse.js?cx=e65585f8c3ea1440e"></script>
 
@@ -996,12 +1024,7 @@ document.write(`
               
   
 <div id="searchbox"></div>
-  <article class="bd-article"id="pytorch-article" itemscope="itemscope" itemtype="https://schema.org/Article" itemprop="articleBody">
-   <meta itemprop="headline" content="Tensor CUDA Stream API">
-   <meta itemprop="description" content="PyTorch documentation">
-   <meta itemprop="datePublished" content="">
-   <meta itemprop="dateModified" content="">
-   <meta itemprop="author" content="PyTorch Contributors">
+  <article class="bd-article"id="pytorch-article">
    <!-- Hidden breadcrumb schema for SEO only -->
    <div style="display:none;" itemscope itemtype="https://schema.org/BreadcrumbList">
       
@@ -1327,7 +1350,6 @@ calling <code class="docutils literal notranslate"><span class="pre">setCurrentC
   </div>
 </div>
 
-
 <div class="prev-next-area">
     <a class="left-prev"
        href="tensor_creation.html"
@@ -1362,7 +1384,8 @@ calling <code class="docutils literal notranslate"><span class="pre">setCurrentC
   <p class="theme-version">
     Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.4.
   </p>
-</div></div>
+</div>
+</div>
   
 </div>
                 </footer>
@@ -1430,19 +1453,15 @@ calling <code class="docutils literal notranslate"><span class="pre">setCurrentC
   <div class="sidebar-heading">PyTorch Libraries</div>
   <ul style="list-style-type: none; padding: 0; padding-bottom: 80px;">
   
-   <li><a class="nav-link nav-external" href="https://pytorch.org/audio/stable/" style="color: var(--pst-color-text-muted)">torchaudio</a></li>
-  
    <li><a class="nav-link nav-external" href="https://pytorch.org/ao" style="color: var(--pst-color-text-muted)">torchao</a></li>
-  
-   <li><a class="nav-link nav-external" href="https://pytorch.org/executorch" style="color: var(--pst-color-text-muted)">ExecuTorch</a></li>
   
    <li><a class="nav-link nav-external" href="https://pytorch.org/torchrec" style="color: var(--pst-color-text-muted)">torchrec</a></li>
   
-   <li><a class="nav-link nav-external" href="https://pytorch.org/serve/" style="color: var(--pst-color-text-muted)">torchserve</a></li>
+   <li><a class="nav-link nav-external" href="https://pytorch.org/torchcodec" style="color: var(--pst-color-text-muted)">TorchCodec</a></li>
   
-   <li><a class="nav-link nav-external" href="https://pytorch.org/data" style="color: var(--pst-color-text-muted)">torchdata</a></li>
+   <li><a class="nav-link nav-external" href="https://pytorch.org/vision" style="color: var(--pst-color-text-muted)">torchvision</a></li>
   
-   <li><a class="nav-link nav-external" href="https://pytorch.org/data" style="color: var(--pst-color-text-muted)">torchvision</a></li>
+   <li><a class="nav-link nav-external" href="https://pytorch.org/executorch" style="color: var(--pst-color-text-muted)">ExecuTorch</a></li>
   
    <li><a class="nav-link nav-external" href="https://pytorch.org/xla" style="color: var(--pst-color-text-muted)">PyTorch on XLA Devices</a></li>
   
@@ -1605,17 +1624,23 @@ calling <code class="docutils literal notranslate"><span class="pre">setCurrentC
   </footer>
    <script type="application/ld+json">
       {
-        "@context": "https://schema.org",
-        "@type": "Article",
-        "headline": "Tensor CUDA Stream API",
-        "description": "PyTorch Documentation. Explore PyTorch, an open-source machine learning library that accelerates the path from research prototyping to production deployment. Discover tutorials, API references, and guides to help you build and deploy deep learning models efficiently.",
-        "author": {
-          "@type": "Organization",
-          "name": "PyTorch Contributors"
-        },
-        "datePublished": "",
-        "dateModified": "",
-      }
+         "@context": "https://schema.org",
+         "@type": "Article",
+         "headline": "Tensor CUDA Stream API",
+         "description": "PyTorch Documentation. Explore PyTorch, an open-source machine learning library that accelerates the path from research prototyping to production deployment. Discover tutorials, API references, and guides to help you build and deploy deep learning models efficiently.",
+         "author": {
+           "@type": "Organization",
+           "name": "PyTorch Contributors"
+         },
+         "image": "../_static/img/pytorch_seo.png",
+         "mainEntityOfPage": {
+           "@type": "WebPage",
+           "@id": "/notes/tensor_cuda_stream.html"
+         },
+         "datePublished": "",
+         "dateModified": "",
+         "articleBody": "Tensor CUDA Stream API# A CUDA Stream is a linear sequence of execution that belongs to a specific CUDA device. The PyTorch C++ API supports CUDA streams with the CUDAStream class and useful helper functions to make streaming operations easy. You can find them in CUDAStream.h. This note provides more details on how to use Pytorch C++ CUDA Stream APIs. Acquiring CUDA stream# Pytorch’s C++ API provides the following ways to acquire CUDA stream: Acquire a new stream from the CUDA stream pool, streams are preallocated from the pool and returned in a round-robin fashion. CUDAStream getStreamFromPool(const bool isHighPriority = false, DeviceIndex device = -1); Tip You can request a stream from the high priority pool by setting isHighPriority to true, or a stream for a specific device by setting device index (defaulting to the current CUDA stream’s device index). Acquire the default CUDA stream for the passed CUDA device, or for the current device if no device index is passed. CUDAStream getDefaultCUDAStream(DeviceIndex device_index = -1); Tip The default stream is where most computation occurs when you aren’t explicitly using streams. Acquire the current CUDA stream, for the CUDA device with index device_index, or for the current device if no device index is passed. CUDAStream getCurrentCUDAStream(DeviceIndex device_index = -1); Tip The current CUDA stream will usually be the default CUDA stream for the device, but it may be different if someone called setCurrentCUDAStream or used StreamGuard or CUDAStreamGuard. Set CUDA stream# Pytorch’s C++ API provides the following ways to set CUDA stream: Set the current stream on the device of the passed in stream to be the passed in stream. void setCurrentCUDAStream(CUDAStream stream); Attention This function may have nothing to do with the current device. It only changes the current stream on the stream’s device. We recommend using CUDAStreamGuard, instead, since it switches to the stream’s device and makes it the current stream on that device. CUDAStreamGuard will also restore the current device and stream when it’s destroyed Use CUDAStreamGuard to switch to a CUDA stream within a scope, it is defined in CUDAStreamGuard.h Tip Use CUDAMultiStreamGuard if you need to set streams on multiple CUDA devices. CUDA Stream Usage Examples# Acquiring and setting CUDA stream on the same device // This example shows how to acquire and set CUDA stream on the same device. // `at::cuda::setCurrentCUDAStream` is used to set current CUDA stream // create a tensor on device 0 torch::Tensor tensor0 = torch::ones({2, 2}, torch::device(torch::kCUDA)); // get a new CUDA stream from CUDA stream pool on device 0 at::cuda::CUDAStream myStream = at::cuda::getStreamFromPool(); // set current CUDA stream from default stream to `myStream` on device 0 at::cuda::setCurrentCUDAStream(myStream); // sum() on tensor0 uses `myStream` as current CUDA stream tensor0.sum(); // get the default CUDA stream on device 0 at::cuda::CUDAStream defaultSt..."
+       }
    </script>
 
   </body>

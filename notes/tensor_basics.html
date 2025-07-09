@@ -104,6 +104,34 @@
    }
 </script>
 <!-- End Facebook Pixel Code -->
+<!-- Script to Fix scrolling -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Fix anchor scrolling
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        e.preventDefault();
+        const targetId = this.getAttribute('href').substring(1);
+        const targetElement = document.getElementById(targetId);
+
+        if (targetElement) {
+          const headerHeight =
+            (document.querySelector('.header-holder') ? document.querySelector('.header-holder').offsetHeight : 0) +
+            (document.querySelector('.bd-header') ? document.querySelector('.bd-header').offsetHeight : 0) + 20;
+
+          const targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset - headerHeight;
+          window.scrollTo({
+            top: targetPosition,
+            behavior: 'smooth'
+          });
+
+          // Update URL hash without scrolling
+          history.pushState(null, null, '#' + targetId);
+        }
+      });
+    });
+  });
+</script>
 
 <script async src="https://cse.google.com/cse.js?cx=e65585f8c3ea1440e"></script>
 
@@ -996,12 +1024,7 @@ document.write(`
               
   
 <div id="searchbox"></div>
-  <article class="bd-article"id="pytorch-article" itemscope="itemscope" itemtype="https://schema.org/Article" itemprop="articleBody">
-   <meta itemprop="headline" content="Tensor Basics">
-   <meta itemprop="description" content="PyTorch documentation">
-   <meta itemprop="datePublished" content="">
-   <meta itemprop="dateModified" content="">
-   <meta itemprop="author" content="PyTorch Contributors">
+  <article class="bd-article"id="pytorch-article">
    <!-- Hidden breadcrumb schema for SEO only -->
    <div style="display:none;" itemscope itemtype="https://schema.org/BreadcrumbList">
       
@@ -1193,7 +1216,6 @@ which reduce the dimensions of a <code class="docutils literal notranslate"><spa
   </div>
 </div>
 
-
 <div class="prev-next-area">
     <a class="left-prev"
        href="maybe_owned.html"
@@ -1228,7 +1250,8 @@ which reduce the dimensions of a <code class="docutils literal notranslate"><spa
   <p class="theme-version">
     Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.4.
   </p>
-</div></div>
+</div>
+</div>
   
 </div>
                 </footer>
@@ -1300,19 +1323,15 @@ which reduce the dimensions of a <code class="docutils literal notranslate"><spa
   <div class="sidebar-heading">PyTorch Libraries</div>
   <ul style="list-style-type: none; padding: 0; padding-bottom: 80px;">
   
-   <li><a class="nav-link nav-external" href="https://pytorch.org/audio/stable/" style="color: var(--pst-color-text-muted)">torchaudio</a></li>
-  
    <li><a class="nav-link nav-external" href="https://pytorch.org/ao" style="color: var(--pst-color-text-muted)">torchao</a></li>
-  
-   <li><a class="nav-link nav-external" href="https://pytorch.org/executorch" style="color: var(--pst-color-text-muted)">ExecuTorch</a></li>
   
    <li><a class="nav-link nav-external" href="https://pytorch.org/torchrec" style="color: var(--pst-color-text-muted)">torchrec</a></li>
   
-   <li><a class="nav-link nav-external" href="https://pytorch.org/serve/" style="color: var(--pst-color-text-muted)">torchserve</a></li>
+   <li><a class="nav-link nav-external" href="https://pytorch.org/torchcodec" style="color: var(--pst-color-text-muted)">TorchCodec</a></li>
   
-   <li><a class="nav-link nav-external" href="https://pytorch.org/data" style="color: var(--pst-color-text-muted)">torchdata</a></li>
+   <li><a class="nav-link nav-external" href="https://pytorch.org/vision" style="color: var(--pst-color-text-muted)">torchvision</a></li>
   
-   <li><a class="nav-link nav-external" href="https://pytorch.org/data" style="color: var(--pst-color-text-muted)">torchvision</a></li>
+   <li><a class="nav-link nav-external" href="https://pytorch.org/executorch" style="color: var(--pst-color-text-muted)">ExecuTorch</a></li>
   
    <li><a class="nav-link nav-external" href="https://pytorch.org/xla" style="color: var(--pst-color-text-muted)">PyTorch on XLA Devices</a></li>
   
@@ -1475,17 +1494,23 @@ which reduce the dimensions of a <code class="docutils literal notranslate"><spa
   </footer>
    <script type="application/ld+json">
       {
-        "@context": "https://schema.org",
-        "@type": "Article",
-        "headline": "Tensor Basics",
-        "description": "PyTorch Documentation. Explore PyTorch, an open-source machine learning library that accelerates the path from research prototyping to production deployment. Discover tutorials, API references, and guides to help you build and deploy deep learning models efficiently.",
-        "author": {
-          "@type": "Organization",
-          "name": "PyTorch Contributors"
-        },
-        "datePublished": "",
-        "dateModified": "",
-      }
+         "@context": "https://schema.org",
+         "@type": "Article",
+         "headline": "Tensor Basics",
+         "description": "PyTorch Documentation. Explore PyTorch, an open-source machine learning library that accelerates the path from research prototyping to production deployment. Discover tutorials, API references, and guides to help you build and deploy deep learning models efficiently.",
+         "author": {
+           "@type": "Organization",
+           "name": "PyTorch Contributors"
+         },
+         "image": "../_static/img/pytorch_seo.png",
+         "mainEntityOfPage": {
+           "@type": "WebPage",
+           "@id": "/notes/tensor_basics.html"
+         },
+         "datePublished": "",
+         "dateModified": "",
+         "articleBody": "Tensor Basics# The ATen tensor library backing PyTorch is a simple tensor library that exposes the Tensor operations in Torch directly in C++17. ATen’s API is auto-generated from the same declarations PyTorch uses so the two APIs will track each other over time. Tensor types are resolved dynamically, such that the API is generic and does not include templates. That is, there is one Tensor type. It can hold a CPU or CUDA Tensor, and the tensor may have Doubles, Float, Ints, etc. This design makes it easy to write generic code without templating everything. See https://pytorch.org/cppdocs/api/namespace_at.html#functions for the provided API. Excerpt: Tensor atan2(const Tensor &amp; other) const; Tensor &amp; atan2_(const Tensor &amp; other); Tensor pow(Scalar exponent) const; Tensor pow(const Tensor &amp; exponent) const; Tensor &amp; pow_(Scalar exponent); Tensor &amp; pow_(const Tensor &amp; exponent); Tensor lerp(const Tensor &amp; end, Scalar weight) const; Tensor &amp; lerp_(const Tensor &amp; end, Scalar weight); Tensor histc() const; Tensor histc(int64_t bins) const; Tensor histc(int64_t bins, Scalar min) const; Tensor histc(int64_t bins, Scalar min, Scalar max) const; In place operations are also provided, and always suffixed by _ to indicate they will modify the Tensor. Efficient Access to Tensor Elements# When using Tensor-wide operations, the relative cost of dynamic dispatch is very small. However, there are cases, especially in your own kernels, where efficient element-wise access is needed, and the cost of dynamic dispatch inside the element-wise loop is very high. ATen provides accessors that are created with a single dynamic check that a Tensor is the type and number of dimensions. Accessors then expose an API for accessing the Tensor elements efficiently. Accessors are temporary views of a Tensor. They are only valid for the lifetime of the tensor that they view and hence should only be used locally in a function, like iterators. Note that accessors are not compatible with CUDA tensors inside kernel functions. Instead, you will have to use a packed accessor which behaves the same way but copies tensor metadata instead of pointing to it. It is thus recommended to use accessors for CPU tensors and packed accessors for CUDA tensors. CPU accessors# torch::Tensor foo = torch::rand({12, 12}); // assert foo is 2-dimensional and holds floats. auto foo_a = foo.accessor&lt;float,2&gt;(); float trace = 0; for(int i = 0; i &lt; foo_a.size(0); i++) { // use the accessor foo_a to get tensor data. trace += foo_a[i][i]; } CUDA accessors# __global__ void packed_accessor_kernel( torch::PackedTensorAccessor64&lt;float, 2&gt; foo, float* trace) { int i = threadIdx.x; gpuAtomicAdd(trace, foo[i][i]); } torch::Tensor foo = torch::rand({12, 12}); // assert foo is 2-dimensional and holds floats. auto foo_a = foo.packed_accessor64&lt;float,2&gt;(); float trace = 0; packed_accessor_kernel&lt;&lt;&lt;1, 12&gt;&gt;&gt;(foo_a, &amp;trace); In addition to PackedTensorAccessor64 and packed_accessor64 there are also the corresponding PackedTe..."
+       }
    </script>
 
   </body>

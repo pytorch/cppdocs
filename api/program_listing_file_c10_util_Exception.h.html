@@ -102,6 +102,34 @@
    }
 </script>
 <!-- End Facebook Pixel Code -->
+<!-- Script to Fix scrolling -->
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Fix anchor scrolling
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function(e) {
+        e.preventDefault();
+        const targetId = this.getAttribute('href').substring(1);
+        const targetElement = document.getElementById(targetId);
+
+        if (targetElement) {
+          const headerHeight =
+            (document.querySelector('.header-holder') ? document.querySelector('.header-holder').offsetHeight : 0) +
+            (document.querySelector('.bd-header') ? document.querySelector('.bd-header').offsetHeight : 0) + 20;
+
+          const targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset - headerHeight;
+          window.scrollTo({
+            top: targetPosition,
+            behavior: 'smooth'
+          });
+
+          // Update URL hash without scrolling
+          history.pushState(null, null, '#' + targetId);
+        }
+      });
+    });
+  });
+</script>
 
 <script async src="https://cse.google.com/cse.js?cx=e65585f8c3ea1440e"></script>
 
@@ -997,12 +1025,7 @@ document.write(`
               
   
 <div id="searchbox"></div>
-  <article class="bd-article"id="pytorch-article" itemscope="itemscope" itemtype="https://schema.org/Article" itemprop="articleBody">
-   <meta itemprop="headline" content="Program Listing for File Exception.h">
-   <meta itemprop="description" content="PyTorch documentation">
-   <meta itemprop="datePublished" content="">
-   <meta itemprop="dateModified" content="">
-   <meta itemprop="author" content="PyTorch Contributors">
+  <article class="bd-article"id="pytorch-article">
    <!-- Hidden breadcrumb schema for SEO only -->
    <div style="display:none;" itemscope itemtype="https://schema.org/BreadcrumbList">
       
@@ -1290,10 +1313,23 @@ document.write(`
 <span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span>
 <span class="p">};</span>
 
-<span class="c1">// Used for handling syntacitc erros in input arguments.</span>
-<span class="c1">// They shuld turn into SytnaxError when the cross into Python</span>
+<span class="c1">// Used for handling syntactic errors in input arguments.</span>
+<span class="c1">// These turn into SyntaxError when the cross into Python.</span>
 <span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">SyntaxError</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span>
 <span class="w">  </span><span class="k">using</span><span class="w"> </span><span class="n">Error</span><span class="o">::</span><span class="n">Error</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="c1">// Raised when accelerator API call hits an error.</span>
+<span class="c1">// These turn into AcceleratorError when the cross into Python</span>
+<span class="k">class</span><span class="w"> </span><span class="nc">C10_API</span><span class="w"> </span><span class="n">AcceleratorError</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Error</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="kt">int32_t</span><span class="w"> </span><span class="n">error_code</span><span class="p">;</span>
+
+<span class="w"> </span><span class="k">public</span><span class="o">:</span>
+<span class="w">  </span><span class="n">AcceleratorError</span><span class="p">(</span><span class="n">SourceLocation</span><span class="w"> </span><span class="n">loc</span><span class="p">,</span><span class="w"> </span><span class="kt">int32_t</span><span class="w"> </span><span class="n">code</span><span class="p">,</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">string</span><span class="o">&amp;</span><span class="w"> </span><span class="n">msg</span><span class="p">)</span>
+<span class="w">      </span><span class="o">:</span><span class="w"> </span><span class="n">Error</span><span class="p">(</span><span class="n">loc</span><span class="p">,</span><span class="w"> </span><span class="n">msg</span><span class="p">),</span><span class="w"> </span><span class="n">error_code</span><span class="p">(</span><span class="n">code</span><span class="p">)</span><span class="w"> </span><span class="p">{}</span>
+<span class="w">  </span><span class="kt">int32_t</span><span class="w"> </span><span class="n">get_error_code</span><span class="p">()</span><span class="w"> </span><span class="k">const</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">error_code</span><span class="p">;</span>
+<span class="w">  </span><span class="p">}</span>
 <span class="p">};</span>
 
 <span class="c1">// Base error type for all distributed errors.</span>
@@ -1706,28 +1742,28 @@ document.write(`
 
 <span class="cm">/*</span>
 <span class="cm">// Deprecation disabled until we fix sites in our codebase</span>
-<span class="cm">C10_DEPRECATED_MESSAGE(&quot;AT_ERROR(msg) is deprecated, use TORCH_CHECK(false, msg)</span>
-<span class="cm">instead.&quot;)</span>
+<span class="cm">[[deprecated(&quot;AT_ERROR(msg) is deprecated, use TORCH_CHECK(false, msg)</span>
+<span class="cm">instead.&quot;)]]</span>
 <span class="cm">*/</span>
 <span class="kr">inline</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">deprecated_AT_ERROR</span><span class="p">()</span><span class="w"> </span><span class="p">{}</span>
 
 <span class="cm">/*</span>
 <span class="cm">// Deprecation disabled until we fix sites in our codebase</span>
-<span class="cm">C10_DEPRECATED_MESSAGE(&quot;AT_ASSERT is deprecated, if you mean to indicate an</span>
+<span class="cm">[[deprecated(&quot;AT_ASSERT is deprecated, if you mean to indicate an</span>
 <span class="cm">internal invariant failure, use &quot; \</span>
 <span class="cm">                       &quot;TORCH_INTERNAL_ASSERT instead; if you mean to do user</span>
 <span class="cm">error checking, use &quot; \ &quot;TORCH_CHECK.  See</span>
-<span class="cm">https://github.com/pytorch/pytorch/issues/20287 for more details.&quot;)</span>
+<span class="cm">https://github.com/pytorch/pytorch/issues/20287 for more details.&quot;)]]</span>
 <span class="cm">*/</span>
 <span class="kr">inline</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">deprecated_AT_ASSERT</span><span class="p">()</span><span class="w"> </span><span class="p">{}</span>
 
 <span class="cm">/*</span>
 <span class="cm">// Deprecation disabled until we fix sites in our codebase</span>
-<span class="cm">C10_DEPRECATED_MESSAGE(&quot;AT_ASSERTM is deprecated, if you mean to indicate an</span>
+<span class="cm">[[deprecated(&quot;AT_ASSERTM is deprecated, if you mean to indicate an</span>
 <span class="cm">internal invariant failure, use &quot; \</span>
 <span class="cm">                       &quot;TORCH_INTERNAL_ASSERT instead; if you mean to do user</span>
 <span class="cm">error checking, use &quot; \ &quot;TORCH_CHECK.  See</span>
-<span class="cm">https://github.com/pytorch/pytorch/issues/20287 for more details.&quot;)</span>
+<span class="cm">https://github.com/pytorch/pytorch/issues/20287 for more details.&quot;)]]</span>
 <span class="cm">*/</span>
 <span class="kr">inline</span><span class="w"> </span><span class="kt">void</span><span class="w"> </span><span class="nf">deprecated_AT_ASSERTM</span><span class="p">()</span><span class="w"> </span><span class="p">{}</span>
 
@@ -1813,7 +1849,6 @@ document.write(`
   </div>
 </div>
 
-
 <div class="prev-next-area">
 </div>
 
@@ -1830,7 +1865,8 @@ document.write(`
   <p class="theme-version">
     Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.4.
   </p>
-</div></div>
+</div>
+</div>
   
 </div>
                 </footer>
@@ -1866,19 +1902,15 @@ document.write(`
   <div class="sidebar-heading">PyTorch Libraries</div>
   <ul style="list-style-type: none; padding: 0; padding-bottom: 80px;">
   
-   <li><a class="nav-link nav-external" href="https://pytorch.org/audio/stable/" style="color: var(--pst-color-text-muted)">torchaudio</a></li>
-  
    <li><a class="nav-link nav-external" href="https://pytorch.org/ao" style="color: var(--pst-color-text-muted)">torchao</a></li>
-  
-   <li><a class="nav-link nav-external" href="https://pytorch.org/executorch" style="color: var(--pst-color-text-muted)">ExecuTorch</a></li>
   
    <li><a class="nav-link nav-external" href="https://pytorch.org/torchrec" style="color: var(--pst-color-text-muted)">torchrec</a></li>
   
-   <li><a class="nav-link nav-external" href="https://pytorch.org/serve/" style="color: var(--pst-color-text-muted)">torchserve</a></li>
+   <li><a class="nav-link nav-external" href="https://pytorch.org/torchcodec" style="color: var(--pst-color-text-muted)">TorchCodec</a></li>
   
-   <li><a class="nav-link nav-external" href="https://pytorch.org/data" style="color: var(--pst-color-text-muted)">torchdata</a></li>
+   <li><a class="nav-link nav-external" href="https://pytorch.org/vision" style="color: var(--pst-color-text-muted)">torchvision</a></li>
   
-   <li><a class="nav-link nav-external" href="https://pytorch.org/data" style="color: var(--pst-color-text-muted)">torchvision</a></li>
+   <li><a class="nav-link nav-external" href="https://pytorch.org/executorch" style="color: var(--pst-color-text-muted)">ExecuTorch</a></li>
   
    <li><a class="nav-link nav-external" href="https://pytorch.org/xla" style="color: var(--pst-color-text-muted)">PyTorch on XLA Devices</a></li>
   
@@ -2041,17 +2073,23 @@ document.write(`
   </footer>
    <script type="application/ld+json">
       {
-        "@context": "https://schema.org",
-        "@type": "Article",
-        "headline": "Program Listing for File Exception.h",
-        "description": "PyTorch Documentation. Explore PyTorch, an open-source machine learning library that accelerates the path from research prototyping to production deployment. Discover tutorials, API references, and guides to help you build and deploy deep learning models efficiently.",
-        "author": {
-          "@type": "Organization",
-          "name": "PyTorch Contributors"
-        },
-        "datePublished": "",
-        "dateModified": "",
-      }
+         "@context": "https://schema.org",
+         "@type": "Article",
+         "headline": "Program Listing for File Exception.h",
+         "description": "PyTorch Documentation. Explore PyTorch, an open-source machine learning library that accelerates the path from research prototyping to production deployment. Discover tutorials, API references, and guides to help you build and deploy deep learning models efficiently.",
+         "author": {
+           "@type": "Organization",
+           "name": "PyTorch Contributors"
+         },
+         "image": "../_static/img/pytorch_seo.png",
+         "mainEntityOfPage": {
+           "@type": "WebPage",
+           "@id": "/api/program_listing_file_c10_util_Exception.h.html"
+         },
+         "datePublished": "",
+         "dateModified": "",
+         "articleBody": "Program Listing for File Exception.h# ↰ Return to documentation for file (c10/util/Exception.h) #ifndef C10_UTIL_EXCEPTION_H_ #define C10_UTIL_EXCEPTION_H_ #include &lt;c10/macros/Export.h&gt; #include &lt;c10/macros/Macros.h&gt; #include &lt;c10/util/Backtrace.h&gt; #include &lt;c10/util/Lazy.h&gt; #include &lt;c10/util/StringUtil.h&gt; #include &lt;cstdint&gt; #include &lt;exception&gt; #include &lt;memory&gt; #include &lt;string&gt; #include &lt;variant&gt; #include &lt;vector&gt; #if defined(_MSC_VER) &amp;&amp; _MSC_VER &lt;= 1900 #define __func__ __FUNCTION__ #endif namespace c10 { class C10_API Error : public std::exception { private: // The actual error message. std::string msg_; // Context for the message (in order of decreasing specificity). Context will // be automatically formatted appropriately, so it is not necessary to add // extra leading/trailing newlines to strings inside this vector std::vector&lt;std::string&gt; context_; // The C++ backtrace at the point when this exception was raised. This // may be empty if there is no valid backtrace. (We don&#39;t use optional // here to reduce the dependencies this file has.) Backtrace backtrace_; // These two are derived fields from msg_stack_ and backtrace_, but we need // fields for the strings so that we can return a const char* (as the // signature of std::exception requires). Currently, the invariant // is that these fields are ALWAYS populated consistently with respect // to msg_stack_ and backtrace_. mutable OptimisticLazy&lt;std::string&gt; what_; std::string what_without_backtrace_; // This is a little debugging trick: you can stash a relevant pointer // in caller, and then when you catch the exception, you can compare // against pointers you have on hand to get more information about // where the exception came from. In Caffe2, this is used to figure // out which operator raised an exception. const void* caller_; public: // PyTorch-style Error constructor. NB: the implementation of this // is actually in Logging.cpp Error(SourceLocation source_location, std::string msg); // Caffe2-style error message Error( const char* file, const uint32_t line, const char* condition, const std::string&amp; msg, Backtrace backtrace, const void* caller = nullptr); // Base constructor Error( std::string msg, Backtrace backtrace = nullptr, const void* caller = nullptr); // Add some new context to the message stack. The last added context // will be formatted at the end of the context list upon printing. // WARNING: This method is O(n) in the size of the stack, so don&#39;t go // wild adding a ridiculous amount of context to error messages. void add_context(std::string msg); const std::string&amp; msg() const { return msg_; } const std::vector&lt;std::string&gt;&amp; context() const { return context_; } const Backtrace&amp; backtrace() const; const char* what() const noexcept override; const void* caller() const noexcept { return caller_; } virtual const char* what_without_backtrace() const noexcept { return what_without_backtrace_.c_str(); } private: void refresh_what(); std::string compute_what(bool include_b..."
+       }
    </script>
 
   </body>
