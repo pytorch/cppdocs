@@ -55,6 +55,28 @@
 <link rel="canonical" href="/api/program_listing_file_torch_csrc_api_include_torch_data_datasets_chunk.h.html" crossorigin="anonymous">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js"></script>
+<script>
+  if (window.location.hostname === 'docs.pytorch.org' || window.location.hostname === 'docs-preview.pytorch.org') {
+    const script = document.createElement('script');
+    script.src = 'https://cmp.osano.com/16A0DbT9yDNIaQkvZ/31b1b91a-e0b6-47ea-bde2-7f2bd13dbe5c/osano.js?variant=one';
+    document.head.appendChild(script);
+  }
+</script>
+<script>
+  // Cookie banner for non-LF projects.
+  document.addEventListener('DOMContentLoaded', function() {
+    // Hide cookie banner on local environments
+    if (window.location.hostname === 'localhost' ||
+        window.location.hostname === '0.0.0.0' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.startsWith('192.168.')) {
+      const banner = document.querySelector('.cookie-banner-wrapper');
+      if (banner) {
+        banner.style.display = 'none';
+      }
+    }
+  });
+</script>
 <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" crossorigin="anonymous">
 <script type="text/javascript" src="../_static/js/theme.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1736,21 +1758,17 @@ document.write(`
 
 
        </div>
-
-  <div class="cookie-banner-wrapper">
-  <div class="container">
-    <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
-    <img class="close-button" src="../_static/img/pytorch-x.svg">
-  </div>
-</div>
  </footer>
-   
-  <footer class="bd-footer"><div class="cookie-banner-wrapper">
+
+<div class="cookie-banner-wrapper">
   <div class="container">
     <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
     <img class="close-button" src="../_static/img/pytorch-x.svg">
   </div>
 </div>
+
+   
+  <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
   
     <div class="footer-items__start">
@@ -1795,18 +1813,20 @@ document.write(`
          "@type": "Article",
          "headline": "Program Listing for File chunk.h",
          "description": "PyTorch Documentation. Explore PyTorch, an open-source machine learning library that accelerates the path from research prototyping to production deployment. Discover tutorials, API references, and guides to help you build and deploy deep learning models efficiently.",
+         "url": "/api/program_listing_file_torch_csrc_api_include_torch_data_datasets_chunk.h.html",
          "author": {
            "@type": "Organization",
-           "name": "PyTorch Contributors"
+           "name": "PyTorch Contributors",
+           "url": "https://pytorch.org"
          },
          "image": "../_static/img/pytorch_seo.png",
          "mainEntityOfPage": {
            "@type": "WebPage",
            "@id": "/api/program_listing_file_torch_csrc_api_include_torch_data_datasets_chunk.h.html"
          },
-         "datePublished": "",
+        "datePublished": "",
          "dateModified": "",
-         "articleBody": "Program Listing for File chunk.h# ↰ Return to documentation for file (torch/csrc/api/include/torch/data/datasets/chunk.h) #pragma once #include &lt;c10/util/irange.h&gt; #include &lt;torch/arg.h&gt; #include &lt;torch/data/datasets/stateful.h&gt; #include &lt;torch/data/samplers.h&gt; #include &lt;queue&gt; #include &lt;thread&gt; #include &lt;utility&gt; #include &lt;torch/serialize.h&gt; namespace torch::data::datasets { template &lt; typename ExampleType_, typename ChunkType_ = std::vector&lt;ExampleType_&gt;&gt; class ChunkDataReader { public: virtual ~ChunkDataReader() = default; using ChunkType = ChunkType_; using ExampleType = ExampleType_; virtual ChunkType read_chunk(size_t chunk_index) = 0; virtual size_t chunk_count() = 0; virtual void reset() = 0; }; namespace detail { template &lt; typename UnwrappedBatch, typename ExampleSampler = samplers::RandomSampler&gt; class BatchDataBuffer { public: using UnwrappedBatchType = UnwrappedBatch; using BatchType = std::optional&lt;UnwrappedBatchType&gt;; using BatchRequestType = typename ExampleSampler::BatchRequestType; BatchDataBuffer( size_t batch_size, ExampleSampler&amp; example_sampler, size_t queue_capacity) : batch_size_(batch_size), example_sampler_(example_sampler), queue_capacity_(queue_capacity) {} BatchType get_batch() { std::unique_lock&lt;std::mutex&gt; lock(queue_mutex_); cv_read_.wait(lock, [this] { // wait till there is available data in the queue or if all chunks are // loaded (i.e. the dataset is exhausted for this epoch) return ( this-&gt;total_example_count_in_queue_ &gt;= batch_size_ || this-&gt;stop_); }); if (batch_queue_.empty()) { AT_ASSERT(stop_); // All batches have been retrieved. Return an empty batch. return std::nullopt; } UnwrappedBatchData batch = std::move(batch_queue_.front()); batch_queue_.pop(); if (batch.exception) { throw WorkerException(batch.exception); } total_example_count_in_queue_ -= batch.batch_data.size(); lock.unlock(); cv_write_.notify_all(); return batch.batch_data; } void add_chunk_data(UnwrappedBatchType data) { std::unique_lock&lt;std::mutex&gt; lock(queue_mutex_); cv_write_.wait(lock, [this] { // stop loading if we have preloaded enough data. return this-&gt;total_example_count_in_queue_ &lt; this-&gt;queue_capacity_ || this-&gt;stop_; }); if (stop_) { // When stop_ is true, it means no further chunk loading is necessary. // Return without any further processing. return; } auto data_size = data.size(); auto remaining_size = data_size; example_sampler_.reset(data_size); auto fill_batch = [&amp;](size_t example_count, UnwrappedBatchType&amp; batch) { auto batch_example_indices = this-&gt;example_sampler_.next(example_count); AT_ASSERT( batch_example_indices &amp;&amp; batch_example_indices.value().size() == example_count); BatchRequestType&amp; indices = batch_example_indices.value(); for (size_t i : indices) { TORCH_CHECK(i &lt; data_size, &#34;Index out of range&#34;); batch.emplace_back(std::move(data[i])); } remaining_size -= example_count; }; if (!batch_queue_.empty()) { // if the queue has existing data, and the last batch doesn&#39;t have enough // examples to fill a batch_size ..."
+         "articleBody": "Program Listing for File chunk.h# ↰ Return to documentation for file (torch/csrc/api/include/torch/data/datasets/chunk.h) #pragma once #include &lt;c10/util/irange.h&gt; #include &lt;torch/arg.h&gt; #include &lt;torch/data/datasets/stateful.h&gt; #include &lt;torch/data/samplers.h&gt; #include &lt;queue&gt; #include &lt;thread&gt; #include &lt;utility&gt; #include &lt;torch/serialize.h&gt; namespace torch::data::datasets { template &lt; typename ExampleType_, typename ChunkType_ = std::vector&lt;ExampleType_&gt;&gt; class ChunkDataReader { public: virtual ~ChunkDataReader() = default; using ChunkType = ChunkType_; using ExampleType = ExampleType_; virtual ChunkType read_chunk(size_t chunk_index) = 0; virtual size_t chunk_count() = 0; virtual void reset() = 0; }; namespace detail { template &lt; typename UnwrappedBatch, typename ExampleSampler = samplers::RandomSampler&gt; class BatchDataBuffer { public: using UnwrappedBatchType = UnwrappedBatch; using BatchType = std::optional&lt;UnwrappedBatchType&gt;; using BatchRequestType = typename ExampleSampler::BatchRequestType; BatchDataBuffer( size_t batch_size, ExampleSampler&amp; example_sampler, size_t queue_capacity) : batch_size_(batch_size), example_sampler_(example_sampler), queue_capacity_(queue_capacity) {} BatchType get_batch() { std::unique_lock&lt;std::mutex&gt; lock(queue_mutex_); cv_read_.wait(lock, [this] { // wait till there is available data in the queue or if all chunks are // loaded (i.e. the dataset is exhausted for this epoch) return ( this-&gt;total_example_count_in_queue_ &gt;= batch_size_ || this-&gt;stop_); }); if (batch_queue_.empty()) { AT_ASSERT(stop_); // All batches have been retrieved. Return an empty batch. return std::nullopt; } UnwrappedBatchData batch = std::move(batch_queue_.front()); batch_queue_.pop(); if (batch.exception) { throw WorkerException(batch.exception); } total_example_count_in_queue_ -= batch.batch_data.size(); lock.unlock(); cv_write_.notify_all(); return batch.batch_data; } void add_chunk_data(UnwrappedBatchType data) { std::unique_lock&lt;std::mutex&gt; lock(queue_mutex_); cv_write_.wait(lock, [this] { // stop loading if we have preloaded enough data. return this-&gt;total_example_count_in_queue_ &lt; this-&gt;queue_capacity_ || this-&gt;stop_; }); if (stop_) { // When stop_ is true, it means no further chunk loading is necessary. // Return without any further processing. return; } auto data_size = data.size(); auto remaining_size = data_size; example_sampler_.reset(data_size); auto fill_batch = [&amp;](size_t example_count, UnwrappedBatchType&amp; batch) { auto batch_example_indices = this-&gt;example_sampler_.next(example_count); AT_ASSERT( batch_example_indices &amp;&amp; batch_example_indices.value().size() == example_count); BatchRequestType&amp; indices = batch_example_indices.value(); for (size_t i : indices) { TORCH_CHECK(i &lt; data_size, \&#34;Index out of range\&#34;); batch.emplace_back(std::move(data[i])); } remaining_size -= example_count; }; if (!batch_queue_.empty()) { // if the queue has existing data, and the last batch doesn&#39;t have enough // examples to fill a batch_size ..."
        }
    </script>
 

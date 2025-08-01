@@ -55,6 +55,28 @@
 <link rel="canonical" href="/api/program_listing_file_c10_cuda_CUDAGuard.h.html" crossorigin="anonymous">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js"></script>
+<script>
+  if (window.location.hostname === 'docs.pytorch.org' || window.location.hostname === 'docs-preview.pytorch.org') {
+    const script = document.createElement('script');
+    script.src = 'https://cmp.osano.com/16A0DbT9yDNIaQkvZ/31b1b91a-e0b6-47ea-bde2-7f2bd13dbe5c/osano.js?variant=one';
+    document.head.appendChild(script);
+  }
+</script>
+<script>
+  // Cookie banner for non-LF projects.
+  document.addEventListener('DOMContentLoaded', function() {
+    // Hide cookie banner on local environments
+    if (window.location.hostname === 'localhost' ||
+        window.location.hostname === '0.0.0.0' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.startsWith('192.168.')) {
+      const banner = document.querySelector('.cookie-banner-wrapper');
+      if (banner) {
+        banner.style.display = 'none';
+      }
+    }
+  });
+</script>
 <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" crossorigin="anonymous">
 <script type="text/javascript" src="../_static/js/theme.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1477,21 +1499,17 @@ document.write(`
 
 
        </div>
-
-  <div class="cookie-banner-wrapper">
-  <div class="container">
-    <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
-    <img class="close-button" src="../_static/img/pytorch-x.svg">
-  </div>
-</div>
  </footer>
-   
-  <footer class="bd-footer"><div class="cookie-banner-wrapper">
+
+<div class="cookie-banner-wrapper">
   <div class="container">
     <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
     <img class="close-button" src="../_static/img/pytorch-x.svg">
   </div>
 </div>
+
+   
+  <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
   
     <div class="footer-items__start">
@@ -1536,16 +1554,18 @@ document.write(`
          "@type": "Article",
          "headline": "Program Listing for File CUDAGuard.h",
          "description": "PyTorch Documentation. Explore PyTorch, an open-source machine learning library that accelerates the path from research prototyping to production deployment. Discover tutorials, API references, and guides to help you build and deploy deep learning models efficiently.",
+         "url": "/api/program_listing_file_c10_cuda_CUDAGuard.h.html",
          "author": {
            "@type": "Organization",
-           "name": "PyTorch Contributors"
+           "name": "PyTorch Contributors",
+           "url": "https://pytorch.org"
          },
          "image": "../_static/img/pytorch_seo.png",
          "mainEntityOfPage": {
            "@type": "WebPage",
            "@id": "/api/program_listing_file_c10_cuda_CUDAGuard.h.html"
          },
-         "datePublished": "",
+        "datePublished": "",
          "dateModified": "",
          "articleBody": "Program Listing for File CUDAGuard.h# ↰ Return to documentation for file (c10/cuda/CUDAGuard.h) #pragma once #include &lt;c10/core/DeviceType.h&gt; #include &lt;c10/core/impl/InlineDeviceGuard.h&gt; #include &lt;c10/core/impl/InlineStreamGuard.h&gt; #include &lt;c10/cuda/CUDAMacros.h&gt; #include &lt;c10/cuda/impl/CUDAGuardImpl.h&gt; namespace c10::cuda { // This code is kind of boilerplatey. See Note [Whither the DeviceGuard // boilerplate] struct CUDAGuard { explicit CUDAGuard() = delete; explicit CUDAGuard(DeviceIndex device_index) : guard_(device_index) {} explicit CUDAGuard(Device device) : guard_(device) {} // Copy is not allowed CUDAGuard(const CUDAGuard&amp;) = delete; CUDAGuard&amp; operator=(const CUDAGuard&amp;) = delete; // Move is not allowed (there is no uninitialized state) CUDAGuard(CUDAGuard&amp;&amp; other) = delete; CUDAGuard&amp; operator=(CUDAGuard&amp;&amp; other) = delete; ~CUDAGuard() = default; void set_device(Device device) { guard_.set_device(device); } void reset_device(Device device) { guard_.reset_device(device); } void set_index(DeviceIndex device_index) { guard_.set_index(device_index); } Device original_device() const { return guard_.original_device(); } Device current_device() const { return guard_.current_device(); } private: c10::impl::InlineDeviceGuard&lt;impl::CUDAGuardImpl&gt; guard_; }; struct OptionalCUDAGuard { explicit OptionalCUDAGuard() = default; explicit OptionalCUDAGuard(std::optional&lt;Device&gt; device_opt) : guard_(device_opt) {} explicit OptionalCUDAGuard(std::optional&lt;DeviceIndex&gt; device_index_opt) : guard_(device_index_opt) {} // Copy is not allowed OptionalCUDAGuard(const OptionalCUDAGuard&amp;) = delete; OptionalCUDAGuard&amp; operator=(const OptionalCUDAGuard&amp;) = delete; // See Note [Move construction for RAII guards is tricky] OptionalCUDAGuard(OptionalCUDAGuard&amp;&amp; other) = delete; // See Note [Move assignment for RAII guards is tricky] OptionalCUDAGuard&amp; operator=(OptionalCUDAGuard&amp;&amp; other) = delete; ~OptionalCUDAGuard() = default; void set_device(Device device) { guard_.set_device(device); } void reset_device(Device device) { guard_.reset_device(device); } void set_index(DeviceIndex device_index) { guard_.set_index(device_index); } std::optional&lt;Device&gt; original_device() const { return guard_.original_device(); } std::optional&lt;Device&gt; current_device() const { return guard_.current_device(); } void reset() { guard_.reset(); } private: c10::impl::InlineOptionalDeviceGuard&lt;impl::CUDAGuardImpl&gt; guard_; }; struct CUDAStreamGuard { explicit CUDAStreamGuard() = delete; explicit CUDAStreamGuard(Stream stream) : guard_(stream) {} ~CUDAStreamGuard() = default; CUDAStreamGuard(const CUDAStreamGuard&amp;) = delete; CUDAStreamGuard&amp; operator=(const CUDAStreamGuard&amp;) = delete; CUDAStreamGuard(CUDAStreamGuard&amp;&amp; other) = delete; CUDAStreamGuard&amp; operator=(CUDAStreamGuard&amp;&amp; other) = delete; void reset_stream(Stream stream) { guard_.reset_stream(stream); } CUDAStream original_stream() const { return CUDAStream(CUDAStream::UNCHECKED, guard_.original_stream()); } CUDAStream current_stream..."
        }

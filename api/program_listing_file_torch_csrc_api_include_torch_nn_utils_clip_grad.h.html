@@ -55,6 +55,28 @@
 <link rel="canonical" href="/api/program_listing_file_torch_csrc_api_include_torch_nn_utils_clip_grad.h.html" crossorigin="anonymous">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js"></script>
+<script>
+  if (window.location.hostname === 'docs.pytorch.org' || window.location.hostname === 'docs-preview.pytorch.org') {
+    const script = document.createElement('script');
+    script.src = 'https://cmp.osano.com/16A0DbT9yDNIaQkvZ/31b1b91a-e0b6-47ea-bde2-7f2bd13dbe5c/osano.js?variant=one';
+    document.head.appendChild(script);
+  }
+</script>
+<script>
+  // Cookie banner for non-LF projects.
+  document.addEventListener('DOMContentLoaded', function() {
+    // Hide cookie banner on local environments
+    if (window.location.hostname === 'localhost' ||
+        window.location.hostname === '0.0.0.0' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.startsWith('192.168.')) {
+      const banner = document.querySelector('.cookie-banner-wrapper');
+      if (banner) {
+        banner.style.display = 'none';
+      }
+    }
+  });
+</script>
 <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" crossorigin="anonymous">
 <script type="text/javascript" src="../_static/js/theme.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1408,21 +1430,17 @@ document.write(`
 
 
        </div>
-
-  <div class="cookie-banner-wrapper">
-  <div class="container">
-    <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
-    <img class="close-button" src="../_static/img/pytorch-x.svg">
-  </div>
-</div>
  </footer>
-   
-  <footer class="bd-footer"><div class="cookie-banner-wrapper">
+
+<div class="cookie-banner-wrapper">
   <div class="container">
     <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
     <img class="close-button" src="../_static/img/pytorch-x.svg">
   </div>
 </div>
+
+   
+  <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
   
     <div class="footer-items__start">
@@ -1467,18 +1485,20 @@ document.write(`
          "@type": "Article",
          "headline": "Program Listing for File clip_grad.h",
          "description": "PyTorch Documentation. Explore PyTorch, an open-source machine learning library that accelerates the path from research prototyping to production deployment. Discover tutorials, API references, and guides to help you build and deploy deep learning models efficiently.",
+         "url": "/api/program_listing_file_torch_csrc_api_include_torch_nn_utils_clip_grad.h.html",
          "author": {
            "@type": "Organization",
-           "name": "PyTorch Contributors"
+           "name": "PyTorch Contributors",
+           "url": "https://pytorch.org"
          },
          "image": "../_static/img/pytorch_seo.png",
          "mainEntityOfPage": {
            "@type": "WebPage",
            "@id": "/api/program_listing_file_torch_csrc_api_include_torch_nn_utils_clip_grad.h.html"
          },
-         "datePublished": "",
+        "datePublished": "",
          "dateModified": "",
-         "articleBody": "Program Listing for File clip_grad.h# ↰ Return to documentation for file (torch/csrc/api/include/torch/nn/utils/clip_grad.h) #pragma once #include &lt;torch/csrc/Export.h&gt; #include &lt;torch/types.h&gt; #include &lt;utility&gt; #include &lt;vector&gt; namespace torch::nn::utils { // Clips gradient norm of a vector of Tensors. // See // https://pytorch.org/docs/stable/nn.html?highlight=clip_grad_norm#torch.nn.utils.clip_grad_norm_ // for more details about this module. // // Difference with the python version: unlike the python version, even when // skipping the finiteness checks (error_if_nonfinite = false), this function // will introduce a device &lt;=&gt; CPU synchronization (for devices where that makes // sense!) in order to return a CPU-side `double`. This C++ version therefore // cannot be run fully asynchronously w.r.t. the device of the gradients. inline double clip_grad_norm_( const std::vector&lt;Tensor&gt;&amp; parameters, double max_norm, double norm_type = 2.0, bool error_if_nonfinite = false) { std::vector&lt;Tensor&gt; params_with_grad; for (const auto&amp; param : parameters) { auto&amp; grad = param.grad(); if (grad.defined()) { params_with_grad.push_back(param); } } if (params_with_grad.empty()) { return 0.0; } Tensor total_norm_tensor; if (norm_type == std::numeric_limits&lt;double&gt;::infinity()) { std::vector&lt;Tensor&gt; norms; norms.reserve(params_with_grad.size()); for (const auto&amp; param : params_with_grad) { norms.emplace_back(param.grad().data().abs().max()); } total_norm_tensor = (norms.size() == 1) ? norms[0] : torch::max(torch::stack(norms)); } else if (norm_type == 0) { total_norm_tensor = torch::full({}, static_cast&lt;double&gt;(params_with_grad.size())); } else { std::vector&lt;Tensor&gt; norms; norms.reserve(params_with_grad.size()); for (const auto&amp; param : params_with_grad) { norms.emplace_back(param.grad().data().norm(norm_type)); } total_norm_tensor = (norms.size() == 1) ? norms[0] : torch::stack(norms).norm(norm_type); } // When possible (ie when skipping the finiteness check), we avoid // synchronizing the CPU and the gradients&#39; device until the very end to // preserve async execution on the device. When checking for finite-ness, this // optional ensures we only sync once. std::optional&lt;double&gt; total_norm = std::nullopt; if (error_if_nonfinite) { total_norm = total_norm_tensor.item().toDouble(); TORCH_CHECK( std::isfinite(*total_norm), &#34;The total norm of order &#34;, norm_type, &#34; for gradients from `parameters` &#34;, &#34;is non-finite, so it cannot be clipped. To disable this error and scale &#34;, &#34;the gradients with the non-finite norm anyway, set &#34;, &#34;`error_if_nonfinite=false`&#34;); } auto clip_coef = max_norm / (total_norm_tensor + 1e-6); auto clip_coef_clamped = torch::clamp(clip_coef, std::nullopt /* min */, 1.0 /* max */); for (auto&amp; param : params_with_grad) { param.grad().data().mul_(clip_coef_clamped); } if (!total_norm.has_value()) { total_norm = total_norm_tensor.item().toDouble(); } return *total_norm; } // A wrapper around clip_grad_norm_ that allows us to call the function wit..."
+         "articleBody": "Program Listing for File clip_grad.h# ↰ Return to documentation for file (torch/csrc/api/include/torch/nn/utils/clip_grad.h) #pragma once #include &lt;torch/csrc/Export.h&gt; #include &lt;torch/types.h&gt; #include &lt;utility&gt; #include &lt;vector&gt; namespace torch::nn::utils { // Clips gradient norm of a vector of Tensors. // See // https://pytorch.org/docs/stable/nn.html?highlight=clip_grad_norm#torch.nn.utils.clip_grad_norm_ // for more details about this module. // // Difference with the python version: unlike the python version, even when // skipping the finiteness checks (error_if_nonfinite = false), this function // will introduce a device &lt;=&gt; CPU synchronization (for devices where that makes // sense!) in order to return a CPU-side `double`. This C++ version therefore // cannot be run fully asynchronously w.r.t. the device of the gradients. inline double clip_grad_norm_( const std::vector&lt;Tensor&gt;&amp; parameters, double max_norm, double norm_type = 2.0, bool error_if_nonfinite = false) { std::vector&lt;Tensor&gt; params_with_grad; for (const auto&amp; param : parameters) { auto&amp; grad = param.grad(); if (grad.defined()) { params_with_grad.push_back(param); } } if (params_with_grad.empty()) { return 0.0; } Tensor total_norm_tensor; if (norm_type == std::numeric_limits&lt;double&gt;::infinity()) { std::vector&lt;Tensor&gt; norms; norms.reserve(params_with_grad.size()); for (const auto&amp; param : params_with_grad) { norms.emplace_back(param.grad().data().abs().max()); } total_norm_tensor = (norms.size() == 1) ? norms[0] : torch::max(torch::stack(norms)); } else if (norm_type == 0) { total_norm_tensor = torch::full({}, static_cast&lt;double&gt;(params_with_grad.size())); } else { std::vector&lt;Tensor&gt; norms; norms.reserve(params_with_grad.size()); for (const auto&amp; param : params_with_grad) { norms.emplace_back(param.grad().data().norm(norm_type)); } total_norm_tensor = (norms.size() == 1) ? norms[0] : torch::stack(norms).norm(norm_type); } // When possible (ie when skipping the finiteness check), we avoid // synchronizing the CPU and the gradients&#39; device until the very end to // preserve async execution on the device. When checking for finite-ness, this // optional ensures we only sync once. std::optional&lt;double&gt; total_norm = std::nullopt; if (error_if_nonfinite) { total_norm = total_norm_tensor.item().toDouble(); TORCH_CHECK( std::isfinite(*total_norm), \&#34;The total norm of order \&#34;, norm_type, \&#34; for gradients from `parameters` \&#34;, \&#34;is non-finite, so it cannot be clipped. To disable this error and scale \&#34;, \&#34;the gradients with the non-finite norm anyway, set \&#34;, \&#34;`error_if_nonfinite=false`\&#34;); } auto clip_coef = max_norm / (total_norm_tensor + 1e-6); auto clip_coef_clamped = torch::clamp(clip_coef, std::nullopt /* min */, 1.0 /* max */); for (auto&amp; param : params_with_grad) { param.grad().data().mul_(clip_coef_clamped); } if (!total_norm.has_value()) { total_norm = total_norm_tensor.item().toDouble(); } return *total_norm; } // A wrapper around clip_grad_norm_ that allows us to call the function wit..."
        }
    </script>
 

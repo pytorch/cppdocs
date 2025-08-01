@@ -55,6 +55,28 @@
 <link rel="canonical" href="/api/program_listing_file_torch_csrc_api_include_torch_nn_modules_container_any_value.h.html" crossorigin="anonymous">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js"></script>
+<script>
+  if (window.location.hostname === 'docs.pytorch.org' || window.location.hostname === 'docs-preview.pytorch.org') {
+    const script = document.createElement('script');
+    script.src = 'https://cmp.osano.com/16A0DbT9yDNIaQkvZ/31b1b91a-e0b6-47ea-bde2-7f2bd13dbe5c/osano.js?variant=one';
+    document.head.appendChild(script);
+  }
+</script>
+<script>
+  // Cookie banner for non-LF projects.
+  document.addEventListener('DOMContentLoaded', function() {
+    // Hide cookie banner on local environments
+    if (window.location.hostname === 'localhost' ||
+        window.location.hostname === '0.0.0.0' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.startsWith('192.168.')) {
+      const banner = document.querySelector('.cookie-banner-wrapper');
+      if (banner) {
+        banner.style.display = 'none';
+      }
+    }
+  });
+</script>
 <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" crossorigin="anonymous">
 <script type="text/javascript" src="../_static/js/theme.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1364,21 +1386,17 @@ document.write(`
 
 
        </div>
-
-  <div class="cookie-banner-wrapper">
-  <div class="container">
-    <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
-    <img class="close-button" src="../_static/img/pytorch-x.svg">
-  </div>
-</div>
  </footer>
-   
-  <footer class="bd-footer"><div class="cookie-banner-wrapper">
+
+<div class="cookie-banner-wrapper">
   <div class="container">
     <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
     <img class="close-button" src="../_static/img/pytorch-x.svg">
   </div>
 </div>
+
+   
+  <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
   
     <div class="footer-items__start">
@@ -1423,18 +1441,20 @@ document.write(`
          "@type": "Article",
          "headline": "Program Listing for File any_value.h",
          "description": "PyTorch Documentation. Explore PyTorch, an open-source machine learning library that accelerates the path from research prototyping to production deployment. Discover tutorials, API references, and guides to help you build and deploy deep learning models efficiently.",
+         "url": "/api/program_listing_file_torch_csrc_api_include_torch_nn_modules_container_any_value.h.html",
          "author": {
            "@type": "Organization",
-           "name": "PyTorch Contributors"
+           "name": "PyTorch Contributors",
+           "url": "https://pytorch.org"
          },
          "image": "../_static/img/pytorch_seo.png",
          "mainEntityOfPage": {
            "@type": "WebPage",
            "@id": "/api/program_listing_file_torch_csrc_api_include_torch_nn_modules_container_any_value.h.html"
          },
-         "datePublished": "",
+        "datePublished": "",
          "dateModified": "",
-         "articleBody": "Program Listing for File any_value.h# ↰ Return to documentation for file (torch/csrc/api/include/torch/nn/modules/container/any_value.h) #pragma once #include &lt;torch/types.h&gt; #include &lt;memory&gt; #include &lt;type_traits&gt; #include &lt;typeinfo&gt; #include &lt;utility&gt; namespace torch::nn { // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ AnyValue ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ class AnyValue { public: AnyValue(AnyValue&amp;&amp;) = default; AnyValue&amp; operator=(AnyValue&amp;&amp;) = default; ~AnyValue() = default; AnyValue(const AnyValue&amp; other) : content_(other.content_-&gt;clone()) {} AnyValue&amp; operator=(const AnyValue&amp; other) { content_ = other.content_-&gt;clone(); return *this; } template &lt; typename T, typename = std::enable_if_t&lt;!std::is_same_v&lt;T, AnyValue&gt;&gt;&gt; explicit AnyValue(T&amp;&amp; value) : content_( std::make_unique&lt;Holder&lt;std::decay_t&lt;T&gt;&gt;&gt;(std::forward&lt;T&gt;(value))) { } template &lt;typename T&gt; T* try_get() { static_assert( !std::is_reference_v&lt;T&gt;, &#34;AnyValue stores decayed types, you cannot cast it to a reference type&#34;); static_assert( !std::is_array_v&lt;T&gt;, &#34;AnyValue stores decayed types, you must cast it to T* instead of T[]&#34;); if (typeid(T).hash_code() == type_info().hash_code()) { return &amp;static_cast&lt;Holder&lt;T&gt;&amp;&gt;(*content_).value; } return nullptr; } template &lt;typename T&gt; T get() { if (auto* maybe_value = try_get&lt;T&gt;()) { return *maybe_value; } TORCH_CHECK( false, &#34;Attempted to cast AnyValue to &#34;, c10::demangle(typeid(T).name()), &#34;, but its actual type is &#34;, c10::demangle(type_info().name())); } const std::type_info&amp; type_info() const noexcept { return content_-&gt;type_info; } private: friend struct AnyModulePlaceholder; friend struct TestAnyValue; struct Placeholder { explicit Placeholder(const std::type_info&amp; type_info_) noexcept : type_info(type_info_) {} Placeholder(const Placeholder&amp;) = default; Placeholder(Placeholder&amp;&amp;) = default; Placeholder&amp; operator=(const Placeholder&amp;) = delete; Placeholder&amp; operator=(Placeholder&amp;&amp;) = delete; virtual ~Placeholder() = default; virtual std::unique_ptr&lt;Placeholder&gt; clone() const { TORCH_CHECK(false, &#34;clone() should only be called on `AnyValue::Holder`&#34;); } // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members) const std::type_info&amp; type_info; }; template &lt;typename T&gt; struct Holder : public Placeholder { template &lt; typename U, typename = std::enable_if_t&lt;!std::is_same_v&lt;U, Holder&gt;&gt;&gt; explicit Holder(U&amp;&amp; value_) noexcept : Placeholder(typeid(T)), value(std::forward&lt;U&gt;(value_)) {} std::unique_ptr&lt;Placeholder&gt; clone() const override { return std::make_unique&lt;Holder&lt;T&gt;&gt;(value); } T value; }; std::unique_ptr&lt;Placeholder&gt; content_; }; } // namespace torch::nn"
+         "articleBody": "Program Listing for File any_value.h# ↰ Return to documentation for file (torch/csrc/api/include/torch/nn/modules/container/any_value.h) #pragma once #include &lt;torch/types.h&gt; #include &lt;memory&gt; #include &lt;type_traits&gt; #include &lt;typeinfo&gt; #include &lt;utility&gt; namespace torch::nn { // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ AnyValue ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ class AnyValue { public: AnyValue(AnyValue&amp;&amp;) = default; AnyValue&amp; operator=(AnyValue&amp;&amp;) = default; ~AnyValue() = default; AnyValue(const AnyValue&amp; other) : content_(other.content_-&gt;clone()) {} AnyValue&amp; operator=(const AnyValue&amp; other) { content_ = other.content_-&gt;clone(); return *this; } template &lt; typename T, typename = std::enable_if_t&lt;!std::is_same_v&lt;T, AnyValue&gt;&gt;&gt; explicit AnyValue(T&amp;&amp; value) : content_( std::make_unique&lt;Holder&lt;std::decay_t&lt;T&gt;&gt;&gt;(std::forward&lt;T&gt;(value))) { } template &lt;typename T&gt; T* try_get() { static_assert( !std::is_reference_v&lt;T&gt;, \&#34;AnyValue stores decayed types, you cannot cast it to a reference type\&#34;); static_assert( !std::is_array_v&lt;T&gt;, \&#34;AnyValue stores decayed types, you must cast it to T* instead of T[]\&#34;); if (typeid(T).hash_code() == type_info().hash_code()) { return &amp;static_cast&lt;Holder&lt;T&gt;&amp;&gt;(*content_).value; } return nullptr; } template &lt;typename T&gt; T get() { if (auto* maybe_value = try_get&lt;T&gt;()) { return *maybe_value; } TORCH_CHECK( false, \&#34;Attempted to cast AnyValue to \&#34;, c10::demangle(typeid(T).name()), \&#34;, but its actual type is \&#34;, c10::demangle(type_info().name())); } const std::type_info&amp; type_info() const noexcept { return content_-&gt;type_info; } private: friend struct AnyModulePlaceholder; friend struct TestAnyValue; struct Placeholder { explicit Placeholder(const std::type_info&amp; type_info_) noexcept : type_info(type_info_) {} Placeholder(const Placeholder&amp;) = default; Placeholder(Placeholder&amp;&amp;) = default; Placeholder&amp; operator=(const Placeholder&amp;) = delete; Placeholder&amp; operator=(Placeholder&amp;&amp;) = delete; virtual ~Placeholder() = default; virtual std::unique_ptr&lt;Placeholder&gt; clone() const { TORCH_CHECK(false, \&#34;clone() should only be called on `AnyValue::Holder`\&#34;); } // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members) const std::type_info&amp; type_info; }; template &lt;typename T&gt; struct Holder : public Placeholder { template &lt; typename U, typename = std::enable_if_t&lt;!std::is_same_v&lt;U, Holder&gt;&gt;&gt; explicit Holder(U&amp;&amp; value_) noexcept : Placeholder(typeid(T)), value(std::forward&lt;U&gt;(value_)) {} std::unique_ptr&lt;Placeholder&gt; clone() const override { return std::make_unique&lt;Holder&lt;T&gt;&gt;(value); } T value; }; std::unique_ptr&lt;Placeholder&gt; content_; }; } // namespace torch::nn"
        }
    </script>
 

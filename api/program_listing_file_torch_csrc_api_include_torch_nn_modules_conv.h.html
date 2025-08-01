@@ -55,6 +55,28 @@
 <link rel="canonical" href="/api/program_listing_file_torch_csrc_api_include_torch_nn_modules_conv.h.html" crossorigin="anonymous">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js"></script>
+<script>
+  if (window.location.hostname === 'docs.pytorch.org' || window.location.hostname === 'docs-preview.pytorch.org') {
+    const script = document.createElement('script');
+    script.src = 'https://cmp.osano.com/16A0DbT9yDNIaQkvZ/31b1b91a-e0b6-47ea-bde2-7f2bd13dbe5c/osano.js?variant=one';
+    document.head.appendChild(script);
+  }
+</script>
+<script>
+  // Cookie banner for non-LF projects.
+  document.addEventListener('DOMContentLoaded', function() {
+    // Hide cookie banner on local environments
+    if (window.location.hostname === 'localhost' ||
+        window.location.hostname === '0.0.0.0' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.startsWith('192.168.')) {
+      const banner = document.querySelector('.cookie-banner-wrapper');
+      if (banner) {
+        banner.style.display = 'none';
+      }
+    }
+  });
+</script>
 <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" crossorigin="anonymous">
 <script type="text/javascript" src="../_static/js/theme.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1606,21 +1628,17 @@ document.write(`
 
 
        </div>
-
-  <div class="cookie-banner-wrapper">
-  <div class="container">
-    <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
-    <img class="close-button" src="../_static/img/pytorch-x.svg">
-  </div>
-</div>
  </footer>
-   
-  <footer class="bd-footer"><div class="cookie-banner-wrapper">
+
+<div class="cookie-banner-wrapper">
   <div class="container">
     <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
     <img class="close-button" src="../_static/img/pytorch-x.svg">
   </div>
 </div>
+
+   
+  <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
   
     <div class="footer-items__start">
@@ -1665,18 +1683,20 @@ document.write(`
          "@type": "Article",
          "headline": "Program Listing for File conv.h",
          "description": "PyTorch Documentation. Explore PyTorch, an open-source machine learning library that accelerates the path from research prototyping to production deployment. Discover tutorials, API references, and guides to help you build and deploy deep learning models efficiently.",
+         "url": "/api/program_listing_file_torch_csrc_api_include_torch_nn_modules_conv.h.html",
          "author": {
            "@type": "Organization",
-           "name": "PyTorch Contributors"
+           "name": "PyTorch Contributors",
+           "url": "https://pytorch.org"
          },
          "image": "../_static/img/pytorch_seo.png",
          "mainEntityOfPage": {
            "@type": "WebPage",
            "@id": "/api/program_listing_file_torch_csrc_api_include_torch_nn_modules_conv.h.html"
          },
-         "datePublished": "",
+        "datePublished": "",
          "dateModified": "",
-         "articleBody": "Program Listing for File conv.h# ↰ Return to documentation for file (torch/csrc/api/include/torch/nn/modules/conv.h) #pragma once #include &lt;c10/util/irange.h&gt; #include &lt;c10/util/overloaded.h&gt; #include &lt;torch/expanding_array.h&gt; #include &lt;torch/nn/cloneable.h&gt; #include &lt;torch/nn/init.h&gt; #include &lt;torch/nn/modules/common.h&gt; #include &lt;torch/nn/modules/utils.h&gt; #include &lt;torch/nn/options/conv.h&gt; #include &lt;torch/nn/pimpl.h&gt; #include &lt;torch/types.h&gt; #include &lt;torch/csrc/Export.h&gt; #include &lt;cstddef&gt; #include &lt;vector&gt; namespace torch::nn { template &lt;size_t D, typename Derived&gt; class ConvNdImpl : public torch::nn::Cloneable&lt;Derived&gt; { public: explicit ConvNdImpl(detail::ConvNdOptions&lt;D&gt; options_) : options(std::move(options_)) { ConvNdImpl::reset(); } void reset() override { TORCH_CHECK( options.in_channels() &gt; 0 &amp;&amp; options.groups() &gt; 0 &amp;&amp; options.out_channels() &gt; 0, &#34;in_channels, groups and out_channels must be a positive integer.&#34;); TORCH_CHECK( options.in_channels() % options.groups() == 0, &#34;in_channels must be divisible by groups&#34;); TORCH_CHECK( options.out_channels() % options.groups() == 0, &#34;out_channels must be divisible by groups&#34;); std::visit( c10::overloaded( [&amp;](enumtype::kValid) { _reversed_padding_repeated_twice.resize(2 * D); std::fill_n(_reversed_padding_repeated_twice.begin(), 2 * D, 0); }, [&amp;](enumtype::kSame) { for (const auto i : c10::irange(D)) { const auto stride = (*options.stride())[i]; TORCH_CHECK( stride == 1, &#34;padding=&#39;same&#39; is not supported for strided convolutions&#34;); } _reversed_padding_repeated_twice.resize(2 * D); for (const auto i : c10::irange(D)) { const auto dilation = (*options.dilation())[i]; const auto kernel_size = (*options.kernel_size())[i]; const auto total_padding = dilation * (kernel_size - 1); auto left_pad = total_padding / 2; auto right_pad = total_padding - left_pad; _reversed_padding_repeated_twice[2 * i] = left_pad; _reversed_padding_repeated_twice[2 * i + 1] = right_pad; } }, [&amp;](const ExpandingArray&lt;D&gt;&amp; pad) { _reversed_padding_repeated_twice = torch::nn::modules::utils::_reverse_repeat_vector(pad, 2); }), options.padding()); if (options.transposed()) { std::vector&lt;int64_t&gt; weight_sizes = { options.in_channels(), options.out_channels() / options.groups()}; weight_sizes.insert( weight_sizes.end(), (*options.kernel_size()).begin(), (*options.kernel_size()).end()); weight = this-&gt;register_parameter(&#34;weight&#34;, torch::empty(weight_sizes)); } else { std::vector&lt;int64_t&gt; weight_sizes = { options.out_channels(), options.in_channels() / options.groups()}; weight_sizes.insert( weight_sizes.end(), (*options.kernel_size()).begin(), (*options.kernel_size()).end()); weight = this-&gt;register_parameter(&#34;weight&#34;, torch::empty(weight_sizes)); } if (options.bias()) { bias = this-&gt;register_parameter( &#34;bias&#34;, torch::empty({options.out_channels()})); } else { this-&gt;register_parameter(&#34;bias&#34;, Tensor(), /*requires_grad=*/false); } reset_parameters(); } void reset_parameters() { init::kaiming_uniform_( weight, /*a=*/std::sqrt(5))..."
+         "articleBody": "Program Listing for File conv.h# ↰ Return to documentation for file (torch/csrc/api/include/torch/nn/modules/conv.h) #pragma once #include &lt;c10/util/irange.h&gt; #include &lt;c10/util/overloaded.h&gt; #include &lt;torch/expanding_array.h&gt; #include &lt;torch/nn/cloneable.h&gt; #include &lt;torch/nn/init.h&gt; #include &lt;torch/nn/modules/common.h&gt; #include &lt;torch/nn/modules/utils.h&gt; #include &lt;torch/nn/options/conv.h&gt; #include &lt;torch/nn/pimpl.h&gt; #include &lt;torch/types.h&gt; #include &lt;torch/csrc/Export.h&gt; #include &lt;cstddef&gt; #include &lt;vector&gt; namespace torch::nn { template &lt;size_t D, typename Derived&gt; class ConvNdImpl : public torch::nn::Cloneable&lt;Derived&gt; { public: explicit ConvNdImpl(detail::ConvNdOptions&lt;D&gt; options_) : options(std::move(options_)) { ConvNdImpl::reset(); } void reset() override { TORCH_CHECK( options.in_channels() &gt; 0 &amp;&amp; options.groups() &gt; 0 &amp;&amp; options.out_channels() &gt; 0, \&#34;in_channels, groups and out_channels must be a positive integer.\&#34;); TORCH_CHECK( options.in_channels() % options.groups() == 0, \&#34;in_channels must be divisible by groups\&#34;); TORCH_CHECK( options.out_channels() % options.groups() == 0, \&#34;out_channels must be divisible by groups\&#34;); std::visit( c10::overloaded( [&amp;](enumtype::kValid) { _reversed_padding_repeated_twice.resize(2 * D); std::fill_n(_reversed_padding_repeated_twice.begin(), 2 * D, 0); }, [&amp;](enumtype::kSame) { for (const auto i : c10::irange(D)) { const auto stride = (*options.stride())[i]; TORCH_CHECK( stride == 1, \&#34;padding=&#39;same&#39; is not supported for strided convolutions\&#34;); } _reversed_padding_repeated_twice.resize(2 * D); for (const auto i : c10::irange(D)) { const auto dilation = (*options.dilation())[i]; const auto kernel_size = (*options.kernel_size())[i]; const auto total_padding = dilation * (kernel_size - 1); auto left_pad = total_padding / 2; auto right_pad = total_padding - left_pad; _reversed_padding_repeated_twice[2 * i] = left_pad; _reversed_padding_repeated_twice[2 * i + 1] = right_pad; } }, [&amp;](const ExpandingArray&lt;D&gt;&amp; pad) { _reversed_padding_repeated_twice = torch::nn::modules::utils::_reverse_repeat_vector(pad, 2); }), options.padding()); if (options.transposed()) { std::vector&lt;int64_t&gt; weight_sizes = { options.in_channels(), options.out_channels() / options.groups()}; weight_sizes.insert( weight_sizes.end(), (*options.kernel_size()).begin(), (*options.kernel_size()).end()); weight = this-&gt;register_parameter(\&#34;weight\&#34;, torch::empty(weight_sizes)); } else { std::vector&lt;int64_t&gt; weight_sizes = { options.out_channels(), options.in_channels() / options.groups()}; weight_sizes.insert( weight_sizes.end(), (*options.kernel_size()).begin(), (*options.kernel_size()).end()); weight = this-&gt;register_parameter(\&#34;weight\&#34;, torch::empty(weight_sizes)); } if (options.bias()) { bias = this-&gt;register_parameter( \&#34;bias\&#34;, torch::empty({options.out_channels()})); } else { this-&gt;register_parameter(\&#34;bias\&#34;, Tensor(), /*requires_grad=*/false); } reset_parameters(); } void reset_parameters() { init::kaiming_uniform_( weight, /*a=*/std::sqrt(5))..."
        }
    </script>
 

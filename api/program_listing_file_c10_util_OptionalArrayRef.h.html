@@ -55,6 +55,28 @@
 <link rel="canonical" href="/api/program_listing_file_c10_util_OptionalArrayRef.h.html" crossorigin="anonymous">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js"></script>
+<script>
+  if (window.location.hostname === 'docs.pytorch.org' || window.location.hostname === 'docs-preview.pytorch.org') {
+    const script = document.createElement('script');
+    script.src = 'https://cmp.osano.com/16A0DbT9yDNIaQkvZ/31b1b91a-e0b6-47ea-bde2-7f2bd13dbe5c/osano.js?variant=one';
+    document.head.appendChild(script);
+  }
+</script>
+<script>
+  // Cookie banner for non-LF projects.
+  document.addEventListener('DOMContentLoaded', function() {
+    // Hide cookie banner on local environments
+    if (window.location.hostname === 'localhost' ||
+        window.location.hostname === '0.0.0.0' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.startsWith('192.168.')) {
+      const banner = document.querySelector('.cookie-banner-wrapper');
+      if (banner) {
+        banner.style.display = 'none';
+      }
+    }
+  });
+</script>
 <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" crossorigin="anonymous">
 <script type="text/javascript" src="../_static/js/theme.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1501,21 +1523,17 @@ document.write(`
 
 
        </div>
-
-  <div class="cookie-banner-wrapper">
-  <div class="container">
-    <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
-    <img class="close-button" src="../_static/img/pytorch-x.svg">
-  </div>
-</div>
  </footer>
-   
-  <footer class="bd-footer"><div class="cookie-banner-wrapper">
+
+<div class="cookie-banner-wrapper">
   <div class="container">
     <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
     <img class="close-button" src="../_static/img/pytorch-x.svg">
   </div>
 </div>
+
+   
+  <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
   
     <div class="footer-items__start">
@@ -1560,16 +1578,18 @@ document.write(`
          "@type": "Article",
          "headline": "Program Listing for File OptionalArrayRef.h",
          "description": "PyTorch Documentation. Explore PyTorch, an open-source machine learning library that accelerates the path from research prototyping to production deployment. Discover tutorials, API references, and guides to help you build and deploy deep learning models efficiently.",
+         "url": "/api/program_listing_file_c10_util_OptionalArrayRef.h.html",
          "author": {
            "@type": "Organization",
-           "name": "PyTorch Contributors"
+           "name": "PyTorch Contributors",
+           "url": "https://pytorch.org"
          },
          "image": "../_static/img/pytorch_seo.png",
          "mainEntityOfPage": {
            "@type": "WebPage",
            "@id": "/api/program_listing_file_c10_util_OptionalArrayRef.h.html"
          },
-         "datePublished": "",
+        "datePublished": "",
          "dateModified": "",
          "articleBody": "Program Listing for File OptionalArrayRef.h# ↰ Return to documentation for file (c10/util/OptionalArrayRef.h) // This file defines OptionalArrayRef&lt;T&gt;, a class that has almost the same // exact functionality as std::optional&lt;ArrayRef&lt;T&gt;&gt;, except that its // converting constructor fixes a dangling pointer issue. // // The implicit converting constructor of both std::optional&lt;ArrayRef&lt;T&gt;&gt; and // std::optional&lt;ArrayRef&lt;T&gt;&gt; can cause the underlying ArrayRef&lt;T&gt; to store // a dangling pointer. OptionalArrayRef&lt;T&gt; prevents this by wrapping // a std::optional&lt;ArrayRef&lt;T&gt;&gt; and fixing the constructor implementation. // // See https://github.com/pytorch/pytorch/issues/63645 for more on this. #pragma once #include &lt;c10/util/ArrayRef.h&gt; #include &lt;cstdint&gt; #include &lt;initializer_list&gt; #include &lt;optional&gt; #include &lt;type_traits&gt; #include &lt;utility&gt; namespace c10 { template &lt;typename T&gt; class OptionalArrayRef final { public: // Constructors constexpr OptionalArrayRef() noexcept = default; constexpr OptionalArrayRef(std::nullopt_t) noexcept {} OptionalArrayRef(const OptionalArrayRef&amp; other) = default; OptionalArrayRef(OptionalArrayRef&amp;&amp; other) noexcept = default; constexpr OptionalArrayRef(const std::optional&lt;ArrayRef&lt;T&gt;&gt;&amp; other) noexcept : wrapped_opt_array_ref(other) {} constexpr OptionalArrayRef(std::optional&lt;ArrayRef&lt;T&gt;&gt;&amp;&amp; other) noexcept : wrapped_opt_array_ref(std::move(other)) {} constexpr OptionalArrayRef(const T&amp; value) noexcept : wrapped_opt_array_ref(value) {} template &lt; typename U = ArrayRef&lt;T&gt;, std::enable_if_t&lt; !std::is_same_v&lt;std::decay_t&lt;U&gt;, OptionalArrayRef&gt; &amp;&amp; !std::is_same_v&lt;std::decay_t&lt;U&gt;, std::in_place_t&gt; &amp;&amp; std::is_constructible_v&lt;ArrayRef&lt;T&gt;, U&amp;&amp;&gt; &amp;&amp; std::is_convertible_v&lt;U&amp;&amp;, ArrayRef&lt;T&gt;&gt; &amp;&amp; !std::is_convertible_v&lt;U&amp;&amp;, T&gt;, bool&gt; = false&gt; constexpr OptionalArrayRef(U&amp;&amp; value) noexcept( std::is_nothrow_constructible_v&lt;ArrayRef&lt;T&gt;, U&amp;&amp;&gt;) : wrapped_opt_array_ref(std::forward&lt;U&gt;(value)) {} template &lt; typename U = ArrayRef&lt;T&gt;, std::enable_if_t&lt; !std::is_same_v&lt;std::decay_t&lt;U&gt;, OptionalArrayRef&gt; &amp;&amp; !std::is_same_v&lt;std::decay_t&lt;U&gt;, std::in_place_t&gt; &amp;&amp; std::is_constructible_v&lt;ArrayRef&lt;T&gt;, U&amp;&amp;&gt; &amp;&amp; !std::is_convertible_v&lt;U&amp;&amp;, ArrayRef&lt;T&gt;&gt;, bool&gt; = false&gt; constexpr explicit OptionalArrayRef(U&amp;&amp; value) noexcept( std::is_nothrow_constructible_v&lt;ArrayRef&lt;T&gt;, U&amp;&amp;&gt;) : wrapped_opt_array_ref(std::forward&lt;U&gt;(value)) {} template &lt;typename... Args&gt; constexpr explicit OptionalArrayRef( std::in_place_t ip, Args&amp;&amp;... args) noexcept : wrapped_opt_array_ref(ip, std::forward&lt;Args&gt;(args)...) {} template &lt;typename U, typename... Args&gt; constexpr explicit OptionalArrayRef( std::in_place_t ip, std::initializer_list&lt;U&gt; il, Args&amp;&amp;... args) : wrapped_opt_array_ref(ip, il, std::forward&lt;Args&gt;(args)...) {} constexpr OptionalArrayRef(const std::initializer_list&lt;T&gt;&amp; Vec) : wrapped_opt_array_ref(ArrayRef&lt;T&gt;(Vec)) {} // Destructor ~OptionalArrayRef() = default; // Assignment constexpr OptionalArrayRef&amp; operator=(std::nullopt_t) noexcept { wrapped_opt_array_ref = std::nullopt; retu..."
        }

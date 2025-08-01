@@ -55,6 +55,28 @@
 <link rel="canonical" href="/api/program_listing_file_c10_cuda_CUDAStream.h.html" crossorigin="anonymous">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js"></script>
+<script>
+  if (window.location.hostname === 'docs.pytorch.org' || window.location.hostname === 'docs-preview.pytorch.org') {
+    const script = document.createElement('script');
+    script.src = 'https://cmp.osano.com/16A0DbT9yDNIaQkvZ/31b1b91a-e0b6-47ea-bde2-7f2bd13dbe5c/osano.js?variant=one';
+    document.head.appendChild(script);
+  }
+</script>
+<script>
+  // Cookie banner for non-LF projects.
+  document.addEventListener('DOMContentLoaded', function() {
+    // Hide cookie banner on local environments
+    if (window.location.hostname === 'localhost' ||
+        window.location.hostname === '0.0.0.0' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.startsWith('192.168.')) {
+      const banner = document.querySelector('.cookie-banner-wrapper');
+      if (banner) {
+        banner.style.display = 'none';
+      }
+    }
+  });
+</script>
 <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" crossorigin="anonymous">
 <script type="text/javascript" src="../_static/js/theme.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1468,21 +1490,17 @@ document.write(`
 
 
        </div>
-
-  <div class="cookie-banner-wrapper">
-  <div class="container">
-    <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
-    <img class="close-button" src="../_static/img/pytorch-x.svg">
-  </div>
-</div>
  </footer>
-   
-  <footer class="bd-footer"><div class="cookie-banner-wrapper">
+
+<div class="cookie-banner-wrapper">
   <div class="container">
     <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
     <img class="close-button" src="../_static/img/pytorch-x.svg">
   </div>
 </div>
+
+   
+  <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
   
     <div class="footer-items__start">
@@ -1527,18 +1545,20 @@ document.write(`
          "@type": "Article",
          "headline": "Program Listing for File CUDAStream.h",
          "description": "PyTorch Documentation. Explore PyTorch, an open-source machine learning library that accelerates the path from research prototyping to production deployment. Discover tutorials, API references, and guides to help you build and deploy deep learning models efficiently.",
+         "url": "/api/program_listing_file_c10_cuda_CUDAStream.h.html",
          "author": {
            "@type": "Organization",
-           "name": "PyTorch Contributors"
+           "name": "PyTorch Contributors",
+           "url": "https://pytorch.org"
          },
          "image": "../_static/img/pytorch_seo.png",
          "mainEntityOfPage": {
            "@type": "WebPage",
            "@id": "/api/program_listing_file_c10_cuda_CUDAStream.h.html"
          },
-         "datePublished": "",
+        "datePublished": "",
          "dateModified": "",
-         "articleBody": "Program Listing for File CUDAStream.h# ↰ Return to documentation for file (c10/cuda/CUDAStream.h) #pragma once #include &lt;cuda_runtime_api.h&gt; #include &lt;c10/core/DeviceGuard.h&gt; #include &lt;c10/core/Stream.h&gt; #include &lt;c10/cuda/CUDAFunctions.h&gt; #include &lt;c10/util/Exception.h&gt; /* * Stream pool note. * * A CUDAStream is an abstraction of an actual cuStream on the GPU. CUDAStreams * are backed by cuStreams, but they use several pools to minimize the costs * associated with creating, retaining, and destroying cuStreams. * * There are three pools per device, and a device&#39;s pools are lazily created. * * The first pool contains only the default stream. When the default stream * is requested it&#39;s returned. * * The second pool is the &#34;low priority&#34; or &#34;default priority&#34; streams. In * HIP builds there is no distinction between streams in this pool and streams * in the third pool (below). There are 32 of these streams per device, and * when a stream is requested one of these streams is returned round-robin. * That is, the first stream requested is at index 0, the second at index 1... * to index 31, then index 0 again. * * This means that if 33 low priority streams are requested, the first and * last streams requested are actually the same stream (under the covers) * and kernels enqueued on them cannot run concurrently. * * The third pool is the &#34;high priority&#34; streams. The third pool acts like * the second pool except the streams are created with a higher priority. * * These pools suggest that stream users should prefer many short-lived streams, * as the cost of acquiring and releasing streams is effectively zero. If * many longer-lived streams are required in performance critical scenarios * then the functionality here may need to be extended to allow, for example, * &#34;reserving&#34; a subset of the pool so that other streams do not accidentally * overlap the performance critical streams. * * Note: although the notion of &#34;current stream for device&#34; is thread local * (every OS thread has a separate current stream, as one might expect), * the stream pool is global across all threads; stream 0 is always stream 0 * no matter which thread you use it on. Multiple threads can synchronize * on the same stream. Although the CUDA documentation is not very clear * on the matter, streams are thread safe; e.g., it is safe to enqueue * a kernel on the same stream from two different threads. */ namespace c10::cuda { static constexpr int max_compile_time_stream_priorities = 4; // Value object representing a CUDA stream. This is just a wrapper // around c10::Stream, but it comes with a little extra CUDA-specific // functionality (conversion to cudaStream_t), and a guarantee that // the wrapped c10::Stream really is a CUDA stream. class C10_CUDA_API CUDAStream { public: enum Unchecked { UNCHECKED }; explicit CUDAStream(Stream stream) : stream_(stream) { TORCH_CHECK(stream_.device_type() == DeviceType::CUDA); } explicit CUDAStream(Unchecked, Stream stream) : stream_(stream) {} bool..."
+         "articleBody": "Program Listing for File CUDAStream.h# ↰ Return to documentation for file (c10/cuda/CUDAStream.h) #pragma once #include &lt;cuda_runtime_api.h&gt; #include &lt;c10/core/DeviceGuard.h&gt; #include &lt;c10/core/Stream.h&gt; #include &lt;c10/cuda/CUDAFunctions.h&gt; #include &lt;c10/util/Exception.h&gt; /* * Stream pool note. * * A CUDAStream is an abstraction of an actual cuStream on the GPU. CUDAStreams * are backed by cuStreams, but they use several pools to minimize the costs * associated with creating, retaining, and destroying cuStreams. * * There are three pools per device, and a device&#39;s pools are lazily created. * * The first pool contains only the default stream. When the default stream * is requested it&#39;s returned. * * The second pool is the \&#34;low priority\&#34; or \&#34;default priority\&#34; streams. In * HIP builds there is no distinction between streams in this pool and streams * in the third pool (below). There are 32 of these streams per device, and * when a stream is requested one of these streams is returned round-robin. * That is, the first stream requested is at index 0, the second at index 1... * to index 31, then index 0 again. * * This means that if 33 low priority streams are requested, the first and * last streams requested are actually the same stream (under the covers) * and kernels enqueued on them cannot run concurrently. * * The third pool is the \&#34;high priority\&#34; streams. The third pool acts like * the second pool except the streams are created with a higher priority. * * These pools suggest that stream users should prefer many short-lived streams, * as the cost of acquiring and releasing streams is effectively zero. If * many longer-lived streams are required in performance critical scenarios * then the functionality here may need to be extended to allow, for example, * \&#34;reserving\&#34; a subset of the pool so that other streams do not accidentally * overlap the performance critical streams. * * Note: although the notion of \&#34;current stream for device\&#34; is thread local * (every OS thread has a separate current stream, as one might expect), * the stream pool is global across all threads; stream 0 is always stream 0 * no matter which thread you use it on. Multiple threads can synchronize * on the same stream. Although the CUDA documentation is not very clear * on the matter, streams are thread safe; e.g., it is safe to enqueue * a kernel on the same stream from two different threads. */ namespace c10::cuda { static constexpr int max_compile_time_stream_priorities = 4; // Value object representing a CUDA stream. This is just a wrapper // around c10::Stream, but it comes with a little extra CUDA-specific // functionality (conversion to cudaStream_t), and a guarantee that // the wrapped c10::Stream really is a CUDA stream. class C10_CUDA_API CUDAStream { public: enum Unchecked { UNCHECKED }; explicit CUDAStream(Stream stream) : stream_(stream) { TORCH_CHECK(stream_.device_type() == DeviceType::CUDA); } explicit CUDAStream(Unchecked, Stream stream) : stream_(stream) {} bool..."
        }
    </script>
 

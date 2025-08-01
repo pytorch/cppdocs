@@ -55,6 +55,28 @@
 <link rel="canonical" href="/api/program_listing_file_torch_csrc_api_include_torch_nn_modules_container_sequential.h.html" crossorigin="anonymous">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js"></script>
+<script>
+  if (window.location.hostname === 'docs.pytorch.org' || window.location.hostname === 'docs-preview.pytorch.org') {
+    const script = document.createElement('script');
+    script.src = 'https://cmp.osano.com/16A0DbT9yDNIaQkvZ/31b1b91a-e0b6-47ea-bde2-7f2bd13dbe5c/osano.js?variant=one';
+    document.head.appendChild(script);
+  }
+</script>
+<script>
+  // Cookie banner for non-LF projects.
+  document.addEventListener('DOMContentLoaded', function() {
+    // Hide cookie banner on local environments
+    if (window.location.hostname === 'localhost' ||
+        window.location.hostname === '0.0.0.0' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.startsWith('192.168.')) {
+      const banner = document.querySelector('.cookie-banner-wrapper');
+      if (banner) {
+        banner.style.display = 'none';
+      }
+    }
+  });
+</script>
 <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" crossorigin="anonymous">
 <script type="text/javascript" src="../_static/js/theme.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1496,21 +1518,17 @@ document.write(`
 
 
        </div>
-
-  <div class="cookie-banner-wrapper">
-  <div class="container">
-    <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
-    <img class="close-button" src="../_static/img/pytorch-x.svg">
-  </div>
-</div>
  </footer>
-   
-  <footer class="bd-footer"><div class="cookie-banner-wrapper">
+
+<div class="cookie-banner-wrapper">
   <div class="container">
     <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
     <img class="close-button" src="../_static/img/pytorch-x.svg">
   </div>
 </div>
+
+   
+  <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
   
     <div class="footer-items__start">
@@ -1555,18 +1573,20 @@ document.write(`
          "@type": "Article",
          "headline": "Program Listing for File sequential.h",
          "description": "PyTorch Documentation. Explore PyTorch, an open-source machine learning library that accelerates the path from research prototyping to production deployment. Discover tutorials, API references, and guides to help you build and deploy deep learning models efficiently.",
+         "url": "/api/program_listing_file_torch_csrc_api_include_torch_nn_modules_container_sequential.h.html",
          "author": {
            "@type": "Organization",
-           "name": "PyTorch Contributors"
+           "name": "PyTorch Contributors",
+           "url": "https://pytorch.org"
          },
          "image": "../_static/img/pytorch_seo.png",
          "mainEntityOfPage": {
            "@type": "WebPage",
            "@id": "/api/program_listing_file_torch_csrc_api_include_torch_nn_modules_container_sequential.h.html"
          },
-         "datePublished": "",
+        "datePublished": "",
          "dateModified": "",
-         "articleBody": "Program Listing for File sequential.h# ↰ Return to documentation for file (torch/csrc/api/include/torch/nn/modules/container/sequential.h) #pragma once #include &lt;torch/detail/static.h&gt; #include &lt;torch/nn/cloneable.h&gt; #include &lt;torch/nn/module.h&gt; #include &lt;torch/nn/modules/container/any.h&gt; #include &lt;torch/nn/modules/container/named_any.h&gt; #include &lt;torch/nn/pimpl.h&gt; #include &lt;torch/types.h&gt; #include &lt;c10/util/Exception.h&gt; #include &lt;cstdint&gt; #include &lt;memory&gt; #include &lt;ostream&gt; #include &lt;string&gt; #include &lt;type_traits&gt; #include &lt;utility&gt; #include &lt;vector&gt; namespace torch::nn { class SequentialImpl : public Cloneable&lt;SequentialImpl&gt; { public: using Iterator = std::vector&lt;AnyModule&gt;::iterator; using ConstIterator = std::vector&lt;AnyModule&gt;::const_iterator; SequentialImpl() = default; template &lt;typename... Modules&gt; explicit SequentialImpl(Modules&amp;&amp;... modules) { modules_.reserve(sizeof...(Modules)); push_back(std::forward&lt;Modules&gt;(modules)...); } explicit SequentialImpl( torch::OrderedDict&lt;std::string, AnyModule&gt;&amp;&amp; ordered_dict) { modules_.reserve(ordered_dict.size()); for (auto&amp; item : ordered_dict) { push_back(item.key(), std::move(item.value())); } } explicit SequentialImpl(std::initializer_list&lt;NamedAnyModule&gt; named_modules) { modules_.reserve(named_modules.size()); for (const auto&amp; named_module : named_modules) { push_back(named_module.name(), named_module.module()); } } std::shared_ptr&lt;Module&gt; clone( const std::optional&lt;Device&gt;&amp; device = std::nullopt) const override { auto clone = std::make_shared&lt;SequentialImpl&gt;(); for (const auto&amp; module : modules_) { clone-&gt;push_back(module.clone(device)); } return clone; } void reset() override {} void pretty_print(std::ostream&amp; stream) const override { stream &lt;&lt; &#34;torch::nn::Sequential&#34;; } template &lt;typename ReturnType = Tensor, typename... InputTypes&gt; ReturnType forward(InputTypes&amp;&amp;... inputs) { TORCH_CHECK(!is_empty(), &#34;Cannot call forward() on an empty Sequential&#34;); auto iterator = modules_.begin(); auto input = iterator-&gt;any_forward(std::forward&lt;InputTypes&gt;(inputs)...); for (++iterator; iterator != modules_.end(); ++iterator) { input = iterator-&gt;any_forward(std::move(input)); } // Check the return value and give a nice error message if the requested // return type was incorrect. if (auto* return_value = input.template try_get&lt;ReturnType&gt;()) { return std::move(*return_value); } TORCH_CHECK( false, &#34;The type of the return value is &#34;, c10::demangle(input.type_info().name()), &#34;, but you asked for type &#34;, c10::demangle(typeid(ReturnType).name())); } template &lt;typename ModuleType&gt; void push_back(std::shared_ptr&lt;ModuleType&gt; module_ptr) { push_back(std::to_string(modules_.size()), std::move(module_ptr)); } template &lt;typename ModuleType&gt; void push_back(std::string name, std::shared_ptr&lt;ModuleType&gt; module_ptr) { push_back(std::move(name), AnyModule(std::move(module_ptr))); } template &lt;typename M, typename = torch::detail::enable_if_module_t&lt;M&gt;&gt; void push_back(M&amp;&amp; module) { push_back(std::to_string(modules_.size())..."
+         "articleBody": "Program Listing for File sequential.h# ↰ Return to documentation for file (torch/csrc/api/include/torch/nn/modules/container/sequential.h) #pragma once #include &lt;torch/detail/static.h&gt; #include &lt;torch/nn/cloneable.h&gt; #include &lt;torch/nn/module.h&gt; #include &lt;torch/nn/modules/container/any.h&gt; #include &lt;torch/nn/modules/container/named_any.h&gt; #include &lt;torch/nn/pimpl.h&gt; #include &lt;torch/types.h&gt; #include &lt;c10/util/Exception.h&gt; #include &lt;cstdint&gt; #include &lt;memory&gt; #include &lt;ostream&gt; #include &lt;string&gt; #include &lt;type_traits&gt; #include &lt;utility&gt; #include &lt;vector&gt; namespace torch::nn { class SequentialImpl : public Cloneable&lt;SequentialImpl&gt; { public: using Iterator = std::vector&lt;AnyModule&gt;::iterator; using ConstIterator = std::vector&lt;AnyModule&gt;::const_iterator; SequentialImpl() = default; template &lt;typename... Modules&gt; explicit SequentialImpl(Modules&amp;&amp;... modules) { modules_.reserve(sizeof...(Modules)); push_back(std::forward&lt;Modules&gt;(modules)...); } explicit SequentialImpl( torch::OrderedDict&lt;std::string, AnyModule&gt;&amp;&amp; ordered_dict) { modules_.reserve(ordered_dict.size()); for (auto&amp; item : ordered_dict) { push_back(item.key(), std::move(item.value())); } } explicit SequentialImpl(std::initializer_list&lt;NamedAnyModule&gt; named_modules) { modules_.reserve(named_modules.size()); for (const auto&amp; named_module : named_modules) { push_back(named_module.name(), named_module.module()); } } std::shared_ptr&lt;Module&gt; clone( const std::optional&lt;Device&gt;&amp; device = std::nullopt) const override { auto clone = std::make_shared&lt;SequentialImpl&gt;(); for (const auto&amp; module : modules_) { clone-&gt;push_back(module.clone(device)); } return clone; } void reset() override {} void pretty_print(std::ostream&amp; stream) const override { stream &lt;&lt; \&#34;torch::nn::Sequential\&#34;; } template &lt;typename ReturnType = Tensor, typename... InputTypes&gt; ReturnType forward(InputTypes&amp;&amp;... inputs) { TORCH_CHECK(!is_empty(), \&#34;Cannot call forward() on an empty Sequential\&#34;); auto iterator = modules_.begin(); auto input = iterator-&gt;any_forward(std::forward&lt;InputTypes&gt;(inputs)...); for (++iterator; iterator != modules_.end(); ++iterator) { input = iterator-&gt;any_forward(std::move(input)); } // Check the return value and give a nice error message if the requested // return type was incorrect. if (auto* return_value = input.template try_get&lt;ReturnType&gt;()) { return std::move(*return_value); } TORCH_CHECK( false, \&#34;The type of the return value is \&#34;, c10::demangle(input.type_info().name()), \&#34;, but you asked for type \&#34;, c10::demangle(typeid(ReturnType).name())); } template &lt;typename ModuleType&gt; void push_back(std::shared_ptr&lt;ModuleType&gt; module_ptr) { push_back(std::to_string(modules_.size()), std::move(module_ptr)); } template &lt;typename ModuleType&gt; void push_back(std::string name, std::shared_ptr&lt;ModuleType&gt; module_ptr) { push_back(std::move(name), AnyModule(std::move(module_ptr))); } template &lt;typename M, typename = torch::detail::enable_if_module_t&lt;M&gt;&gt; void push_back(M&amp;&amp; module) { push_back(std::to_string(modules_.size())..."
        }
    </script>
 

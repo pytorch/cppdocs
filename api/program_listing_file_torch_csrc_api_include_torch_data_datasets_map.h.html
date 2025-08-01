@@ -55,6 +55,28 @@
 <link rel="canonical" href="/api/program_listing_file_torch_csrc_api_include_torch_data_datasets_map.h.html" crossorigin="anonymous">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js"></script>
+<script>
+  if (window.location.hostname === 'docs.pytorch.org' || window.location.hostname === 'docs-preview.pytorch.org') {
+    const script = document.createElement('script');
+    script.src = 'https://cmp.osano.com/16A0DbT9yDNIaQkvZ/31b1b91a-e0b6-47ea-bde2-7f2bd13dbe5c/osano.js?variant=one';
+    document.head.appendChild(script);
+  }
+</script>
+<script>
+  // Cookie banner for non-LF projects.
+  document.addEventListener('DOMContentLoaded', function() {
+    // Hide cookie banner on local environments
+    if (window.location.hostname === 'localhost' ||
+        window.location.hostname === '0.0.0.0' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.startsWith('192.168.')) {
+      const banner = document.querySelector('.cookie-banner-wrapper');
+      if (banner) {
+        banner.style.display = 'none';
+      }
+    }
+  });
+</script>
 <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" crossorigin="anonymous">
 <script type="text/javascript" src="../_static/js/theme.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1359,21 +1381,17 @@ document.write(`
 
 
        </div>
-
-  <div class="cookie-banner-wrapper">
-  <div class="container">
-    <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
-    <img class="close-button" src="../_static/img/pytorch-x.svg">
-  </div>
-</div>
  </footer>
-   
-  <footer class="bd-footer"><div class="cookie-banner-wrapper">
+
+<div class="cookie-banner-wrapper">
   <div class="container">
     <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
     <img class="close-button" src="../_static/img/pytorch-x.svg">
   </div>
 </div>
+
+   
+  <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
   
     <div class="footer-items__start">
@@ -1418,18 +1436,20 @@ document.write(`
          "@type": "Article",
          "headline": "Program Listing for File map.h",
          "description": "PyTorch Documentation. Explore PyTorch, an open-source machine learning library that accelerates the path from research prototyping to production deployment. Discover tutorials, API references, and guides to help you build and deploy deep learning models efficiently.",
+         "url": "/api/program_listing_file_torch_csrc_api_include_torch_data_datasets_map.h.html",
          "author": {
            "@type": "Organization",
-           "name": "PyTorch Contributors"
+           "name": "PyTorch Contributors",
+           "url": "https://pytorch.org"
          },
          "image": "../_static/img/pytorch_seo.png",
          "mainEntityOfPage": {
            "@type": "WebPage",
            "@id": "/api/program_listing_file_torch_csrc_api_include_torch_data_datasets_map.h.html"
          },
-         "datePublished": "",
+        "datePublished": "",
          "dateModified": "",
-         "articleBody": "Program Listing for File map.h# ↰ Return to documentation for file (torch/csrc/api/include/torch/data/datasets/map.h) #pragma once #include &lt;torch/data/datasets/base.h&gt; #include &lt;torch/types.h&gt; #include &lt;c10/util/ArrayRef.h&gt; #include &lt;cstddef&gt; #include &lt;type_traits&gt; #include &lt;utility&gt; namespace torch::data::datasets { namespace detail { template &lt;bool C, typename T&gt; using optional_if_t = std::conditional_t&lt;C, std::optional&lt;T&gt;, T&gt;; } // namespace detail template &lt;typename SourceDataset, typename AppliedTransform&gt; class MapDataset : public BatchDataset&lt; MapDataset&lt;SourceDataset, AppliedTransform&gt;, detail::optional_if_t&lt; SourceDataset::is_stateful, typename AppliedTransform::OutputBatchType&gt;, typename SourceDataset::BatchRequestType&gt; { public: using DatasetType = SourceDataset; using TransformType = AppliedTransform; using BatchRequestType = typename SourceDataset::BatchRequestType; using OutputBatchType = detail::optional_if_t&lt; SourceDataset::is_stateful, typename AppliedTransform::OutputBatchType&gt;; MapDataset(DatasetType dataset, TransformType transform) : dataset_(std::move(dataset)), transform_(std::move(transform)) {} OutputBatchType get_batch(BatchRequestType indices) override { return get_batch_impl(std::move(indices)); } // NOLINTNEXTLINE(bugprone-exception-escape) std::optional&lt;size_t&gt; size() const noexcept override { return dataset_.size(); } void reset() { dataset_.reset(); } const SourceDataset&amp; dataset() noexcept { return dataset_; } const AppliedTransform&amp; transform() noexcept { return transform_; } private: template &lt; typename D = SourceDataset, typename = std::enable_if_t&lt;!D::is_stateful&gt;&gt; OutputBatchType get_batch_impl(BatchRequestType indices) { return transform_.apply_batch(dataset_.get_batch(std::move(indices))); } template &lt;typename D = SourceDataset&gt; std::enable_if_t&lt;D::is_stateful, OutputBatchType&gt; get_batch_impl( BatchRequestType indices) { if (auto batch = dataset_.get_batch(std::move(indices))) { return transform_.apply_batch(std::move(*batch)); } return std::nullopt; } SourceDataset dataset_; // The transformation that is applied to batches received from the dataset. AppliedTransform transform_; }; template &lt;typename DatasetType, typename TransformType&gt; MapDataset&lt;DatasetType, TransformType&gt; map( DatasetType dataset, TransformType transform) { static_assert( std::is_same_v&lt; std::conditional_t&lt; DatasetType::is_stateful, typename DatasetType::BatchType::value_type, typename DatasetType::BatchType&gt;, typename TransformType::InputBatchType&gt;, &#34;BatchType type of dataset does not match input type of transform&#34;); return {std::move(dataset), std::move(transform)}; } } // namespace torch::data::datasets"
+         "articleBody": "Program Listing for File map.h# ↰ Return to documentation for file (torch/csrc/api/include/torch/data/datasets/map.h) #pragma once #include &lt;torch/data/datasets/base.h&gt; #include &lt;torch/types.h&gt; #include &lt;c10/util/ArrayRef.h&gt; #include &lt;cstddef&gt; #include &lt;type_traits&gt; #include &lt;utility&gt; namespace torch::data::datasets { namespace detail { template &lt;bool C, typename T&gt; using optional_if_t = std::conditional_t&lt;C, std::optional&lt;T&gt;, T&gt;; } // namespace detail template &lt;typename SourceDataset, typename AppliedTransform&gt; class MapDataset : public BatchDataset&lt; MapDataset&lt;SourceDataset, AppliedTransform&gt;, detail::optional_if_t&lt; SourceDataset::is_stateful, typename AppliedTransform::OutputBatchType&gt;, typename SourceDataset::BatchRequestType&gt; { public: using DatasetType = SourceDataset; using TransformType = AppliedTransform; using BatchRequestType = typename SourceDataset::BatchRequestType; using OutputBatchType = detail::optional_if_t&lt; SourceDataset::is_stateful, typename AppliedTransform::OutputBatchType&gt;; MapDataset(DatasetType dataset, TransformType transform) : dataset_(std::move(dataset)), transform_(std::move(transform)) {} OutputBatchType get_batch(BatchRequestType indices) override { return get_batch_impl(std::move(indices)); } // NOLINTNEXTLINE(bugprone-exception-escape) std::optional&lt;size_t&gt; size() const noexcept override { return dataset_.size(); } void reset() { dataset_.reset(); } const SourceDataset&amp; dataset() noexcept { return dataset_; } const AppliedTransform&amp; transform() noexcept { return transform_; } private: template &lt; typename D = SourceDataset, typename = std::enable_if_t&lt;!D::is_stateful&gt;&gt; OutputBatchType get_batch_impl(BatchRequestType indices) { return transform_.apply_batch(dataset_.get_batch(std::move(indices))); } template &lt;typename D = SourceDataset&gt; std::enable_if_t&lt;D::is_stateful, OutputBatchType&gt; get_batch_impl( BatchRequestType indices) { if (auto batch = dataset_.get_batch(std::move(indices))) { return transform_.apply_batch(std::move(*batch)); } return std::nullopt; } SourceDataset dataset_; // The transformation that is applied to batches received from the dataset. AppliedTransform transform_; }; template &lt;typename DatasetType, typename TransformType&gt; MapDataset&lt;DatasetType, TransformType&gt; map( DatasetType dataset, TransformType transform) { static_assert( std::is_same_v&lt; std::conditional_t&lt; DatasetType::is_stateful, typename DatasetType::BatchType::value_type, typename DatasetType::BatchType&gt;, typename TransformType::InputBatchType&gt;, \&#34;BatchType type of dataset does not match input type of transform\&#34;); return {std::move(dataset), std::move(transform)}; } } // namespace torch::data::datasets"
        }
    </script>
 

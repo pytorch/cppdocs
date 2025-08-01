@@ -55,6 +55,28 @@
 <link rel="canonical" href="/api/program_listing_file_torch_csrc_api_include_torch_data_datasets_base.h.html" crossorigin="anonymous">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js"></script>
+<script>
+  if (window.location.hostname === 'docs.pytorch.org' || window.location.hostname === 'docs-preview.pytorch.org') {
+    const script = document.createElement('script');
+    script.src = 'https://cmp.osano.com/16A0DbT9yDNIaQkvZ/31b1b91a-e0b6-47ea-bde2-7f2bd13dbe5c/osano.js?variant=one';
+    document.head.appendChild(script);
+  }
+</script>
+<script>
+  // Cookie banner for non-LF projects.
+  document.addEventListener('DOMContentLoaded', function() {
+    // Hide cookie banner on local environments
+    if (window.location.hostname === 'localhost' ||
+        window.location.hostname === '0.0.0.0' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.startsWith('192.168.')) {
+      const banner = document.querySelector('.cookie-banner-wrapper');
+      if (banner) {
+        banner.style.display = 'none';
+      }
+    }
+  });
+</script>
 <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" crossorigin="anonymous">
 <script type="text/javascript" src="../_static/js/theme.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1341,21 +1363,17 @@ document.write(`
 
 
        </div>
-
-  <div class="cookie-banner-wrapper">
-  <div class="container">
-    <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
-    <img class="close-button" src="../_static/img/pytorch-x.svg">
-  </div>
-</div>
  </footer>
-   
-  <footer class="bd-footer"><div class="cookie-banner-wrapper">
+
+<div class="cookie-banner-wrapper">
   <div class="container">
     <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
     <img class="close-button" src="../_static/img/pytorch-x.svg">
   </div>
 </div>
+
+   
+  <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
   
     <div class="footer-items__start">
@@ -1400,16 +1418,18 @@ document.write(`
          "@type": "Article",
          "headline": "Program Listing for File base.h",
          "description": "PyTorch Documentation. Explore PyTorch, an open-source machine learning library that accelerates the path from research prototyping to production deployment. Discover tutorials, API references, and guides to help you build and deploy deep learning models efficiently.",
+         "url": "/api/program_listing_file_torch_csrc_api_include_torch_data_datasets_base.h.html",
          "author": {
            "@type": "Organization",
-           "name": "PyTorch Contributors"
+           "name": "PyTorch Contributors",
+           "url": "https://pytorch.org"
          },
          "image": "../_static/img/pytorch_seo.png",
          "mainEntityOfPage": {
            "@type": "WebPage",
            "@id": "/api/program_listing_file_torch_csrc_api_include_torch_data_datasets_base.h.html"
          },
-         "datePublished": "",
+        "datePublished": "",
          "dateModified": "",
          "articleBody": "Program Listing for File base.h# ↰ Return to documentation for file (torch/csrc/api/include/torch/data/datasets/base.h) #pragma once #include &lt;torch/data/example.h&gt; #include &lt;torch/types.h&gt; #include &lt;c10/util/ArrayRef.h&gt; #include &lt;cstddef&gt; #include &lt;cstdint&gt; #include &lt;type_traits&gt; #include &lt;utility&gt; #include &lt;vector&gt; namespace torch::data::datasets { template &lt;typename S, typename T&gt; class MapDataset; template &lt;typename D, typename T&gt; MapDataset&lt;D, T&gt; map(D, T); // NOLINT } // namespace torch::data::datasets namespace torch::data::datasets { namespace detail { template &lt;typename T&gt; struct is_optional : std::false_type {}; template &lt;typename T&gt; struct is_optional&lt;std::optional&lt;T&gt;&gt; : std::true_type {}; } // namespace detail template &lt; typename Self, typename Batch = std::vector&lt;Example&lt;&gt;&gt;, typename BatchRequest = ArrayRef&lt;size_t&gt;&gt; class BatchDataset { public: using SelfType = Self; using BatchType = Batch; using BatchRequestType = BatchRequest; constexpr static bool is_stateful = detail::is_optional&lt;BatchType&gt;::value; virtual ~BatchDataset() = default; virtual Batch get_batch(BatchRequest request) = 0; virtual std::optional&lt;size_t&gt; size() const = 0; template &lt;typename TransformType&gt; MapDataset&lt;Self, TransformType&gt; map(TransformType transform) &amp; { return datasets::map(static_cast&lt;Self&amp;&gt;(*this), std::move(transform)); } template &lt;typename TransformType&gt; MapDataset&lt;Self, TransformType&gt; map(TransformType transform) &amp;&amp; { return datasets::map( std::move(static_cast&lt;Self&amp;&gt;(*this)), std::move(transform)); } }; template &lt;typename Self, typename SingleExample = Example&lt;&gt;&gt; class Dataset : public BatchDataset&lt;Self, std::vector&lt;SingleExample&gt;&gt; { public: using ExampleType = SingleExample; virtual ExampleType get(size_t index) = 0; std::vector&lt;ExampleType&gt; get_batch(ArrayRef&lt;size_t&gt; indices) override { std::vector&lt;ExampleType&gt; batch; batch.reserve(indices.size()); for (const auto i : indices) { batch.push_back(get(i)); } return batch; } }; template &lt;typename Self, typename Batch = std::vector&lt;Example&lt;&gt;&gt;&gt; using StreamDataset = BatchDataset&lt;Self, Batch, /*BatchRequest=*/size_t&gt;; } // namespace torch::data::datasets"
        }

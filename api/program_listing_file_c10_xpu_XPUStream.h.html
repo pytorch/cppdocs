@@ -55,6 +55,28 @@
 <link rel="canonical" href="/api/program_listing_file_c10_xpu_XPUStream.h.html" crossorigin="anonymous">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js"></script>
+<script>
+  if (window.location.hostname === 'docs.pytorch.org' || window.location.hostname === 'docs-preview.pytorch.org') {
+    const script = document.createElement('script');
+    script.src = 'https://cmp.osano.com/16A0DbT9yDNIaQkvZ/31b1b91a-e0b6-47ea-bde2-7f2bd13dbe5c/osano.js?variant=one';
+    document.head.appendChild(script);
+  }
+</script>
+<script>
+  // Cookie banner for non-LF projects.
+  document.addEventListener('DOMContentLoaded', function() {
+    // Hide cookie banner on local environments
+    if (window.location.hostname === 'localhost' ||
+        window.location.hostname === '0.0.0.0' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.startsWith('192.168.')) {
+      const banner = document.querySelector('.cookie-banner-wrapper');
+      if (banner) {
+        banner.style.display = 'none';
+      }
+    }
+  });
+</script>
 <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" crossorigin="anonymous">
 <script type="text/javascript" src="../_static/js/theme.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1413,21 +1435,17 @@ document.write(`
 
 
        </div>
-
-  <div class="cookie-banner-wrapper">
-  <div class="container">
-    <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
-    <img class="close-button" src="../_static/img/pytorch-x.svg">
-  </div>
-</div>
  </footer>
-   
-  <footer class="bd-footer"><div class="cookie-banner-wrapper">
+
+<div class="cookie-banner-wrapper">
   <div class="container">
     <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
     <img class="close-button" src="../_static/img/pytorch-x.svg">
   </div>
 </div>
+
+   
+  <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
   
     <div class="footer-items__start">
@@ -1472,18 +1490,20 @@ document.write(`
          "@type": "Article",
          "headline": "Program Listing for File XPUStream.h",
          "description": "PyTorch Documentation. Explore PyTorch, an open-source machine learning library that accelerates the path from research prototyping to production deployment. Discover tutorials, API references, and guides to help you build and deploy deep learning models efficiently.",
+         "url": "/api/program_listing_file_c10_xpu_XPUStream.h.html",
          "author": {
            "@type": "Organization",
-           "name": "PyTorch Contributors"
+           "name": "PyTorch Contributors",
+           "url": "https://pytorch.org"
          },
          "image": "../_static/img/pytorch_seo.png",
          "mainEntityOfPage": {
            "@type": "WebPage",
            "@id": "/api/program_listing_file_c10_xpu_XPUStream.h.html"
          },
-         "datePublished": "",
+        "datePublished": "",
          "dateModified": "",
-         "articleBody": "Program Listing for File XPUStream.h# ↰ Return to documentation for file (c10/xpu/XPUStream.h) #pragma once #include &lt;c10/core/Stream.h&gt; #include &lt;c10/core/impl/GPUTrace.h&gt; #include &lt;c10/xpu/XPUFunctions.h&gt; namespace c10::xpu { /* * Note [Stream Management] * * An XPUStream is an abstraction of an actual SYCL queue in which SYCL kernel * can execute. Currently, there are several pools per device to manage SYCL * queue, and a device&#39;s pool is lazily created. * * There are two pools per device. The first pool contains &#34;normal priority&#34; * queues. The second pool is the &#34;high priority&#34; queues. There are 32 queues in * per pool per device, and when a queue is requested one of these queues is * returned round-robin. That is, the first queue requested is at index 0, the * second at index 1... to index 31, then index 0 again. * * This means that if 33 queues are requested, the first and last queues * requested are actually the same queue (under the covers) and kernels enqueued * on them cannot run concurrently. * * It is safe to enqueue a kernel on the same queue from two different * threads as the SYCL specification described. */ static constexpr int max_compile_time_stream_priorities = 3; /* * This serves as a wrapper around c10::Stream and acts as a representation for * a SYCL queue, which allows asynchronous execution of XPU tasks. */ class C10_XPU_API XPUStream { public: enum Unchecked { UNCHECKED }; explicit XPUStream(Stream stream) : stream_(stream) { TORCH_CHECK(stream_.device_type() == DeviceType::XPU); } explicit XPUStream(Unchecked, Stream stream) : stream_(stream) {} bool operator==(const XPUStream&amp; other) const noexcept { return unwrap() == other.unwrap(); } bool operator!=(const XPUStream&amp; other) const noexcept { return unwrap() != other.unwrap(); } operator sycl::queue&amp;() const { return queue(); } operator sycl::queue*() const { return &amp;queue(); } operator Stream() const { return unwrap(); } DeviceType device_type() const { return DeviceType::XPU; } DeviceIndex device_index() const { return stream_.device_index(); } Device device() const { return Device(DeviceType::XPU, device_index()); } StreamId id() const { return stream_.id(); } bool query() const { return queue().ext_oneapi_empty(); } void synchronize() const { queue().wait_and_throw(); const c10::impl::PyInterpreter* interp = c10::impl::GPUTrace::get_trace(); if (C10_UNLIKELY(interp)) { (*interp)-&gt;trace_gpu_stream_synchronization( c10::kXPU, reinterpret_cast&lt;uintptr_t&gt;(&amp;queue())); } } int priority() const; sycl::queue&amp; queue() const; Stream unwrap() const { return stream_; } struct c10::StreamData3 pack3() const { return stream_.pack3(); } static XPUStream unpack3( StreamId stream_id, DeviceIndex device_index, DeviceType device_type) { return XPUStream(Stream::unpack3(stream_id, device_index, device_type)); } static std::tuple&lt;int, int&gt; priority_range() { // See Note [XPU Stream priorities] return std::make_tuple(1, -max_compile_time_stream_priorities + 2); } private: Stream strea..."
+         "articleBody": "Program Listing for File XPUStream.h# ↰ Return to documentation for file (c10/xpu/XPUStream.h) #pragma once #include &lt;c10/core/Stream.h&gt; #include &lt;c10/core/impl/GPUTrace.h&gt; #include &lt;c10/xpu/XPUFunctions.h&gt; namespace c10::xpu { /* * Note [Stream Management] * * An XPUStream is an abstraction of an actual SYCL queue in which SYCL kernel * can execute. Currently, there are several pools per device to manage SYCL * queue, and a device&#39;s pool is lazily created. * * There are two pools per device. The first pool contains \&#34;normal priority\&#34; * queues. The second pool is the \&#34;high priority\&#34; queues. There are 32 queues in * per pool per device, and when a queue is requested one of these queues is * returned round-robin. That is, the first queue requested is at index 0, the * second at index 1... to index 31, then index 0 again. * * This means that if 33 queues are requested, the first and last queues * requested are actually the same queue (under the covers) and kernels enqueued * on them cannot run concurrently. * * It is safe to enqueue a kernel on the same queue from two different * threads as the SYCL specification described. */ static constexpr int max_compile_time_stream_priorities = 3; /* * This serves as a wrapper around c10::Stream and acts as a representation for * a SYCL queue, which allows asynchronous execution of XPU tasks. */ class C10_XPU_API XPUStream { public: enum Unchecked { UNCHECKED }; explicit XPUStream(Stream stream) : stream_(stream) { TORCH_CHECK(stream_.device_type() == DeviceType::XPU); } explicit XPUStream(Unchecked, Stream stream) : stream_(stream) {} bool operator==(const XPUStream&amp; other) const noexcept { return unwrap() == other.unwrap(); } bool operator!=(const XPUStream&amp; other) const noexcept { return unwrap() != other.unwrap(); } operator sycl::queue&amp;() const { return queue(); } operator sycl::queue*() const { return &amp;queue(); } operator Stream() const { return unwrap(); } DeviceType device_type() const { return DeviceType::XPU; } DeviceIndex device_index() const { return stream_.device_index(); } Device device() const { return Device(DeviceType::XPU, device_index()); } StreamId id() const { return stream_.id(); } bool query() const { return queue().ext_oneapi_empty(); } void synchronize() const { queue().wait_and_throw(); const c10::impl::PyInterpreter* interp = c10::impl::GPUTrace::get_trace(); if (C10_UNLIKELY(interp)) { (*interp)-&gt;trace_gpu_stream_synchronization( c10::kXPU, reinterpret_cast&lt;uintptr_t&gt;(&amp;queue())); } } int priority() const; sycl::queue&amp; queue() const; Stream unwrap() const { return stream_; } struct c10::StreamData3 pack3() const { return stream_.pack3(); } static XPUStream unpack3( StreamId stream_id, DeviceIndex device_index, DeviceType device_type) { return XPUStream(Stream::unpack3(stream_id, device_index, device_type)); } static std::tuple&lt;int, int&gt; priority_range() { // See Note [XPU Stream priorities] return std::make_tuple(1, -max_compile_time_stream_priorities + 2); } private: Stream strea..."
        }
    </script>
 

@@ -55,6 +55,28 @@
 <link rel="canonical" href="/api/program_listing_file_torch_csrc_api_include_torch_expanding_array.h.html" crossorigin="anonymous">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js"></script>
+<script>
+  if (window.location.hostname === 'docs.pytorch.org' || window.location.hostname === 'docs-preview.pytorch.org') {
+    const script = document.createElement('script');
+    script.src = 'https://cmp.osano.com/16A0DbT9yDNIaQkvZ/31b1b91a-e0b6-47ea-bde2-7f2bd13dbe5c/osano.js?variant=one';
+    document.head.appendChild(script);
+  }
+</script>
+<script>
+  // Cookie banner for non-LF projects.
+  document.addEventListener('DOMContentLoaded', function() {
+    // Hide cookie banner on local environments
+    if (window.location.hostname === 'localhost' ||
+        window.location.hostname === '0.0.0.0' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.startsWith('192.168.')) {
+      const banner = document.querySelector('.cookie-banner-wrapper');
+      if (banner) {
+        banner.style.display = 'none';
+      }
+    }
+  });
+</script>
 <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" crossorigin="anonymous">
 <script type="text/javascript" src="../_static/js/theme.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1402,21 +1424,17 @@ document.write(`
 
 
        </div>
-
-  <div class="cookie-banner-wrapper">
-  <div class="container">
-    <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
-    <img class="close-button" src="../_static/img/pytorch-x.svg">
-  </div>
-</div>
  </footer>
-   
-  <footer class="bd-footer"><div class="cookie-banner-wrapper">
+
+<div class="cookie-banner-wrapper">
   <div class="container">
     <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
     <img class="close-button" src="../_static/img/pytorch-x.svg">
   </div>
 </div>
+
+   
+  <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
   
     <div class="footer-items__start">
@@ -1461,18 +1479,20 @@ document.write(`
          "@type": "Article",
          "headline": "Program Listing for File expanding_array.h",
          "description": "PyTorch Documentation. Explore PyTorch, an open-source machine learning library that accelerates the path from research prototyping to production deployment. Discover tutorials, API references, and guides to help you build and deploy deep learning models efficiently.",
+         "url": "/api/program_listing_file_torch_csrc_api_include_torch_expanding_array.h.html",
          "author": {
            "@type": "Organization",
-           "name": "PyTorch Contributors"
+           "name": "PyTorch Contributors",
+           "url": "https://pytorch.org"
          },
          "image": "../_static/img/pytorch_seo.png",
          "mainEntityOfPage": {
            "@type": "WebPage",
            "@id": "/api/program_listing_file_torch_csrc_api_include_torch_expanding_array.h.html"
          },
-         "datePublished": "",
+        "datePublished": "",
          "dateModified": "",
-         "articleBody": "Program Listing for File expanding_array.h# ↰ Return to documentation for file (torch/csrc/api/include/torch/expanding_array.h) #pragma once #include &lt;c10/util/ArrayRef.h&gt; #include &lt;c10/util/Exception.h&gt; #include &lt;c10/util/irange.h&gt; #include &lt;optional&gt; #include &lt;algorithm&gt; #include &lt;array&gt; #include &lt;cstdint&gt; #include &lt;initializer_list&gt; #include &lt;string&gt; #include &lt;vector&gt; namespace torch { template &lt;size_t D, typename T = int64_t&gt; class ExpandingArray { public: /*implicit*/ ExpandingArray(std::initializer_list&lt;T&gt; list) : ExpandingArray(c10::ArrayRef&lt;T&gt;(list)) {} /*implicit*/ ExpandingArray(std::vector&lt;T&gt; vec) : ExpandingArray(c10::ArrayRef&lt;T&gt;(vec)) {} /*implicit*/ ExpandingArray(c10::ArrayRef&lt;T&gt; values) { // clang-format off TORCH_CHECK( values.size() == D, &#34;Expected &#34;, D, &#34; values, but instead got &#34;, values.size()); // clang-format on std::copy(values.begin(), values.end(), values_.begin()); } /*implicit*/ ExpandingArray(T single_size) { values_.fill(single_size); } /*implicit*/ ExpandingArray(const std::array&lt;T, D&gt;&amp; values) : values_(values) {} std::array&lt;T, D&gt;&amp; operator*() { return values_; } const std::array&lt;T, D&gt;&amp; operator*() const { return values_; } std::array&lt;T, D&gt;* operator-&gt;() { return &amp;values_; } const std::array&lt;T, D&gt;* operator-&gt;() const { return &amp;values_; } operator c10::ArrayRef&lt;T&gt;() const { return values_; } size_t size() const noexcept { return D; } protected: // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes) std::array&lt;T, D&gt; values_; }; template &lt;size_t D, typename T&gt; std::ostream&amp; operator&lt;&lt;( std::ostream&amp; stream, const ExpandingArray&lt;D, T&gt;&amp; expanding_array) { if (expanding_array.size() == 1) { return stream &lt;&lt; expanding_array-&gt;at(0); } return stream &lt;&lt; static_cast&lt;c10::ArrayRef&lt;T&gt;&gt;(expanding_array); } template &lt;size_t D, typename T = int64_t&gt; class ExpandingArrayWithOptionalElem : public ExpandingArray&lt;D, std::optional&lt;T&gt;&gt; { public: using ExpandingArray&lt;D, std::optional&lt;T&gt;&gt;::ExpandingArray; /*implicit*/ ExpandingArrayWithOptionalElem(std::initializer_list&lt;T&gt; list) : ExpandingArrayWithOptionalElem(c10::ArrayRef&lt;T&gt;(list)) {} /*implicit*/ ExpandingArrayWithOptionalElem(std::vector&lt;T&gt; vec) : ExpandingArrayWithOptionalElem(c10::ArrayRef&lt;T&gt;(vec)) {} /*implicit*/ ExpandingArrayWithOptionalElem(c10::ArrayRef&lt;T&gt; values) : ExpandingArray&lt;D, std::optional&lt;T&gt;&gt;(0) { // clang-format off TORCH_CHECK( values.size() == D, &#34;Expected &#34;, D, &#34; values, but instead got &#34;, values.size()); // clang-format on for (const auto i : c10::irange(this-&gt;values_.size())) { this-&gt;values_[i] = values[i]; } } /*implicit*/ ExpandingArrayWithOptionalElem(T single_size) : ExpandingArray&lt;D, std::optional&lt;T&gt;&gt;(0) { for (const auto i : c10::irange(this-&gt;values_.size())) { this-&gt;values_[i] = single_size; } } /*implicit*/ ExpandingArrayWithOptionalElem(const std::array&lt;T, D&gt;&amp; values) : ExpandingArray&lt;D, std::optional&lt;T&gt;&gt;(0) { for (const auto i : c10::irange(this-&gt;values_.size())) { this-&gt;values_[i] = values[i]; } } }; template &lt;size_t D, typena..."
+         "articleBody": "Program Listing for File expanding_array.h# ↰ Return to documentation for file (torch/csrc/api/include/torch/expanding_array.h) #pragma once #include &lt;c10/util/ArrayRef.h&gt; #include &lt;c10/util/Exception.h&gt; #include &lt;c10/util/irange.h&gt; #include &lt;optional&gt; #include &lt;algorithm&gt; #include &lt;array&gt; #include &lt;cstdint&gt; #include &lt;initializer_list&gt; #include &lt;string&gt; #include &lt;vector&gt; namespace torch { template &lt;size_t D, typename T = int64_t&gt; class ExpandingArray { public: /*implicit*/ ExpandingArray(std::initializer_list&lt;T&gt; list) : ExpandingArray(c10::ArrayRef&lt;T&gt;(list)) {} /*implicit*/ ExpandingArray(std::vector&lt;T&gt; vec) : ExpandingArray(c10::ArrayRef&lt;T&gt;(vec)) {} /*implicit*/ ExpandingArray(c10::ArrayRef&lt;T&gt; values) { // clang-format off TORCH_CHECK( values.size() == D, \&#34;Expected \&#34;, D, \&#34; values, but instead got \&#34;, values.size()); // clang-format on std::copy(values.begin(), values.end(), values_.begin()); } /*implicit*/ ExpandingArray(T single_size) { values_.fill(single_size); } /*implicit*/ ExpandingArray(const std::array&lt;T, D&gt;&amp; values) : values_(values) {} std::array&lt;T, D&gt;&amp; operator*() { return values_; } const std::array&lt;T, D&gt;&amp; operator*() const { return values_; } std::array&lt;T, D&gt;* operator-&gt;() { return &amp;values_; } const std::array&lt;T, D&gt;* operator-&gt;() const { return &amp;values_; } operator c10::ArrayRef&lt;T&gt;() const { return values_; } size_t size() const noexcept { return D; } protected: // NOLINTNEXTLINE(cppcoreguidelines-non-private-member-variables-in-classes) std::array&lt;T, D&gt; values_; }; template &lt;size_t D, typename T&gt; std::ostream&amp; operator&lt;&lt;( std::ostream&amp; stream, const ExpandingArray&lt;D, T&gt;&amp; expanding_array) { if (expanding_array.size() == 1) { return stream &lt;&lt; expanding_array-&gt;at(0); } return stream &lt;&lt; static_cast&lt;c10::ArrayRef&lt;T&gt;&gt;(expanding_array); } template &lt;size_t D, typename T = int64_t&gt; class ExpandingArrayWithOptionalElem : public ExpandingArray&lt;D, std::optional&lt;T&gt;&gt; { public: using ExpandingArray&lt;D, std::optional&lt;T&gt;&gt;::ExpandingArray; /*implicit*/ ExpandingArrayWithOptionalElem(std::initializer_list&lt;T&gt; list) : ExpandingArrayWithOptionalElem(c10::ArrayRef&lt;T&gt;(list)) {} /*implicit*/ ExpandingArrayWithOptionalElem(std::vector&lt;T&gt; vec) : ExpandingArrayWithOptionalElem(c10::ArrayRef&lt;T&gt;(vec)) {} /*implicit*/ ExpandingArrayWithOptionalElem(c10::ArrayRef&lt;T&gt; values) : ExpandingArray&lt;D, std::optional&lt;T&gt;&gt;(0) { // clang-format off TORCH_CHECK( values.size() == D, \&#34;Expected \&#34;, D, \&#34; values, but instead got \&#34;, values.size()); // clang-format on for (const auto i : c10::irange(this-&gt;values_.size())) { this-&gt;values_[i] = values[i]; } } /*implicit*/ ExpandingArrayWithOptionalElem(T single_size) : ExpandingArray&lt;D, std::optional&lt;T&gt;&gt;(0) { for (const auto i : c10::irange(this-&gt;values_.size())) { this-&gt;values_[i] = single_size; } } /*implicit*/ ExpandingArrayWithOptionalElem(const std::array&lt;T, D&gt;&amp; values) : ExpandingArray&lt;D, std::optional&lt;T&gt;&gt;(0) { for (const auto i : c10::irange(this-&gt;values_.size())) { this-&gt;values_[i] = values[i]; } } }; template &lt;size_t D, typena..."
        }
    </script>
 

@@ -57,6 +57,28 @@
 <link rel="canonical" href="/notes/inference_mode.html" crossorigin="anonymous">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js"></script>
+<script>
+  if (window.location.hostname === 'docs.pytorch.org' || window.location.hostname === 'docs-preview.pytorch.org') {
+    const script = document.createElement('script');
+    script.src = 'https://cmp.osano.com/16A0DbT9yDNIaQkvZ/31b1b91a-e0b6-47ea-bde2-7f2bd13dbe5c/osano.js?variant=one';
+    document.head.appendChild(script);
+  }
+</script>
+<script>
+  // Cookie banner for non-LF projects.
+  document.addEventListener('DOMContentLoaded', function() {
+    // Hide cookie banner on local environments
+    if (window.location.hostname === 'localhost' ||
+        window.location.hostname === '0.0.0.0' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.startsWith('192.168.')) {
+      const banner = document.querySelector('.cookie-banner-wrapper');
+      if (banner) {
+        banner.style.display = 'none';
+      }
+    }
+  });
+</script>
 <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" crossorigin="anonymous">
 <script type="text/javascript" src="../_static/js/theme.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1421,21 +1443,17 @@ for more details.</p>
 
 
        </div>
-
-  <div class="cookie-banner-wrapper">
-  <div class="container">
-    <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
-    <img class="close-button" src="../_static/img/pytorch-x.svg">
-  </div>
-</div>
  </footer>
-   
-  <footer class="bd-footer"><div class="cookie-banner-wrapper">
+
+<div class="cookie-banner-wrapper">
   <div class="container">
     <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
     <img class="close-button" src="../_static/img/pytorch-x.svg">
   </div>
 </div>
+
+   
+  <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
   
     <div class="footer-items__start">
@@ -1480,16 +1498,18 @@ for more details.</p>
          "@type": "Article",
          "headline": "Inference Mode",
          "description": "PyTorch Documentation. Explore PyTorch, an open-source machine learning library that accelerates the path from research prototyping to production deployment. Discover tutorials, API references, and guides to help you build and deploy deep learning models efficiently.",
+         "url": "/notes/inference_mode.html",
          "author": {
            "@type": "Organization",
-           "name": "PyTorch Contributors"
+           "name": "PyTorch Contributors",
+           "url": "https://pytorch.org"
          },
          "image": "../_static/img/pytorch_seo.png",
          "mainEntityOfPage": {
            "@type": "WebPage",
            "@id": "/notes/inference_mode.html"
          },
-         "datePublished": "",
+        "datePublished": "",
          "dateModified": "",
          "articleBody": "Inference Mode# c10::InferenceMode is a new RAII guard analogous to NoGradMode to be used when you are certain your operations will have no interactions with autograd (e.g. model training). Compared to NoGradMode, code run under this mode gets better performance by disabling autograd related work like view tracking and version counter bumps. However, tensors created inside c10::InferenceMode have more limitations when interacting with autograd system as well. InferenceMode can be enabled for a given block of code. Inside InferenceMode all newly allocated (non-view) tensors are marked as inference tensors. Inference tensors: do not have a version counter so an error will be raised if you try to read their version (e.g., because you saved this tensor for backward). are immutable outside InferenceMode. So an error will be raised if you try to: - mutate their data outside InferenceMode. - mutate them into requires_grad=True outside InferenceMode. To work around you can make a clone outside InferenceMode to get a normal tensor before mutating. A non-view tensor is an inference tensor if and only if it was allocated inside InferenceMode. A view tensor is an inference tensor if and only if it is a view of an inference tensor. Inside an InferenceMode block, we make the following performance guarantees: Like NoGradMode, all operations do not record grad_fn even if their inputs have requires_grad=True. This applies to both inference tensors and normal tensors. View operations on inference tensors do not do view tracking. View and non-view inference tensors are indistinguishable. Inplace operations on inference tensors are guaranteed not to do a version bump. For more implementation details of InferenceMode please see the RFC-0011-InferenceMode. Migration guide from AutoNonVariableTypeMode# In production use of PyTorch for inference workload, we have seen a proliferation of uses of the C++ guard AutoNonVariableTypeMode (now AutoDispatchBelowADInplaceOrView), which disables autograd, view tracking and version counter bumps. Unfortunately, current colloquial of this guard for inference workload is unsafe: it’s possible to use AutoNonVariableTypeMode to bypass PyTorch’s safety checks and result in silently wrong results, e.g. PyTorch throws an error when tensors saved for backwards are subsequently mutated, but mutation happens inside AutoNonVariableTypeMode will silently bypass the check and returns wrong gradient to users. When current users of AutoNonVariableTypeMode think about migrating, the following steps might help you decide the best alternatives: Users trying to run workload in inference only mode (like loading a pretrained JIT model and run inference in C++ runtime) should add c10::InferenceMode guard to guard all operations on tensors (including model loading). See an inference workload example below: c10::InferenceMode guard; model.load_jit(saved_model); auto inputs = preprocess_tensors(data); auto out = model.forward(inputs); auto outputs = po..."
        }

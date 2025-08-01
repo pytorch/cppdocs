@@ -55,6 +55,28 @@
 <link rel="canonical" href="/api/program_listing_file_torch_csrc_api_include_torch_nn_utils_rnn.h.html" crossorigin="anonymous">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js"></script>
+<script>
+  if (window.location.hostname === 'docs.pytorch.org' || window.location.hostname === 'docs-preview.pytorch.org') {
+    const script = document.createElement('script');
+    script.src = 'https://cmp.osano.com/16A0DbT9yDNIaQkvZ/31b1b91a-e0b6-47ea-bde2-7f2bd13dbe5c/osano.js?variant=one';
+    document.head.appendChild(script);
+  }
+</script>
+<script>
+  // Cookie banner for non-LF projects.
+  document.addEventListener('DOMContentLoaded', function() {
+    // Hide cookie banner on local environments
+    if (window.location.hostname === 'localhost' ||
+        window.location.hostname === '0.0.0.0' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.startsWith('192.168.')) {
+      const banner = document.querySelector('.cookie-banner-wrapper');
+      if (banner) {
+        banner.style.display = 'none';
+      }
+    }
+  });
+</script>
 <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" crossorigin="anonymous">
 <script type="text/javascript" src="../_static/js/theme.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1472,21 +1494,17 @@ document.write(`
 
 
        </div>
-
-  <div class="cookie-banner-wrapper">
-  <div class="container">
-    <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
-    <img class="close-button" src="../_static/img/pytorch-x.svg">
-  </div>
-</div>
  </footer>
-   
-  <footer class="bd-footer"><div class="cookie-banner-wrapper">
+
+<div class="cookie-banner-wrapper">
   <div class="container">
     <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
     <img class="close-button" src="../_static/img/pytorch-x.svg">
   </div>
 </div>
+
+   
+  <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
   
     <div class="footer-items__start">
@@ -1531,18 +1549,20 @@ document.write(`
          "@type": "Article",
          "headline": "Program Listing for File rnn.h",
          "description": "PyTorch Documentation. Explore PyTorch, an open-source machine learning library that accelerates the path from research prototyping to production deployment. Discover tutorials, API references, and guides to help you build and deploy deep learning models efficiently.",
+         "url": "/api/program_listing_file_torch_csrc_api_include_torch_nn_utils_rnn.h.html",
          "author": {
            "@type": "Organization",
-           "name": "PyTorch Contributors"
+           "name": "PyTorch Contributors",
+           "url": "https://pytorch.org"
          },
          "image": "../_static/img/pytorch_seo.png",
          "mainEntityOfPage": {
            "@type": "WebPage",
            "@id": "/api/program_listing_file_torch_csrc_api_include_torch_nn_utils_rnn.h.html"
          },
-         "datePublished": "",
+        "datePublished": "",
          "dateModified": "",
-         "articleBody": "Program Listing for File rnn.h# ↰ Return to documentation for file (torch/csrc/api/include/torch/nn/utils/rnn.h) #pragma once #include &lt;c10/util/irange.h&gt; #include &lt;torch/types.h&gt; #include &lt;utility&gt; namespace torch::nn::utils::rnn { inline Tensor invert_permutation(const Tensor&amp; permutation) { if (!permutation.defined()) { return torch::Tensor(); } Tensor output = torch::empty_like(permutation, torch::MemoryFormat::Contiguous); output.scatter_( 0, permutation, torch::arange(0, permutation.numel(), permutation.device())); return output; } class PackedSequence { public: explicit PackedSequence( Tensor data, Tensor batch_sizes, Tensor sorted_indices = {}, Tensor unsorted_indices = {}) { // NB: if unsorted_indices is provided, it should be the inverse permutation // to sorted_indices. Don&#39;t assert it here because the PackedSequence ctor // should only be used internally. if (!unsorted_indices.defined()) { unsorted_indices = invert_permutation(sorted_indices); } TORCH_CHECK( batch_sizes.device().type() == kCPU, &#34;batch_sizes should always be on CPU. &#34; &#34;Instances of PackedSequence should never be created manually. &#34; &#34;They should be instantiated by functions like pack_sequence &#34; &#34;and pack_padded_sequences in nn::utils::rnn. &#34; &#34;https://pytorch.org/docs/stable/nn.html#torch.nn.utils.rnn.pack_sequence&#34;); data_ = std::move(data); batch_sizes_ = std::move(batch_sizes); sorted_indices_ = std::move(sorted_indices); unsorted_indices_ = std::move(unsorted_indices); } const Tensor&amp; data() const { return data_; } const Tensor&amp; batch_sizes() const { return batch_sizes_; } const Tensor&amp; sorted_indices() const { return sorted_indices_; } const Tensor&amp; unsorted_indices() const { return unsorted_indices_; } PackedSequence pin_memory() const { // Why not convert `batch_sizes`? // See NOTE [ device and dtype of a PackedSequence ] return PackedSequence( data_.pin_memory(), batch_sizes_, sorted_indices_.defined() ? sorted_indices_.pin_memory() : Tensor(), unsorted_indices_.defined() ? unsorted_indices_.pin_memory() : Tensor()); } PackedSequence to(TensorOptions options) const { // Performs dtype and/or device conversion on `data_`. // // If the ``data_`` Tensor already has the correct `torch::Dtype` // and `torch::Device`, then ``self`` is returned. // Otherwise, returns a copy with the desired configuration. // Why not convert `batch_sizes`? // See NOTE [ device and dtype of a PackedSequence ] Tensor data = data_.to(options); if (data.is_same(data_)) { return *this; } else { // Does not forward device or dtype args, device is set from data.device() Tensor sorted_indices = sorted_indices_.defined() ? sorted_indices_.to( options.device(data.device()).dtype(sorted_indices_.dtype())) : Tensor(); Tensor unsorted_indices = unsorted_indices_.defined() ? unsorted_indices_.to( options.device(data.device()).dtype(unsorted_indices_.dtype())) : Tensor(); return PackedSequence( std::move(data), batch_sizes_, std::move(sorted_indices), std::move(unsorted_indices)); } } PackedSequence..."
+         "articleBody": "Program Listing for File rnn.h# ↰ Return to documentation for file (torch/csrc/api/include/torch/nn/utils/rnn.h) #pragma once #include &lt;c10/util/irange.h&gt; #include &lt;torch/types.h&gt; #include &lt;utility&gt; namespace torch::nn::utils::rnn { inline Tensor invert_permutation(const Tensor&amp; permutation) { if (!permutation.defined()) { return torch::Tensor(); } Tensor output = torch::empty_like(permutation, torch::MemoryFormat::Contiguous); output.scatter_( 0, permutation, torch::arange(0, permutation.numel(), permutation.device())); return output; } class PackedSequence { public: explicit PackedSequence( Tensor data, Tensor batch_sizes, Tensor sorted_indices = {}, Tensor unsorted_indices = {}) { // NB: if unsorted_indices is provided, it should be the inverse permutation // to sorted_indices. Don&#39;t assert it here because the PackedSequence ctor // should only be used internally. if (!unsorted_indices.defined()) { unsorted_indices = invert_permutation(sorted_indices); } TORCH_CHECK( batch_sizes.device().type() == kCPU, \&#34;batch_sizes should always be on CPU. \&#34; \&#34;Instances of PackedSequence should never be created manually. \&#34; \&#34;They should be instantiated by functions like pack_sequence \&#34; \&#34;and pack_padded_sequences in nn::utils::rnn. \&#34; \&#34;https://pytorch.org/docs/stable/nn.html#torch.nn.utils.rnn.pack_sequence\&#34;); data_ = std::move(data); batch_sizes_ = std::move(batch_sizes); sorted_indices_ = std::move(sorted_indices); unsorted_indices_ = std::move(unsorted_indices); } const Tensor&amp; data() const { return data_; } const Tensor&amp; batch_sizes() const { return batch_sizes_; } const Tensor&amp; sorted_indices() const { return sorted_indices_; } const Tensor&amp; unsorted_indices() const { return unsorted_indices_; } PackedSequence pin_memory() const { // Why not convert `batch_sizes`? // See NOTE [ device and dtype of a PackedSequence ] return PackedSequence( data_.pin_memory(), batch_sizes_, sorted_indices_.defined() ? sorted_indices_.pin_memory() : Tensor(), unsorted_indices_.defined() ? unsorted_indices_.pin_memory() : Tensor()); } PackedSequence to(TensorOptions options) const { // Performs dtype and/or device conversion on `data_`. // // If the ``data_`` Tensor already has the correct `torch::Dtype` // and `torch::Device`, then ``self`` is returned. // Otherwise, returns a copy with the desired configuration. // Why not convert `batch_sizes`? // See NOTE [ device and dtype of a PackedSequence ] Tensor data = data_.to(options); if (data.is_same(data_)) { return *this; } else { // Does not forward device or dtype args, device is set from data.device() Tensor sorted_indices = sorted_indices_.defined() ? sorted_indices_.to( options.device(data.device()).dtype(sorted_indices_.dtype())) : Tensor(); Tensor unsorted_indices = unsorted_indices_.defined() ? unsorted_indices_.to( options.device(data.device()).dtype(unsorted_indices_.dtype())) : Tensor(); return PackedSequence( std::move(data), batch_sizes_, std::move(sorted_indices), std::move(unsorted_indices)); } } PackedSequence..."
        }
    </script>
 

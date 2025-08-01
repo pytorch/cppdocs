@@ -55,6 +55,28 @@
 <link rel="canonical" href="/api/program_listing_file_torch_csrc_api_include_torch_nn_modules_container_moduledict.h.html" crossorigin="anonymous">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js"></script>
+<script>
+  if (window.location.hostname === 'docs.pytorch.org' || window.location.hostname === 'docs-preview.pytorch.org') {
+    const script = document.createElement('script');
+    script.src = 'https://cmp.osano.com/16A0DbT9yDNIaQkvZ/31b1b91a-e0b6-47ea-bde2-7f2bd13dbe5c/osano.js?variant=one';
+    document.head.appendChild(script);
+  }
+</script>
+<script>
+  // Cookie banner for non-LF projects.
+  document.addEventListener('DOMContentLoaded', function() {
+    // Hide cookie banner on local environments
+    if (window.location.hostname === 'localhost' ||
+        window.location.hostname === '0.0.0.0' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.startsWith('192.168.')) {
+      const banner = document.querySelector('.cookie-banner-wrapper');
+      if (banner) {
+        banner.style.display = 'none';
+      }
+    }
+  });
+</script>
 <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" crossorigin="anonymous">
 <script type="text/javascript" src="../_static/js/theme.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1428,21 +1450,17 @@ document.write(`
 
 
        </div>
-
-  <div class="cookie-banner-wrapper">
-  <div class="container">
-    <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
-    <img class="close-button" src="../_static/img/pytorch-x.svg">
-  </div>
-</div>
  </footer>
-   
-  <footer class="bd-footer"><div class="cookie-banner-wrapper">
+
+<div class="cookie-banner-wrapper">
   <div class="container">
     <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
     <img class="close-button" src="../_static/img/pytorch-x.svg">
   </div>
 </div>
+
+   
+  <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
   
     <div class="footer-items__start">
@@ -1487,18 +1505,20 @@ document.write(`
          "@type": "Article",
          "headline": "Program Listing for File moduledict.h",
          "description": "PyTorch Documentation. Explore PyTorch, an open-source machine learning library that accelerates the path from research prototyping to production deployment. Discover tutorials, API references, and guides to help you build and deploy deep learning models efficiently.",
+         "url": "/api/program_listing_file_torch_csrc_api_include_torch_nn_modules_container_moduledict.h.html",
          "author": {
            "@type": "Organization",
-           "name": "PyTorch Contributors"
+           "name": "PyTorch Contributors",
+           "url": "https://pytorch.org"
          },
          "image": "../_static/img/pytorch_seo.png",
          "mainEntityOfPage": {
            "@type": "WebPage",
            "@id": "/api/program_listing_file_torch_csrc_api_include_torch_nn_modules_container_moduledict.h.html"
          },
-         "datePublished": "",
+        "datePublished": "",
          "dateModified": "",
-         "articleBody": "Program Listing for File moduledict.h# ↰ Return to documentation for file (torch/csrc/api/include/torch/nn/modules/container/moduledict.h) #pragma once #include &lt;torch/nn/cloneable.h&gt; #include &lt;torch/nn/module.h&gt; #include &lt;torch/ordered_dict.h&gt; #include &lt;vector&gt; namespace torch::nn { class ModuleDictImpl : public Cloneable&lt;ModuleDictImpl&gt; { public: using Iterator = torch::OrderedDict&lt;std::string, std::shared_ptr&lt;Module&gt;&gt;::Iterator; using ConstIterator = torch::OrderedDict&lt;std::string, std::shared_ptr&lt;Module&gt;&gt;::ConstIterator; ModuleDictImpl() = default; explicit ModuleDictImpl( const std::vector&lt;std::pair&lt;std::string, std::shared_ptr&lt;Module&gt;&gt;&gt;&amp; modules) { update(modules); } explicit ModuleDictImpl( const torch::OrderedDict&lt;std::string, std::shared_ptr&lt;Module&gt;&gt;&amp; modules) { update(modules); } std::vector&lt;std::pair&lt;std::string, std::shared_ptr&lt;Module&gt;&gt;&gt; items() const { return modules_.pairs(); } std::vector&lt;std::string&gt; keys() const { return modules_.keys(); } std::vector&lt;std::shared_ptr&lt;Module&gt;&gt; values() const { return modules_.values(); } Iterator begin() { return modules_.begin(); } ConstIterator begin() const { return modules_.begin(); } Iterator end() { return modules_.end(); } ConstIterator end() const { return modules_.end(); } size_t size() const noexcept { return modules_.size(); } bool empty() const noexcept { return modules_.is_empty(); } bool contains(const std::string&amp; key) const noexcept { return modules_.contains(key); } void clear() { // Not remove the registration of modules to make it consistent with python // version. modules_.clear(); } std::shared_ptr&lt;Module&gt; clone( const std::optional&lt;Device&gt;&amp; device = std::nullopt) const override { auto clone = std::make_shared&lt;ModuleDictImpl&gt;(); for (const auto&amp; module : modules_) { clone-&gt;insert(module.key(), module.value()-&gt;clone(device)); } return clone; } void reset() override {} void pretty_print(std::ostream&amp; stream) const override { stream &lt;&lt; &#34;torch::nn::ModuleDict&#34;; } std::shared_ptr&lt;Module&gt; operator[](const std::string&amp; key) const { return modules_[key]; } template &lt;typename T&gt; T&amp; at(const std::string&amp; key) { static_assert( torch::detail::is_module&lt;T&gt;::value, &#34;Can only call ModuleList::at with an nn::Module type&#34;); auto module = modules_[key]-&gt;as&lt;T&gt;(); TORCH_CHECK( module, &#34;Unable to cast module[&#34;, key, &#34;] to &#34;, c10::demangle(typeid(T).name())); return *module; } template &lt;typename T&gt; const T&amp; at(const std::string&amp; key) const { static_assert( torch::detail::is_module&lt;T&gt;::value, &#34;Can only call ModuleList::at with an nn::Module type&#34;); const auto module = modules_[key]-&gt;as&lt;T&gt;(); TORCH_CHECK( module, &#34;Unable to cast module[&#34;, key, &#34;] to &#34;, c10::demangle(typeid(T).name())); return *module; } std::shared_ptr&lt;Module&gt; pop(const std::string&amp; key) { auto module = modules_[key]; modules_.erase(key); // Not remove the registration of the module to make it consistent with // python version. return module; } void update( const std::vector&lt;std::pair&lt;std::string, std::shared_ptr&lt;Module&gt;&gt;&gt;&amp; module..."
+         "articleBody": "Program Listing for File moduledict.h# ↰ Return to documentation for file (torch/csrc/api/include/torch/nn/modules/container/moduledict.h) #pragma once #include &lt;torch/nn/cloneable.h&gt; #include &lt;torch/nn/module.h&gt; #include &lt;torch/ordered_dict.h&gt; #include &lt;vector&gt; namespace torch::nn { class ModuleDictImpl : public Cloneable&lt;ModuleDictImpl&gt; { public: using Iterator = torch::OrderedDict&lt;std::string, std::shared_ptr&lt;Module&gt;&gt;::Iterator; using ConstIterator = torch::OrderedDict&lt;std::string, std::shared_ptr&lt;Module&gt;&gt;::ConstIterator; ModuleDictImpl() = default; explicit ModuleDictImpl( const std::vector&lt;std::pair&lt;std::string, std::shared_ptr&lt;Module&gt;&gt;&gt;&amp; modules) { update(modules); } explicit ModuleDictImpl( const torch::OrderedDict&lt;std::string, std::shared_ptr&lt;Module&gt;&gt;&amp; modules) { update(modules); } std::vector&lt;std::pair&lt;std::string, std::shared_ptr&lt;Module&gt;&gt;&gt; items() const { return modules_.pairs(); } std::vector&lt;std::string&gt; keys() const { return modules_.keys(); } std::vector&lt;std::shared_ptr&lt;Module&gt;&gt; values() const { return modules_.values(); } Iterator begin() { return modules_.begin(); } ConstIterator begin() const { return modules_.begin(); } Iterator end() { return modules_.end(); } ConstIterator end() const { return modules_.end(); } size_t size() const noexcept { return modules_.size(); } bool empty() const noexcept { return modules_.is_empty(); } bool contains(const std::string&amp; key) const noexcept { return modules_.contains(key); } void clear() { // Not remove the registration of modules to make it consistent with python // version. modules_.clear(); } std::shared_ptr&lt;Module&gt; clone( const std::optional&lt;Device&gt;&amp; device = std::nullopt) const override { auto clone = std::make_shared&lt;ModuleDictImpl&gt;(); for (const auto&amp; module : modules_) { clone-&gt;insert(module.key(), module.value()-&gt;clone(device)); } return clone; } void reset() override {} void pretty_print(std::ostream&amp; stream) const override { stream &lt;&lt; \&#34;torch::nn::ModuleDict\&#34;; } std::shared_ptr&lt;Module&gt; operator[](const std::string&amp; key) const { return modules_[key]; } template &lt;typename T&gt; T&amp; at(const std::string&amp; key) { static_assert( torch::detail::is_module&lt;T&gt;::value, \&#34;Can only call ModuleList::at with an nn::Module type\&#34;); auto module = modules_[key]-&gt;as&lt;T&gt;(); TORCH_CHECK( module, \&#34;Unable to cast module[\&#34;, key, \&#34;] to \&#34;, c10::demangle(typeid(T).name())); return *module; } template &lt;typename T&gt; const T&amp; at(const std::string&amp; key) const { static_assert( torch::detail::is_module&lt;T&gt;::value, \&#34;Can only call ModuleList::at with an nn::Module type\&#34;); const auto module = modules_[key]-&gt;as&lt;T&gt;(); TORCH_CHECK( module, \&#34;Unable to cast module[\&#34;, key, \&#34;] to \&#34;, c10::demangle(typeid(T).name())); return *module; } std::shared_ptr&lt;Module&gt; pop(const std::string&amp; key) { auto module = modules_[key]; modules_.erase(key); // Not remove the registration of the module to make it consistent with // python version. return module; } void update( const std::vector&lt;std::pair&lt;std::string, std::shared_ptr&lt;Module&gt;&gt;&gt;&amp; module..."
        }
    </script>
 

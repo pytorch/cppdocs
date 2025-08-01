@@ -55,6 +55,28 @@
 <link rel="canonical" href="/api/program_listing_file_torch_library.h.html" crossorigin="anonymous">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js"></script>
+<script>
+  if (window.location.hostname === 'docs.pytorch.org' || window.location.hostname === 'docs-preview.pytorch.org') {
+    const script = document.createElement('script');
+    script.src = 'https://cmp.osano.com/16A0DbT9yDNIaQkvZ/31b1b91a-e0b6-47ea-bde2-7f2bd13dbe5c/osano.js?variant=one';
+    document.head.appendChild(script);
+  }
+</script>
+<script>
+  // Cookie banner for non-LF projects.
+  document.addEventListener('DOMContentLoaded', function() {
+    // Hide cookie banner on local environments
+    if (window.location.hostname === 'localhost' ||
+        window.location.hostname === '0.0.0.0' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.startsWith('192.168.')) {
+      const banner = document.querySelector('.cookie-banner-wrapper');
+      if (banner) {
+        banner.style.display = 'none';
+      }
+    }
+  });
+</script>
 <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" crossorigin="anonymous">
 <script type="text/javascript" src="../_static/js/theme.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -2046,21 +2068,17 @@ document.write(`
 
 
        </div>
-
-  <div class="cookie-banner-wrapper">
-  <div class="container">
-    <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
-    <img class="close-button" src="../_static/img/pytorch-x.svg">
-  </div>
-</div>
  </footer>
-   
-  <footer class="bd-footer"><div class="cookie-banner-wrapper">
+
+<div class="cookie-banner-wrapper">
   <div class="container">
     <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
     <img class="close-button" src="../_static/img/pytorch-x.svg">
   </div>
 </div>
+
+   
+  <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
   
     <div class="footer-items__start">
@@ -2105,18 +2123,20 @@ document.write(`
          "@type": "Article",
          "headline": "Program Listing for File library.h",
          "description": "PyTorch Documentation. Explore PyTorch, an open-source machine learning library that accelerates the path from research prototyping to production deployment. Discover tutorials, API references, and guides to help you build and deploy deep learning models efficiently.",
+         "url": "/api/program_listing_file_torch_library.h.html",
          "author": {
            "@type": "Organization",
-           "name": "PyTorch Contributors"
+           "name": "PyTorch Contributors",
+           "url": "https://pytorch.org"
          },
          "image": "../_static/img/pytorch_seo.png",
          "mainEntityOfPage": {
            "@type": "WebPage",
            "@id": "/api/program_listing_file_torch_library.h.html"
          },
-         "datePublished": "",
+        "datePublished": "",
          "dateModified": "",
-         "articleBody": "Program Listing for File library.h# ↰ Return to documentation for file (torch/library.h) // m is a torch::Library; methods on it will define // operators in the myops namespace m.def(&#34;add&#34;, add_impl); } m.fallback(xla_fallback); } // m is a torch::Library; methods on it will define // CPU implementations of operators in the myops namespace. // It is NOT valid to call torch::Library::def() // in this context. m.impl(&#34;add&#34;, add_cpu_impl); } // You must define all of the operators for this library in // this namespace. TORCH_LIBRARY(myops, m) { // Define a operator with exactly one implementation for all backends. m.def(&#34;add(Tensor self, Tensor other) -&gt; Tensor&#34;, &amp;add_impl); // Define a schema for an operator, but provide no implementation // (use this syntax if you want to use the dispatcher) m.def(&#34;mul(Tensor self, Tensor other) -&gt; Tensor&#34;); // Provide an implementation for a defined operator (you can // provide multiple; one per backend). The dispatcher takes care of // calling the correct implementation depending on if we get a CPU // tensor or a CUDA tensor m.impl(&#34;mul&#34;, torch::kCPU, &amp;mul_cpu_impl); m.impl(&#34;mul&#34;, torch::kCUDA, &amp;mul_cuda_impl); } // Define implementations for operators for a non-standard backend, // e.g., XLA (valid values are entries of DispatchKey). This can // be used to define operators in a different file than the initial // TORCH_LIBRARY definition (e.g., if it is in an external library) TORCH_LIBRARY_IMPL(myops, XLA, m) { m.impl(&#34;mul&#34;, &amp;mul_xla_impl); } #pragma once #include &lt;ATen/core/op_registration/infer_schema.h&gt; #include &lt;ATen/core/op_registration/op_allowlist.h&gt; #include &lt;ATen/core/dispatch/Dispatcher.h&gt; #include &lt;c10/core/DispatchKey.h&gt; #include &lt;torch/csrc/jit/frontend/function_schema_parser.h&gt; // Just for inferFunctionSchemaFromFunctor #include &lt;ATen/core/enum_tag.h&gt; #include &lt;ATen/core/op_registration/op_registration.h&gt; namespace torch { #if defined C10_MOBILE struct NoInferSchemaTag {}; #endif #define HAS_PT2_COMPLIANT_TAG // For multipy/torchdeploy use case // codespell:ignore multipy enum class _RegisterOrVerify { REGISTER, VERIFY }; template &lt;class CurClass&gt; class class_; #define HAS_IMPL_ABSTRACT_PYSTUB class TORCH_API CppFunction final { // TODO: This is morally the same thing as KernelRegistrationConfig, but it&#39;s // opaque to the user. public: template &lt;typename Func&gt; explicit CppFunction( Func* f, std::enable_if_t&lt; c10::guts::is_function_type&lt;Func&gt;::value, std::nullptr_t&gt; = nullptr) : func_(c10::KernelFunction::makeFromUnboxedRuntimeFunction(f)), cpp_signature_(c10::impl::CppSignature::make&lt;Func&gt;()), schema_( c10::detail::inferFunctionSchemaFromFunctor&lt;std::decay_t&lt;Func&gt;&gt;()) {} template &lt;typename FuncPtr&gt; explicit CppFunction( FuncPtr f, std::enable_if_t&lt; c10::is_compile_time_function_pointer&lt;FuncPtr&gt;::value, std::nullptr_t&gt; = nullptr) : func_(c10::KernelFunction::makeFromUnboxedFunction(f)), cpp_signature_( c10::impl::CppSignature::make&lt;typename FuncPtr::FuncType&gt;()), schema_(c10::detail::inferFuncti..."
+         "articleBody": "Program Listing for File library.h# ↰ Return to documentation for file (torch/library.h) // m is a torch::Library; methods on it will define // operators in the myops namespace m.def(\&#34;add\&#34;, add_impl); } m.fallback(xla_fallback); } // m is a torch::Library; methods on it will define // CPU implementations of operators in the myops namespace. // It is NOT valid to call torch::Library::def() // in this context. m.impl(\&#34;add\&#34;, add_cpu_impl); } // You must define all of the operators for this library in // this namespace. TORCH_LIBRARY(myops, m) { // Define a operator with exactly one implementation for all backends. m.def(\&#34;add(Tensor self, Tensor other) -&gt; Tensor\&#34;, &amp;add_impl); // Define a schema for an operator, but provide no implementation // (use this syntax if you want to use the dispatcher) m.def(\&#34;mul(Tensor self, Tensor other) -&gt; Tensor\&#34;); // Provide an implementation for a defined operator (you can // provide multiple; one per backend). The dispatcher takes care of // calling the correct implementation depending on if we get a CPU // tensor or a CUDA tensor m.impl(\&#34;mul\&#34;, torch::kCPU, &amp;mul_cpu_impl); m.impl(\&#34;mul\&#34;, torch::kCUDA, &amp;mul_cuda_impl); } // Define implementations for operators for a non-standard backend, // e.g., XLA (valid values are entries of DispatchKey). This can // be used to define operators in a different file than the initial // TORCH_LIBRARY definition (e.g., if it is in an external library) TORCH_LIBRARY_IMPL(myops, XLA, m) { m.impl(\&#34;mul\&#34;, &amp;mul_xla_impl); } #pragma once #include &lt;ATen/core/op_registration/infer_schema.h&gt; #include &lt;ATen/core/op_registration/op_allowlist.h&gt; #include &lt;ATen/core/dispatch/Dispatcher.h&gt; #include &lt;c10/core/DispatchKey.h&gt; #include &lt;torch/csrc/jit/frontend/function_schema_parser.h&gt; // Just for inferFunctionSchemaFromFunctor #include &lt;ATen/core/enum_tag.h&gt; #include &lt;ATen/core/op_registration/op_registration.h&gt; namespace torch { #if defined C10_MOBILE struct NoInferSchemaTag {}; #endif #define HAS_PT2_COMPLIANT_TAG // For multipy/torchdeploy use case // codespell:ignore multipy enum class _RegisterOrVerify { REGISTER, VERIFY }; template &lt;class CurClass&gt; class class_; #define HAS_IMPL_ABSTRACT_PYSTUB class TORCH_API CppFunction final { // TODO: This is morally the same thing as KernelRegistrationConfig, but it&#39;s // opaque to the user. public: template &lt;typename Func&gt; explicit CppFunction( Func* f, std::enable_if_t&lt; c10::guts::is_function_type&lt;Func&gt;::value, std::nullptr_t&gt; = nullptr) : func_(c10::KernelFunction::makeFromUnboxedRuntimeFunction(f)), cpp_signature_(c10::impl::CppSignature::make&lt;Func&gt;()), schema_( c10::detail::inferFunctionSchemaFromFunctor&lt;std::decay_t&lt;Func&gt;&gt;()) {} template &lt;typename FuncPtr&gt; explicit CppFunction( FuncPtr f, std::enable_if_t&lt; c10::is_compile_time_function_pointer&lt;FuncPtr&gt;::value, std::nullptr_t&gt; = nullptr) : func_(c10::KernelFunction::makeFromUnboxedFunction(f)), cpp_signature_( c10::impl::CppSignature::make&lt;typename FuncPtr::FuncType&gt;()), schema_(c10::detail::inferFuncti..."
        }
    </script>
 

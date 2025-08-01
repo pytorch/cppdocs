@@ -56,6 +56,28 @@
 <link rel="canonical" href="/index.html" crossorigin="anonymous">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js"></script>
+<script>
+  if (window.location.hostname === 'docs.pytorch.org' || window.location.hostname === 'docs-preview.pytorch.org') {
+    const script = document.createElement('script');
+    script.src = 'https://cmp.osano.com/16A0DbT9yDNIaQkvZ/31b1b91a-e0b6-47ea-bde2-7f2bd13dbe5c/osano.js?variant=one';
+    document.head.appendChild(script);
+  }
+</script>
+<script>
+  // Cookie banner for non-LF projects.
+  document.addEventListener('DOMContentLoaded', function() {
+    // Hide cookie banner on local environments
+    if (window.location.hostname === 'localhost' ||
+        window.location.hostname === '0.0.0.0' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.startsWith('192.168.')) {
+      const banner = document.querySelector('.cookie-banner-wrapper');
+      if (banner) {
+        banner.style.display = 'none';
+      }
+    }
+  });
+</script>
 <link rel="stylesheet" type="text/css" href="_static/css/theme.css" crossorigin="anonymous">
 <script type="text/javascript" src="_static/js/theme.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1371,21 +1393,17 @@ We thank Stephen for his work and his efforts providing help with the PyTorch C+
 
 
        </div>
-
-  <div class="cookie-banner-wrapper">
-  <div class="container">
-    <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
-    <img class="close-button" src="_static/img/pytorch-x.svg">
-  </div>
-</div>
  </footer>
-   
-  <footer class="bd-footer"><div class="cookie-banner-wrapper">
+
+<div class="cookie-banner-wrapper">
   <div class="container">
     <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
     <img class="close-button" src="_static/img/pytorch-x.svg">
   </div>
 </div>
+
+   
+  <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
   
     <div class="footer-items__start">
@@ -1430,16 +1448,18 @@ We thank Stephen for his work and his efforts providing help with the PyTorch C+
          "@type": "Article",
          "headline": "PyTorch C++ API",
          "description": "PyTorch Documentation. Explore PyTorch, an open-source machine learning library that accelerates the path from research prototyping to production deployment. Discover tutorials, API references, and guides to help you build and deploy deep learning models efficiently.",
+         "url": "/index.html",
          "author": {
            "@type": "Organization",
-           "name": "PyTorch Contributors"
+           "name": "PyTorch Contributors",
+           "url": "https://pytorch.org"
          },
          "image": "_static/img/pytorch_seo.png",
          "mainEntityOfPage": {
            "@type": "WebPage",
            "@id": "/index.html"
          },
-         "datePublished": "",
+        "datePublished": "",
          "dateModified": "",
          "articleBody": "PyTorch C++ API# These pages provide the documentation for the public portions of the PyTorch C++ API. This API can roughly be divided into five parts: ATen: The foundational tensor and mathematical operation library on which all else is built. Autograd: Augments ATen with automatic differentiation. C++ Frontend: High level constructs for training and evaluation of machine learning models. TorchScript: An interface to the TorchScript JIT compiler and interpreter. C++ Extensions: A means of extending the Python API with custom C++ and CUDA routines. Combining, these building blocks form a research and production ready C++ library for tensor computation and dynamic neural networks with strong emphasis on GPU acceleration as well as fast CPU performance. It is currently in use at Facebook in research and production; we are looking forward to welcome more users of the PyTorch C++ API. Warning At the moment, the C++ API should be considered “beta” stability; we may make major breaking changes to the backend in order to improve the API, or in service of providing the Python interface to PyTorch, which is our most stable and best supported interface. ATen# ATen is fundamentally a tensor library, on top of which almost all other Python and C++ interfaces in PyTorch are built. It provides a core Tensor class, on which many hundreds of operations are defined. Most of these operations have both CPU and GPU implementations, to which the Tensor class will dynamically dispatch based on its type. A small example of using ATen could look as follows: #include &lt;ATen/ATen.h&gt; at::Tensor a = at::ones({2, 2}, at::kInt); at::Tensor b = at::randn({2, 2}); auto c = a + b.to(at::kInt); This Tensor class and all other symbols in ATen are found in the at:: namespace, documented here. Autograd# What we term autograd are the portions of PyTorch’s C++ API that augment the ATen Tensor class with capabilities concerning automatic differentiation. The autograd system records operations on tensors to form an autograd graph. Calling backwards() on a leaf variable in this graph performs reverse mode differentiation through the network of functions and tensors spanning the autograd graph, ultimately yielding gradients. The following example provides a taste of this interface: #include &lt;torch/csrc/autograd/variable.h&gt; #include &lt;torch/csrc/autograd/function.h&gt; torch::Tensor a = torch::ones({2, 2}, torch::requires_grad()); torch::Tensor b = torch::randn({2, 2}); auto c = a + b; c.backward(); // a.grad() will now hold the gradient of c w.r.t. a. The at::Tensor class in ATen is not differentiable by default. To add the differentiability of tensors the autograd API provides, you must use tensor factory functions from the torch:: namespace instead of the at:: namespace. For example, while a tensor created with at::ones will not be differentiable, a tensor created with torch::ones will be. C++ Frontend# The PyTorch C++ frontend provides a high level, pure C++ modeling interface for neural..."
        }

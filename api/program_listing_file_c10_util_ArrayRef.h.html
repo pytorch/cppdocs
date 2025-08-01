@@ -55,6 +55,28 @@
 <link rel="canonical" href="/api/program_listing_file_c10_util_ArrayRef.h.html" crossorigin="anonymous">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js"></script>
+<script>
+  if (window.location.hostname === 'docs.pytorch.org' || window.location.hostname === 'docs-preview.pytorch.org') {
+    const script = document.createElement('script');
+    script.src = 'https://cmp.osano.com/16A0DbT9yDNIaQkvZ/31b1b91a-e0b6-47ea-bde2-7f2bd13dbe5c/osano.js?variant=one';
+    document.head.appendChild(script);
+  }
+</script>
+<script>
+  // Cookie banner for non-LF projects.
+  document.addEventListener('DOMContentLoaded', function() {
+    // Hide cookie banner on local environments
+    if (window.location.hostname === 'localhost' ||
+        window.location.hostname === '0.0.0.0' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.startsWith('192.168.')) {
+      const banner = document.querySelector('.cookie-banner-wrapper');
+      if (banner) {
+        banner.style.display = 'none';
+      }
+    }
+  });
+</script>
 <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" crossorigin="anonymous">
 <script type="text/javascript" src="../_static/js/theme.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1582,21 +1604,17 @@ document.write(`
 
 
        </div>
-
-  <div class="cookie-banner-wrapper">
-  <div class="container">
-    <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
-    <img class="close-button" src="../_static/img/pytorch-x.svg">
-  </div>
-</div>
  </footer>
-   
-  <footer class="bd-footer"><div class="cookie-banner-wrapper">
+
+<div class="cookie-banner-wrapper">
   <div class="container">
     <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
     <img class="close-button" src="../_static/img/pytorch-x.svg">
   </div>
 </div>
+
+   
+  <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
   
     <div class="footer-items__start">
@@ -1641,18 +1659,20 @@ document.write(`
          "@type": "Article",
          "headline": "Program Listing for File ArrayRef.h",
          "description": "PyTorch Documentation. Explore PyTorch, an open-source machine learning library that accelerates the path from research prototyping to production deployment. Discover tutorials, API references, and guides to help you build and deploy deep learning models efficiently.",
+         "url": "/api/program_listing_file_c10_util_ArrayRef.h.html",
          "author": {
            "@type": "Organization",
-           "name": "PyTorch Contributors"
+           "name": "PyTorch Contributors",
+           "url": "https://pytorch.org"
          },
          "image": "../_static/img/pytorch_seo.png",
          "mainEntityOfPage": {
            "@type": "WebPage",
            "@id": "/api/program_listing_file_c10_util_ArrayRef.h.html"
          },
-         "datePublished": "",
+        "datePublished": "",
          "dateModified": "",
-         "articleBody": "Program Listing for File ArrayRef.h# ↰ Return to documentation for file (c10/util/ArrayRef.h) //===--- ArrayRef.h - Array Reference Wrapper -------------------*- C++ -*-===// // // The LLVM Compiler Infrastructure // // This file is distributed under the University of Illinois Open Source // License. See LICENSE.TXT for details. // //===----------------------------------------------------------------------===// // ATen: modified from llvm::ArrayRef. // removed llvm-specific functionality // removed some implicit const -&gt; non-const conversions that rely on // complicated std::enable_if meta-programming // removed a bunch of slice variants for simplicity... #pragma once #include &lt;c10/macros/Macros.h&gt; #include &lt;c10/util/Exception.h&gt; #include &lt;c10/util/SmallVector.h&gt; #include &lt;array&gt; #include &lt;cstddef&gt; #include &lt;cstdint&gt; #include &lt;initializer_list&gt; #include &lt;iterator&gt; #include &lt;ostream&gt; #include &lt;type_traits&gt; #include &lt;vector&gt; namespace c10 { template &lt;typename T&gt; class ArrayRef final { public: using iterator = const T*; using const_iterator = const T*; using size_type = size_t; using value_type = T; using reverse_iterator = std::reverse_iterator&lt;iterator&gt;; private: const T* Data; size_type Length; void debugCheckNullptrInvariant() { TORCH_INTERNAL_ASSERT_DEBUG_ONLY( Data != nullptr || Length == 0, &#34;created ArrayRef with nullptr and non-zero length! std::optional relies on this being illegal&#34;); } public: /* implicit */ constexpr ArrayRef() : Data(nullptr), Length(0) {} // TODO Make this explicit constexpr ArrayRef(const T&amp; OneElt) : Data(&amp;OneElt), Length(1) {} constexpr ArrayRef(const T* data, size_t length) : Data(data), Length(length) { debugCheckNullptrInvariant(); } constexpr ArrayRef(const T* begin, const T* end) : Data(begin), Length(end - begin) { debugCheckNullptrInvariant(); } template &lt;typename U&gt; /* implicit */ ArrayRef(const SmallVectorTemplateCommon&lt;T, U&gt;&amp; Vec) : Data(Vec.data()), Length(Vec.size()) { debugCheckNullptrInvariant(); } template &lt; typename Container, typename U = decltype(std::declval&lt;Container&gt;().data()), typename = std::enable_if_t&lt; (std::is_same_v&lt;U, T*&gt; || std::is_same_v&lt;U, T const*&gt;)&gt;&gt; /* implicit */ ArrayRef(const Container&amp; container) : Data(container.data()), Length(container.size()) { debugCheckNullptrInvariant(); } // The enable_if stuff here makes sure that this isn&#39;t used for // std::vector&lt;bool&gt;, because ArrayRef can&#39;t work on a std::vector&lt;bool&gt; // bitfield. template &lt;typename A&gt; /* implicit */ ArrayRef(const std::vector&lt;T, A&gt;&amp; Vec) : Data(Vec.data()), Length(Vec.size()) { static_assert( !std::is_same_v&lt;T, bool&gt;, &#34;ArrayRef&lt;bool&gt; cannot be constructed from a std::vector&lt;bool&gt; bitfield.&#34;); } template &lt;size_t N&gt; /* implicit */ constexpr ArrayRef(const std::array&lt;T, N&gt;&amp; Arr) : Data(Arr.data()), Length(N) {} template &lt;size_t N&gt; // NOLINTNEXTLINE(*c-arrays*) /* implicit */ constexpr ArrayRef(const T (&amp;Arr)[N]) : Data(Arr), Length(N) {} /* implicit */ constexpr ArrayRef(const std::initializer_list&lt;T&gt;&amp; Vec) : Data( ..."
+         "articleBody": "Program Listing for File ArrayRef.h# ↰ Return to documentation for file (c10/util/ArrayRef.h) //===--- ArrayRef.h - Array Reference Wrapper -------------------*- C++ -*-===// // // The LLVM Compiler Infrastructure // // This file is distributed under the University of Illinois Open Source // License. See LICENSE.TXT for details. // //===----------------------------------------------------------------------===// // ATen: modified from llvm::ArrayRef. // removed llvm-specific functionality // removed some implicit const -&gt; non-const conversions that rely on // complicated std::enable_if meta-programming // removed a bunch of slice variants for simplicity... #pragma once #include &lt;c10/macros/Macros.h&gt; #include &lt;c10/util/Exception.h&gt; #include &lt;c10/util/SmallVector.h&gt; #include &lt;array&gt; #include &lt;cstddef&gt; #include &lt;cstdint&gt; #include &lt;initializer_list&gt; #include &lt;iterator&gt; #include &lt;ostream&gt; #include &lt;type_traits&gt; #include &lt;vector&gt; namespace c10 { template &lt;typename T&gt; class ArrayRef final { public: using iterator = const T*; using const_iterator = const T*; using size_type = size_t; using value_type = T; using reverse_iterator = std::reverse_iterator&lt;iterator&gt;; private: const T* Data; size_type Length; void debugCheckNullptrInvariant() { TORCH_INTERNAL_ASSERT_DEBUG_ONLY( Data != nullptr || Length == 0, \&#34;created ArrayRef with nullptr and non-zero length! std::optional relies on this being illegal\&#34;); } public: /* implicit */ constexpr ArrayRef() : Data(nullptr), Length(0) {} // TODO Make this explicit constexpr ArrayRef(const T&amp; OneElt) : Data(&amp;OneElt), Length(1) {} constexpr ArrayRef(const T* data, size_t length) : Data(data), Length(length) { debugCheckNullptrInvariant(); } constexpr ArrayRef(const T* begin, const T* end) : Data(begin), Length(end - begin) { debugCheckNullptrInvariant(); } template &lt;typename U&gt; /* implicit */ ArrayRef(const SmallVectorTemplateCommon&lt;T, U&gt;&amp; Vec) : Data(Vec.data()), Length(Vec.size()) { debugCheckNullptrInvariant(); } template &lt; typename Container, typename U = decltype(std::declval&lt;Container&gt;().data()), typename = std::enable_if_t&lt; (std::is_same_v&lt;U, T*&gt; || std::is_same_v&lt;U, T const*&gt;)&gt;&gt; /* implicit */ ArrayRef(const Container&amp; container) : Data(container.data()), Length(container.size()) { debugCheckNullptrInvariant(); } // The enable_if stuff here makes sure that this isn&#39;t used for // std::vector&lt;bool&gt;, because ArrayRef can&#39;t work on a std::vector&lt;bool&gt; // bitfield. template &lt;typename A&gt; /* implicit */ ArrayRef(const std::vector&lt;T, A&gt;&amp; Vec) : Data(Vec.data()), Length(Vec.size()) { static_assert( !std::is_same_v&lt;T, bool&gt;, \&#34;ArrayRef&lt;bool&gt; cannot be constructed from a std::vector&lt;bool&gt; bitfield.\&#34;); } template &lt;size_t N&gt; /* implicit */ constexpr ArrayRef(const std::array&lt;T, N&gt;&amp; Arr) : Data(Arr.data()), Length(N) {} template &lt;size_t N&gt; // NOLINTNEXTLINE(*c-arrays*) /* implicit */ constexpr ArrayRef(const T (&amp;Arr)[N]) : Data(Arr), Length(N) {} /* implicit */ constexpr ArrayRef(const std::initializer_list&lt;T&gt;&amp; Vec) : Data( ..."
        }
    </script>
 

@@ -55,6 +55,28 @@
 <link rel="canonical" href="/api/program_listing_file_torch_csrc_api_include_torch_data_dataloader_stateless.h.html" crossorigin="anonymous">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js"></script>
+<script>
+  if (window.location.hostname === 'docs.pytorch.org' || window.location.hostname === 'docs-preview.pytorch.org') {
+    const script = document.createElement('script');
+    script.src = 'https://cmp.osano.com/16A0DbT9yDNIaQkvZ/31b1b91a-e0b6-47ea-bde2-7f2bd13dbe5c/osano.js?variant=one';
+    document.head.appendChild(script);
+  }
+</script>
+<script>
+  // Cookie banner for non-LF projects.
+  document.addEventListener('DOMContentLoaded', function() {
+    // Hide cookie banner on local environments
+    if (window.location.hostname === 'localhost' ||
+        window.location.hostname === '0.0.0.0' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.startsWith('192.168.')) {
+      const banner = document.querySelector('.cookie-banner-wrapper');
+      if (banner) {
+        banner.style.display = 'none';
+      }
+    }
+  });
+</script>
 <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" crossorigin="anonymous">
 <script type="text/javascript" src="../_static/js/theme.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1331,21 +1353,17 @@ document.write(`
 
 
        </div>
-
-  <div class="cookie-banner-wrapper">
-  <div class="container">
-    <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
-    <img class="close-button" src="../_static/img/pytorch-x.svg">
-  </div>
-</div>
  </footer>
-   
-  <footer class="bd-footer"><div class="cookie-banner-wrapper">
+
+<div class="cookie-banner-wrapper">
   <div class="container">
     <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
     <img class="close-button" src="../_static/img/pytorch-x.svg">
   </div>
 </div>
+
+   
+  <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
   
     <div class="footer-items__start">
@@ -1390,16 +1408,18 @@ document.write(`
          "@type": "Article",
          "headline": "Program Listing for File stateless.h",
          "description": "PyTorch Documentation. Explore PyTorch, an open-source machine learning library that accelerates the path from research prototyping to production deployment. Discover tutorials, API references, and guides to help you build and deploy deep learning models efficiently.",
+         "url": "/api/program_listing_file_torch_csrc_api_include_torch_data_dataloader_stateless.h.html",
          "author": {
            "@type": "Organization",
-           "name": "PyTorch Contributors"
+           "name": "PyTorch Contributors",
+           "url": "https://pytorch.org"
          },
          "image": "../_static/img/pytorch_seo.png",
          "mainEntityOfPage": {
            "@type": "WebPage",
            "@id": "/api/program_listing_file_torch_csrc_api_include_torch_data_dataloader_stateless.h.html"
          },
-         "datePublished": "",
+        "datePublished": "",
          "dateModified": "",
          "articleBody": "Program Listing for File stateless.h# ↰ Return to documentation for file (torch/csrc/api/include/torch/data/dataloader/stateless.h) #pragma once #include &lt;torch/data/dataloader/base.h&gt; #include &lt;torch/data/worker_exception.h&gt; #include &lt;c10/util/Exception.h&gt; #include &lt;c10/util/irange.h&gt; #include &lt;cstddef&gt; #include &lt;thread&gt; #include &lt;utility&gt; namespace torch::data { template &lt;typename Dataset, typename Sampler&gt; class StatelessDataLoader : public DataLoaderBase&lt; Dataset, typename Dataset::BatchType, typename Sampler::BatchRequestType&gt; { public: using super = DataLoaderBase&lt; Dataset, typename Dataset::BatchType, typename Sampler::BatchRequestType&gt;; using typename super::BatchRequestType; StatelessDataLoader( Dataset dataset, Sampler sampler, DataLoaderOptions options) : super(options), sampler_(std::move(sampler)) { for (const auto w : c10::irange(this-&gt;options_.workers)) { // Here we copy the dataset into the worker thread closure. Each worker // has its own copy of the dataset. This means the dataset must be // trivially copiable, or else we don&#39;t expect more than one worker to // be in use. (void)w; // Suppress unused variable warning this-&gt;workers_.emplace_back( [this, dataset]() mutable { this-&gt;worker_thread(dataset); }); } if (this-&gt;options_.workers == 0) { this-&gt;main_thread_dataset_ = std::make_unique&lt;Dataset&gt;(std::move(dataset)); } } private: void reset() override { sampler_.reset(); // Call the base class method last because it calls `prefetch()` super::reset(); } std::optional&lt;BatchRequestType&gt; get_batch_request() override { auto indices = sampler_.next(this-&gt;options_.batch_size); if (!indices || (indices-&gt;size() &lt; this-&gt;options_.batch_size &amp;&amp; this-&gt;options_.drop_last)) { return std::nullopt; } AT_ASSERT(indices-&gt;size() &gt; 0); return indices; } Sampler sampler_; }; } // namespace torch::data"
        }

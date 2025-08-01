@@ -55,6 +55,28 @@
 <link rel="canonical" href="/api/program_listing_file_aten_src_ATen_native_TensorShape.h.html" crossorigin="anonymous">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js"></script>
+<script>
+  if (window.location.hostname === 'docs.pytorch.org' || window.location.hostname === 'docs-preview.pytorch.org') {
+    const script = document.createElement('script');
+    script.src = 'https://cmp.osano.com/16A0DbT9yDNIaQkvZ/31b1b91a-e0b6-47ea-bde2-7f2bd13dbe5c/osano.js?variant=one';
+    document.head.appendChild(script);
+  }
+</script>
+<script>
+  // Cookie banner for non-LF projects.
+  document.addEventListener('DOMContentLoaded', function() {
+    // Hide cookie banner on local environments
+    if (window.location.hostname === 'localhost' ||
+        window.location.hostname === '0.0.0.0' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.startsWith('192.168.')) {
+      const banner = document.querySelector('.cookie-banner-wrapper');
+      if (banner) {
+        banner.style.display = 'none';
+      }
+    }
+  });
+</script>
 <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" crossorigin="anonymous">
 <script type="text/javascript" src="../_static/js/theme.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1409,21 +1431,17 @@ document.write(`
 
 
        </div>
-
-  <div class="cookie-banner-wrapper">
-  <div class="container">
-    <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
-    <img class="close-button" src="../_static/img/pytorch-x.svg">
-  </div>
-</div>
  </footer>
-   
-  <footer class="bd-footer"><div class="cookie-banner-wrapper">
+
+<div class="cookie-banner-wrapper">
   <div class="container">
     <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
     <img class="close-button" src="../_static/img/pytorch-x.svg">
   </div>
 </div>
+
+   
+  <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
   
     <div class="footer-items__start">
@@ -1468,18 +1486,20 @@ document.write(`
          "@type": "Article",
          "headline": "Program Listing for File TensorShape.h",
          "description": "PyTorch Documentation. Explore PyTorch, an open-source machine learning library that accelerates the path from research prototyping to production deployment. Discover tutorials, API references, and guides to help you build and deploy deep learning models efficiently.",
+         "url": "/api/program_listing_file_aten_src_ATen_native_TensorShape.h.html",
          "author": {
            "@type": "Organization",
-           "name": "PyTorch Contributors"
+           "name": "PyTorch Contributors",
+           "url": "https://pytorch.org"
          },
          "image": "../_static/img/pytorch_seo.png",
          "mainEntityOfPage": {
            "@type": "WebPage",
            "@id": "/api/program_listing_file_aten_src_ATen_native_TensorShape.h.html"
          },
-         "datePublished": "",
+        "datePublished": "",
          "dateModified": "",
-         "articleBody": "Program Listing for File TensorShape.h# ↰ Return to documentation for file (aten/src/ATen/native/TensorShape.h) #pragma once #include &lt;ATen/core/IListRef.h&gt; #include &lt;ATen/core/Tensor.h&gt; #include &lt;c10/util/irange.h&gt; namespace at::native { TORCH_API at::Tensor clone_preserve_strides(const at::Tensor&amp; self); inline bool cat_should_skip_tensor(const Tensor&amp; t) { return t.sym_numel() == 0 &amp;&amp; t.dim() == 1; } // Check to see if the shape of tensors is compatible // for being concatenated along a given dimension. inline void check_cat_shape_except_dim( const Tensor&amp; first, const Tensor&amp; second, int64_t dimension, int64_t index) { int64_t first_dims = first.dim(); int64_t second_dims = second.dim(); TORCH_CHECK( first_dims == second_dims, &#34;Tensors must have same number of dimensions: got &#34;, first_dims, &#34; and &#34;, second_dims); for (const auto dim : c10::irange(first_dims)) { if (dim == dimension) { continue; } int64_t first_dim_size = first.sizes()[dim]; int64_t second_dim_size = second.sizes()[dim]; TORCH_CHECK( first_dim_size == second_dim_size, &#34;Sizes of tensors must match except in dimension &#34;, dimension, &#34;. Expected size &#34;, static_cast&lt;long long&gt;(first_dim_size), &#34; but got size &#34;, static_cast&lt;long long&gt;(second_dim_size), &#34; for tensor number &#34;, index, &#34; in the list.&#34;); } } inline void check_cat_no_zero_dim(const MaterializedITensorListRef&amp; tensors) { [[maybe_unused]] int64_t i = 0; for (const Tensor&amp; t : tensors) { TORCH_CHECK( t.dim() &gt; 0, &#34;zero-dimensional tensor (at position &#34;, i, &#34;) cannot be concatenated&#34;); i++; } } inline int64_t get_num_splits( const Tensor&amp; self, int64_t split_size, int64_t dim) { TORCH_CHECK(self.dim() != 0, &#34;split expects at least a 1-dimensional tensor&#34;); TORCH_CHECK( split_size &gt;= 0, &#34;split expects split_size be non-negative, but got split_size=&#34;, split_size); int64_t dim_size = self.size(dim); TORCH_CHECK( split_size &gt; 0 || dim_size == 0, &#34;split_size can only be 0 if dimension size is 0, &#34; &#34;but got dimension size of &#34;, dim_size); // if split_size is 0 and dimension size is 0, there is 1 split. int64_t num_splits = 1; if (split_size != 0) { // ensuring num_splits is at least 1 makes consistent the case where // split_size &gt; dim_size (returns a single split). We might want to error // here, but keep it for BC. num_splits = std::max&lt;int64_t&gt;((dim_size + split_size - 1) / split_size, 1); } return num_splits; } inline bool have_same_ndims(TensorList tensors) { auto ndim = tensors[0].dim(); for (const auto tensor_idx : c10::irange(tensors.size())) { if (tensors[tensor_idx].dim() != ndim) { return false; } } return true; } inline void leading_dimension_matches(TensorList tensors, int64_t dim) { auto tensor_zero_size = tensors[0].sizes(); std::vector&lt;c10::SymInt&gt; leading_dim_sizes( tensor_zero_size.begin(), tensor_zero_size.begin() + dim); for (const auto i : c10::irange(tensors.size())) { at::Tensor tensor = tensors[i]; for (const auto j : c10::irange(dim)) { TORCH_CHECK( tensor.size(j) == leading_dim_sizes[j], &#34;_chunk_cat exp..."
+         "articleBody": "Program Listing for File TensorShape.h# ↰ Return to documentation for file (aten/src/ATen/native/TensorShape.h) #pragma once #include &lt;ATen/core/IListRef.h&gt; #include &lt;ATen/core/Tensor.h&gt; #include &lt;c10/util/irange.h&gt; namespace at::native { TORCH_API at::Tensor clone_preserve_strides(const at::Tensor&amp; self); inline bool cat_should_skip_tensor(const Tensor&amp; t) { return t.sym_numel() == 0 &amp;&amp; t.dim() == 1; } // Check to see if the shape of tensors is compatible // for being concatenated along a given dimension. inline void check_cat_shape_except_dim( const Tensor&amp; first, const Tensor&amp; second, int64_t dimension, int64_t index) { int64_t first_dims = first.dim(); int64_t second_dims = second.dim(); TORCH_CHECK( first_dims == second_dims, \&#34;Tensors must have same number of dimensions: got \&#34;, first_dims, \&#34; and \&#34;, second_dims); for (const auto dim : c10::irange(first_dims)) { if (dim == dimension) { continue; } int64_t first_dim_size = first.sizes()[dim]; int64_t second_dim_size = second.sizes()[dim]; TORCH_CHECK( first_dim_size == second_dim_size, \&#34;Sizes of tensors must match except in dimension \&#34;, dimension, \&#34;. Expected size \&#34;, static_cast&lt;long long&gt;(first_dim_size), \&#34; but got size \&#34;, static_cast&lt;long long&gt;(second_dim_size), \&#34; for tensor number \&#34;, index, \&#34; in the list.\&#34;); } } inline void check_cat_no_zero_dim(const MaterializedITensorListRef&amp; tensors) { [[maybe_unused]] int64_t i = 0; for (const Tensor&amp; t : tensors) { TORCH_CHECK( t.dim() &gt; 0, \&#34;zero-dimensional tensor (at position \&#34;, i, \&#34;) cannot be concatenated\&#34;); i++; } } inline int64_t get_num_splits( const Tensor&amp; self, int64_t split_size, int64_t dim) { TORCH_CHECK(self.dim() != 0, \&#34;split expects at least a 1-dimensional tensor\&#34;); TORCH_CHECK( split_size &gt;= 0, \&#34;split expects split_size be non-negative, but got split_size=\&#34;, split_size); int64_t dim_size = self.size(dim); TORCH_CHECK( split_size &gt; 0 || dim_size == 0, \&#34;split_size can only be 0 if dimension size is 0, \&#34; \&#34;but got dimension size of \&#34;, dim_size); // if split_size is 0 and dimension size is 0, there is 1 split. int64_t num_splits = 1; if (split_size != 0) { // ensuring num_splits is at least 1 makes consistent the case where // split_size &gt; dim_size (returns a single split). We might want to error // here, but keep it for BC. num_splits = std::max&lt;int64_t&gt;((dim_size + split_size - 1) / split_size, 1); } return num_splits; } inline bool have_same_ndims(TensorList tensors) { auto ndim = tensors[0].dim(); for (const auto tensor_idx : c10::irange(tensors.size())) { if (tensors[tensor_idx].dim() != ndim) { return false; } } return true; } inline void leading_dimension_matches(TensorList tensors, int64_t dim) { auto tensor_zero_size = tensors[0].sizes(); std::vector&lt;c10::SymInt&gt; leading_dim_sizes( tensor_zero_size.begin(), tensor_zero_size.begin() + dim); for (const auto i : c10::irange(tensors.size())) { at::Tensor tensor = tensors[i]; for (const auto j : c10::irange(dim)) { TORCH_CHECK( tensor.size(j) == leading_dim_sizes[j], \&#34;_chunk_cat exp..."
        }
    </script>
 

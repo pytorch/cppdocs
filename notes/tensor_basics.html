@@ -57,6 +57,28 @@
 <link rel="canonical" href="/notes/tensor_basics.html" crossorigin="anonymous">
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js"></script>
+<script>
+  if (window.location.hostname === 'docs.pytorch.org' || window.location.hostname === 'docs-preview.pytorch.org') {
+    const script = document.createElement('script');
+    script.src = 'https://cmp.osano.com/16A0DbT9yDNIaQkvZ/31b1b91a-e0b6-47ea-bde2-7f2bd13dbe5c/osano.js?variant=one';
+    document.head.appendChild(script);
+  }
+</script>
+<script>
+  // Cookie banner for non-LF projects.
+  document.addEventListener('DOMContentLoaded', function() {
+    // Hide cookie banner on local environments
+    if (window.location.hostname === 'localhost' ||
+        window.location.hostname === '0.0.0.0' ||
+        window.location.hostname === '127.0.0.1' ||
+        window.location.hostname.startsWith('192.168.')) {
+      const banner = document.querySelector('.cookie-banner-wrapper');
+      if (banner) {
+        banner.style.display = 'none';
+      }
+    }
+  });
+</script>
 <link rel="stylesheet" type="text/css" href="../_static/css/theme.css" crossorigin="anonymous">
 <script type="text/javascript" src="../_static/js/theme.js"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -1444,21 +1466,17 @@ which reduce the dimensions of a <code class="docutils literal notranslate"><spa
 
 
        </div>
-
-  <div class="cookie-banner-wrapper">
-  <div class="container">
-    <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
-    <img class="close-button" src="../_static/img/pytorch-x.svg">
-  </div>
-</div>
  </footer>
-   
-  <footer class="bd-footer"><div class="cookie-banner-wrapper">
+
+<div class="cookie-banner-wrapper">
   <div class="container">
     <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://www.facebook.com/policies/cookies/">Cookies Policy</a>.</p>
     <img class="close-button" src="../_static/img/pytorch-x.svg">
   </div>
 </div>
+
+   
+  <footer class="bd-footer">
 <div class="bd-footer__inner bd-page-width">
   
     <div class="footer-items__start">
@@ -1503,16 +1521,18 @@ which reduce the dimensions of a <code class="docutils literal notranslate"><spa
          "@type": "Article",
          "headline": "Tensor Basics",
          "description": "PyTorch Documentation. Explore PyTorch, an open-source machine learning library that accelerates the path from research prototyping to production deployment. Discover tutorials, API references, and guides to help you build and deploy deep learning models efficiently.",
+         "url": "/notes/tensor_basics.html",
          "author": {
            "@type": "Organization",
-           "name": "PyTorch Contributors"
+           "name": "PyTorch Contributors",
+           "url": "https://pytorch.org"
          },
          "image": "../_static/img/pytorch_seo.png",
          "mainEntityOfPage": {
            "@type": "WebPage",
            "@id": "/notes/tensor_basics.html"
          },
-         "datePublished": "",
+        "datePublished": "",
          "dateModified": "",
          "articleBody": "Tensor Basics# The ATen tensor library backing PyTorch is a simple tensor library that exposes the Tensor operations in Torch directly in C++17. ATen’s API is auto-generated from the same declarations PyTorch uses so the two APIs will track each other over time. Tensor types are resolved dynamically, such that the API is generic and does not include templates. That is, there is one Tensor type. It can hold a CPU or CUDA Tensor, and the tensor may have Doubles, Float, Ints, etc. This design makes it easy to write generic code without templating everything. See https://pytorch.org/cppdocs/api/namespace_at.html#functions for the provided API. Excerpt: Tensor atan2(const Tensor &amp; other) const; Tensor &amp; atan2_(const Tensor &amp; other); Tensor pow(Scalar exponent) const; Tensor pow(const Tensor &amp; exponent) const; Tensor &amp; pow_(Scalar exponent); Tensor &amp; pow_(const Tensor &amp; exponent); Tensor lerp(const Tensor &amp; end, Scalar weight) const; Tensor &amp; lerp_(const Tensor &amp; end, Scalar weight); Tensor histc() const; Tensor histc(int64_t bins) const; Tensor histc(int64_t bins, Scalar min) const; Tensor histc(int64_t bins, Scalar min, Scalar max) const; In place operations are also provided, and always suffixed by _ to indicate they will modify the Tensor. Efficient Access to Tensor Elements# When using Tensor-wide operations, the relative cost of dynamic dispatch is very small. However, there are cases, especially in your own kernels, where efficient element-wise access is needed, and the cost of dynamic dispatch inside the element-wise loop is very high. ATen provides accessors that are created with a single dynamic check that a Tensor is the type and number of dimensions. Accessors then expose an API for accessing the Tensor elements efficiently. Accessors are temporary views of a Tensor. They are only valid for the lifetime of the tensor that they view and hence should only be used locally in a function, like iterators. Note that accessors are not compatible with CUDA tensors inside kernel functions. Instead, you will have to use a packed accessor which behaves the same way but copies tensor metadata instead of pointing to it. It is thus recommended to use accessors for CPU tensors and packed accessors for CUDA tensors. CPU accessors# torch::Tensor foo = torch::rand({12, 12}); // assert foo is 2-dimensional and holds floats. auto foo_a = foo.accessor&lt;float,2&gt;(); float trace = 0; for(int i = 0; i &lt; foo_a.size(0); i++) { // use the accessor foo_a to get tensor data. trace += foo_a[i][i]; } CUDA accessors# __global__ void packed_accessor_kernel( torch::PackedTensorAccessor64&lt;float, 2&gt; foo, float* trace) { int i = threadIdx.x; gpuAtomicAdd(trace, foo[i][i]); } torch::Tensor foo = torch::rand({12, 12}); // assert foo is 2-dimensional and holds floats. auto foo_a = foo.packed_accessor64&lt;float,2&gt;(); float trace = 0; packed_accessor_kernel&lt;&lt;&lt;1, 12&gt;&gt;&gt;(foo_a, &amp;trace); In addition to PackedTensorAccessor64 and packed_accessor64 there are also the corresponding PackedTe..."
        }
