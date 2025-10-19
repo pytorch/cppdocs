@@ -83,10 +83,11 @@ Program Listing for File any.h
          typename... ArgumentTypes>
      std::unique_ptr<AnyModulePlaceholder> make_holder(
          std::shared_ptr<ModuleType>&& module,
-         ReturnType (Class::*)(ArgumentTypes...));
+         ReturnType (Class::* /*unused*/)(ArgumentTypes...));
    
      template <typename ModuleType, typename ReturnType, typename... ArgumentTypes>
-     ModuleType& get_(ReturnType (ModuleType::*)(ArgumentTypes...)) const;
+     ModuleType& get_(
+         ReturnType (ModuleType::* /*unused*/)(ArgumentTypes...)) const;
    
      template <typename ModuleType>
      ModuleType& get_() const;
@@ -215,7 +216,7 @@ Program Listing for File any.h
        typename... ArgumentTypes>
    std::unique_ptr<AnyModulePlaceholder> AnyModule::make_holder(
        std::shared_ptr<ModuleType>&& module,
-       ReturnType (Class::*)(ArgumentTypes...)) {
+       ReturnType (Class::* /*unused*/)(ArgumentTypes...)) {
      static_assert(
          torch::detail::check_not_lvalue_references<ArgumentTypes...>(),
          "Modules stored inside AnyModule must not take references. "
@@ -240,7 +241,7 @@ Program Listing for File any.h
    
    template <typename ModuleType, typename ReturnType, typename... ArgumentTypes>
    ModuleType& AnyModule::get_(
-       ReturnType (ModuleType::*)(ArgumentTypes...)) const {
+       ReturnType (ModuleType::* /*unused*/)(ArgumentTypes...)) const {
      if (typeid(ModuleType).hash_code() == type_info().hash_code()) {
        return *static_cast<AnyModuleHolder<ModuleType, ArgumentTypes...>&>(
                    *content_)
