@@ -32,6 +32,8 @@ Program Listing for File ivalue.h
    #include <unordered_set>
    #include <utility>
    
+   C10_DIAGNOSTIC_PUSH_AND_IGNORED_IF_DEFINED("-Wswitch-default")
+   
    namespace torch {
    class TORCH_API CustomClassHolder : public c10::intrusive_ptr_target {};
    namespace jit {
@@ -546,7 +548,14 @@ Program Listing for File ivalue.h
      IValue(const c10::SymBool& i) {
        if (auto mi = i.maybe_as_bool()) {
          tag = Tag::Bool;
+   #if __BYTE_ORDER__ == __ORDER_LITTLE_ENDIAN__
          payload.u.as_int = *mi;
+   #elif __BYTE_ORDER__ == __ORDER_BIG_ENDIAN__
+         /* due to byteorder if value assigned as_int, as_bool actually is not set correctly */
+         payload.u.as_bool = *mi;
+   #else
+   #error Unexpected or undefined __BYTE_ORDER__
+   #endif
        } else {
          tag = Tag::SymBool;
          payload.u.as_intrusive_ptr = i.toSymNodeImpl().release();
@@ -766,7 +775,7 @@ Program Listing for File ivalue.h
      IValue(std::optional<T> v);
      template <class T, enable_if_list_is_ivalue_constructible<T> = nullptr>
      IValue(c10::OptionalArrayRef<T> v);
-     IValue(std::nullopt_t);
+     IValue(std::nullopt_t /*unused*/);
    
      // ClassType
      IValue(c10::intrusive_ptr<ivalue::Object> v);
@@ -1085,7 +1094,7 @@ Program Listing for File ivalue.h
      using HashIdentityIValueMap =
          std::unordered_map<IValue, IValue, HashIdentityIValue, CompIdentityIValues>;
    
-     // Chechs if this and rhs has a subvalues in common.
+     // Checks if this and rhs has a subvalues in common.
      // [t1,t2] and [t2, t3] returns true.
      bool overlaps(const IValue& rhs) const;
    
@@ -1538,5 +1547,7 @@ Program Listing for File ivalue.h
    };
    
    } // namespace c10
+   
+   C10_DIAGNOSTIC_POP()
    
    #include <ATen/core/ivalue_inl.h> // IWYU pragma: keep
