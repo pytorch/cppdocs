@@ -29,6 +29,8 @@ Program Listing for File ops.h
    
    HIDDEN_NAMESPACE_BEGIN(torch, stable)
    
+   using DeleterFnPtr = void (*)(void*);
+   
    inline torch::stable::Tensor empty_like(const torch::stable::Tensor& self) {
      const auto num_args = 6;
      std::array<StableIValue, num_args> stack{
@@ -430,6 +432,41 @@ Program Listing for File ops.h
          0));
      return torch::stable::Tensor(ath);
    }
+   
+   #if TORCH_FEATURE_VERSION >= TORCH_VERSION_2_11_0
+   inline torch::stable::Tensor from_blob(
+       void* data,
+       torch::headeronly::IntHeaderOnlyArrayRef sizes,
+       torch::headeronly::IntHeaderOnlyArrayRef strides,
+       torch::stable::Device device,
+       torch::headeronly::ScalarType dtype,
+       DeleterFnPtr deleter,
+       int64_t storage_offset = 0,
+       torch::headeronly::Layout layout = torch::headeronly::Layout::Strided) {
+     auto shim_dtype =
+         torch::stable::detail::to<int32_t>(torch::stable::detail::from(dtype));
+     auto shim_device_type = torch::stable::detail::to<int32_t>(
+         torch::stable::detail::from(device.type()));
+     auto shim_layout =
+         torch::stable::detail::to<int32_t>(torch::stable::detail::from(layout));
+     AtenTensorHandle ath;
+     TORCH_ERROR_CODE_CHECK(torch_from_blob(
+         data,
+         sizes.size(),
+         sizes.data(),
+         strides.data(),
+         storage_offset,
+         shim_dtype,
+         shim_device_type,
+         device.index(),
+         &ath,
+         shim_layout,
+         nullptr,
+         0,
+         deleter));
+     return torch::stable::Tensor(ath);
+   }
+   #endif // TORCH_FEATURE_VERSION >= TORCH_VERSION_2_11_0
    
    inline torch::stable::Tensor to(
        const torch::stable::Tensor& self,
