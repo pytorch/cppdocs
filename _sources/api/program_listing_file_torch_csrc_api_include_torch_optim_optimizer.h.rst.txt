@@ -26,6 +26,7 @@ Program Listing for File optimizer.h
    #include <iterator>
    #include <memory>
    #include <string>
+   #include <type_traits>
    #include <vector>
    
    // Forward declarations confuse Doxygen
@@ -80,12 +81,168 @@ Program Listing for File optimizer.h
      virtual void set_lr(const double lr);
    };
    
+   // Forward declarations for optimizer option types
+   struct SGDOptions;
+   struct AdamOptions;
+   struct AdamWOptions;
+   struct AdagradOptions;
+   struct RMSpropOptions;
+   struct LBFGSOptions;
+   
    template <typename Derived>
    class OptimizerCloneableOptions : public OptimizerOptions {
     private:
      std::unique_ptr<OptimizerOptions> clone() const override {
        return std::make_unique<Derived>(static_cast<const Derived&>(*this));
      }
+   
+     // SFINAE field detection - detects optimizer fields using public accessor
+     // methods
+     template <class T, class Enable = void>
+     struct _has_lr : std::false_type {};
+     template <class T>
+     struct _has_lr<T, std::void_t<decltype(std::declval<const T&>().lr())>>
+         : std::true_type {};
+   
+     template <class T, class Enable = void>
+     struct _has_momentum : std::false_type {};
+     template <class T>
+     struct _has_momentum<
+         T,
+         std::void_t<decltype(std::declval<const T&>().momentum())>>
+         : std::true_type {};
+   
+     template <class T, class Enable = void>
+     struct _has_weight_decay : std::false_type {};
+     template <class T>
+     struct _has_weight_decay<
+         T,
+         std::void_t<decltype(std::declval<const T&>().weight_decay())>>
+         : std::true_type {};
+   
+     template <class T, class Enable = void>
+     struct _has_dampening : std::false_type {};
+     template <class T>
+     struct _has_dampening<
+         T,
+         std::void_t<decltype(std::declval<const T&>().dampening())>>
+         : std::true_type {};
+   
+     template <class T, class Enable = void>
+     struct _has_nesterov : std::false_type {};
+     template <class T>
+     struct _has_nesterov<
+         T,
+         std::void_t<decltype(std::declval<const T&>().nesterov())>>
+         : std::true_type {};
+   
+     template <class T, class Enable = void>
+     struct _has_betas : std::false_type {};
+     template <class T>
+     struct _has_betas<T, std::void_t<decltype(std::declval<const T&>().betas())>>
+         : std::true_type {};
+   
+     template <class T, class Enable = void>
+     struct _has_eps : std::false_type {};
+     template <class T>
+     struct _has_eps<T, std::void_t<decltype(std::declval<const T&>().eps())>>
+         : std::true_type {};
+   
+     template <class T, class Enable = void>
+     struct _has_amsgrad : std::false_type {};
+     template <class T>
+     struct _has_amsgrad<
+         T,
+         std::void_t<decltype(std::declval<const T&>().amsgrad())>>
+         : std::true_type {};
+   
+     // Optimizer-specific field detection
+     template <class T, class Enable = void>
+     struct _has_lr_decay : std::false_type {};
+     template <class T>
+     struct _has_lr_decay<
+         T,
+         std::void_t<decltype(std::declval<const T&>().lr_decay())>>
+         : std::true_type {};
+   
+     template <class T, class Enable = void>
+     struct _has_alpha : std::false_type {};
+     template <class T>
+     struct _has_alpha<T, std::void_t<decltype(std::declval<const T&>().alpha())>>
+         : std::true_type {};
+   
+     template <class T, class Enable = void>
+     struct _has_centered : std::false_type {};
+     template <class T>
+     struct _has_centered<
+         T,
+         std::void_t<decltype(std::declval<const T&>().centered())>>
+         : std::true_type {};
+   
+     template <class T, class Enable = void>
+     struct _has_initial_accumulator_value : std::false_type {};
+     template <class T>
+     struct _has_initial_accumulator_value<
+         T,
+         std::void_t<
+             decltype(std::declval<const T&>().initial_accumulator_value())>>
+         : std::true_type {};
+   
+     // LBFGS-specific fields with appropriate types
+     template <class T, class Enable = void>
+     struct _has_max_iter : std::false_type {};
+     template <class T>
+     struct _has_max_iter<
+         T,
+         std::void_t<decltype(std::declval<const T&>().max_iter())>>
+         : std::true_type {};
+   
+     template <class T, class Enable = void>
+     struct _has_max_eval : std::false_type {};
+     template <class T>
+     struct _has_max_eval<
+         T,
+         std::void_t<decltype(std::declval<const T&>().max_eval())>>
+         : std::true_type {};
+   
+     template <class T, class Enable = void>
+     struct _has_tolerance_grad : std::false_type {};
+     template <class T>
+     struct _has_tolerance_grad<
+         T,
+         std::void_t<decltype(std::declval<const T&>().tolerance_grad())>>
+         : std::true_type {};
+   
+     template <class T, class Enable = void>
+     struct _has_tolerance_change : std::false_type {};
+     template <class T>
+     struct _has_tolerance_change<
+         T,
+         std::void_t<decltype(std::declval<const T&>().tolerance_change())>>
+         : std::true_type {};
+   
+     template <class T, class Enable = void>
+     struct _has_history_size : std::false_type {};
+     template <class T>
+     struct _has_history_size<
+         T,
+         std::void_t<decltype(std::declval<const T&>().history_size())>>
+         : std::true_type {};
+   
+     template <class T, class Enable = void>
+     struct _has_line_search_fn : std::false_type {};
+     template <class T>
+     struct _has_line_search_fn<
+         T,
+         std::void_t<decltype(std::declval<const T&>().line_search_fn())>>
+         : std::true_type {};
+   
+     void _merge_by_comparison(
+         const Derived& defaults,
+         const Derived& user_options);
+   
+     // Friend class for controlled access to private _merge_by_comparison method
+     friend class Optimizer;
    };
    
    class TORCH_API OptimizerParamGroup {
@@ -181,6 +338,40 @@ Program Listing for File optimizer.h
      virtual void save(serialize::OutputArchive& archive) const;
    
      virtual void load(serialize::InputArchive& archive);
+   
+    private:
+     template <typename OptimizerType>
+     static bool _try_merge_optimizer_type(
+         std::unique_ptr<OptimizerOptions>& final_options,
+         const OptimizerOptions& user_options,
+         const OptimizerOptions& defaults) {
+       auto* typed_final = dynamic_cast<OptimizerType*>(final_options.get());
+       auto* typed_user = dynamic_cast<const OptimizerType*>(&user_options);
+       auto* typed_defaults = dynamic_cast<const OptimizerType*>(&defaults);
+   
+       if (typed_final && typed_user && typed_defaults) {
+         typed_final->_merge_by_comparison(*typed_defaults, *typed_user);
+         return true;
+       }
+       return false;
+     }
+   
+     template <typename... OptimizerTypes>
+     static void _try_merge_all_optimizer_types(
+         std::unique_ptr<OptimizerOptions>& final_options,
+         const OptimizerOptions& user_options,
+         const OptimizerOptions& defaults) {
+       // Try each optimizer type until one succeeds - much cleaner than manual
+       // chain
+       (void)(_try_merge_optimizer_type<OptimizerTypes>(
+                  final_options, user_options, defaults) ||
+              ...);
+     }
+   
+     static void _try_merge_all_optimizers(
+         std::unique_ptr<OptimizerOptions>& final_options,
+         const OptimizerOptions& user_options,
+         const OptimizerOptions& defaults);
    
     protected:
      std::vector<OptimizerParamGroup> param_groups_;
