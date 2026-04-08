@@ -1,0 +1,1795 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="Custom autograd functions in PyTorch C++ — defining forward and backward passes with torch::autograd::Function." name="description" />
+<meta content="PyTorch, C++, autograd, custom function, forward, backward, Function" name="keywords" />
+
+    <title>Custom Autograd Functions &#8212; PyTorch main documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=6977116a" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../../_static/documentation_options.js?v=a8da1a53"></script>
+    <script src="../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api/autograd/custom_functions';</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Gradient Modes" href="modes.html" />
+    <link rel="prev" title="Gradient Computation" href="gradient.html" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+
+<!-- LLM/AI Agent: See /llms.txt for comprehensive navigation guidance -->
+<!-- Machine-readable LLM metadata -->
+<meta name="llm:site-type" content="documentation">
+<meta name="llm:framework" content="PyTorch">
+
+<meta name="llm:description" content="Custom autograd functions in PyTorch C++ — defining forward and backward passes with torch::autograd::Function.">
+
+
+
+
+
+<meta name="llm:navigation-file" content="https://pytorch.org/docs/stable/llms.txt">
+<meta name="llm:sitemap" content="https://pytorch.org/docs/stable/sitemap.xml">
+<meta name="llm:version" content="main">
+<meta name="llm:project" content="PyTorch">
+<meta name="llm:page-type" content="documentation">
+<link rel="alternate" type="text/plain" href="https://pytorch.org/docs/stable/llms.txt" title="LLM Navigation Guide">
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js"></script>
+<script>
+  if (window.location.hostname === 'docs.pytorch.org' || window.location.hostname === 'docs-preview.pytorch.org') {
+    const script = document.createElement('script');
+    script.src = 'https://cmp.osano.com/16A0DbT9yDNIaQkvZ/31b1b91a-e0b6-47ea-bde2-7f2bd13dbe5c/osano.js?variant=one';
+    document.head.appendChild(script);
+  }
+</script>
+<script>
+  // Cookie banner for non-LF projects
+  document.addEventListener('DOMContentLoaded', function () {
+    // Hide cookie banner on local environments and LF owned docs
+    if (window.location.hostname === 'localhost' ||
+      window.location.hostname === '0.0.0.0' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname === 'docs.pytorch.org' ||
+      window.location.hostname === 'docs-preview.pytorch.org' ||
+      window.location.hostname.startsWith('192.168.')) {
+      const banner = document.querySelector('.cookie-banner-wrapper');
+      if (banner) {
+        banner.style.display = 'none';
+      }
+    }
+  });
+</script>
+<!-- Conditional CSS for header and footer height adjustment -->
+
+<style>
+  :root {
+    --header-height: 0px !important;
+    --header-height-desktop: 0px !important;
+  }
+  /* Ensure proper mobile layout when LF header is hidden */
+  @media (max-width: 960px) {
+    .bd-header {
+      top: 0 !important;
+      position: sticky !important;
+      z-index: 1020 !important;
+    }
+    .bd-main {
+      padding-top: 0 !important;
+      margin-top: 0 !important;
+    }
+    .bd-article-container {
+      padding-top: 0 !important;
+    }
+    .header-article__inner {
+      padding-top: 1rem !important;
+    }
+
+  }
+</style>
+
+
+<link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" crossorigin="anonymous">
+<script type="text/javascript" src="../../_static/js/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400&display=swap" rel="stylesheet">
+<meta property="og:image" content="https://docs.pytorch.org/docs/stable/_static/img/pytorch_seo.png" />
+<link rel="stylesheet" href="../../_static/webfonts/all.min.css" crossorigin="anonymous">
+<meta http-equiv="Content-Security-Policy"
+  content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; style-src * 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval' blob:;">
+<meta name="pytorch_project" content="">
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-T8XT4PS" height="0" width="0"
+    style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+<!-- Google Tag Manager -->
+<script>(function (w, d, s, l, i) {
+    w[l] = w[l] || []; w[l].push({
+      'gtm.start':
+        new Date().getTime(), event: 'gtm.js'
+    }); var f = d.getElementsByTagName(s)[0],
+      j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
+        'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
+    j.onload = function () {
+      window.dispatchEvent(new Event('gtm_loaded'));
+      console.log('GTM loaded successfully');
+    };
+  })(window, document, 'script', 'dataLayer', 'GTM-T8XT4PS');
+</script>
+<!-- End Google Tag Manager -->
+<!-- Facebook Pixel Code -->
+<script>
+  !function (f, b, e, v, n, t, s) {
+    if (f.fbq) return; n = f.fbq = function () {
+      n.callMethod ?
+        n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+    };
+    if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
+    n.queue = []; t = b.createElement(e); t.async = !0;
+    t.src = v; s = b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t, s)
+  }(window, document, 'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init', '243028289693773');
+  fbq('track', 'PageView');
+</script>
+<script>
+  document.documentElement.setAttribute('data-version', 'main');
+</script>
+<noscript>
+  <img height="1" width="1" src="https://www.facebook.com/tr?id=243028289693773&ev=PageView&noscript=1" />
+</noscript>
+<script>
+  function gtag() {
+    window.dataLayer.push(arguments);
+  }
+</script>
+<!-- End Facebook Pixel Code -->
+<!-- Repository configuration for tutorials -->
+
+
+<!-- Script to Fix scrolling with fast fixed-duration animation -->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const SCROLL_DURATION = 150; // Fixed duration in ms regardless of distance
+    let lockedTargetId = null; // Lock the TOC to this target until user scrolls manually
+    let isUpdatingToc = false; // Guard against infinite loops
+
+    function smoothScrollTo(targetY, duration, onComplete) {
+      const startY = window.pageYOffset;
+      const difference = targetY - startY;
+      const startTime = performance.now();
+
+      function step(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        // Ease-out cubic for smooth deceleration
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        window.scrollTo(0, startY + difference * easeOut);
+        if (progress < 1) {
+          requestAnimationFrame(step);
+        } else if (onComplete) {
+          onComplete();
+        }
+      }
+      requestAnimationFrame(step);
+    }
+
+    function updateTocHighlight(targetId) {
+      if (isUpdatingToc) return; // Prevent infinite loop
+      isUpdatingToc = true;
+
+      // Find the TOC link that points to this target
+      const tocNav = document.querySelector('.bd-toc-nav');
+      if (!tocNav) {
+        isUpdatingToc = false;
+        return;
+      }
+
+      // Remove active class from all TOC items
+      tocNav.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+        link.parentElement.classList.remove('active');
+      });
+
+      // Add active class to the matching link
+      const matchingLink = tocNav.querySelector(`a[href="#${CSS.escape(targetId)}"]`);
+      if (matchingLink) {
+        matchingLink.classList.add('active');
+        matchingLink.parentElement.classList.add('active');
+      }
+
+      // Use setTimeout to reset the guard after the current call stack
+      setTimeout(function() {
+        isUpdatingToc = false;
+      }, 0);
+    }
+
+    // Watch for ScrollSpy trying to change the active state and override it
+    const tocNav = document.querySelector('.bd-toc-nav');
+    if (tocNav) {
+      const observer = new MutationObserver(function(mutations) {
+        if (lockedTargetId && !isUpdatingToc) {
+          // Force our target to stay highlighted
+          updateTocHighlight(lockedTargetId);
+        }
+      });
+      observer.observe(tocNav, {
+        attributes: true,
+        attributeFilter: ['class'],
+        subtree: true
+      });
+    }
+
+    // Release the lock when user scrolls manually (not programmatically)
+    window.addEventListener('wheel', function() {
+      lockedTargetId = null;
+    });
+    window.addEventListener('touchmove', function() {
+      lockedTargetId = null;
+    });
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        const targetId = this.getAttribute('href').substring(1);
+        if (!targetId) return; // Skip empty hash links
+        const targetElement = document.getElementById(targetId);
+
+        if (targetElement) {
+          e.preventDefault();
+
+          // Lock the TOC to this target
+          lockedTargetId = targetId;
+
+          const headerHeight =
+            (document.querySelector('.header-holder') ? document.querySelector('.header-holder').offsetHeight : 0) +
+            (document.querySelector('.bd-header') ? document.querySelector('.bd-header').offsetHeight : 0) + 20;
+
+          const targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset - headerHeight;
+
+          // Update TOC highlight immediately
+          updateTocHighlight(targetId);
+
+          smoothScrollTo(targetPosition, SCROLL_DURATION, function() {
+            // Keep it highlighted after scroll
+            updateTocHighlight(targetId);
+          });
+
+          // Update URL hash without scrolling
+          history.pushState(null, null, '#' + targetId);
+        }
+      });
+    });
+  });
+</script>
+
+<script async src="https://cse.google.com/cse.js?cx=e65585f8c3ea1440e"></script>
+<!-- RunLLM Widget Configuration -->
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+
+  </head>
+
+<body data-feedback-url="https://github.com/pytorch/pytorch" class="pytorch-body">
+  
+
+
+  
+  
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+
+  
+  <div class="navbar-header-items__mobile-logo">
+    
+
+
+
+
+
+
+
+  
+  
+  
+
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+    <span class="logo__title">Home</span>
+  
+</a>
+  </div>
+
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      
+      
+        
+        <div class="navbar-item desktop-only-version">
+          
+  <a href="../../index.html" class="version">main</a>
+
+        </div>
+      
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+    
+      <li class="nav-item">
+        
+          
+          <a class="nav-link nav-internal" href="../../installing.html">
+            Installing C++ Distributions of PyTorch
+          </a>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          
+          <a class="nav-link nav-internal" href="../../frontend.html">
+            The C++ Frontend
+          </a>
+        
+      </li>
+    
+      <li class="nav-item dropdown current active">
+        
+          
+          <div class="nav-item-with-toggle">
+            <a class="nav-link nav-internal active" href="../index.html">
+              C++ API Reference
+            </a>
+          </div>
+          <ul class="dropdown-menu" id="dropdown-3">
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../aten/index.html">
+                  ATen: Tensor Library
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../c10/index.html">
+                  C10: Core Utilities
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="index.html">
+                  Autograd: Automatic Differentiation
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../cuda/index.html">
+                  CUDA Support
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../xpu/index.html">
+                  XPU Support
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../nn/index.html">
+                  Neural Network Modules (torch::nn)
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../optim/index.html">
+                  Optimizers (torch::optim)
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../data/index.html">
+                  Data Loading (torch::data)
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../serialize/index.html">
+                  Serialization (torch::serialize)
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../library/index.html">
+                  Torch Library API
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../stable/index.html">
+                  Torch Stable API
+                </a>
+              </li>
+            
+          </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          
+          <a class="nav-link nav-internal" href="../../faq.html">
+            FAQ
+          </a>
+        
+      </li>
+    
+
+    
+    
+  </ul>
+</nav>
+</div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+      
+      
+        <div class="navbar-item"><!-- PyTorch.org site link - desktop only, two-line layout -->
+<!-- Note: The show_pytorch_org_link check is handled in layout.html's navbar_end block -->
+<a href="https://pytorch.org" class="pytorch-site-link nav-link nav-external" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Go to PyTorch.org">
+  <span class="pytorch-site-link-text">
+    <span>Go to</span>
+    <span>pytorch.org <i class="fa-solid fa-arrow-up-right-from-square external-icon"></i></span>
+  </span>
+</a></div>
+      
+      
+        <div class="navbar-item">
+  
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+</div>
+      
+        <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://x.com/PyTorch" title="X" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-x-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">X</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/pytorch/pytorch" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://discuss.pytorch.org/" title="PyTorch Forum" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-discourse fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyTorch Forum</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/torch/" title="PyPi" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-python fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPi</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+
+
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    <div class="sidebar-header-items__start">
+      <div class="navbar-item">
+        
+  <a href="../../index.html" class="version">main</a>
+
+      </div>
+    </div>
+    
+
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+    
+      <li class="nav-item">
+        
+          
+          <a class="nav-link nav-internal" href="../../installing.html">
+            Installing C++ Distributions of PyTorch
+          </a>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          
+          <a class="nav-link nav-internal" href="../../frontend.html">
+            The C++ Frontend
+          </a>
+        
+      </li>
+    
+      <li class="nav-item dropdown current active">
+        
+          
+          <div class="nav-item-with-toggle">
+            <a class="nav-link nav-internal active" href="../index.html">
+              C++ API Reference
+            </a>
+          </div>
+          <ul class="dropdown-menu" id="dropdown-3">
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../aten/index.html">
+                  ATen: Tensor Library
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../c10/index.html">
+                  C10: Core Utilities
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="index.html">
+                  Autograd: Automatic Differentiation
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../cuda/index.html">
+                  CUDA Support
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../xpu/index.html">
+                  XPU Support
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../nn/index.html">
+                  Neural Network Modules (torch::nn)
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../optim/index.html">
+                  Optimizers (torch::optim)
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../data/index.html">
+                  Data Loading (torch::data)
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../serialize/index.html">
+                  Serialization (torch::serialize)
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../library/index.html">
+                  Torch Library API
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../stable/index.html">
+                  Torch Stable API
+                </a>
+              </li>
+            
+          </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          
+          <a class="nav-link nav-internal" href="../../faq.html">
+            FAQ
+          </a>
+        
+      </li>
+    
+
+    
+    
+  </ul>
+</nav>
+</div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+        
+          <div class="navbar-item"><!-- PyTorch.org site link - desktop only, two-line layout -->
+<!-- Note: The show_pytorch_org_link check is handled in layout.html's navbar_end block -->
+<a href="https://pytorch.org" class="pytorch-site-link nav-link nav-external" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Go to PyTorch.org">
+  <span class="pytorch-site-link-text">
+    <span>Go to</span>
+    <span>pytorch.org <i class="fa-solid fa-arrow-up-right-from-square external-icon"></i></span>
+  </span>
+</a></div>
+        
+        
+          <div class="navbar-item">
+  
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+</div>
+        
+          <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://x.com/PyTorch" title="X" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-x-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">X</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/pytorch/pytorch" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://discuss.pytorch.org/" title="PyTorch Forum" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-discourse fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyTorch Forum</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/torch/" title="PyPi" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-python fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPi</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Core</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../aten/index.html">ATen: Tensor Library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../aten/tensor.html">Tensor Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../aten/creation.html">Tensor Creation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../aten/indexing.html">Tensor Indexing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../aten/accessors.html">Tensor Accessors</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../c10/index.html">C10: Core Utilities</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../c10/device.html">Device and DeviceType</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../c10/guards.html">Device Guards</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../c10/streams.html">Streams</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../c10/types.html">Core Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../c10/utilities.html">Utilities</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">Autograd: Automatic Differentiation</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="gradient.html">Gradient Computation</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">Custom Autograd Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="modes.html">Gradient Modes</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../cuda/index.html">CUDA Support</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../cuda/streams.html">CUDA Streams</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cuda/guards.html">CUDA Guards</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cuda/utilities.html">CUDA Utility Functions</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../xpu/index.html">XPU Support</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../xpu/streams.html">XPU Streams</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../xpu/utilities.html">XPU Utility Functions</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">C++ Frontend</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../nn/index.html">Neural Network Modules (torch::nn)</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../nn/containers.html">Containers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/convolution.html">Convolution Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/pooling.html">Pooling Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/linear.html">Linear Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/activation.html">Activation Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/normalization.html">Normalization Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/dropout.html">Dropout Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/embedding.html">Embedding Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/recurrent.html">Recurrent Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/transformer.html">Transformer Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/loss.html">Loss Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/functional.html">Functional API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/utilities.html">Utilities</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../optim/index.html">Optimizers (torch::optim)</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../optim/gradient_descent.html">Gradient Descent Optimizers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../optim/adaptive.html">Adaptive Learning Rate Optimizers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../optim/second_order.html">Second-Order Optimizers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../optim/schedulers.html">Learning Rate Schedulers</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../data/index.html">Data Loading (torch::data)</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../data/datasets.html">Datasets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../data/dataloader.html">DataLoader</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../data/samplers.html">Samplers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../data/transforms.html">Transforms</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../serialize/index.html">Serialization (torch::serialize)</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../serialize/save_load.html">Saving and Loading</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../serialize/archives.html">Archives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../serialize/checkpoints.html">Checkpoints</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Extensions</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../library/index.html">Torch Library API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../library/registration.html">Operator Registration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../library/custom_classes.html">Custom Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../library/versioning.html">Library Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../stable/index.html">Torch Stable API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../stable/registration.html">Library Registration Macros</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../stable/operators.html">Stable Operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../stable/utilities.html">Utilities</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+
+
+
+<div id="rtd-footer-container"></div>
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">C++ API Reference</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">Autograd: Automatic Differentiation</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page">Custom...</li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+<div class="rating">
+    Rate this Page
+    <div class="stars">
+        
+        <span class="star" data-behavior="tutorial-rating" data-count="1" data-value="1">★</span>
+        
+        <span class="star" data-behavior="tutorial-rating" data-count="2" data-value="2">★</span>
+        
+        <span class="star" data-behavior="tutorial-rating" data-count="3" data-value="3">★</span>
+        
+        <span class="star" data-behavior="tutorial-rating" data-count="4" data-value="4">★</span>
+        
+        <span class="star" data-behavior="tutorial-rating" data-count="5" data-value="5">★</span>
+        
+    </div>
+</div>
+</div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="searchbox"></div>
+<div id="pytorch-article">
+  <!-- Hidden breadcrumb schema for SEO only -->
+  <div style="display:none;" itemscope itemtype="https://schema.org/BreadcrumbList">
+    
+    <div itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+      <link itemprop="item" href="../index.html">
+      <meta itemprop="name" content="C++ API Reference">
+      <meta itemprop="position" content="1">
+    </div>
+    
+    <div itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+      <link itemprop="item" href="index.html">
+      <meta itemprop="name" content="Autograd: Automatic Differentiation">
+      <meta itemprop="position" content="2">
+    </div>
+    
+    <div itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+      <meta itemprop="name" content="Custom Autograd Functions">
+      <meta itemprop="position" content="3">
+    </div>
+  </div>
+
+  
+  
+
+  
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="custom-autograd-functions">
+<h1>Custom Autograd Functions<a class="headerlink" href="#custom-autograd-functions" title="Link to this heading">#</a></h1>
+<p>PyTorch allows you to define custom autograd functions with custom forward
+and backward implementations.</p>
+<section id="function-base-class">
+<h2>Function Base Class<a class="headerlink" href="#function-base-class" title="Link to this heading">#</a></h2>
+<dl class="cpp struct">
+<dt class="sig sig-object cpp" id="_CPPv4I0EN5torch8autograd8FunctionE">
+<span id="_CPPv3I0EN5torch8autograd8FunctionE"></span><span id="_CPPv2I0EN5torch8autograd8FunctionE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">T</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="PyTorchstructtorch_1_1autograd_1_1_function"></span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Function</span></span></span><a class="headerlink" href="#_CPPv4I0EN5torch8autograd8FunctionE" title="Link to this definition">#</a><br /></dt>
+<dd><p>To use custom autograd operations, implement a <a class="reference internal" href="#PyTorchstructtorch_1_1autograd_1_1_function"><span class="std std-ref">Function</span></a> subclass with static forward and backward functions: </p>
+<p><code class="docutils literal notranslate"><span class="pre">forward</span></code> can take as many arguments as you want and should return either a variable list or a Variable. Use of any direct Variable arguments will be registered in the graph but no vectors/sets or any other data structures will be traversed. You can use std::optional&lt;Tensor&gt; as one of the arguments and it will be registered as a variable in the graph if the argument has a value. It should take a pointer to <code class="docutils literal notranslate"><a class="reference internal" href="#PyTorchstructtorch_1_1autograd_1_1_autograd_context"><span class="std std-ref"><span class="pre">torch::autograd::AutogradContext</span></span></a></code> as the first argument. Variables can be saved in the <code class="docutils literal notranslate"><span class="pre">ctx</span></code> using <code class="docutils literal notranslate"><span class="pre">ctx-&gt;save_for_backward</span></code> (see <code class="docutils literal notranslate"><a class="reference internal" href="#PyTorchstructtorch_1_1autograd_1_1_autograd_context_1a2150f73ad822cb634fe098065aaf4545"><span class="std std-ref"><span class="pre">torch::autograd::AutogradContext::save_for_backward</span></span></a></code>) and other data can be saved in the <code class="docutils literal notranslate"><span class="pre">ctx-&gt;saved_data</span></code> map (see <code class="docutils literal notranslate"><a class="reference internal" href="#PyTorchstructtorch_1_1autograd_1_1_autograd_context_1a382fceaf530cd9f5cce8f34eaedcab83"><span class="std std-ref"><span class="pre">torch::autograd::AutogradContext::saved_data</span></span></a></code>) in the form of <code class="docutils literal notranslate"><span class="pre">&lt;std::string,</span> <span class="pre">at::IValue&gt;</span></code> pairs.</p>
+<p><code class="docutils literal notranslate"><span class="pre">backward</span></code> should take a pointer to <code class="docutils literal notranslate"><a class="reference internal" href="#PyTorchstructtorch_1_1autograd_1_1_autograd_context"><span class="std std-ref"><span class="pre">torch::autograd::AutogradContext</span></span></a></code> and a variable list containing as many Variables as there were outputs from <code class="docutils literal notranslate"><span class="pre">forward</span></code> as arguments. It should return as many Variables as there were inputs with each of them containing the gradient w.r.t. its corresponding input. Variables saved in <code class="docutils literal notranslate"><span class="pre">forward</span></code> can be accessed with <code class="docutils literal notranslate"><span class="pre">ctx-&gt;get_saved_variables</span></code> (see <code class="docutils literal notranslate"><a class="reference internal" href="#PyTorchstructtorch_1_1autograd_1_1_autograd_context_1afb8b53cd27bbcb7662544c27d2a94151"><span class="std std-ref"><span class="pre">torch::autograd::AutogradContext::get_saved_variables</span></span></a></code>) and other saved data can be accessed from <code class="docutils literal notranslate"><span class="pre">ctx-&gt;saved_data</span></code>. To enable compiled autograd support (torch.compile for backward) for your custom autograd operation, you can set MyFunction::is_traceable (see Function::istraceable notes below).</p>
+<p>For example: <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">MyFunction</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">Function</span><span class="o">&lt;</span><span class="n">MyFunction</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="k">public</span><span class="o">:</span>
+<span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="k">constexpr</span><span class="w"> </span><span class="kt">bool</span><span class="w"> </span><span class="n">is_traceable</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">true</span><span class="p">;</span>
+
+<span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="n">variable_list</span><span class="w"> </span><span class="nf">forward</span><span class="p">(</span><span class="n">AutogradContext</span><span class="w"> </span><span class="o">*</span><span class="n">ctx</span><span class="p">,</span><span class="w"> </span><span class="kt">int</span><span class="w"> </span><span class="n">n</span><span class="p">,</span><span class="w"> </span><span class="n">Variable</span><span class="w"> </span><span class="n">var</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">     </span><span class="c1">// Save data for backward in context</span>
+<span class="w">     </span><span class="n">ctx</span><span class="o">-&gt;</span><span class="n">saved_data</span><span class="p">[</span><span class="s">&quot;n&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">n</span><span class="p">;</span>
+<span class="w">     </span><span class="n">var</span><span class="p">.</span><span class="n">mul_</span><span class="p">(</span><span class="n">n</span><span class="p">);</span>
+<span class="w">     </span><span class="c1">// Mark var as modified by inplace operation</span>
+<span class="w">     </span><span class="n">ctx</span><span class="o">-&gt;</span><span class="n">mark_dirty</span><span class="p">({</span><span class="n">var</span><span class="p">});</span>
+<span class="w">     </span><span class="k">return</span><span class="w"> </span><span class="p">{</span><span class="n">var</span><span class="p">};</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="n">variable_list</span><span class="w"> </span><span class="nf">backward</span><span class="p">(</span><span class="n">AutogradContext</span><span class="w"> </span><span class="o">*</span><span class="n">ctx</span><span class="p">,</span><span class="w"> </span><span class="n">variable_list</span>
+<span class="w">  </span><span class="n">grad_output</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">     </span><span class="c1">// Use data saved in forward</span>
+<span class="w">     </span><span class="k">auto</span><span class="w"> </span><span class="n">n</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ctx</span><span class="o">-&gt;</span><span class="n">saved_data</span><span class="p">[</span><span class="s">&quot;n&quot;</span><span class="p">].</span><span class="n">toInt</span><span class="p">();</span>
+<span class="w">     </span><span class="k">return</span><span class="w"> </span><span class="p">{</span><span class="n">grad_output</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">*</span><span class="n">n</span><span class="p">};</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+</p>
+<p>To use <code class="docutils literal notranslate"><span class="pre">MyFunction</span></code>: <div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">Variable</span><span class="w"> </span><span class="n">x</span><span class="p">;</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">y</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MyFunction</span><span class="o">::</span><span class="n">apply</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span><span class="w"> </span><span class="n">x</span><span class="p">);</span>
+<span class="c1">// Example backward call</span>
+<span class="n">y</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">sum</span><span class="p">().</span><span class="n">backward</span><span class="p">();</span>
+</pre></div>
+</div>
+</p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-static-functions">Public Static Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4I0DpEN5torch8autograd8Function5applyENSt11enable_if_tINSt9is_same_vI1X1TEE9forward_tI1XDp4ArgsEEEDpRR4Args">
+<span id="_CPPv3I0DpEN5torch8autograd8Function5applyEDpRR4Args"></span><span id="_CPPv2I0DpEN5torch8autograd8Function5applyEDpRR4Args"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">X</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN5torch8autograd8FunctionE" title="torch::autograd::Function::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="p"><span class="pre">...</span></span><span class="sig-name descname"><span class="n"><span class="pre">Args</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="PyTorchstructtorch_1_1autograd_1_1_function_1a323bbb7988549a039ab2311e5b531dde"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">apply</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0DpEN5torch8autograd8Function5applyENSt11enable_if_tINSt9is_same_vI1X1TEE9forward_tI1XDp4ArgsEEEDpRR4Args" title="torch::autograd::Function::apply::Args"><span class="n"><span class="pre">Args</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">...</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">args</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="o"><span class="pre">-&gt;</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">enable_if_t</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">is_same_v</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0DpEN5torch8autograd8Function5applyENSt11enable_if_tINSt9is_same_vI1X1TEE9forward_tI1XDp4ArgsEEEDpRR4Args" title="torch::autograd::Function::apply::X"><span class="n"><span class="pre">X</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN5torch8autograd8FunctionE" title="torch::autograd::Function::T"><span class="n"><span class="pre">T</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">forward_t</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0DpEN5torch8autograd8Function5applyENSt11enable_if_tINSt9is_same_vI1X1TEE9forward_tI1XDp4ArgsEEEDpRR4Args" title="torch::autograd::Function::apply::X"><span class="n"><span class="pre">X</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0DpEN5torch8autograd8Function5applyENSt11enable_if_tINSt9is_same_vI1X1TEE9forward_tI1XDp4ArgsEEEDpRR4Args" title="torch::autograd::Function::apply::Args"><span class="n"><span class="pre">Args</span></span></a><span class="p"><span class="pre">...</span></span><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><a class="headerlink" href="#_CPPv4I0DpEN5torch8autograd8Function5applyENSt11enable_if_tINSt9is_same_vI1X1TEE9forward_tI1XDp4ArgsEEEDpRR4Args" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-static-attributes">Public Static Attributes</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch8autograd8Function12is_traceableE">
+<span id="_CPPv3N5torch8autograd8Function12is_traceableE"></span><span id="_CPPv2N5torch8autograd8Function12is_traceableE"></span><span id="torch::autograd::Function::is_traceable__b"></span><span class="target" id="PyTorchstructtorch_1_1autograd_1_1_function_1aeef0e749408cadf8b6a4c05bfb7d20d3"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">constexpr</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">is_traceable</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">false</span></span><a class="headerlink" href="#_CPPv4N5torch8autograd8Function12is_traceableE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+</div>
+</dd></dl>
+
+</section>
+<section id="autogradcontext">
+<h2>AutogradContext<a class="headerlink" href="#autogradcontext" title="Link to this heading">#</a></h2>
+<dl class="cpp struct">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch8autograd15AutogradContextE">
+<span id="_CPPv3N5torch8autograd15AutogradContextE"></span><span id="_CPPv2N5torch8autograd15AutogradContextE"></span><span id="torch::autograd::AutogradContext"></span><span class="target" id="PyTorchstructtorch_1_1autograd_1_1_autograd_context"></span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">AutogradContext</span></span></span><a class="headerlink" href="#_CPPv4N5torch8autograd15AutogradContextE" title="Link to this definition">#</a><br /></dt>
+<dd><p>Context to save information during <code class="docutils literal notranslate"><span class="pre">forward</span></code> that can be accessed in <code class="docutils literal notranslate"><span class="pre">backward</span></code> in custom autograd operations (see <code class="docutils literal notranslate"><a class="reference internal" href="#PyTorchstructtorch_1_1autograd_1_1_function"><span class="std std-ref"><span class="pre">torch::autograd::Function</span></span></a></code> for details). </p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch8autograd15AutogradContext15AutogradContextEv">
+<span id="_CPPv3N5torch8autograd15AutogradContext15AutogradContextEv"></span><span id="_CPPv2N5torch8autograd15AutogradContext15AutogradContextEv"></span><span id="torch::autograd::AutogradContext::AutogradContext"></span><span class="target" id="PyTorchstructtorch_1_1autograd_1_1_autograd_context_1a610acf6cb5bd08960d1b51f0fe2ed514"></span><span class="sig-name descname"><span class="n"><span class="pre">AutogradContext</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">default</span></span><a class="headerlink" href="#_CPPv4N5torch8autograd15AutogradContext15AutogradContextEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch8autograd15AutogradContext15AutogradContextERK15AutogradContext">
+<span id="_CPPv3N5torch8autograd15AutogradContext15AutogradContextERK15AutogradContext"></span><span id="_CPPv2N5torch8autograd15AutogradContext15AutogradContextERK15AutogradContext"></span><span id="torch::autograd::AutogradContext::AutogradContext__AutogradContextCR"></span><span class="target" id="PyTorchstructtorch_1_1autograd_1_1_autograd_context_1a4d4c2cf86530ef74c5a02d32c081d953"></span><span class="sig-name descname"><span class="n"><span class="pre">AutogradContext</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N5torch8autograd15AutogradContext15AutogradContextERK15AutogradContext" title="torch::autograd::AutogradContext::AutogradContext"><span class="n"><span class="pre">AutogradContext</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">other</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">delete</span></span><a class="headerlink" href="#_CPPv4N5torch8autograd15AutogradContext15AutogradContextERK15AutogradContext" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch8autograd15AutogradContextaSERK15AutogradContext">
+<span id="_CPPv3N5torch8autograd15AutogradContextaSERK15AutogradContext"></span><span id="_CPPv2N5torch8autograd15AutogradContextaSERK15AutogradContext"></span><span id="torch::autograd::AutogradContext::assign-operator__AutogradContextCR"></span><span class="target" id="PyTorchstructtorch_1_1autograd_1_1_autograd_context_1a0bf80e4ddc1e2a0c3104f7e436a29f61"></span><a class="reference internal" href="#_CPPv4N5torch8autograd15AutogradContextE" title="torch::autograd::AutogradContext"><span class="n"><span class="pre">AutogradContext</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">=</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N5torch8autograd15AutogradContextE" title="torch::autograd::AutogradContext"><span class="n"><span class="pre">AutogradContext</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">other</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">delete</span></span><a class="headerlink" href="#_CPPv4N5torch8autograd15AutogradContextaSERK15AutogradContext" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch8autograd15AutogradContext15AutogradContextERR15AutogradContext">
+<span id="_CPPv3N5torch8autograd15AutogradContext15AutogradContextERR15AutogradContext"></span><span id="_CPPv2N5torch8autograd15AutogradContext15AutogradContextERR15AutogradContext"></span><span id="torch::autograd::AutogradContext::AutogradContext__AutogradContextRR"></span><span class="target" id="PyTorchstructtorch_1_1autograd_1_1_autograd_context_1aae305bf1a37791483fd058ae32051327"></span><span class="sig-name descname"><span class="n"><span class="pre">AutogradContext</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4N5torch8autograd15AutogradContext15AutogradContextERR15AutogradContext" title="torch::autograd::AutogradContext::AutogradContext"><span class="n"><span class="pre">AutogradContext</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">other</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">delete</span></span><a class="headerlink" href="#_CPPv4N5torch8autograd15AutogradContext15AutogradContextERR15AutogradContext" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch8autograd15AutogradContextaSERR15AutogradContext">
+<span id="_CPPv3N5torch8autograd15AutogradContextaSERR15AutogradContext"></span><span id="_CPPv2N5torch8autograd15AutogradContextaSERR15AutogradContext"></span><span id="torch::autograd::AutogradContext::assign-operator__AutogradContextRR"></span><span class="target" id="PyTorchstructtorch_1_1autograd_1_1_autograd_context_1a14d8b6440da3ab32a9ae2e4c2c71f6de"></span><a class="reference internal" href="#_CPPv4N5torch8autograd15AutogradContextE" title="torch::autograd::AutogradContext"><span class="n"><span class="pre">AutogradContext</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">=</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4N5torch8autograd15AutogradContextE" title="torch::autograd::AutogradContext"><span class="n"><span class="pre">AutogradContext</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">other</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">delete</span></span><a class="headerlink" href="#_CPPv4N5torch8autograd15AutogradContextaSERR15AutogradContext" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch8autograd15AutogradContextD0Ev">
+<span id="_CPPv3N5torch8autograd15AutogradContextD0Ev"></span><span id="_CPPv2N5torch8autograd15AutogradContextD0Ev"></span><span id="torch::autograd::AutogradContext::~AutogradContext"></span><span class="target" id="PyTorchstructtorch_1_1autograd_1_1_autograd_context_1a8d8b1d9df1f08192a0bc250b754f4dea"></span><span class="sig-name descname"><span class="n"><span class="pre">~AutogradContext</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">default</span></span><a class="headerlink" href="#_CPPv4N5torch8autograd15AutogradContextD0Ev" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch8autograd15AutogradContext15AutogradContextER10PackedArgs">
+<span id="_CPPv3N5torch8autograd15AutogradContext15AutogradContextER10PackedArgs"></span><span id="_CPPv2N5torch8autograd15AutogradContext15AutogradContextER10PackedArgs"></span><span id="torch::autograd::AutogradContext::AutogradContext__PackedArgsR"></span><span class="target" id="PyTorchstructtorch_1_1autograd_1_1_autograd_context_1aa141e0558b74944578761c283bc4f00b"></span><span class="sig-name descname"><span class="n"><span class="pre">AutogradContext</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">PackedArgs</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">packed_args</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5torch8autograd15AutogradContext15AutogradContextER10PackedArgs" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch8autograd15AutogradContext17save_for_backwardE13variable_list">
+<span id="_CPPv3N5torch8autograd15AutogradContext17save_for_backwardE13variable_list"></span><span id="_CPPv2N5torch8autograd15AutogradContext17save_for_backwardE13variable_list"></span><span id="torch::autograd::AutogradContext::save_for_backward__variable_list"></span><span class="target" id="PyTorchstructtorch_1_1autograd_1_1_autograd_context_1a2150f73ad822cb634fe098065aaf4545"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">save_for_backward</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">variable_list</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">to_save</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5torch8autograd15AutogradContext17save_for_backwardE13variable_list" title="Link to this definition">#</a><br /></dt>
+<dd><p>Saves the list of variables for a future call to <code class="docutils literal notranslate"><span class="pre">backward</span></code>. </p>
+<p>This should be called at most once from inside of <code class="docutils literal notranslate"><span class="pre">forward</span></code>. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch8autograd15AutogradContext10mark_dirtyERK13variable_list">
+<span id="_CPPv3N5torch8autograd15AutogradContext10mark_dirtyERK13variable_list"></span><span id="_CPPv2N5torch8autograd15AutogradContext10mark_dirtyERK13variable_list"></span><span id="torch::autograd::AutogradContext::mark_dirty__variable_listCR"></span><span class="target" id="PyTorchstructtorch_1_1autograd_1_1_autograd_context_1a6521e7b098e15e8fb592244f6ec2f1de"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">mark_dirty</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">variable_list</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">inputs</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5torch8autograd15AutogradContext10mark_dirtyERK13variable_list" title="Link to this definition">#</a><br /></dt>
+<dd><p>Marks variables in the list as modified in an in-place operation. </p>
+<p>This should be called at most once from inside of <code class="docutils literal notranslate"><span class="pre">forward</span></code> and all arguments should be inputs. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch8autograd15AutogradContext23mark_non_differentiableERK13variable_list">
+<span id="_CPPv3N5torch8autograd15AutogradContext23mark_non_differentiableERK13variable_list"></span><span id="_CPPv2N5torch8autograd15AutogradContext23mark_non_differentiableERK13variable_list"></span><span id="torch::autograd::AutogradContext::mark_non_differentiable__variable_listCR"></span><span class="target" id="PyTorchstructtorch_1_1autograd_1_1_autograd_context_1a167ac4fe841f0eceafe8271d0f010bbd"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">mark_non_differentiable</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">variable_list</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">outputs</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5torch8autograd15AutogradContext23mark_non_differentiableERK13variable_list" title="Link to this definition">#</a><br /></dt>
+<dd><p>Marks outputs in the list as not requiring gradients. </p>
+<p>This should be called at most once from inside of <code class="docutils literal notranslate"><span class="pre">forward</span></code> and all arguments should be outputs. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch8autograd15AutogradContext21set_materialize_gradsEb">
+<span id="_CPPv3N5torch8autograd15AutogradContext21set_materialize_gradsEb"></span><span id="_CPPv2N5torch8autograd15AutogradContext21set_materialize_gradsEb"></span><span id="torch::autograd::AutogradContext::set_materialize_grads__b"></span><span class="target" id="PyTorchstructtorch_1_1autograd_1_1_autograd_context_1a951005bf6b38a5251caedde505a318a0"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">set_materialize_grads</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">value</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5torch8autograd15AutogradContext21set_materialize_gradsEb" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5torch8autograd15AutogradContext19get_saved_variablesEv">
+<span id="_CPPv3NK5torch8autograd15AutogradContext19get_saved_variablesEv"></span><span id="_CPPv2NK5torch8autograd15AutogradContext19get_saved_variablesEv"></span><span id="torch::autograd::AutogradContext::get_saved_variablesC"></span><span class="target" id="PyTorchstructtorch_1_1autograd_1_1_autograd_context_1afb8b53cd27bbcb7662544c27d2a94151"></span><span class="n"><span class="pre">variable_list</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">get_saved_variables</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK5torch8autograd15AutogradContext19get_saved_variablesEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Get the list of variables that were saved in <code class="docutils literal notranslate"><span class="pre">forward</span></code> using <code class="docutils literal notranslate"><a class="reference internal" href="#PyTorchstructtorch_1_1autograd_1_1_autograd_context_1a2150f73ad822cb634fe098065aaf4545"><span class="std std-ref"><span class="pre">save_for_backward()</span></span></a></code>. </p>
+<p>Before returning them to the user, a check is made to ensure that they were not modified by any in-place operations. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5torch8autograd15AutogradContext18get_and_bump_dirtyEv">
+<span id="_CPPv3NK5torch8autograd15AutogradContext18get_and_bump_dirtyEv"></span><span id="_CPPv2NK5torch8autograd15AutogradContext18get_and_bump_dirtyEv"></span><span id="torch::autograd::AutogradContext::get_and_bump_dirtyC"></span><span class="target" id="PyTorchstructtorch_1_1autograd_1_1_autograd_context_1ac7ccdd7bddcb9ca841141a28a709bf81"></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">unordered_set</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">at</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">TensorImpl</span></span><span class="p"><span class="pre">*</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_and_bump_dirty</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK5torch8autograd15AutogradContext18get_and_bump_dirtyEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5torch8autograd15AutogradContext22get_non_differentiableEv">
+<span id="_CPPv3NK5torch8autograd15AutogradContext22get_non_differentiableEv"></span><span id="_CPPv2NK5torch8autograd15AutogradContext22get_non_differentiableEv"></span><span id="torch::autograd::AutogradContext::get_non_differentiableC"></span><span class="target" id="PyTorchstructtorch_1_1autograd_1_1_autograd_context_1a3a2d43e5a05c5ba03b3565d74c592e6e"></span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">unordered_set</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">at</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">TensorImpl</span></span><span class="p"><span class="pre">*</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">get_non_differentiable</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK5torch8autograd15AutogradContext22get_non_differentiableEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5torch8autograd15AutogradContext16needs_input_gradE6size_t">
+<span id="_CPPv3NK5torch8autograd15AutogradContext16needs_input_gradE6size_t"></span><span id="_CPPv2NK5torch8autograd15AutogradContext16needs_input_gradE6size_t"></span><span id="torch::autograd::AutogradContext::needs_input_grad__sC"></span><span class="target" id="PyTorchstructtorch_1_1autograd_1_1_autograd_context_1ab5a4cfc311942315873a964f8d5144db"></span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">needs_input_grad</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">output_edge_index</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK5torch8autograd15AutogradContext16needs_input_gradE6size_t" title="Link to this definition">#</a><br /></dt>
+<dd><p>Expose the Node’s <code class="docutils literal notranslate"><span class="pre">task_should_compute_output</span></code> method to the cpp custom autograd <a class="reference internal" href="#PyTorchstructtorch_1_1autograd_1_1_function"><span class="std std-ref">Function</span></a> as <code class="docutils literal notranslate"><span class="pre">needs_input_grad</span></code>. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5torch8autograd15AutogradContext16needs_input_gradENSt16initializer_listI10IndexRangeEE">
+<span id="_CPPv3NK5torch8autograd15AutogradContext16needs_input_gradENSt16initializer_listI10IndexRangeEE"></span><span id="_CPPv2NK5torch8autograd15AutogradContext16needs_input_gradENSt16initializer_listI10IndexRangeEE"></span><span id="torch::autograd::AutogradContext::needs_input_grad__std::initializer_list:IndexRange:C"></span><span class="target" id="PyTorchstructtorch_1_1autograd_1_1_autograd_context_1a0ba0dbd749ef0bd160a36b0214dcb124"></span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">needs_input_grad</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">initializer_list</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">IndexRange</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">idxs</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK5torch8autograd15AutogradContext16needs_input_gradENSt16initializer_listI10IndexRangeEE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-members">Public Members</p>
+<dl class="cpp var">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch8autograd15AutogradContext10saved_dataE">
+<span id="_CPPv3N5torch8autograd15AutogradContext10saved_dataE"></span><span id="_CPPv2N5torch8autograd15AutogradContext10saved_dataE"></span><span id="torch::autograd::AutogradContext::saved_data__ska::flat_hash_map:ss.at::IValue:"></span><span class="target" id="PyTorchstructtorch_1_1autograd_1_1_autograd_context_1a382fceaf530cd9f5cce8f34eaedcab83"></span><span class="n"><span class="pre">ska</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">flat_hash_map</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">string</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="n"><span class="pre">at</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">IValue</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">saved_data</span></span></span><a class="headerlink" href="#_CPPv4N5torch8autograd15AutogradContext10saved_dataE" title="Link to this definition">#</a><br /></dt>
+<dd><p>Can be used to save non-variable data for <code class="docutils literal notranslate"><span class="pre">backward</span></code>. </p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+</section>
+<section id="creating-custom-functions">
+<h2>Creating Custom Functions<a class="headerlink" href="#creating-custom-functions" title="Link to this heading">#</a></h2>
+<p>To create a custom autograd function, inherit from <code class="docutils literal notranslate"><span class="pre">torch::autograd::Function</span></code>
+and implement the static <code class="docutils literal notranslate"><span class="pre">forward</span></code> and <code class="docutils literal notranslate"><span class="pre">backward</span></code> methods:</p>
+<p><strong>Example:</strong></p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">MyReLU</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">autograd</span><span class="o">::</span><span class="n">Function</span><span class="o">&lt;</span><span class="n">MyReLU</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="k">public</span><span class="o">:</span>
+<span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">Tensor</span><span class="w"> </span><span class="n">forward</span><span class="p">(</span>
+<span class="w">      </span><span class="n">torch</span><span class="o">::</span><span class="n">autograd</span><span class="o">::</span><span class="n">AutogradContext</span><span class="o">*</span><span class="w"> </span><span class="n">ctx</span><span class="p">,</span>
+<span class="w">      </span><span class="n">torch</span><span class="o">::</span><span class="n">Tensor</span><span class="w"> </span><span class="n">input</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">ctx</span><span class="o">-&gt;</span><span class="n">save_for_backward</span><span class="p">({</span><span class="n">input</span><span class="p">});</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="n">input</span><span class="p">.</span><span class="n">clamp_min</span><span class="p">(</span><span class="mi">0</span><span class="p">);</span>
+<span class="w">  </span><span class="p">}</span>
+
+<span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">autograd</span><span class="o">::</span><span class="n">variable_list</span><span class="w"> </span><span class="n">backward</span><span class="p">(</span>
+<span class="w">      </span><span class="n">torch</span><span class="o">::</span><span class="n">autograd</span><span class="o">::</span><span class="n">AutogradContext</span><span class="o">*</span><span class="w"> </span><span class="n">ctx</span><span class="p">,</span>
+<span class="w">      </span><span class="n">torch</span><span class="o">::</span><span class="n">autograd</span><span class="o">::</span><span class="n">variable_list</span><span class="w"> </span><span class="n">grad_outputs</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">saved</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">ctx</span><span class="o">-&gt;</span><span class="n">get_saved_variables</span><span class="p">();</span>
+<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">input</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">saved</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
+<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">grad_output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">grad_outputs</span><span class="p">[</span><span class="mi">0</span><span class="p">];</span>
+<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">grad_input</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">grad_output</span><span class="w"> </span><span class="o">*</span><span class="w"> </span><span class="p">(</span><span class="n">input</span><span class="w"> </span><span class="o">&gt;</span><span class="w"> </span><span class="mi">0</span><span class="p">).</span><span class="n">to</span><span class="p">(</span><span class="n">grad_output</span><span class="p">.</span><span class="n">dtype</span><span class="p">());</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">{</span><span class="n">grad_input</span><span class="p">};</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">};</span>
+
+<span class="c1">// Usage</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">MyReLU</span><span class="o">::</span><span class="n">apply</span><span class="p">(</span><span class="n">input</span><span class="p">);</span>
+</pre></div>
+</div>
+</section>
+<section id="custom-kernels-and-autodispatchbelowadinplaceorview">
+<h2>Custom Kernels and AutoDispatchBelowADInplaceOrView<a class="headerlink" href="#custom-kernels-and-autodispatchbelowadinplaceorview" title="Link to this heading">#</a></h2>
+<p>For users implementing custom kernels who want to redispatch below <code class="docutils literal notranslate"><span class="pre">Autograd</span></code> dispatch
+keys, use <code class="docutils literal notranslate"><span class="pre">at::AutoDispatchBelowADInplaceOrView</span></code> instead of <code class="docutils literal notranslate"><span class="pre">InferenceMode</span></code>:</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">class</span><span class="w"> </span><span class="nc">ROIAlignFunction</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="k">public</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">autograd</span><span class="o">::</span><span class="n">Function</span><span class="o">&lt;</span><span class="n">ROIAlignFunction</span><span class="o">&gt;</span><span class="w"> </span><span class="p">{</span>
+<span class="w"> </span><span class="k">public</span><span class="o">:</span>
+<span class="w">  </span><span class="k">static</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">autograd</span><span class="o">::</span><span class="n">variable_list</span><span class="w"> </span><span class="n">forward</span><span class="p">(</span>
+<span class="w">      </span><span class="n">torch</span><span class="o">::</span><span class="n">autograd</span><span class="o">::</span><span class="n">AutogradContext</span><span class="o">*</span><span class="w"> </span><span class="n">ctx</span><span class="p">,</span>
+<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">autograd</span><span class="o">::</span><span class="n">Variable</span><span class="o">&amp;</span><span class="w"> </span><span class="n">input</span><span class="p">,</span>
+<span class="w">      </span><span class="k">const</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">autograd</span><span class="o">::</span><span class="n">Variable</span><span class="o">&amp;</span><span class="w"> </span><span class="n">rois</span><span class="p">,</span>
+<span class="w">      </span><span class="kt">double</span><span class="w"> </span><span class="n">spatial_scale</span><span class="p">,</span>
+<span class="w">      </span><span class="kt">int64_t</span><span class="w"> </span><span class="n">pooled_height</span><span class="p">,</span>
+<span class="w">      </span><span class="kt">int64_t</span><span class="w"> </span><span class="n">pooled_width</span><span class="p">,</span>
+<span class="w">      </span><span class="kt">int64_t</span><span class="w"> </span><span class="n">sampling_ratio</span><span class="p">,</span>
+<span class="w">      </span><span class="kt">bool</span><span class="w"> </span><span class="n">aligned</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="n">ctx</span><span class="o">-&gt;</span><span class="n">saved_data</span><span class="p">[</span><span class="s">&quot;spatial_scale&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">spatial_scale</span><span class="p">;</span>
+<span class="w">    </span><span class="n">ctx</span><span class="o">-&gt;</span><span class="n">saved_data</span><span class="p">[</span><span class="s">&quot;pooled_height&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pooled_height</span><span class="p">;</span>
+<span class="w">    </span><span class="n">ctx</span><span class="o">-&gt;</span><span class="n">saved_data</span><span class="p">[</span><span class="s">&quot;pooled_width&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">pooled_width</span><span class="p">;</span>
+<span class="w">    </span><span class="n">ctx</span><span class="o">-&gt;</span><span class="n">saved_data</span><span class="p">[</span><span class="s">&quot;sampling_ratio&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">sampling_ratio</span><span class="p">;</span>
+<span class="w">    </span><span class="n">ctx</span><span class="o">-&gt;</span><span class="n">saved_data</span><span class="p">[</span><span class="s">&quot;aligned&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">aligned</span><span class="p">;</span>
+<span class="w">    </span><span class="n">ctx</span><span class="o">-&gt;</span><span class="n">saved_data</span><span class="p">[</span><span class="s">&quot;input_shape&quot;</span><span class="p">]</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">input</span><span class="p">.</span><span class="n">sizes</span><span class="p">();</span>
+<span class="w">    </span><span class="n">ctx</span><span class="o">-&gt;</span><span class="n">save_for_backward</span><span class="p">({</span><span class="n">rois</span><span class="p">});</span>
+
+<span class="w">    </span><span class="n">at</span><span class="o">::</span><span class="n">AutoDispatchBelowADInplaceOrView</span><span class="w"> </span><span class="n">guard</span><span class="p">;</span>
+<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">result</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">roi_align</span><span class="p">(</span>
+<span class="w">        </span><span class="n">input</span><span class="p">,</span><span class="w"> </span><span class="n">rois</span><span class="p">,</span><span class="w"> </span><span class="n">spatial_scale</span><span class="p">,</span><span class="w"> </span><span class="n">pooled_height</span><span class="p">,</span>
+<span class="w">        </span><span class="n">pooled_width</span><span class="p">,</span><span class="w"> </span><span class="n">sampling_ratio</span><span class="p">,</span><span class="w"> </span><span class="n">aligned</span><span class="p">);</span>
+<span class="w">    </span><span class="k">return</span><span class="w"> </span><span class="p">{</span><span class="n">result</span><span class="p">};</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">};</span>
+</pre></div>
+</div>
+<p>For customized inplace and view kernels, see the
+<a class="reference external" href="https://pytorch.org/tutorials/advanced/cpp_extension.html#backward-pass">custom kernel tutorial</a>
+for more details.</p>
+</section>
+</section>
+
+
+                </article>
+              
+</div>
+
+              
+              
+                <footer class="bd-footer-article">
+                  <div class="footer-article-items footer-article__inner">
+  
+    <div class="footer-article-item">
+<div class="feedback">
+  
+<div class="rating">
+    Rate this Page
+    <div class="stars">
+        
+        <span class="star" data-behavior="tutorial-rating" data-count="1" data-value="1">★</span>
+        
+        <span class="star" data-behavior="tutorial-rating" data-count="2" data-value="2">★</span>
+        
+        <span class="star" data-behavior="tutorial-rating" data-count="3" data-value="3">★</span>
+        
+        <span class="star" data-behavior="tutorial-rating" data-count="4" data-value="4">★</span>
+        
+        <span class="star" data-behavior="tutorial-rating" data-count="5" data-value="5">★</span>
+        
+    </div>
+</div>
+
+  <div class="feedback-send">
+    <button class="feedback-btn"
+            onclick="openGitHubIssue()"
+            data-bs-title="Create a GitHub Issue"
+            data-bs-placement="bottom"
+            data-bs-toggle="tooltip"
+            data-gtm="feedback-btn-click">Send Feedback
+    </button>
+  </div>
+</div>
+
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="gradient.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Gradient Computation</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="modes.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Gradient Modes</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+
+<div class="footer-info">
+  <p class="copyright">
+    
+  </p>
+
+  <p class="theme-version">
+    Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.4.
+  </p>
+</div>
+</div>
+  
+</div>
+                </footer>
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="gradient.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Gradient Computation</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="modes.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Gradient Modes</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc">
+<div class="sidebar-secondary-items sidebar-secondary__inner">
+    
+       <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#function-base-class">Function Base Class</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0EN5torch8autograd8FunctionE"><code class="docutils literal notranslate"><span class="pre">torch::autograd::Function</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0DpEN5torch8autograd8Function5applyENSt11enable_if_tINSt9is_same_vI1X1TEE9forward_tI1XDp4ArgsEEEDpRR4Args"><code class="docutils literal notranslate"><span class="pre">apply()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch8autograd8Function12is_traceableE"><code class="docutils literal notranslate"><span class="pre">is_traceable</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#autogradcontext">AutogradContext</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch8autograd15AutogradContextE"><code class="docutils literal notranslate"><span class="pre">torch::autograd::AutogradContext</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch8autograd15AutogradContext15AutogradContextEv"><code class="docutils literal notranslate"><span class="pre">AutogradContext()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch8autograd15AutogradContext15AutogradContextERK15AutogradContext"><code class="docutils literal notranslate"><span class="pre">AutogradContext()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch8autograd15AutogradContextaSERK15AutogradContext"><code class="docutils literal notranslate"><span class="pre">operator=()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch8autograd15AutogradContext15AutogradContextERR15AutogradContext"><code class="docutils literal notranslate"><span class="pre">AutogradContext()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch8autograd15AutogradContextaSERR15AutogradContext"><code class="docutils literal notranslate"><span class="pre">operator=()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch8autograd15AutogradContextD0Ev"><code class="docutils literal notranslate"><span class="pre">~AutogradContext()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch8autograd15AutogradContext15AutogradContextER10PackedArgs"><code class="docutils literal notranslate"><span class="pre">AutogradContext()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch8autograd15AutogradContext17save_for_backwardE13variable_list"><code class="docutils literal notranslate"><span class="pre">save_for_backward()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch8autograd15AutogradContext10mark_dirtyERK13variable_list"><code class="docutils literal notranslate"><span class="pre">mark_dirty()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch8autograd15AutogradContext23mark_non_differentiableERK13variable_list"><code class="docutils literal notranslate"><span class="pre">mark_non_differentiable()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch8autograd15AutogradContext21set_materialize_gradsEb"><code class="docutils literal notranslate"><span class="pre">set_materialize_grads()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK5torch8autograd15AutogradContext19get_saved_variablesEv"><code class="docutils literal notranslate"><span class="pre">get_saved_variables()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK5torch8autograd15AutogradContext18get_and_bump_dirtyEv"><code class="docutils literal notranslate"><span class="pre">get_and_bump_dirty()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK5torch8autograd15AutogradContext22get_non_differentiableEv"><code class="docutils literal notranslate"><span class="pre">get_non_differentiable()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK5torch8autograd15AutogradContext16needs_input_gradE6size_t"><code class="docutils literal notranslate"><span class="pre">needs_input_grad()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK5torch8autograd15AutogradContext16needs_input_gradENSt16initializer_listI10IndexRangeEE"><code class="docutils literal notranslate"><span class="pre">needs_input_grad()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch8autograd15AutogradContext10saved_dataE"><code class="docutils literal notranslate"><span class="pre">saved_data</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#creating-custom-functions">Creating Custom Functions</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#custom-kernels-and-autodispatchbelowadinplaceorview">Custom Kernels and AutoDispatchBelowADInplaceOrView</a></li>
+</ul>
+  </nav></div>
+    
+       <div class="sidebar-secondary-item">
+    <div class="tocsection sourcelink">
+      <a href="../../_sources/api/autograd/custom_functions.md.txt">
+        <i class="fa-solid fa-file-lines"></i> Show Source
+      </a>
+    </div>
+</div>
+    
+
+
+
+
+<div class="sidebar-secondary-item">
+  <div class="sidebar-heading">PyTorch Libraries</div>
+  <ul style="list-style-type: none; padding: 0; padding-bottom: 80px;">
+  
+   <li><a class="nav-link nav-external" href="https://docs.pytorch.org/executorch" style="color: var(--pst-color-text-muted)">ExecuTorch</a></li>
+  
+   <li><a class="nav-link nav-external" href="https://docs.pytorch.org/helion" style="color: var(--pst-color-text-muted)">Helion</a></li>
+  
+   <li><a class="nav-link nav-external" href="https://docs.pytorch.org/ao" style="color: var(--pst-color-text-muted)">torchao</a></li>
+  
+   <li><a class="nav-link nav-external" href="https://github.com/pytorch/kineto" style="color: var(--pst-color-text-muted)">kineto</a></li>
+  
+   <li><a class="nav-link nav-external" href="https://github.com/pytorch/torchtitan" style="color: var(--pst-color-text-muted)">torchtitan</a></li>
+  
+   <li><a class="nav-link nav-external" href="https://docs.pytorch.org/rl" style="color: var(--pst-color-text-muted)">TorchRL</a></li>
+  
+   <li><a class="nav-link nav-external" href="https://docs.pytorch.org/vision" style="color: var(--pst-color-text-muted)">torchvision</a></li>
+  
+   <li><a class="nav-link nav-external" href="https://docs.pytorch.org/audio" style="color: var(--pst-color-text-muted)">torchaudio</a></li>
+  
+   <li><a class="nav-link nav-external" href="https://docs.pytorch.org/tensordict" style="color: var(--pst-color-text-muted)">tensordict</a></li>
+  
+   <li><a class="nav-link nav-external" href="https://docs.pytorch.org/xla" style="color: var(--pst-color-text-muted)">PyTorch on XLA Devices</a></li>
+  
+  </ul>
+</div>
+
+</div>
+</div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  
+
+<div class="container-fluid docs-tutorials-resources" id="docs-tutorials-resources">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-4">
+        <h2>Docs</h2>
+        <p>Access comprehensive developer documentation for PyTorch</p>
+        <a class="with-right-arrow" href="https://docs.pytorch.org/docs/stable/index.html">View Docs</a>
+      </div>
+
+      <div class="col-md-4">
+        <h2>Tutorials</h2>
+        <p>Get in-depth tutorials for beginners and advanced developers</p>
+        <a class="with-right-arrow" href="https://docs.pytorch.org/tutorials">View Tutorials</a>
+      </div>
+
+      <div class="col-md-4">
+        <h2>Resources</h2>
+        <p>Find development resources and get your questions answered</p>
+        <a class="with-right-arrow" href="https://pytorch.org/resources">View Resources</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+<footer class="site-footer">
+
+  <div class="container footer-container">
+
+    <div class="newsletter" id="newsletter">
+
+      <p class="newsletter__title is-style-max-width-800"><strong>Stay in touch</strong> for updates, event info, and
+        the latest news</p>
+
+
+      <script charset="utf-8" type="text/javascript" src="//js.hsforms.net/forms/embed/v2.js"></script>
+      <script>
+        hbspt.forms.create({
+          region: "na1",
+          portalId: "8112310",
+          formId: "2fb2231c-000b-4ec5-88a0-1ab242549c9e"
+        });
+      </script>
+
+
+      <p class="newsletter__privacy">By submitting this form, I consent to receive marketing emails from the LF and its
+        projects regarding their events, training, research, developments, and related announcements. I understand that
+        I can unsubscribe at any time using the links in the footers of the emails I receive. <a
+          href="https://www.linuxfoundation.org/privacy/">Privacy Policy</a>.</p>
+
+    </div>
+
+    <div class="lf-grid">
+      <ul class="social-links">
+        <li><a href="https://www.facebook.com/pytorch" target="_blank" title="PyTorch on Facebook">
+            <svg xmlns="http://www.w3.org/2000/svg" viewbox="-0.51 -0.26 26.45 26.45" aria-label="Facebook">
+              <path fill="currentColor"
+                d="M25.497 13.075c0-2.45-.698-4.848-2.011-6.911a12.765 12.765 0 0 0-5.398-4.73A12.671 12.671 0 0 0 11.008.38a12.705 12.705 0 0 0-6.529 2.95A12.827 12.827 0 0 0 .563 9.358a12.896 12.896 0 0 0-.07 7.201 12.831 12.831 0 0 0 3.801 6.103 12.709 12.709 0 0 0 6.471 3.078v-8.957H7.53v-3.708h3.235v-2.824c0-3.213 1.903-4.988 4.813-4.988.956.014 1.909.097 2.852.25V8.67h-1.607a1.83 1.83 0 0 0-1.518.497 1.854 1.854 0 0 0-.561 1.505v2.404h3.535l-.563 3.708h-2.97v8.957a12.725 12.725 0 0 0 7.697-4.337 12.87 12.87 0 0 0 3.054-8.328z" />
+            </svg>
+          </a></li>
+        <li><a href="https://twitter.com/pytorch" target="_blank" title="PyTorch on X">
+            <svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 300 300" aria-label="X">
+              <path fill="currentColor"
+                d="M178.57 127.15 290.27 0h-26.46l-97.03 110.38L89.34 0H0l117.13 166.93L0 300.25h26.46l102.4-116.59 81.8 116.59h89.34M36.01 19.54H76.66l187.13 262.13h-40.66" />
+            </svg>
+          </a></li>
+        <li><a href="https://www.youtube.com/pytorch" target="_blank" title="PyTorch on YouTube">
+            <svg xmlns="http://www.w3.org/2000/svg" viewbox="0.21 0.27 34.45 25.07" aria-label="YouTube">
+              <path fill="currentColor"
+                d="M33.729 6.084s-.327-2.33-1.317-3.356a4.691 4.691 0 0 0-3.32-1.432c-4.634-.34-11.589-.34-11.589-.34h-.014s-6.954 0-11.59.342a4.692 4.692 0 0 0-3.32 1.432c-.993 1.025-1.315 3.354-1.315 3.354a52.189 52.189 0 0 0-.331 5.473v2.566c.014 1.829.125 3.656.331 5.472 0 0 .322 2.33 1.316 3.36 1.26 1.345 2.916 1.3 3.653 1.445 2.65.26 11.263.34 11.263.34s6.96-.01 11.597-.353a4.691 4.691 0 0 0 3.32-1.432c.993-1.026 1.316-3.356 1.316-3.356.206-1.817.316-3.644.33-5.473v-2.57a52.26 52.26 0 0 0-.33-5.472zM14.076 17.232V7.729l8.951 4.768-8.95 4.735z" />
+            </svg>
+          </a></li>
+        <li><a href="https://www.linkedin.com/company/pytorch" target="_blank" title="PyTorch on LinkedIn">
+            <svg xmlns="http://www.w3.org/2000/svg" viewbox="-10.23 -10.23 531.96 531.96" aria-label="LinkedIn">
+              <rect width="512" height="512" rx="0" fill="currentColor" />
+              <circle fill="#000" cx="142" cy="138" r="37" />
+              <path stroke="#000" stroke-width="66" d="M244 194v198M142 194v198" />
+              <path fill="#000"
+                d="M276 282c0-20 13-40 36-40 24 0 33 18 33 45v105h66V279c0-61-32-89-76-89-34 0-51 19-59 32" />
+            </svg>
+          </a></li>
+        <li><a href="https://pytorch.slack.com" target="_blank" title="PyTorch Slack">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0.16 -0.03 21.19 21.19" aria-label="Slack">
+              <path fill="currentColor"
+                d="M4.896 13.27a2.147 2.147 0 0 1-2.141 2.142A2.147 2.147 0 0 1 .613 13.27c0-1.178.963-2.141 2.142-2.141h2.141v2.141zm1.08 0c0-1.178.962-2.141 2.141-2.141s2.142.963 2.142 2.141v5.363a2.147 2.147 0 0 1-2.142 2.141 2.147 2.147 0 0 1-2.141-2.142V13.27zm2.141-8.6a2.147 2.147 0 0 1-2.141-2.14c0-1.18.962-2.142 2.141-2.142s2.142.963 2.142 2.141v2.142H8.117zm0 1.08c1.179 0 2.141.962 2.141 2.141a2.147 2.147 0 0 1-2.141 2.142H2.755A2.147 2.147 0 0 1 .613 7.89c0-1.179.963-2.141 2.142-2.141h5.362zm8.599 2.141c0-1.179.963-2.141 2.141-2.141 1.179 0 2.143.962 2.143 2.14a2.147 2.147 0 0 1-2.142 2.142h-2.141V7.89zm-1.08 0a2.147 2.147 0 0 1-2.141 2.142 2.147 2.147 0 0 1-2.141-2.142V2.53c0-1.178.962-2.141 2.141-2.141s2.142.963 2.142 2.141v5.362zm-2.141 8.6c1.179 0 2.142.962 2.142 2.14a2.147 2.147 0 0 1-2.142 2.142 2.147 2.147 0 0 1-2.141-2.141V16.49h2.141zm0-1.08a2.147 2.147 0 0 1-2.141-2.141c0-1.179.962-2.142 2.141-2.142h5.362c1.179 0 2.142.963 2.142 2.142a2.147 2.147 0 0 1-2.142 2.142h-5.362z">
+              </path>
+            </svg>
+          </a></li>
+        <li><a href="https://pytorch.org/wechat" title="PyTorch on WeChat">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0.14 -0.17 38.02 33.02" aria-label="WeChat">
+              <path fill="currentColor"
+                d="M26.289 10.976a12.972 12.972 0 0 0-8.742 3.53 10.386 10.386 0 0 0-3.224 8.795c-1.326-.164-2.535-.345-3.75-.448a2.332 2.332 0 0 0-1.273.216c-1.18.666-2.311 1.418-3.652 2.255.246-1.112.405-2.087.687-3.024a1.15 1.15 0 0 0-.523-1.52C1.737 17.902.02 13.601 1.307 9.165c1.189-4.1 4.11-6.587 8.077-7.884A13.54 13.54 0 0 1 24.18 5.617a10.135 10.135 0 0 1 2.109 5.359zM10.668 9.594a1.564 1.564 0 0 0-2.095-1.472 1.52 1.52 0 0 0-.895 1.964 1.502 1.502 0 0 0 1.391.966 1.545 1.545 0 0 0 1.598-1.46v.002zm8.15-1.566a1.567 1.567 0 0 0-1.528 1.543 1.528 1.528 0 0 0 1.571 1.492 1.52 1.52 0 0 0 1.375-2.117 1.518 1.518 0 0 0-1.415-.919l-.003.001z">
+              </path>
+              <path fill="currentColor"
+                d="M33.914 32.137c-1.075-.478-2.062-1.196-3.11-1.306-1.049-.11-2.145.494-3.24.605a10.821 10.821 0 0 1-8.781-2.864c-4.682-4.33-4.013-10.97 1.403-14.518 4.811-3.154 11.874-2.102 15.268 2.273a8.671 8.671 0 0 1-1.002 12.095c-1.046.929-1.422 1.693-.751 2.917.102.257.174.525.213.798zM21.68 20.292a1.264 1.264 0 1 0 .01-2.528 1.264 1.264 0 0 0-.01 2.528zm7.887-2.526a1.266 1.266 0 0 0-1.256 1.21 1.247 1.247 0 1 0 1.256-1.21z">
+              </path>
+            </svg>
+          </a></li>
+      </ul>
+    </div>
+    
+    <div class="privacy-policy">
+      <div class="copyright">
+      
+        <p>
+          &copy; PyTorch. Copyright © The Linux Foundation®. All rights reserved. The Linux Foundation has registered
+          trademarks and uses trademarks. For more information, including terms of use, privacy policy, and trademark
+          usage, please see our <a href="https://www.linuxfoundation.org/legal/policies">Policies</a> page. <a
+            href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage</a>. <a
+            href="http://www.linuxfoundation.org/privacy">Privacy Policy</a>.
+        </p>
+        
+      </div>
+    </div>
+
+
+  </div>
+</footer>
+
+<div class="cookie-banner-wrapper">
+  <div class="container">
+    <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://opensource.fb.com/legal/cookie-policy">Cookies Policy</a>.</p>
+    <img class="close-button" src="../../_static/img/pytorch-x.svg">
+  </div>
+</div>
+  
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright PyTorch Contributors.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.4.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  <script type="application/ld+json">
+    {
+       "@context": "https://schema.org",
+       "@type": "Article",
+       "name": "Custom Autograd Functions",
+       "headline": "Custom Autograd Functions",
+       "description": "Custom autograd functions in PyTorch C++ \u2014 defining forward and backward passes with torch::autograd::Function.",
+       "url": "/api/autograd/custom_functions.html",
+       "articleBody": "Custom Autograd Functions# PyTorch allows you to define custom autograd functions with custom forward and backward implementations. Function Base Class# template\u003cclass T\u003estruct Function# To use custom autograd operations, implement a Function subclass with static forward and backward functions: forward can take as many arguments as you want and should return either a variable list or a Variable. Use of any direct Variable arguments will be registered in the graph but no vectors/sets or any other data structures will be traversed. You can use std::optional\u003cTensor\u003e as one of the arguments and it will be registered as a variable in the graph if the argument has a value. It should take a pointer to torch::autograd::AutogradContext as the first argument. Variables can be saved in the ctx using ctx-\u003esave_for_backward (see torch::autograd::AutogradContext::save_for_backward) and other data can be saved in the ctx-\u003esaved_data map (see torch::autograd::AutogradContext::saved_data) in the form of \u003cstd::string, at::IValue\u003e pairs. backward should take a pointer to torch::autograd::AutogradContext and a variable list containing as many Variables as there were outputs from forward as arguments. It should return as many Variables as there were inputs with each of them containing the gradient w.r.t. its corresponding input. Variables saved in forward can be accessed with ctx-\u003eget_saved_variables (see torch::autograd::AutogradContext::get_saved_variables) and other saved data can be accessed from ctx-\u003esaved_data. To enable compiled autograd support (torch.compile for backward) for your custom autograd operation, you can set MyFunction::is_traceable (see Function::istraceable notes below). For example: class MyFunction : public Function\u003cMyFunction\u003e { public: static constexpr bool is_traceable = true; static variable_list forward(AutogradContext *ctx, int n, Variable var) { // Save data for backward in context ctx-\u003esaved_data[\"n\"] = n; var.mul_(n); // Mark var as modified by inplace operation ctx-\u003emark_dirty({var}); return {var}; } static variable_list backward(AutogradContext *ctx, variable_list grad_output) { // Use data saved in forward auto n = ctx-\u003esaved_data[\"n\"].toInt(); return {grad_output[0]*n}; } }; To use MyFunction: Variable x; auto y = MyFunction::apply(6, x); // Example backward call y[0].sum().backward(); Public Static Functions template\u003ctypename X = T, typename ...Args\u003estatic auto apply(Args\u0026\u0026... args) -\u003e std::enable_if_t\u003cstd::is_same_v\u003cX, T\u003e, forward_t\u003cX, Args...\u003e\u003e# Public Static Attributes static constexpr bool is_traceable = false# AutogradContext# struct AutogradContext# Context to save information during forward that can be accessed in backward in custom autograd operations (see torch::autograd::Function for details). Public Functions AutogradContext() = default# AutogradContext(const AutogradContext \u0026other) = delete# AutogradContext \u0026operator=(const AutogradContext \u0026other) = delete# AutogradContext(AutogradContext \u0026\u0026other) = delete# AutogradContext \u0026operator=(AutogradContext \u0026\u0026other) = delete# ~AutogradContext() = default# AutogradContext(PackedArgs \u0026packed_args)# void save_for_backward(variable_list to_save)# Saves the list of variables for a future call to backward. This should be called at most once from inside of forward. void mark_dirty(const variable_list \u0026inputs)# Marks variables in the list as modified in an in-place operation. This should be called at most once from inside of forward and all arguments should be inputs. void mark_non_differentiable(const variable_list \u0026outputs)# Marks outputs in the list as not requiring gradients. This should be called at most once from inside of forward and all arguments should be outputs. void set_materialize_grads(bool value)# variable_list get_saved_variables() const# Get the list of variables that were saved in forward using save_for_backward(). Before returning them to the user, a check is made to ensure that they were not modified by any in-place operations. const std::unordered_set\u003cat::TensorImpl*\u003e \u0026get_and_bump_dirty() const# const std::unordered_set\u003cat::TensorImpl*\u003e \u0026get_non_differentiable() const# bool needs_input_grad(size_t output_edge_index) const# Expose the Node\u2019s task_should_compute_output method to the cpp custom autograd Function as needs_input_grad. bool needs_input_grad(std::initializer_list\u003cIndexRange\u003e idxs) const# Public Members ska::flat_hash_map\u003cstd::string, at::IValue\u003e saved_data# Can be used to save non-variable data for backward. Creating Custom Functions# To create a custom autograd function, inherit from torch::autograd::Function and implement the static forward and backward methods: Example: class MyReLU : public torch::autograd::Function\u003cMyReLU\u003e { public: static torch::Tensor forward( torch::autograd::AutogradContext* ctx, torch::Tensor input) { ctx-\u003esave_for_backward({input}); return input.clamp_min(0); } static torch::autograd::variable_list backward( torch::autograd::AutogradContext* ctx, torch::autograd::variable_list grad_outputs) { auto saved = ctx-\u003eget_saved_variables(); auto input = saved[0]; auto grad_output = grad_outputs[0]; auto grad_input = grad_output * (input \u003e 0).to(grad_output.dtype()); return {grad_input}; } }; // Usage auto output = MyReLU::apply(input); Custom Kernels and AutoDispatchBelowADInplaceOrView# For users implementing custom kernels who want to redispatch below Autograd dispatch keys, use at::AutoDispatchBelowADInplaceOrView instead of InferenceMode: class ROIAlignFunction : public torch::autograd::Function\u003cROIAlignFunction\u003e { public: static torch::autograd::variable_list forward( torch::autograd::AutogradContext* ctx, const torch::autograd::Variable\u0026 input, const torch::autograd::Variable\u0026 rois, double spatial_scale, int64_t pooled_height, int64_t pooled_width, int64_t sampling_ratio, bool aligned) { ctx-\u003esaved_data[\"spatial_scale\"] = spatial_scale; ctx-\u003esaved_data[\"pooled_height\"] = pooled_height; ctx-\u003esaved_data[\"pooled_width\"] = pooled_width; ctx-\u003esaved_data[\"sampling_ratio\"] = sampling_ratio; ctx-\u003esaved_data[\"aligned\"] = aligned; ctx-\u003esaved_data[\"input_shape\"] = input.sizes(); ctx-\u003esave_for_backward({rois}); at::AutoDispatchBelowADInplaceOrView guard; auto result = roi_align( input, rois, spatial_scale, pooled_height, pooled_width, sampling_ratio, aligned); return {result}; } }; For customized inplace and view kernels, see the custom kernel tutorial for more details.",
+       "author": {
+         "@type": "Organization",
+         "name": "PyTorch Contributors",
+         "url": "https://pytorch.org"
+       },
+       "image": "https://pytorch.org/docs/stable/_static/img/pytorch_seo.png",
+       "mainEntityOfPage": {
+         "@type": "WebPage",
+         "@id": "/api/autograd/custom_functions.html"
+       },
+       "datePublished": "2023-01-01T00:00:00Z",
+       "dateModified": "2023-01-01T00:00:00Z"
+     }
+ </script>
+  <script>
+    // Tutorials Call to action event tracking
+    $("[data-behavior='call-to-action-event']").on('click', function () {
+      fbq('trackCustom', "Download", {
+        tutorialTitle: $('h1:first').text(),
+        downloadLink: this.href,
+        tutorialLink: window.location.href,
+        downloadTitle: $(this).attr("data-response")
+      });
+      if (typeof gtag === 'function') {
+        gtag('event', 'click', {
+          'event_category': $(this).attr("data-response"),
+          'event_label': $("h1").first().text(),
+          'tutorial_link': window.location.href
+        });
+      }
+    });
+  </script>
+  
+  </body>
+</html>

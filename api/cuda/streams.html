@@ -1,0 +1,1856 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="CUDA streams in PyTorch C++ — CUDAStream for asynchronous GPU execution and synchronization." name="description" />
+<meta content="PyTorch, C++, CUDA, CUDAStream, stream, asynchronous, GPU, synchronization" name="keywords" />
+
+    <title>CUDA Streams &#8212; PyTorch main documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=6977116a" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../../_static/documentation_options.js?v=a8da1a53"></script>
+    <script src="../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api/cuda/streams';</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="CUDA Guards" href="guards.html" />
+    <link rel="prev" title="CUDA Support" href="index.html" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+
+<!-- LLM/AI Agent: See /llms.txt for comprehensive navigation guidance -->
+<!-- Machine-readable LLM metadata -->
+<meta name="llm:site-type" content="documentation">
+<meta name="llm:framework" content="PyTorch">
+
+<meta name="llm:description" content="CUDA streams in PyTorch C++ — CUDAStream for asynchronous GPU execution and synchronization.">
+
+
+
+
+
+<meta name="llm:navigation-file" content="https://pytorch.org/docs/stable/llms.txt">
+<meta name="llm:sitemap" content="https://pytorch.org/docs/stable/sitemap.xml">
+<meta name="llm:version" content="main">
+<meta name="llm:project" content="PyTorch">
+<meta name="llm:page-type" content="documentation">
+<link rel="alternate" type="text/plain" href="https://pytorch.org/docs/stable/llms.txt" title="LLM Navigation Guide">
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js"></script>
+<script>
+  if (window.location.hostname === 'docs.pytorch.org' || window.location.hostname === 'docs-preview.pytorch.org') {
+    const script = document.createElement('script');
+    script.src = 'https://cmp.osano.com/16A0DbT9yDNIaQkvZ/31b1b91a-e0b6-47ea-bde2-7f2bd13dbe5c/osano.js?variant=one';
+    document.head.appendChild(script);
+  }
+</script>
+<script>
+  // Cookie banner for non-LF projects
+  document.addEventListener('DOMContentLoaded', function () {
+    // Hide cookie banner on local environments and LF owned docs
+    if (window.location.hostname === 'localhost' ||
+      window.location.hostname === '0.0.0.0' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname === 'docs.pytorch.org' ||
+      window.location.hostname === 'docs-preview.pytorch.org' ||
+      window.location.hostname.startsWith('192.168.')) {
+      const banner = document.querySelector('.cookie-banner-wrapper');
+      if (banner) {
+        banner.style.display = 'none';
+      }
+    }
+  });
+</script>
+<!-- Conditional CSS for header and footer height adjustment -->
+
+<style>
+  :root {
+    --header-height: 0px !important;
+    --header-height-desktop: 0px !important;
+  }
+  /* Ensure proper mobile layout when LF header is hidden */
+  @media (max-width: 960px) {
+    .bd-header {
+      top: 0 !important;
+      position: sticky !important;
+      z-index: 1020 !important;
+    }
+    .bd-main {
+      padding-top: 0 !important;
+      margin-top: 0 !important;
+    }
+    .bd-article-container {
+      padding-top: 0 !important;
+    }
+    .header-article__inner {
+      padding-top: 1rem !important;
+    }
+
+  }
+</style>
+
+
+<link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" crossorigin="anonymous">
+<script type="text/javascript" src="../../_static/js/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400&display=swap" rel="stylesheet">
+<meta property="og:image" content="https://docs.pytorch.org/docs/stable/_static/img/pytorch_seo.png" />
+<link rel="stylesheet" href="../../_static/webfonts/all.min.css" crossorigin="anonymous">
+<meta http-equiv="Content-Security-Policy"
+  content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; style-src * 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval' blob:;">
+<meta name="pytorch_project" content="">
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-T8XT4PS" height="0" width="0"
+    style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+<!-- Google Tag Manager -->
+<script>(function (w, d, s, l, i) {
+    w[l] = w[l] || []; w[l].push({
+      'gtm.start':
+        new Date().getTime(), event: 'gtm.js'
+    }); var f = d.getElementsByTagName(s)[0],
+      j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
+        'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
+    j.onload = function () {
+      window.dispatchEvent(new Event('gtm_loaded'));
+      console.log('GTM loaded successfully');
+    };
+  })(window, document, 'script', 'dataLayer', 'GTM-T8XT4PS');
+</script>
+<!-- End Google Tag Manager -->
+<!-- Facebook Pixel Code -->
+<script>
+  !function (f, b, e, v, n, t, s) {
+    if (f.fbq) return; n = f.fbq = function () {
+      n.callMethod ?
+        n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+    };
+    if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
+    n.queue = []; t = b.createElement(e); t.async = !0;
+    t.src = v; s = b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t, s)
+  }(window, document, 'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init', '243028289693773');
+  fbq('track', 'PageView');
+</script>
+<script>
+  document.documentElement.setAttribute('data-version', 'main');
+</script>
+<noscript>
+  <img height="1" width="1" src="https://www.facebook.com/tr?id=243028289693773&ev=PageView&noscript=1" />
+</noscript>
+<script>
+  function gtag() {
+    window.dataLayer.push(arguments);
+  }
+</script>
+<!-- End Facebook Pixel Code -->
+<!-- Repository configuration for tutorials -->
+
+
+<!-- Script to Fix scrolling with fast fixed-duration animation -->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const SCROLL_DURATION = 150; // Fixed duration in ms regardless of distance
+    let lockedTargetId = null; // Lock the TOC to this target until user scrolls manually
+    let isUpdatingToc = false; // Guard against infinite loops
+
+    function smoothScrollTo(targetY, duration, onComplete) {
+      const startY = window.pageYOffset;
+      const difference = targetY - startY;
+      const startTime = performance.now();
+
+      function step(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        // Ease-out cubic for smooth deceleration
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        window.scrollTo(0, startY + difference * easeOut);
+        if (progress < 1) {
+          requestAnimationFrame(step);
+        } else if (onComplete) {
+          onComplete();
+        }
+      }
+      requestAnimationFrame(step);
+    }
+
+    function updateTocHighlight(targetId) {
+      if (isUpdatingToc) return; // Prevent infinite loop
+      isUpdatingToc = true;
+
+      // Find the TOC link that points to this target
+      const tocNav = document.querySelector('.bd-toc-nav');
+      if (!tocNav) {
+        isUpdatingToc = false;
+        return;
+      }
+
+      // Remove active class from all TOC items
+      tocNav.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+        link.parentElement.classList.remove('active');
+      });
+
+      // Add active class to the matching link
+      const matchingLink = tocNav.querySelector(`a[href="#${CSS.escape(targetId)}"]`);
+      if (matchingLink) {
+        matchingLink.classList.add('active');
+        matchingLink.parentElement.classList.add('active');
+      }
+
+      // Use setTimeout to reset the guard after the current call stack
+      setTimeout(function() {
+        isUpdatingToc = false;
+      }, 0);
+    }
+
+    // Watch for ScrollSpy trying to change the active state and override it
+    const tocNav = document.querySelector('.bd-toc-nav');
+    if (tocNav) {
+      const observer = new MutationObserver(function(mutations) {
+        if (lockedTargetId && !isUpdatingToc) {
+          // Force our target to stay highlighted
+          updateTocHighlight(lockedTargetId);
+        }
+      });
+      observer.observe(tocNav, {
+        attributes: true,
+        attributeFilter: ['class'],
+        subtree: true
+      });
+    }
+
+    // Release the lock when user scrolls manually (not programmatically)
+    window.addEventListener('wheel', function() {
+      lockedTargetId = null;
+    });
+    window.addEventListener('touchmove', function() {
+      lockedTargetId = null;
+    });
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        const targetId = this.getAttribute('href').substring(1);
+        if (!targetId) return; // Skip empty hash links
+        const targetElement = document.getElementById(targetId);
+
+        if (targetElement) {
+          e.preventDefault();
+
+          // Lock the TOC to this target
+          lockedTargetId = targetId;
+
+          const headerHeight =
+            (document.querySelector('.header-holder') ? document.querySelector('.header-holder').offsetHeight : 0) +
+            (document.querySelector('.bd-header') ? document.querySelector('.bd-header').offsetHeight : 0) + 20;
+
+          const targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset - headerHeight;
+
+          // Update TOC highlight immediately
+          updateTocHighlight(targetId);
+
+          smoothScrollTo(targetPosition, SCROLL_DURATION, function() {
+            // Keep it highlighted after scroll
+            updateTocHighlight(targetId);
+          });
+
+          // Update URL hash without scrolling
+          history.pushState(null, null, '#' + targetId);
+        }
+      });
+    });
+  });
+</script>
+
+<script async src="https://cse.google.com/cse.js?cx=e65585f8c3ea1440e"></script>
+<!-- RunLLM Widget Configuration -->
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+
+  </head>
+
+<body data-feedback-url="https://github.com/pytorch/pytorch" class="pytorch-body">
+  
+
+
+  
+  
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+
+  
+  <div class="navbar-header-items__mobile-logo">
+    
+
+
+
+
+
+
+
+  
+  
+  
+
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+    <span class="logo__title">Home</span>
+  
+</a>
+  </div>
+
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      
+      
+        
+        <div class="navbar-item desktop-only-version">
+          
+  <a href="../../index.html" class="version">main</a>
+
+        </div>
+      
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+    
+      <li class="nav-item">
+        
+          
+          <a class="nav-link nav-internal" href="../../installing.html">
+            Installing C++ Distributions of PyTorch
+          </a>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          
+          <a class="nav-link nav-internal" href="../../frontend.html">
+            The C++ Frontend
+          </a>
+        
+      </li>
+    
+      <li class="nav-item dropdown current active">
+        
+          
+          <div class="nav-item-with-toggle">
+            <a class="nav-link nav-internal active" href="../index.html">
+              C++ API Reference
+            </a>
+          </div>
+          <ul class="dropdown-menu" id="dropdown-3">
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../aten/index.html">
+                  ATen: Tensor Library
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../c10/index.html">
+                  C10: Core Utilities
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../autograd/index.html">
+                  Autograd: Automatic Differentiation
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="index.html">
+                  CUDA Support
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../xpu/index.html">
+                  XPU Support
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../nn/index.html">
+                  Neural Network Modules (torch::nn)
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../optim/index.html">
+                  Optimizers (torch::optim)
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../data/index.html">
+                  Data Loading (torch::data)
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../serialize/index.html">
+                  Serialization (torch::serialize)
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../library/index.html">
+                  Torch Library API
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../stable/index.html">
+                  Torch Stable API
+                </a>
+              </li>
+            
+          </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          
+          <a class="nav-link nav-internal" href="../../faq.html">
+            FAQ
+          </a>
+        
+      </li>
+    
+
+    
+    
+  </ul>
+</nav>
+</div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+      
+      
+        <div class="navbar-item"><!-- PyTorch.org site link - desktop only, two-line layout -->
+<!-- Note: The show_pytorch_org_link check is handled in layout.html's navbar_end block -->
+<a href="https://pytorch.org" class="pytorch-site-link nav-link nav-external" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Go to PyTorch.org">
+  <span class="pytorch-site-link-text">
+    <span>Go to</span>
+    <span>pytorch.org <i class="fa-solid fa-arrow-up-right-from-square external-icon"></i></span>
+  </span>
+</a></div>
+      
+      
+        <div class="navbar-item">
+  
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+</div>
+      
+        <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://x.com/PyTorch" title="X" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-x-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">X</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/pytorch/pytorch" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://discuss.pytorch.org/" title="PyTorch Forum" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-discourse fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyTorch Forum</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/torch/" title="PyPi" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-python fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPi</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+
+
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    <div class="sidebar-header-items__start">
+      <div class="navbar-item">
+        
+  <a href="../../index.html" class="version">main</a>
+
+      </div>
+    </div>
+    
+
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+    
+      <li class="nav-item">
+        
+          
+          <a class="nav-link nav-internal" href="../../installing.html">
+            Installing C++ Distributions of PyTorch
+          </a>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          
+          <a class="nav-link nav-internal" href="../../frontend.html">
+            The C++ Frontend
+          </a>
+        
+      </li>
+    
+      <li class="nav-item dropdown current active">
+        
+          
+          <div class="nav-item-with-toggle">
+            <a class="nav-link nav-internal active" href="../index.html">
+              C++ API Reference
+            </a>
+          </div>
+          <ul class="dropdown-menu" id="dropdown-3">
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../aten/index.html">
+                  ATen: Tensor Library
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../c10/index.html">
+                  C10: Core Utilities
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../autograd/index.html">
+                  Autograd: Automatic Differentiation
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="index.html">
+                  CUDA Support
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../xpu/index.html">
+                  XPU Support
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../nn/index.html">
+                  Neural Network Modules (torch::nn)
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../optim/index.html">
+                  Optimizers (torch::optim)
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../data/index.html">
+                  Data Loading (torch::data)
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../serialize/index.html">
+                  Serialization (torch::serialize)
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../library/index.html">
+                  Torch Library API
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../stable/index.html">
+                  Torch Stable API
+                </a>
+              </li>
+            
+          </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          
+          <a class="nav-link nav-internal" href="../../faq.html">
+            FAQ
+          </a>
+        
+      </li>
+    
+
+    
+    
+  </ul>
+</nav>
+</div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+        
+          <div class="navbar-item"><!-- PyTorch.org site link - desktop only, two-line layout -->
+<!-- Note: The show_pytorch_org_link check is handled in layout.html's navbar_end block -->
+<a href="https://pytorch.org" class="pytorch-site-link nav-link nav-external" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Go to PyTorch.org">
+  <span class="pytorch-site-link-text">
+    <span>Go to</span>
+    <span>pytorch.org <i class="fa-solid fa-arrow-up-right-from-square external-icon"></i></span>
+  </span>
+</a></div>
+        
+        
+          <div class="navbar-item">
+  
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+</div>
+        
+          <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://x.com/PyTorch" title="X" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-x-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">X</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/pytorch/pytorch" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://discuss.pytorch.org/" title="PyTorch Forum" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-discourse fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyTorch Forum</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/torch/" title="PyPi" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-python fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPi</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Core</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../aten/index.html">ATen: Tensor Library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../aten/tensor.html">Tensor Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../aten/creation.html">Tensor Creation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../aten/indexing.html">Tensor Indexing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../aten/accessors.html">Tensor Accessors</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../c10/index.html">C10: Core Utilities</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../c10/device.html">Device and DeviceType</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../c10/guards.html">Device Guards</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../c10/streams.html">Streams</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../c10/types.html">Core Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../c10/utilities.html">Utilities</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../autograd/index.html">Autograd: Automatic Differentiation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../autograd/gradient.html">Gradient Computation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../autograd/custom_functions.html">Custom Autograd Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../autograd/modes.html">Gradient Modes</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">CUDA Support</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">CUDA Streams</a></li>
+<li class="toctree-l2"><a class="reference internal" href="guards.html">CUDA Guards</a></li>
+<li class="toctree-l2"><a class="reference internal" href="utilities.html">CUDA Utility Functions</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../xpu/index.html">XPU Support</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../xpu/streams.html">XPU Streams</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../xpu/utilities.html">XPU Utility Functions</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">C++ Frontend</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../nn/index.html">Neural Network Modules (torch::nn)</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../nn/containers.html">Containers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/convolution.html">Convolution Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/pooling.html">Pooling Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/linear.html">Linear Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/activation.html">Activation Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/normalization.html">Normalization Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/dropout.html">Dropout Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/embedding.html">Embedding Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/recurrent.html">Recurrent Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/transformer.html">Transformer Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/loss.html">Loss Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/functional.html">Functional API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/utilities.html">Utilities</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../optim/index.html">Optimizers (torch::optim)</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../optim/gradient_descent.html">Gradient Descent Optimizers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../optim/adaptive.html">Adaptive Learning Rate Optimizers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../optim/second_order.html">Second-Order Optimizers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../optim/schedulers.html">Learning Rate Schedulers</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../data/index.html">Data Loading (torch::data)</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../data/datasets.html">Datasets</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../data/dataloader.html">DataLoader</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../data/samplers.html">Samplers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../data/transforms.html">Transforms</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../serialize/index.html">Serialization (torch::serialize)</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../serialize/save_load.html">Saving and Loading</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../serialize/archives.html">Archives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../serialize/checkpoints.html">Checkpoints</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Extensions</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../library/index.html">Torch Library API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../library/registration.html">Operator Registration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../library/custom_classes.html">Custom Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../library/versioning.html">Library Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../stable/index.html">Torch Stable API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../stable/registration.html">Library Registration Macros</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../stable/operators.html">Stable Operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../stable/utilities.html">Utilities</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+
+
+
+<div id="rtd-footer-container"></div>
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">C++ API Reference</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">CUDA Support</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page">CUDA Streams</li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+<div class="rating">
+    Rate this Page
+    <div class="stars">
+        
+        <span class="star" data-behavior="tutorial-rating" data-count="1" data-value="1">★</span>
+        
+        <span class="star" data-behavior="tutorial-rating" data-count="2" data-value="2">★</span>
+        
+        <span class="star" data-behavior="tutorial-rating" data-count="3" data-value="3">★</span>
+        
+        <span class="star" data-behavior="tutorial-rating" data-count="4" data-value="4">★</span>
+        
+        <span class="star" data-behavior="tutorial-rating" data-count="5" data-value="5">★</span>
+        
+    </div>
+</div>
+</div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="searchbox"></div>
+<div id="pytorch-article">
+  <!-- Hidden breadcrumb schema for SEO only -->
+  <div style="display:none;" itemscope itemtype="https://schema.org/BreadcrumbList">
+    
+    <div itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+      <link itemprop="item" href="../index.html">
+      <meta itemprop="name" content="C++ API Reference">
+      <meta itemprop="position" content="1">
+    </div>
+    
+    <div itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+      <link itemprop="item" href="index.html">
+      <meta itemprop="name" content="CUDA Support">
+      <meta itemprop="position" content="2">
+    </div>
+    
+    <div itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+      <meta itemprop="name" content="CUDA Streams">
+      <meta itemprop="position" content="3">
+    </div>
+  </div>
+
+  
+  
+
+  
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="cuda-streams">
+<h1>CUDA Streams<a class="headerlink" href="#cuda-streams" title="Link to this heading">#</a></h1>
+<p>CUDA streams provide a mechanism for asynchronous execution of operations
+on the GPU. Operations queued to the same stream execute in order, while
+operations on different streams can execute concurrently.</p>
+<section id="cudastream">
+<h2>CUDAStream<a class="headerlink" href="#cudastream" title="Link to this heading">#</a></h2>
+<dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4N3c104cuda10CUDAStreamE">
+<span id="_CPPv3N3c104cuda10CUDAStreamE"></span><span id="_CPPv2N3c104cuda10CUDAStreamE"></span><span id="c10::cuda::CUDAStream"></span><span class="target" id="PyTorchclassc10_1_1cuda_1_1_c_u_d_a_stream"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CUDAStream</span></span></span><a class="headerlink" href="#_CPPv4N3c104cuda10CUDAStreamE" title="Link to this definition">#</a><br /></dt>
+<dd><div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-types">Public Types</p>
+<dl class="cpp enum">
+<dt class="sig sig-object cpp" id="_CPPv4N3c104cuda10CUDAStream9UncheckedE">
+<span id="_CPPv3N3c104cuda10CUDAStream9UncheckedE"></span><span id="_CPPv2N3c104cuda10CUDAStream9UncheckedE"></span><span class="target" id="PyTorchclassc10_1_1cuda_1_1_c_u_d_a_stream_1a8a631f2c3e37f01fc4aee5f43364bd62"></span><span class="k"><span class="pre">enum</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Unchecked</span></span></span><a class="headerlink" href="#_CPPv4N3c104cuda10CUDAStream9UncheckedE" title="Link to this definition">#</a><br /></dt>
+<dd><p><em>Values:</em></p>
+<dl class="cpp enumerator">
+<dt class="sig sig-object cpp" id="_CPPv4N3c104cuda10CUDAStream9Unchecked9UNCHECKEDE">
+<span id="_CPPv3N3c104cuda10CUDAStream9Unchecked9UNCHECKEDE"></span><span id="_CPPv2N3c104cuda10CUDAStream9Unchecked9UNCHECKEDE"></span><span class="target" id="PyTorchclassc10_1_1cuda_1_1_c_u_d_a_stream_1a8a631f2c3e37f01fc4aee5f43364bd62a01bca74fc93d597df38dc4f3a013c56d"></span><span class="k"><span class="pre">enumerator</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">UNCHECKED</span></span></span><a class="headerlink" href="#_CPPv4N3c104cuda10CUDAStream9Unchecked9UNCHECKEDE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+</dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N3c104cuda10CUDAStream10CUDAStreamE6Stream">
+<span id="_CPPv3N3c104cuda10CUDAStream10CUDAStreamE6Stream"></span><span id="_CPPv2N3c104cuda10CUDAStream10CUDAStreamE6Stream"></span><span id="c10::cuda::CUDAStream::CUDAStream__Stream"></span><span class="target" id="PyTorchclassc10_1_1cuda_1_1_c_u_d_a_stream_1ae3963a5cda58493d98e35376e59c311a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CUDAStream</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="../c10/streams.html#_CPPv4N3c106StreamE" title="c10::Stream"><span class="n"><span class="pre">Stream</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">stream</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3c104cuda10CUDAStream10CUDAStreamE6Stream" title="Link to this definition">#</a><br /></dt>
+<dd><p>Construct a <a class="reference internal" href="#PyTorchclassc10_1_1cuda_1_1_c_u_d_a_stream"><span class="std std-ref">CUDAStream</span></a> from a <a class="reference internal" href="../c10/streams.html#PyTorchclassc10_1_1_stream"><span class="std std-ref">Stream</span></a>. </p>
+<p>This construction is checked, and will raise an error if the <a class="reference internal" href="../c10/streams.html#PyTorchclassc10_1_1_stream"><span class="std std-ref">Stream</span></a> is not, in fact, a CUDA stream. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N3c104cuda10CUDAStream10CUDAStreamE9Unchecked6Stream">
+<span id="_CPPv3N3c104cuda10CUDAStream10CUDAStreamE9Unchecked6Stream"></span><span id="_CPPv2N3c104cuda10CUDAStream10CUDAStreamE9Unchecked6Stream"></span><span id="c10::cuda::CUDAStream::CUDAStream__Unchecked.Stream"></span><span class="target" id="PyTorchclassc10_1_1cuda_1_1_c_u_d_a_stream_1a7a755235e42fc4b1561ffc22e57c3d95"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">CUDAStream</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4N3c104cuda10CUDAStream9UncheckedE" title="c10::cuda::CUDAStream::Unchecked"><span class="n"><span class="pre">Unchecked</span></span></a>, <a class="reference internal" href="../c10/streams.html#_CPPv4N3c106StreamE" title="c10::Stream"><span class="n"><span class="pre">Stream</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">stream</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3c104cuda10CUDAStream10CUDAStreamE9Unchecked6Stream" title="Link to this definition">#</a><br /></dt>
+<dd><p>Construct a <a class="reference internal" href="#PyTorchclassc10_1_1cuda_1_1_c_u_d_a_stream"><span class="std std-ref">CUDAStream</span></a> from a <a class="reference internal" href="../c10/streams.html#PyTorchclassc10_1_1_stream"><span class="std std-ref">Stream</span></a> with no error checking. </p>
+<p>This constructor uses the “named” constructor idiom, and can be invoked as: CUDAStream(CUDAStream::UNCHECKED, stream) </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK3c104cuda10CUDAStreameqERK10CUDAStream">
+<span id="_CPPv3NK3c104cuda10CUDAStreameqERK10CUDAStream"></span><span id="_CPPv2NK3c104cuda10CUDAStreameqERK10CUDAStream"></span><span id="c10::cuda::CUDAStream::eq-operator__CUDAStreamCRC"></span><span class="target" id="PyTorchclassc10_1_1cuda_1_1_c_u_d_a_stream_1affdb6e904d8449b06ce26249a6e45a2d"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">==</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3c104cuda10CUDAStreamE" title="c10::cuda::CUDAStream"><span class="n"><span class="pre">CUDAStream</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">other</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK3c104cuda10CUDAStreameqERK10CUDAStream" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK3c104cuda10CUDAStreamneERK10CUDAStream">
+<span id="_CPPv3NK3c104cuda10CUDAStreamneERK10CUDAStream"></span><span id="_CPPv2NK3c104cuda10CUDAStreamneERK10CUDAStream"></span><span id="c10::cuda::CUDAStream::neq-operator__CUDAStreamCRC"></span><span class="target" id="PyTorchclassc10_1_1cuda_1_1_c_u_d_a_stream_1ae4feab88f2e25535687635c02b2ac202"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">!=</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3c104cuda10CUDAStreamE" title="c10::cuda::CUDAStream"><span class="n"><span class="pre">CUDAStream</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">other</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK3c104cuda10CUDAStreamneERK10CUDAStream" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK3c104cuda10CUDAStreamcv12cudaStream_tEv">
+<span id="_CPPv3NK3c104cuda10CUDAStreamcv12cudaStream_tEv"></span><span id="_CPPv2NK3c104cuda10CUDAStreamcv12cudaStream_tEv"></span><span id="c10::cuda::CUDAStream::castto-cudaStream_t-operatorC"></span><span class="target" id="PyTorchclassc10_1_1cuda_1_1_c_u_d_a_stream_1abb1ae98b60ac6674d9f3b07d467212b4"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="w"> </span><span class="n"><span class="pre">cudaStream_t</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK3c104cuda10CUDAStreamcv12cudaStream_tEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Implicit conversion to cudaStream_t. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK3c104cuda10CUDAStreamcv6StreamEv">
+<span id="_CPPv3NK3c104cuda10CUDAStreamcv6StreamEv"></span><span id="_CPPv2NK3c104cuda10CUDAStreamcv6StreamEv"></span><span id="c10::cuda::CUDAStream::castto-Stream-operatorC"></span><span class="target" id="PyTorchclassc10_1_1cuda_1_1_c_u_d_a_stream_1ad3b0d96968a38158ad0d9927083aa241"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="w"> </span><a class="reference internal" href="../c10/streams.html#_CPPv4N3c106StreamE" title="c10::Stream"><span class="n"><span class="pre">Stream</span></span></a></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK3c104cuda10CUDAStreamcv6StreamEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Implicit conversion to <a class="reference internal" href="../c10/streams.html#PyTorchclassc10_1_1_stream"><span class="std std-ref">Stream</span></a> (a.k.a., forget that the stream is a CUDA stream). </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK3c104cuda10CUDAStream11device_typeEv">
+<span id="_CPPv3NK3c104cuda10CUDAStream11device_typeEv"></span><span id="_CPPv2NK3c104cuda10CUDAStream11device_typeEv"></span><span id="c10::cuda::CUDAStream::device_typeC"></span><span class="target" id="PyTorchclassc10_1_1cuda_1_1_c_u_d_a_stream_1a480dcb26ddb1b247166a21711228568b"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="../c10/device.html#_CPPv4N3c1010DeviceTypeE" title="c10::DeviceType"><span class="n"><span class="pre">DeviceType</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">device_type</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK3c104cuda10CUDAStream11device_typeEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Used to avoid baking in device type explicitly to Python-side API. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK3c104cuda10CUDAStream12device_indexEv">
+<span id="_CPPv3NK3c104cuda10CUDAStream12device_indexEv"></span><span id="_CPPv2NK3c104cuda10CUDAStream12device_indexEv"></span><span id="c10::cuda::CUDAStream::device_indexC"></span><span class="target" id="PyTorchclassc10_1_1cuda_1_1_c_u_d_a_stream_1ad1c68ee35ff2ccbb13430bfe8789277f"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">DeviceIndex</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">device_index</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK3c104cuda10CUDAStream12device_indexEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Get the CUDA device index that this stream is associated with. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK3c104cuda10CUDAStream6deviceEv">
+<span id="_CPPv3NK3c104cuda10CUDAStream6deviceEv"></span><span id="_CPPv2NK3c104cuda10CUDAStream6deviceEv"></span><span id="c10::cuda::CUDAStream::deviceC"></span><span class="target" id="PyTorchclassc10_1_1cuda_1_1_c_u_d_a_stream_1a82f88ba164dbce2a62b14ce6110d1b07"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="../c10/device.html#_CPPv4N3c106DeviceE" title="c10::Device"><span class="n"><span class="pre">Device</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">device</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK3c104cuda10CUDAStream6deviceEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Get the full <a class="reference internal" href="../c10/device.html#PyTorchstructc10_1_1_device"><span class="std std-ref">Device</span></a> that this stream is associated with. </p>
+<p>The <a class="reference internal" href="../c10/device.html#PyTorchstructc10_1_1_device"><span class="std std-ref">Device</span></a> is guaranteed to be a CUDA device. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK3c104cuda10CUDAStream2idEv">
+<span id="_CPPv3NK3c104cuda10CUDAStream2idEv"></span><span id="_CPPv2NK3c104cuda10CUDAStream2idEv"></span><span id="c10::cuda::CUDAStream::idC"></span><span class="target" id="PyTorchclassc10_1_1cuda_1_1_c_u_d_a_stream_1a765d53fd1468a6abac0b91059a0a34ab"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">StreamId</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">id</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK3c104cuda10CUDAStream2idEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Return the stream ID corresponding to this particular stream. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK3c104cuda10CUDAStream5queryEv">
+<span id="_CPPv3NK3c104cuda10CUDAStream5queryEv"></span><span id="_CPPv2NK3c104cuda10CUDAStream5queryEv"></span><span id="c10::cuda::CUDAStream::queryC"></span><span class="target" id="PyTorchclassc10_1_1cuda_1_1_c_u_d_a_stream_1a482c3a1516b3524a4222b17f5f14b65e"></span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">query</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK3c104cuda10CUDAStream5queryEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK3c104cuda10CUDAStream11synchronizeEv">
+<span id="_CPPv3NK3c104cuda10CUDAStream11synchronizeEv"></span><span id="_CPPv2NK3c104cuda10CUDAStream11synchronizeEv"></span><span id="c10::cuda::CUDAStream::synchronizeC"></span><span class="target" id="PyTorchclassc10_1_1cuda_1_1_c_u_d_a_stream_1ab3c5ea5f5880c4b51d13e42ab2c7373c"></span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">synchronize</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK3c104cuda10CUDAStream11synchronizeEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK3c104cuda10CUDAStream8priorityEv">
+<span id="_CPPv3NK3c104cuda10CUDAStream8priorityEv"></span><span id="_CPPv2NK3c104cuda10CUDAStream8priorityEv"></span><span id="c10::cuda::CUDAStream::priorityC"></span><span class="target" id="PyTorchclassc10_1_1cuda_1_1_c_u_d_a_stream_1a7804778acd7760bfe43124ec1a3b3126"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">priority</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK3c104cuda10CUDAStream8priorityEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK3c104cuda10CUDAStream6streamEv">
+<span id="_CPPv3NK3c104cuda10CUDAStream6streamEv"></span><span id="_CPPv2NK3c104cuda10CUDAStream6streamEv"></span><span id="c10::cuda::CUDAStream::streamC"></span><span class="target" id="PyTorchclassc10_1_1cuda_1_1_c_u_d_a_stream_1a4416b3280ec937eb4e435719cb5ed068"></span><span class="n"><span class="pre">cudaStream_t</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">stream</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK3c104cuda10CUDAStream6streamEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Explicit conversion to cudaStream_t. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK3c104cuda10CUDAStream6unwrapEv">
+<span id="_CPPv3NK3c104cuda10CUDAStream6unwrapEv"></span><span id="_CPPv2NK3c104cuda10CUDAStream6unwrapEv"></span><span id="c10::cuda::CUDAStream::unwrapC"></span><span class="target" id="PyTorchclassc10_1_1cuda_1_1_c_u_d_a_stream_1a289d6b0032b599e7a29ef0d9c7ea5f1b"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="../c10/streams.html#_CPPv4N3c106StreamE" title="c10::Stream"><span class="n"><span class="pre">Stream</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">unwrap</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK3c104cuda10CUDAStream6unwrapEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Explicit conversion to <a class="reference internal" href="../c10/streams.html#PyTorchclassc10_1_1_stream"><span class="std std-ref">Stream</span></a>. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK3c104cuda10CUDAStream5pack3Ev">
+<span id="_CPPv3NK3c104cuda10CUDAStream5pack3Ev"></span><span id="_CPPv2NK3c104cuda10CUDAStream5pack3Ev"></span><span id="c10::cuda::CUDAStream::pack3C"></span><span class="target" id="PyTorchclassc10_1_1cuda_1_1_c_u_d_a_stream_1a3fb4b9abacba0d14eecc95c52982638c"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="n"><span class="pre">c10</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">StreamData3</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">pack3</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK3c104cuda10CUDAStream5pack3Ev" title="Link to this definition">#</a><br /></dt>
+<dd><p>Reversibly pack a <a class="reference internal" href="#PyTorchclassc10_1_1cuda_1_1_c_u_d_a_stream"><span class="std std-ref">CUDAStream</span></a> into a struct representation. </p>
+<p>Previously the stream’s data was packed into a single int64_t, as it was assumed the fields would not require more than 64 bits of storage in total. See <a class="github reference external" href="https://github.com/pytorch/pytorch/issues/75854">pytorch/pytorch#75854</a> for more information regarding newer platforms that may violate this assumption.</p>
+<p>The <a class="reference internal" href="#PyTorchclassc10_1_1cuda_1_1_c_u_d_a_stream"><span class="std std-ref">CUDAStream</span></a> can be unpacked using unpack(). </p>
+</dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-static-functions">Public Static Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N3c104cuda10CUDAStream7unpack3E8StreamId11DeviceIndex10DeviceType">
+<span id="_CPPv3N3c104cuda10CUDAStream7unpack3E8StreamId11DeviceIndex10DeviceType"></span><span id="_CPPv2N3c104cuda10CUDAStream7unpack3E8StreamId11DeviceIndex10DeviceType"></span><span id="c10::cuda::CUDAStream::unpack3__StreamId.DeviceIndex.DeviceType"></span><span class="target" id="PyTorchclassc10_1_1cuda_1_1_c_u_d_a_stream_1aae5b4b938069bb385bb0088b0aa18a62"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N3c104cuda10CUDAStreamE" title="c10::cuda::CUDAStream"><span class="n"><span class="pre">CUDAStream</span></span></a><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">unpack3</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">StreamId</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">stream_id</span></span>, <span class="n"><span class="pre">DeviceIndex</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">device_index</span></span>, <a class="reference internal" href="../c10/device.html#_CPPv4N3c1010DeviceTypeE" title="c10::DeviceType"><span class="n"><span class="pre">DeviceType</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">device_type</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3c104cuda10CUDAStream7unpack3E8StreamId11DeviceIndex10DeviceType" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N3c104cuda10CUDAStream14priority_rangeEv">
+<span id="_CPPv3N3c104cuda10CUDAStream14priority_rangeEv"></span><span id="_CPPv2N3c104cuda10CUDAStream14priority_rangeEv"></span><span id="c10::cuda::CUDAStream::priority_range"></span><span class="target" id="PyTorchclassc10_1_1cuda_1_1_c_u_d_a_stream_1a00c3d33f6d3126a38b62647d73b12c66"></span><span class="k"><span class="pre">static</span></span><span class="w"> </span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">tuple</span></span><span class="p"><span class="pre">&lt;</span></span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="kt"><span class="pre">int</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">priority_range</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N3c104cuda10CUDAStream14priority_rangeEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+</div>
+</dd></dl>
+
+<p><strong>Example:</strong></p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;c10/cuda/CUDAStream.h&gt;</span>
+
+<span class="c1">// Get the default stream for current device</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">stream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">getDefaultCUDAStream</span><span class="p">();</span>
+
+<span class="c1">// Create a new stream</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">new_stream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">getStreamFromPool</span><span class="p">();</span>
+
+<span class="c1">// Get current stream</span>
+<span class="k">auto</span><span class="w"> </span><span class="n">current</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">c10</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">getCurrentCUDAStream</span><span class="p">();</span>
+
+<span class="c1">// Synchronize</span>
+<span class="n">stream</span><span class="p">.</span><span class="n">synchronize</span><span class="p">();</span>
+</pre></div>
+</div>
+</section>
+<section id="acquiring-cuda-streams">
+<h2>Acquiring CUDA Streams<a class="headerlink" href="#acquiring-cuda-streams" title="Link to this heading">#</a></h2>
+<p>PyTorch provides several ways to acquire CUDA streams:</p>
+<ol class="arabic">
+<li><p><strong>From the stream pool</strong> (round-robin allocation):</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="c1">// Normal priority stream</span>
+<span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">CUDAStream</span><span class="w"> </span><span class="n">stream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">getStreamFromPool</span><span class="p">();</span>
+
+<span class="c1">// High priority stream</span>
+<span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">CUDAStream</span><span class="w"> </span><span class="n">high_prio</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">getStreamFromPool</span><span class="p">(</span><span class="cm">/*isHighPriority=*/</span><span class="nb">true</span><span class="p">);</span>
+
+<span class="c1">// Stream for specific device</span>
+<span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">CUDAStream</span><span class="w"> </span><span class="n">dev1_stream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">getStreamFromPool</span><span class="p">(</span><span class="nb">false</span><span class="p">,</span><span class="w"> </span><span class="cm">/*device=*/</span><span class="mi">1</span><span class="p">);</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>Default stream</strong> (where most computation occurs):</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">CUDAStream</span><span class="w"> </span><span class="n">defaultStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">getDefaultCUDAStream</span><span class="p">();</span>
+</pre></div>
+</div>
+</li>
+<li><p><strong>Current stream</strong> (may differ if changed with guards):</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">CUDAStream</span><span class="w"> </span><span class="n">currentStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">getCurrentCUDAStream</span><span class="p">();</span>
+</pre></div>
+</div>
+</li>
+</ol>
+</section>
+<section id="setting-cuda-streams">
+<h2>Setting CUDA Streams<a class="headerlink" href="#setting-cuda-streams" title="Link to this heading">#</a></h2>
+<p><strong>Using setCurrentCUDAStream:</strong></p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">torch</span><span class="o">::</span><span class="n">Tensor</span><span class="w"> </span><span class="n">tensor0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">ones</span><span class="p">({</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">},</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">device</span><span class="p">(</span><span class="n">torch</span><span class="o">::</span><span class="n">kCUDA</span><span class="p">));</span>
+
+<span class="c1">// Get a new stream and set it as current</span>
+<span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">CUDAStream</span><span class="w"> </span><span class="n">myStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">getStreamFromPool</span><span class="p">();</span>
+<span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">setCurrentCUDAStream</span><span class="p">(</span><span class="n">myStream</span><span class="p">);</span>
+
+<span class="c1">// Operations now use myStream</span>
+<span class="n">tensor0</span><span class="p">.</span><span class="n">sum</span><span class="p">();</span>
+
+<span class="c1">// Restore default stream</span>
+<span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">setCurrentCUDAStream</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">getDefaultCUDAStream</span><span class="p">());</span>
+</pre></div>
+</div>
+<p><strong>Using CUDAStreamGuard (recommended):</strong></p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">torch</span><span class="o">::</span><span class="n">Tensor</span><span class="w"> </span><span class="n">tensor0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">ones</span><span class="p">({</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">},</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">device</span><span class="p">(</span><span class="n">torch</span><span class="o">::</span><span class="n">kCUDA</span><span class="p">));</span>
+<span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">CUDAStream</span><span class="w"> </span><span class="n">myStream</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">getStreamFromPool</span><span class="p">();</span>
+
+<span class="p">{</span>
+<span class="w">    </span><span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">CUDAStreamGuard</span><span class="w"> </span><span class="nf">guard</span><span class="p">(</span><span class="n">myStream</span><span class="p">);</span>
+<span class="w">    </span><span class="c1">// Operations use myStream within this scope</span>
+<span class="w">    </span><span class="n">tensor0</span><span class="p">.</span><span class="n">sum</span><span class="p">();</span>
+<span class="p">}</span>
+<span class="c1">// Stream automatically restored to default</span>
+</pre></div>
+</div>
+</section>
+<section id="multi-device-stream-management">
+<h2>Multi-Device Stream Management<a class="headerlink" href="#multi-device-stream-management" title="Link to this heading">#</a></h2>
+<p><strong>Streams on multiple devices:</strong></p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="c1">// Acquire streams for different devices</span>
+<span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">CUDAStream</span><span class="w"> </span><span class="n">stream0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">getStreamFromPool</span><span class="p">(</span><span class="nb">false</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">CUDAStream</span><span class="w"> </span><span class="n">stream1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">getStreamFromPool</span><span class="p">(</span><span class="nb">false</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+
+<span class="c1">// Set current streams on each device</span>
+<span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">setCurrentCUDAStream</span><span class="p">(</span><span class="n">stream0</span><span class="p">);</span>
+<span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">setCurrentCUDAStream</span><span class="p">(</span><span class="n">stream1</span><span class="p">);</span>
+
+<span class="c1">// Create tensors on device 0</span>
+<span class="n">torch</span><span class="o">::</span><span class="n">Tensor</span><span class="w"> </span><span class="n">tensor0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">ones</span><span class="p">({</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">},</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">device</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">kCUDA</span><span class="p">));</span>
+<span class="n">tensor0</span><span class="p">.</span><span class="n">sum</span><span class="p">();</span><span class="w">  </span><span class="c1">// Uses stream0</span>
+
+<span class="c1">// Switch to device 1</span>
+<span class="p">{</span>
+<span class="w">    </span><span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">CUDAGuard</span><span class="w"> </span><span class="nf">device_guard</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="w">    </span><span class="n">torch</span><span class="o">::</span><span class="n">Tensor</span><span class="w"> </span><span class="n">tensor1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">ones</span><span class="p">({</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">},</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">device</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">kCUDA</span><span class="p">));</span>
+<span class="w">    </span><span class="n">tensor1</span><span class="p">.</span><span class="n">sum</span><span class="p">();</span><span class="w">  </span><span class="c1">// Uses stream1</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+<p><strong>Using CUDAMultiStreamGuard:</strong></p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="n">torch</span><span class="o">::</span><span class="n">Tensor</span><span class="w"> </span><span class="n">tensor0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">ones</span><span class="p">({</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">},</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">device</span><span class="p">({</span><span class="n">torch</span><span class="o">::</span><span class="n">kCUDA</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">}));</span>
+<span class="n">torch</span><span class="o">::</span><span class="n">Tensor</span><span class="w"> </span><span class="n">tensor1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">ones</span><span class="p">({</span><span class="mi">2</span><span class="p">,</span><span class="w"> </span><span class="mi">2</span><span class="p">},</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">device</span><span class="p">({</span><span class="n">torch</span><span class="o">::</span><span class="n">kCUDA</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">}));</span>
+
+<span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">CUDAStream</span><span class="w"> </span><span class="n">stream0</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">getStreamFromPool</span><span class="p">(</span><span class="nb">false</span><span class="p">,</span><span class="w"> </span><span class="mi">0</span><span class="p">);</span>
+<span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">CUDAStream</span><span class="w"> </span><span class="n">stream1</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">getStreamFromPool</span><span class="p">(</span><span class="nb">false</span><span class="p">,</span><span class="w"> </span><span class="mi">1</span><span class="p">);</span>
+
+<span class="p">{</span>
+<span class="w">    </span><span class="c1">// Set streams on both devices simultaneously</span>
+<span class="w">    </span><span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">CUDAMultiStreamGuard</span><span class="w"> </span><span class="nf">multi_guard</span><span class="p">({</span><span class="n">stream0</span><span class="p">,</span><span class="w"> </span><span class="n">stream1</span><span class="p">});</span>
+
+<span class="w">    </span><span class="n">tensor0</span><span class="p">.</span><span class="n">sum</span><span class="p">();</span><span class="w">  </span><span class="c1">// Uses stream0 on device 0</span>
+<span class="w">    </span><span class="n">tensor1</span><span class="p">.</span><span class="n">sum</span><span class="p">();</span><span class="w">  </span><span class="c1">// Uses stream1 on device 1</span>
+<span class="p">}</span>
+<span class="c1">// Both streams restored to defaults</span>
+</pre></div>
+</div>
+<div class="admonition attention">
+<p class="admonition-title">Attention</p>
+<p><code class="docutils literal notranslate"><span class="pre">CUDAMultiStreamGuard</span></code> does not change the current device index. It only
+changes the stream on each passed-in stream’s device.</p>
+</div>
+</section>
+<section id="multi-device-stream-handling-pattern">
+<h2>Multi-Device Stream Handling Pattern<a class="headerlink" href="#multi-device-stream-handling-pattern" title="Link to this heading">#</a></h2>
+<p>The following skeleton shows three common patterns for acquiring and setting
+streams across multiple CUDA devices:</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="c1">// Create stream vectors on device 0</span>
+<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">CUDAStream</span><span class="o">&gt;</span><span class="w"> </span><span class="n">streams0</span><span class="w"> </span><span class="o">=</span>
+<span class="w">  </span><span class="p">{</span><span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">getDefaultCUDAStream</span><span class="p">(),</span><span class="w"> </span><span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">getStreamFromPool</span><span class="p">()};</span>
+<span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">setCurrentCUDAStream</span><span class="p">(</span><span class="n">streams0</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
+
+<span class="c1">// Create stream vector on device 1 using CUDAGuard</span>
+<span class="n">std</span><span class="o">::</span><span class="n">vector</span><span class="o">&lt;</span><span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">CUDAStream</span><span class="o">&gt;</span><span class="w"> </span><span class="n">streams1</span><span class="p">;</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">CUDAGuard</span><span class="w"> </span><span class="nf">device_guard</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="n">streams1</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">getDefaultCUDAStream</span><span class="p">());</span>
+<span class="w">  </span><span class="n">streams1</span><span class="p">.</span><span class="n">push_back</span><span class="p">(</span><span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">getStreamFromPool</span><span class="p">());</span>
+<span class="p">}</span>
+<span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">setCurrentCUDAStream</span><span class="p">(</span><span class="n">streams1</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
+
+<span class="c1">// Pattern 1: CUDAGuard changes current device only, not streams</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">CUDAGuard</span><span class="w"> </span><span class="nf">device_guard</span><span class="p">(</span><span class="mi">1</span><span class="p">);</span>
+<span class="w">  </span><span class="c1">// current device is 1, current stream on device 1 is still streams1[0]</span>
+<span class="p">}</span>
+
+<span class="c1">// Pattern 2: CUDAStreamGuard changes both current device and current stream</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">CUDAStreamGuard</span><span class="w"> </span><span class="nf">stream_guard</span><span class="p">(</span><span class="n">streams1</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span>
+<span class="w">  </span><span class="c1">// current device is 1, current stream is streams1[1]</span>
+<span class="p">}</span>
+<span class="c1">// restored to device 0, stream streams0[0]</span>
+
+<span class="c1">// Pattern 3: CUDAMultiStreamGuard sets streams on multiple devices at once</span>
+<span class="p">{</span>
+<span class="w">  </span><span class="n">at</span><span class="o">::</span><span class="n">cuda</span><span class="o">::</span><span class="n">CUDAMultiStreamGuard</span><span class="w"> </span><span class="nf">multi_guard</span><span class="p">({</span><span class="n">streams0</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span><span class="w"> </span><span class="n">streams1</span><span class="p">[</span><span class="mi">1</span><span class="p">]});</span>
+<span class="w">  </span><span class="c1">// current device unchanged (still 0)</span>
+<span class="w">  </span><span class="c1">// stream on device 0 is streams0[1], stream on device 1 is streams1[1]</span>
+<span class="p">}</span>
+<span class="c1">// streams restored to streams0[0] and streams1[0]</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+                </article>
+              
+</div>
+
+              
+              
+                <footer class="bd-footer-article">
+                  <div class="footer-article-items footer-article__inner">
+  
+    <div class="footer-article-item">
+<div class="feedback">
+  
+<div class="rating">
+    Rate this Page
+    <div class="stars">
+        
+        <span class="star" data-behavior="tutorial-rating" data-count="1" data-value="1">★</span>
+        
+        <span class="star" data-behavior="tutorial-rating" data-count="2" data-value="2">★</span>
+        
+        <span class="star" data-behavior="tutorial-rating" data-count="3" data-value="3">★</span>
+        
+        <span class="star" data-behavior="tutorial-rating" data-count="4" data-value="4">★</span>
+        
+        <span class="star" data-behavior="tutorial-rating" data-count="5" data-value="5">★</span>
+        
+    </div>
+</div>
+
+  <div class="feedback-send">
+    <button class="feedback-btn"
+            onclick="openGitHubIssue()"
+            data-bs-title="Create a GitHub Issue"
+            data-bs-placement="bottom"
+            data-bs-toggle="tooltip"
+            data-gtm="feedback-btn-click">Send Feedback
+    </button>
+  </div>
+</div>
+
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="index.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">CUDA Support</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="guards.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">CUDA Guards</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+
+<div class="footer-info">
+  <p class="copyright">
+    
+  </p>
+
+  <p class="theme-version">
+    Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.4.
+  </p>
+</div>
+</div>
+  
+</div>
+                </footer>
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="index.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">CUDA Support</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="guards.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">CUDA Guards</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc">
+<div class="sidebar-secondary-items sidebar-secondary__inner">
+    
+       <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#cudastream">CUDAStream</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3c104cuda10CUDAStreamE"><code class="docutils literal notranslate"><span class="pre">c10::cuda::CUDAStream</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3c104cuda10CUDAStream9UncheckedE"><code class="docutils literal notranslate"><span class="pre">Unchecked</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3c104cuda10CUDAStream9Unchecked9UNCHECKEDE"><code class="docutils literal notranslate"><span class="pre">UNCHECKED</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3c104cuda10CUDAStream10CUDAStreamE6Stream"><code class="docutils literal notranslate"><span class="pre">CUDAStream()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3c104cuda10CUDAStream10CUDAStreamE9Unchecked6Stream"><code class="docutils literal notranslate"><span class="pre">CUDAStream()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK3c104cuda10CUDAStreameqERK10CUDAStream"><code class="docutils literal notranslate"><span class="pre">operator==()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK3c104cuda10CUDAStreamneERK10CUDAStream"><code class="docutils literal notranslate"><span class="pre">operator!=()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK3c104cuda10CUDAStreamcv12cudaStream_tEv"><code class="docutils literal notranslate"><span class="pre">operator</span> <span class="pre">cudaStream_t()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK3c104cuda10CUDAStreamcv6StreamEv"><code class="docutils literal notranslate"><span class="pre">operator</span> <span class="pre">Stream()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK3c104cuda10CUDAStream11device_typeEv"><code class="docutils literal notranslate"><span class="pre">device_type()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK3c104cuda10CUDAStream12device_indexEv"><code class="docutils literal notranslate"><span class="pre">device_index()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK3c104cuda10CUDAStream6deviceEv"><code class="docutils literal notranslate"><span class="pre">device()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK3c104cuda10CUDAStream2idEv"><code class="docutils literal notranslate"><span class="pre">id()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK3c104cuda10CUDAStream5queryEv"><code class="docutils literal notranslate"><span class="pre">query()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK3c104cuda10CUDAStream11synchronizeEv"><code class="docutils literal notranslate"><span class="pre">synchronize()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK3c104cuda10CUDAStream8priorityEv"><code class="docutils literal notranslate"><span class="pre">priority()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK3c104cuda10CUDAStream6streamEv"><code class="docutils literal notranslate"><span class="pre">stream()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK3c104cuda10CUDAStream6unwrapEv"><code class="docutils literal notranslate"><span class="pre">unwrap()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK3c104cuda10CUDAStream5pack3Ev"><code class="docutils literal notranslate"><span class="pre">pack3()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3c104cuda10CUDAStream7unpack3E8StreamId11DeviceIndex10DeviceType"><code class="docutils literal notranslate"><span class="pre">unpack3()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N3c104cuda10CUDAStream14priority_rangeEv"><code class="docutils literal notranslate"><span class="pre">priority_range()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#acquiring-cuda-streams">Acquiring CUDA Streams</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#setting-cuda-streams">Setting CUDA Streams</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#multi-device-stream-management">Multi-Device Stream Management</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#multi-device-stream-handling-pattern">Multi-Device Stream Handling Pattern</a></li>
+</ul>
+  </nav></div>
+    
+       <div class="sidebar-secondary-item">
+    <div class="tocsection sourcelink">
+      <a href="../../_sources/api/cuda/streams.md.txt">
+        <i class="fa-solid fa-file-lines"></i> Show Source
+      </a>
+    </div>
+</div>
+    
+
+
+
+
+<div class="sidebar-secondary-item">
+  <div class="sidebar-heading">PyTorch Libraries</div>
+  <ul style="list-style-type: none; padding: 0; padding-bottom: 80px;">
+  
+   <li><a class="nav-link nav-external" href="https://docs.pytorch.org/executorch" style="color: var(--pst-color-text-muted)">ExecuTorch</a></li>
+  
+   <li><a class="nav-link nav-external" href="https://docs.pytorch.org/helion" style="color: var(--pst-color-text-muted)">Helion</a></li>
+  
+   <li><a class="nav-link nav-external" href="https://docs.pytorch.org/ao" style="color: var(--pst-color-text-muted)">torchao</a></li>
+  
+   <li><a class="nav-link nav-external" href="https://github.com/pytorch/kineto" style="color: var(--pst-color-text-muted)">kineto</a></li>
+  
+   <li><a class="nav-link nav-external" href="https://github.com/pytorch/torchtitan" style="color: var(--pst-color-text-muted)">torchtitan</a></li>
+  
+   <li><a class="nav-link nav-external" href="https://docs.pytorch.org/rl" style="color: var(--pst-color-text-muted)">TorchRL</a></li>
+  
+   <li><a class="nav-link nav-external" href="https://docs.pytorch.org/vision" style="color: var(--pst-color-text-muted)">torchvision</a></li>
+  
+   <li><a class="nav-link nav-external" href="https://docs.pytorch.org/audio" style="color: var(--pst-color-text-muted)">torchaudio</a></li>
+  
+   <li><a class="nav-link nav-external" href="https://docs.pytorch.org/tensordict" style="color: var(--pst-color-text-muted)">tensordict</a></li>
+  
+   <li><a class="nav-link nav-external" href="https://docs.pytorch.org/xla" style="color: var(--pst-color-text-muted)">PyTorch on XLA Devices</a></li>
+  
+  </ul>
+</div>
+
+</div>
+</div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  
+
+<div class="container-fluid docs-tutorials-resources" id="docs-tutorials-resources">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-4">
+        <h2>Docs</h2>
+        <p>Access comprehensive developer documentation for PyTorch</p>
+        <a class="with-right-arrow" href="https://docs.pytorch.org/docs/stable/index.html">View Docs</a>
+      </div>
+
+      <div class="col-md-4">
+        <h2>Tutorials</h2>
+        <p>Get in-depth tutorials for beginners and advanced developers</p>
+        <a class="with-right-arrow" href="https://docs.pytorch.org/tutorials">View Tutorials</a>
+      </div>
+
+      <div class="col-md-4">
+        <h2>Resources</h2>
+        <p>Find development resources and get your questions answered</p>
+        <a class="with-right-arrow" href="https://pytorch.org/resources">View Resources</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+<footer class="site-footer">
+
+  <div class="container footer-container">
+
+    <div class="newsletter" id="newsletter">
+
+      <p class="newsletter__title is-style-max-width-800"><strong>Stay in touch</strong> for updates, event info, and
+        the latest news</p>
+
+
+      <script charset="utf-8" type="text/javascript" src="//js.hsforms.net/forms/embed/v2.js"></script>
+      <script>
+        hbspt.forms.create({
+          region: "na1",
+          portalId: "8112310",
+          formId: "2fb2231c-000b-4ec5-88a0-1ab242549c9e"
+        });
+      </script>
+
+
+      <p class="newsletter__privacy">By submitting this form, I consent to receive marketing emails from the LF and its
+        projects regarding their events, training, research, developments, and related announcements. I understand that
+        I can unsubscribe at any time using the links in the footers of the emails I receive. <a
+          href="https://www.linuxfoundation.org/privacy/">Privacy Policy</a>.</p>
+
+    </div>
+
+    <div class="lf-grid">
+      <ul class="social-links">
+        <li><a href="https://www.facebook.com/pytorch" target="_blank" title="PyTorch on Facebook">
+            <svg xmlns="http://www.w3.org/2000/svg" viewbox="-0.51 -0.26 26.45 26.45" aria-label="Facebook">
+              <path fill="currentColor"
+                d="M25.497 13.075c0-2.45-.698-4.848-2.011-6.911a12.765 12.765 0 0 0-5.398-4.73A12.671 12.671 0 0 0 11.008.38a12.705 12.705 0 0 0-6.529 2.95A12.827 12.827 0 0 0 .563 9.358a12.896 12.896 0 0 0-.07 7.201 12.831 12.831 0 0 0 3.801 6.103 12.709 12.709 0 0 0 6.471 3.078v-8.957H7.53v-3.708h3.235v-2.824c0-3.213 1.903-4.988 4.813-4.988.956.014 1.909.097 2.852.25V8.67h-1.607a1.83 1.83 0 0 0-1.518.497 1.854 1.854 0 0 0-.561 1.505v2.404h3.535l-.563 3.708h-2.97v8.957a12.725 12.725 0 0 0 7.697-4.337 12.87 12.87 0 0 0 3.054-8.328z" />
+            </svg>
+          </a></li>
+        <li><a href="https://twitter.com/pytorch" target="_blank" title="PyTorch on X">
+            <svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 300 300" aria-label="X">
+              <path fill="currentColor"
+                d="M178.57 127.15 290.27 0h-26.46l-97.03 110.38L89.34 0H0l117.13 166.93L0 300.25h26.46l102.4-116.59 81.8 116.59h89.34M36.01 19.54H76.66l187.13 262.13h-40.66" />
+            </svg>
+          </a></li>
+        <li><a href="https://www.youtube.com/pytorch" target="_blank" title="PyTorch on YouTube">
+            <svg xmlns="http://www.w3.org/2000/svg" viewbox="0.21 0.27 34.45 25.07" aria-label="YouTube">
+              <path fill="currentColor"
+                d="M33.729 6.084s-.327-2.33-1.317-3.356a4.691 4.691 0 0 0-3.32-1.432c-4.634-.34-11.589-.34-11.589-.34h-.014s-6.954 0-11.59.342a4.692 4.692 0 0 0-3.32 1.432c-.993 1.025-1.315 3.354-1.315 3.354a52.189 52.189 0 0 0-.331 5.473v2.566c.014 1.829.125 3.656.331 5.472 0 0 .322 2.33 1.316 3.36 1.26 1.345 2.916 1.3 3.653 1.445 2.65.26 11.263.34 11.263.34s6.96-.01 11.597-.353a4.691 4.691 0 0 0 3.32-1.432c.993-1.026 1.316-3.356 1.316-3.356.206-1.817.316-3.644.33-5.473v-2.57a52.26 52.26 0 0 0-.33-5.472zM14.076 17.232V7.729l8.951 4.768-8.95 4.735z" />
+            </svg>
+          </a></li>
+        <li><a href="https://www.linkedin.com/company/pytorch" target="_blank" title="PyTorch on LinkedIn">
+            <svg xmlns="http://www.w3.org/2000/svg" viewbox="-10.23 -10.23 531.96 531.96" aria-label="LinkedIn">
+              <rect width="512" height="512" rx="0" fill="currentColor" />
+              <circle fill="#000" cx="142" cy="138" r="37" />
+              <path stroke="#000" stroke-width="66" d="M244 194v198M142 194v198" />
+              <path fill="#000"
+                d="M276 282c0-20 13-40 36-40 24 0 33 18 33 45v105h66V279c0-61-32-89-76-89-34 0-51 19-59 32" />
+            </svg>
+          </a></li>
+        <li><a href="https://pytorch.slack.com" target="_blank" title="PyTorch Slack">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0.16 -0.03 21.19 21.19" aria-label="Slack">
+              <path fill="currentColor"
+                d="M4.896 13.27a2.147 2.147 0 0 1-2.141 2.142A2.147 2.147 0 0 1 .613 13.27c0-1.178.963-2.141 2.142-2.141h2.141v2.141zm1.08 0c0-1.178.962-2.141 2.141-2.141s2.142.963 2.142 2.141v5.363a2.147 2.147 0 0 1-2.142 2.141 2.147 2.147 0 0 1-2.141-2.142V13.27zm2.141-8.6a2.147 2.147 0 0 1-2.141-2.14c0-1.18.962-2.142 2.141-2.142s2.142.963 2.142 2.141v2.142H8.117zm0 1.08c1.179 0 2.141.962 2.141 2.141a2.147 2.147 0 0 1-2.141 2.142H2.755A2.147 2.147 0 0 1 .613 7.89c0-1.179.963-2.141 2.142-2.141h5.362zm8.599 2.141c0-1.179.963-2.141 2.141-2.141 1.179 0 2.143.962 2.143 2.14a2.147 2.147 0 0 1-2.142 2.142h-2.141V7.89zm-1.08 0a2.147 2.147 0 0 1-2.141 2.142 2.147 2.147 0 0 1-2.141-2.142V2.53c0-1.178.962-2.141 2.141-2.141s2.142.963 2.142 2.141v5.362zm-2.141 8.6c1.179 0 2.142.962 2.142 2.14a2.147 2.147 0 0 1-2.142 2.142 2.147 2.147 0 0 1-2.141-2.141V16.49h2.141zm0-1.08a2.147 2.147 0 0 1-2.141-2.141c0-1.179.962-2.142 2.141-2.142h5.362c1.179 0 2.142.963 2.142 2.142a2.147 2.147 0 0 1-2.142 2.142h-5.362z">
+              </path>
+            </svg>
+          </a></li>
+        <li><a href="https://pytorch.org/wechat" title="PyTorch on WeChat">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0.14 -0.17 38.02 33.02" aria-label="WeChat">
+              <path fill="currentColor"
+                d="M26.289 10.976a12.972 12.972 0 0 0-8.742 3.53 10.386 10.386 0 0 0-3.224 8.795c-1.326-.164-2.535-.345-3.75-.448a2.332 2.332 0 0 0-1.273.216c-1.18.666-2.311 1.418-3.652 2.255.246-1.112.405-2.087.687-3.024a1.15 1.15 0 0 0-.523-1.52C1.737 17.902.02 13.601 1.307 9.165c1.189-4.1 4.11-6.587 8.077-7.884A13.54 13.54 0 0 1 24.18 5.617a10.135 10.135 0 0 1 2.109 5.359zM10.668 9.594a1.564 1.564 0 0 0-2.095-1.472 1.52 1.52 0 0 0-.895 1.964 1.502 1.502 0 0 0 1.391.966 1.545 1.545 0 0 0 1.598-1.46v.002zm8.15-1.566a1.567 1.567 0 0 0-1.528 1.543 1.528 1.528 0 0 0 1.571 1.492 1.52 1.52 0 0 0 1.375-2.117 1.518 1.518 0 0 0-1.415-.919l-.003.001z">
+              </path>
+              <path fill="currentColor"
+                d="M33.914 32.137c-1.075-.478-2.062-1.196-3.11-1.306-1.049-.11-2.145.494-3.24.605a10.821 10.821 0 0 1-8.781-2.864c-4.682-4.33-4.013-10.97 1.403-14.518 4.811-3.154 11.874-2.102 15.268 2.273a8.671 8.671 0 0 1-1.002 12.095c-1.046.929-1.422 1.693-.751 2.917.102.257.174.525.213.798zM21.68 20.292a1.264 1.264 0 1 0 .01-2.528 1.264 1.264 0 0 0-.01 2.528zm7.887-2.526a1.266 1.266 0 0 0-1.256 1.21 1.247 1.247 0 1 0 1.256-1.21z">
+              </path>
+            </svg>
+          </a></li>
+      </ul>
+    </div>
+    
+    <div class="privacy-policy">
+      <div class="copyright">
+      
+        <p>
+          &copy; PyTorch. Copyright © The Linux Foundation®. All rights reserved. The Linux Foundation has registered
+          trademarks and uses trademarks. For more information, including terms of use, privacy policy, and trademark
+          usage, please see our <a href="https://www.linuxfoundation.org/legal/policies">Policies</a> page. <a
+            href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage</a>. <a
+            href="http://www.linuxfoundation.org/privacy">Privacy Policy</a>.
+        </p>
+        
+      </div>
+    </div>
+
+
+  </div>
+</footer>
+
+<div class="cookie-banner-wrapper">
+  <div class="container">
+    <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://opensource.fb.com/legal/cookie-policy">Cookies Policy</a>.</p>
+    <img class="close-button" src="../../_static/img/pytorch-x.svg">
+  </div>
+</div>
+  
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright PyTorch Contributors.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.4.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  <script type="application/ld+json">
+    {
+       "@context": "https://schema.org",
+       "@type": "Article",
+       "name": "CUDA Streams",
+       "headline": "CUDA Streams",
+       "description": "CUDA streams in PyTorch C++ \u2014 CUDAStream for asynchronous GPU execution and synchronization.",
+       "url": "/api/cuda/streams.html",
+       "articleBody": "CUDA Streams# CUDA streams provide a mechanism for asynchronous execution of operations on the GPU. Operations queued to the same stream execute in order, while operations on different streams can execute concurrently. CUDAStream# class CUDAStream# Public Types enum Unchecked# Values: enumerator UNCHECKED# Public Functions inline explicit CUDAStream(Stream stream)# Construct a CUDAStream from a Stream. This construction is checked, and will raise an error if the Stream is not, in fact, a CUDA stream. inline explicit CUDAStream(Unchecked, Stream stream)# Construct a CUDAStream from a Stream with no error checking. This constructor uses the \u201cnamed\u201d constructor idiom, and can be invoked as: CUDAStream(CUDAStream::UNCHECKED, stream) inline bool operator==(const CUDAStream \u0026other) const noexcept# inline bool operator!=(const CUDAStream \u0026other) const noexcept# inline operator cudaStream_t() const# Implicit conversion to cudaStream_t. inline operator Stream() const# Implicit conversion to Stream (a.k.a., forget that the stream is a CUDA stream). inline DeviceType device_type() const# Used to avoid baking in device type explicitly to Python-side API. inline DeviceIndex device_index() const# Get the CUDA device index that this stream is associated with. inline Device device() const# Get the full Device that this stream is associated with. The Device is guaranteed to be a CUDA device. inline StreamId id() const# Return the stream ID corresponding to this particular stream. bool query() const# void synchronize() const# inline int priority() const# cudaStream_t stream() const# Explicit conversion to cudaStream_t. inline Stream unwrap() const# Explicit conversion to Stream. inline struct c10::StreamData3 pack3() const# Reversibly pack a CUDAStream into a struct representation. Previously the stream\u2019s data was packed into a single int64_t, as it was assumed the fields would not require more than 64 bits of storage in total. See pytorch/pytorch#75854 for more information regarding newer platforms that may violate this assumption. The CUDAStream can be unpacked using unpack(). Public Static Functions static inline CUDAStream unpack3(StreamId stream_id, DeviceIndex device_index, DeviceType device_type)# static inline std::tuple\u003cint, int\u003e priority_range()# Example: #include \u003cc10/cuda/CUDAStream.h\u003e // Get the default stream for current device auto stream = c10::cuda::getDefaultCUDAStream(); // Create a new stream auto new_stream = c10::cuda::getStreamFromPool(); // Get current stream auto current = c10::cuda::getCurrentCUDAStream(); // Synchronize stream.synchronize(); Acquiring CUDA Streams# PyTorch provides several ways to acquire CUDA streams: From the stream pool (round-robin allocation): // Normal priority stream at::cuda::CUDAStream stream = at::cuda::getStreamFromPool(); // High priority stream at::cuda::CUDAStream high_prio = at::cuda::getStreamFromPool(/*isHighPriority=*/true); // Stream for specific device at::cuda::CUDAStream dev1_stream = at::cuda::getStreamFromPool(false, /*device=*/1); Default stream (where most computation occurs): at::cuda::CUDAStream defaultStream = at::cuda::getDefaultCUDAStream(); Current stream (may differ if changed with guards): at::cuda::CUDAStream currentStream = at::cuda::getCurrentCUDAStream(); Setting CUDA Streams# Using setCurrentCUDAStream: torch::Tensor tensor0 = torch::ones({2, 2}, torch::device(torch::kCUDA)); // Get a new stream and set it as current at::cuda::CUDAStream myStream = at::cuda::getStreamFromPool(); at::cuda::setCurrentCUDAStream(myStream); // Operations now use myStream tensor0.sum(); // Restore default stream at::cuda::setCurrentCUDAStream(at::cuda::getDefaultCUDAStream()); Using CUDAStreamGuard (recommended): torch::Tensor tensor0 = torch::ones({2, 2}, torch::device(torch::kCUDA)); at::cuda::CUDAStream myStream = at::cuda::getStreamFromPool(); { at::cuda::CUDAStreamGuard guard(myStream); // Operations use myStream within this scope tensor0.sum(); } // Stream automatically restored to default Multi-Device Stream Management# Streams on multiple devices: // Acquire streams for different devices at::cuda::CUDAStream stream0 = at::cuda::getStreamFromPool(false, 0); at::cuda::CUDAStream stream1 = at::cuda::getStreamFromPool(false, 1); // Set current streams on each device at::cuda::setCurrentCUDAStream(stream0); at::cuda::setCurrentCUDAStream(stream1); // Create tensors on device 0 torch::Tensor tensor0 = torch::ones({2, 2}, torch::device(at::kCUDA)); tensor0.sum(); // Uses stream0 // Switch to device 1 { at::cuda::CUDAGuard device_guard(1); torch::Tensor tensor1 = torch::ones({2, 2}, torch::device(at::kCUDA)); tensor1.sum(); // Uses stream1 } Using CUDAMultiStreamGuard: torch::Tensor tensor0 = torch::ones({2, 2}, torch::device({torch::kCUDA, 0})); torch::Tensor tensor1 = torch::ones({2, 2}, torch::device({torch::kCUDA, 1})); at::cuda::CUDAStream stream0 = at::cuda::getStreamFromPool(false, 0); at::cuda::CUDAStream stream1 = at::cuda::getStreamFromPool(false, 1); { // Set streams on both devices simultaneously at::cuda::CUDAMultiStreamGuard multi_guard({stream0, stream1}); tensor0.sum(); // Uses stream0 on device 0 tensor1.sum(); // Uses stream1 on device 1 } // Both streams restored to defaults Attention CUDAMultiStreamGuard does not change the current device index. It only changes the stream on each passed-in stream\u2019s device. Multi-Device Stream Handling Pattern# The following skeleton shows three common patterns for acquiring and setting streams across multiple CUDA devices: // Create stream vectors on device 0 std::vector\u003cat::cuda::CUDAStream\u003e streams0 = {at::cuda::getDefaultCUDAStream(), at::cuda::getStreamFromPool()}; at::cuda::setCurrentCUDAStream(streams0[0]); // Create stream vector on device 1 using CUDAGuard std::vector\u003cat::cuda::CUDAStream\u003e streams1; { at::cuda::CUDAGuard device_guard(1); streams1.push_back(at::cuda::getDefaultCUDAStream()); streams1.push_back(at::cuda::getStreamFromPool()); } at::cuda::setCurrentCUDAStream(streams1[0]); // Pattern 1: CUDAGuard changes current device only, not streams { at::cuda::CUDAGuard device_guard(1); // current device is 1, current stream on device 1 is still streams1[0] } // Pattern 2: CUDAStreamGuard changes both current device and current stream { at::cuda::CUDAStreamGuard stream_guard(streams1[1]); // current device is 1, current stream is streams1[1] } // restored to device 0, stream streams0[0] // Pattern 3: CUDAMultiStreamGuard sets streams on multiple devices at once { at::cuda::CUDAMultiStreamGuard multi_guard({streams0[1], streams1[1]}); // current device unchanged (still 0) // stream on device 0 is streams0[1], stream on device 1 is streams1[1] } // streams restored to streams0[0] and streams1[0]",
+       "author": {
+         "@type": "Organization",
+         "name": "PyTorch Contributors",
+         "url": "https://pytorch.org"
+       },
+       "image": "https://pytorch.org/docs/stable/_static/img/pytorch_seo.png",
+       "mainEntityOfPage": {
+         "@type": "WebPage",
+         "@id": "/api/cuda/streams.html"
+       },
+       "datePublished": "2023-01-01T00:00:00Z",
+       "dateModified": "2023-01-01T00:00:00Z"
+     }
+ </script>
+  <script>
+    // Tutorials Call to action event tracking
+    $("[data-behavior='call-to-action-event']").on('click', function () {
+      fbq('trackCustom', "Download", {
+        tutorialTitle: $('h1:first').text(),
+        downloadLink: this.href,
+        tutorialLink: window.location.href,
+        downloadTitle: $(this).attr("data-response")
+      });
+      if (typeof gtag === 'function') {
+        gtag('event', 'click', {
+          'event_category': $(this).attr("data-response"),
+          'event_label': $("h1").first().text(),
+          'tutorial_link': window.location.href
+        });
+      }
+    });
+  </script>
+  
+  </body>
+</html>

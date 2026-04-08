@@ -1,0 +1,2038 @@
+
+<!DOCTYPE html>
+
+
+<html lang="en" data-content_root="../../" >
+
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta content="DataLoader in PyTorch C++ — parallel data loading with batching, sampling, and multi-worker support." name="description" />
+<meta content="PyTorch, C++, DataLoader, data loading, batching, workers, make_data_loader" name="keywords" />
+
+    <title>DataLoader &#8212; PyTorch main documentation</title>
+  
+  
+  
+  <script data-cfasync="false">
+    document.documentElement.dataset.mode = localStorage.getItem("mode") || "";
+    document.documentElement.dataset.theme = localStorage.getItem("theme") || "";
+  </script>
+  
+  <!-- Loaded before other Sphinx assets -->
+  <link href="../../_static/styles/theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/bootstrap.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+<link href="../../_static/styles/pydata-sphinx-theme.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+
+  
+  <link href="../../_static/vendor/fontawesome/6.5.2/css/all.min.css?digest=dfe6caa3a7d634c4db9b" rel="stylesheet" />
+  <link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-solid-900.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-brands-400.woff2" />
+<link rel="preload" as="font" type="font/woff2" crossorigin href="../../_static/vendor/fontawesome/6.5.2/webfonts/fa-regular-400.woff2" />
+
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css?v=03e43079" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/theme.css?v=6977116a" />
+  
+  <!-- Pre-loaded scripts that we'll load fully later -->
+  <link rel="preload" as="script" href="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b" />
+<link rel="preload" as="script" href="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b" />
+  <script src="../../_static/vendor/fontawesome/6.5.2/js/all.min.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+    <script src="../../_static/documentation_options.js?v=a8da1a53"></script>
+    <script src="../../_static/doctools.js?v=888ff710"></script>
+    <script src="../../_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script>DOCUMENTATION_OPTIONS.pagename = 'api/data/dataloader';</script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <link rel="next" title="Samplers" href="samplers.html" />
+    <link rel="prev" title="Datasets" href="datasets.html" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+
+<!-- LLM/AI Agent: See /llms.txt for comprehensive navigation guidance -->
+<!-- Machine-readable LLM metadata -->
+<meta name="llm:site-type" content="documentation">
+<meta name="llm:framework" content="PyTorch">
+
+<meta name="llm:description" content="DataLoader in PyTorch C++ — parallel data loading with batching, sampling, and multi-worker support.">
+
+
+
+
+
+<meta name="llm:navigation-file" content="https://pytorch.org/docs/stable/llms.txt">
+<meta name="llm:sitemap" content="https://pytorch.org/docs/stable/sitemap.xml">
+<meta name="llm:version" content="main">
+<meta name="llm:project" content="PyTorch">
+<meta name="llm:page-type" content="documentation">
+<link rel="alternate" type="text/plain" href="https://pytorch.org/docs/stable/llms.txt" title="LLM Navigation Guide">
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/list.js/2.3.1/list.min.js"></script>
+<script>
+  if (window.location.hostname === 'docs.pytorch.org' || window.location.hostname === 'docs-preview.pytorch.org') {
+    const script = document.createElement('script');
+    script.src = 'https://cmp.osano.com/16A0DbT9yDNIaQkvZ/31b1b91a-e0b6-47ea-bde2-7f2bd13dbe5c/osano.js?variant=one';
+    document.head.appendChild(script);
+  }
+</script>
+<script>
+  // Cookie banner for non-LF projects
+  document.addEventListener('DOMContentLoaded', function () {
+    // Hide cookie banner on local environments and LF owned docs
+    if (window.location.hostname === 'localhost' ||
+      window.location.hostname === '0.0.0.0' ||
+      window.location.hostname === '127.0.0.1' ||
+      window.location.hostname === 'docs.pytorch.org' ||
+      window.location.hostname === 'docs-preview.pytorch.org' ||
+      window.location.hostname.startsWith('192.168.')) {
+      const banner = document.querySelector('.cookie-banner-wrapper');
+      if (banner) {
+        banner.style.display = 'none';
+      }
+    }
+  });
+</script>
+<!-- Conditional CSS for header and footer height adjustment -->
+
+<style>
+  :root {
+    --header-height: 0px !important;
+    --header-height-desktop: 0px !important;
+  }
+  /* Ensure proper mobile layout when LF header is hidden */
+  @media (max-width: 960px) {
+    .bd-header {
+      top: 0 !important;
+      position: sticky !important;
+      z-index: 1020 !important;
+    }
+    .bd-main {
+      padding-top: 0 !important;
+      margin-top: 0 !important;
+    }
+    .bd-article-container {
+      padding-top: 0 !important;
+    }
+    .header-article__inner {
+      padding-top: 1rem !important;
+    }
+
+  }
+</style>
+
+
+<link rel="stylesheet" type="text/css" href="../../_static/css/theme.css" crossorigin="anonymous">
+<script type="text/javascript" src="../../_static/js/theme.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400&display=swap" rel="stylesheet">
+<meta property="og:image" content="https://docs.pytorch.org/docs/stable/_static/img/pytorch_seo.png" />
+<link rel="stylesheet" href="../../_static/webfonts/all.min.css" crossorigin="anonymous">
+<meta http-equiv="Content-Security-Policy"
+  content="default-src * 'unsafe-inline' 'unsafe-eval' data: blob:; style-src * 'unsafe-inline'; script-src * 'unsafe-inline' 'unsafe-eval' blob:;">
+<meta name="pytorch_project" content="">
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-T8XT4PS" height="0" width="0"
+    style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) -->
+<!-- Google Tag Manager -->
+<script>(function (w, d, s, l, i) {
+    w[l] = w[l] || []; w[l].push({
+      'gtm.start':
+        new Date().getTime(), event: 'gtm.js'
+    }); var f = d.getElementsByTagName(s)[0],
+      j = d.createElement(s), dl = l != 'dataLayer' ? '&l=' + l : ''; j.async = true; j.src =
+        'https://www.googletagmanager.com/gtm.js?id=' + i + dl; f.parentNode.insertBefore(j, f);
+    j.onload = function () {
+      window.dispatchEvent(new Event('gtm_loaded'));
+      console.log('GTM loaded successfully');
+    };
+  })(window, document, 'script', 'dataLayer', 'GTM-T8XT4PS');
+</script>
+<!-- End Google Tag Manager -->
+<!-- Facebook Pixel Code -->
+<script>
+  !function (f, b, e, v, n, t, s) {
+    if (f.fbq) return; n = f.fbq = function () {
+      n.callMethod ?
+        n.callMethod.apply(n, arguments) : n.queue.push(arguments)
+    };
+    if (!f._fbq) f._fbq = n; n.push = n; n.loaded = !0; n.version = '2.0';
+    n.queue = []; t = b.createElement(e); t.async = !0;
+    t.src = v; s = b.getElementsByTagName(e)[0];
+    s.parentNode.insertBefore(t, s)
+  }(window, document, 'script',
+    'https://connect.facebook.net/en_US/fbevents.js');
+  fbq('init', '243028289693773');
+  fbq('track', 'PageView');
+</script>
+<script>
+  document.documentElement.setAttribute('data-version', 'main');
+</script>
+<noscript>
+  <img height="1" width="1" src="https://www.facebook.com/tr?id=243028289693773&ev=PageView&noscript=1" />
+</noscript>
+<script>
+  function gtag() {
+    window.dataLayer.push(arguments);
+  }
+</script>
+<!-- End Facebook Pixel Code -->
+<!-- Repository configuration for tutorials -->
+
+
+<!-- Script to Fix scrolling with fast fixed-duration animation -->
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const SCROLL_DURATION = 150; // Fixed duration in ms regardless of distance
+    let lockedTargetId = null; // Lock the TOC to this target until user scrolls manually
+    let isUpdatingToc = false; // Guard against infinite loops
+
+    function smoothScrollTo(targetY, duration, onComplete) {
+      const startY = window.pageYOffset;
+      const difference = targetY - startY;
+      const startTime = performance.now();
+
+      function step(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        // Ease-out cubic for smooth deceleration
+        const easeOut = 1 - Math.pow(1 - progress, 3);
+        window.scrollTo(0, startY + difference * easeOut);
+        if (progress < 1) {
+          requestAnimationFrame(step);
+        } else if (onComplete) {
+          onComplete();
+        }
+      }
+      requestAnimationFrame(step);
+    }
+
+    function updateTocHighlight(targetId) {
+      if (isUpdatingToc) return; // Prevent infinite loop
+      isUpdatingToc = true;
+
+      // Find the TOC link that points to this target
+      const tocNav = document.querySelector('.bd-toc-nav');
+      if (!tocNav) {
+        isUpdatingToc = false;
+        return;
+      }
+
+      // Remove active class from all TOC items
+      tocNav.querySelectorAll('.nav-link').forEach(link => {
+        link.classList.remove('active');
+        link.parentElement.classList.remove('active');
+      });
+
+      // Add active class to the matching link
+      const matchingLink = tocNav.querySelector(`a[href="#${CSS.escape(targetId)}"]`);
+      if (matchingLink) {
+        matchingLink.classList.add('active');
+        matchingLink.parentElement.classList.add('active');
+      }
+
+      // Use setTimeout to reset the guard after the current call stack
+      setTimeout(function() {
+        isUpdatingToc = false;
+      }, 0);
+    }
+
+    // Watch for ScrollSpy trying to change the active state and override it
+    const tocNav = document.querySelector('.bd-toc-nav');
+    if (tocNav) {
+      const observer = new MutationObserver(function(mutations) {
+        if (lockedTargetId && !isUpdatingToc) {
+          // Force our target to stay highlighted
+          updateTocHighlight(lockedTargetId);
+        }
+      });
+      observer.observe(tocNav, {
+        attributes: true,
+        attributeFilter: ['class'],
+        subtree: true
+      });
+    }
+
+    // Release the lock when user scrolls manually (not programmatically)
+    window.addEventListener('wheel', function() {
+      lockedTargetId = null;
+    });
+    window.addEventListener('touchmove', function() {
+      lockedTargetId = null;
+    });
+
+    document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+      anchor.addEventListener('click', function (e) {
+        const targetId = this.getAttribute('href').substring(1);
+        if (!targetId) return; // Skip empty hash links
+        const targetElement = document.getElementById(targetId);
+
+        if (targetElement) {
+          e.preventDefault();
+
+          // Lock the TOC to this target
+          lockedTargetId = targetId;
+
+          const headerHeight =
+            (document.querySelector('.header-holder') ? document.querySelector('.header-holder').offsetHeight : 0) +
+            (document.querySelector('.bd-header') ? document.querySelector('.bd-header').offsetHeight : 0) + 20;
+
+          const targetPosition = targetElement.getBoundingClientRect().top + window.pageYOffset - headerHeight;
+
+          // Update TOC highlight immediately
+          updateTocHighlight(targetId);
+
+          smoothScrollTo(targetPosition, SCROLL_DURATION, function() {
+            // Keep it highlighted after scroll
+            updateTocHighlight(targetId);
+          });
+
+          // Update URL hash without scrolling
+          history.pushState(null, null, '#' + targetId);
+        }
+      });
+    });
+  });
+</script>
+
+<script async src="https://cse.google.com/cse.js?cx=e65585f8c3ea1440e"></script>
+<!-- RunLLM Widget Configuration -->
+
+
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <meta name="docsearch:language" content="en"/>
+
+  </head>
+
+<body data-feedback-url="https://github.com/pytorch/pytorch" class="pytorch-body">
+  
+
+
+  
+  
+  
+  
+  <body data-bs-spy="scroll" data-bs-target=".bd-toc-nav" data-offset="180" data-bs-root-margin="0px 0px -60%" data-default-mode="">
+
+  
+  
+  <div id="pst-skip-link" class="skip-link d-print-none"><a href="#main-content">Skip to main content</a></div>
+
+  
+  <div id="pst-scroll-pixel-helper"></div>
+  
+  <button type="button" class="btn rounded-pill" id="pst-back-to-top">
+    <i class="fa-solid fa-arrow-up"></i>Back to top</button>
+
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-primary-sidebar-checkbox"/>
+  <label class="overlay overlay-primary" for="pst-primary-sidebar-checkbox"></label>
+  
+  <input type="checkbox"
+          class="sidebar-toggle"
+          id="pst-secondary-sidebar-checkbox"/>
+  <label class="overlay overlay-secondary" for="pst-secondary-sidebar-checkbox"></label>
+  
+  <div class="search-button__wrapper">
+    <div class="search-button__overlay"></div>
+    <div class="search-button__search-container">
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form></div>
+  </div>
+
+  <div class="pst-async-banner-revealer d-none">
+  <aside id="bd-header-version-warning" class="d-none d-print-none" aria-label="Version warning"></aside>
+</div>
+
+  
+    <header class="bd-header navbar navbar-expand-lg bd-navbar d-print-none">
+
+<div class="bd-header__inner bd-page-width">
+  <button class="pst-navbar-icon sidebar-toggle primary-toggle" aria-label="Site navigation">
+    <span class="fa-solid fa-bars"></span>
+  </button>
+
+  
+  <div class="navbar-header-items__mobile-logo">
+    
+
+
+
+
+
+
+
+  
+  
+  
+
+
+<a class="navbar-brand logo" href="../../index.html">
+  
+    <span class="logo__title">Home</span>
+  
+</a>
+  </div>
+
+  
+  
+  <div class=" navbar-header-items__start">
+    
+      
+      
+        
+        <div class="navbar-item desktop-only-version">
+          
+  <a href="../../index.html" class="version">main</a>
+
+        </div>
+      
+    
+  </div>
+  
+  <div class=" navbar-header-items">
+    
+    <div class="me-auto navbar-header-items__center">
+      
+        <div class="navbar-item">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+    
+      <li class="nav-item">
+        
+          
+          <a class="nav-link nav-internal" href="../../installing.html">
+            Installing C++ Distributions of PyTorch
+          </a>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          
+          <a class="nav-link nav-internal" href="../../frontend.html">
+            The C++ Frontend
+          </a>
+        
+      </li>
+    
+      <li class="nav-item dropdown current active">
+        
+          
+          <div class="nav-item-with-toggle">
+            <a class="nav-link nav-internal active" href="../index.html">
+              C++ API Reference
+            </a>
+          </div>
+          <ul class="dropdown-menu" id="dropdown-3">
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../aten/index.html">
+                  ATen: Tensor Library
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../c10/index.html">
+                  C10: Core Utilities
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../autograd/index.html">
+                  Autograd: Automatic Differentiation
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../cuda/index.html">
+                  CUDA Support
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../xpu/index.html">
+                  XPU Support
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../nn/index.html">
+                  Neural Network Modules (torch::nn)
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../optim/index.html">
+                  Optimizers (torch::optim)
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="index.html">
+                  Data Loading (torch::data)
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../serialize/index.html">
+                  Serialization (torch::serialize)
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../library/index.html">
+                  Torch Library API
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../stable/index.html">
+                  Torch Stable API
+                </a>
+              </li>
+            
+          </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          
+          <a class="nav-link nav-internal" href="../../faq.html">
+            FAQ
+          </a>
+        
+      </li>
+    
+
+    
+    
+  </ul>
+</nav>
+</div>
+      
+    </div>
+    
+    
+    <div class="navbar-header-items__end">
+      
+      
+      
+        <div class="navbar-item"><!-- PyTorch.org site link - desktop only, two-line layout -->
+<!-- Note: The show_pytorch_org_link check is handled in layout.html's navbar_end block -->
+<a href="https://pytorch.org" class="pytorch-site-link nav-link nav-external" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Go to PyTorch.org">
+  <span class="pytorch-site-link-text">
+    <span>Go to</span>
+    <span>pytorch.org <i class="fa-solid fa-arrow-up-right-from-square external-icon"></i></span>
+  </span>
+</a></div>
+      
+      
+        <div class="navbar-item">
+  
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+</div>
+      
+        <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script></div>
+      
+        <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://x.com/PyTorch" title="X" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-x-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">X</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/pytorch/pytorch" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://discuss.pytorch.org/" title="PyTorch Forum" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-discourse fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyTorch Forum</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/torch/" title="PyPi" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-python fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPi</span></a>
+        </li>
+</ul></div>
+      
+    </div>
+    
+  </div>
+  
+  
+
+  
+    <button class="pst-navbar-icon sidebar-toggle secondary-toggle" aria-label="On this page">
+      <span class="fa-solid fa-outdent"></span>
+    </button>
+  
+</div>
+
+    </header>
+  
+
+  <div class="bd-container">
+    <div class="bd-container__inner bd-page-width">
+      
+      
+      
+      <div class="bd-sidebar-primary bd-sidebar">
+        
+
+
+
+
+  
+  <div class="sidebar-header-items sidebar-primary__section">
+    
+    
+    <div class="sidebar-header-items__start">
+      <div class="navbar-item">
+        
+  <a href="../../index.html" class="version">main</a>
+
+      </div>
+    </div>
+    
+
+    
+    
+      <div class="sidebar-header-items__center">
+        
+          
+          
+            <div class="navbar-item">
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<nav>
+  <ul class="bd-navbar-elements navbar-nav">
+    
+    
+      <li class="nav-item">
+        
+          
+          <a class="nav-link nav-internal" href="../../installing.html">
+            Installing C++ Distributions of PyTorch
+          </a>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          
+          <a class="nav-link nav-internal" href="../../frontend.html">
+            The C++ Frontend
+          </a>
+        
+      </li>
+    
+      <li class="nav-item dropdown current active">
+        
+          
+          <div class="nav-item-with-toggle">
+            <a class="nav-link nav-internal active" href="../index.html">
+              C++ API Reference
+            </a>
+          </div>
+          <ul class="dropdown-menu" id="dropdown-3">
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../aten/index.html">
+                  ATen: Tensor Library
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../c10/index.html">
+                  C10: Core Utilities
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../autograd/index.html">
+                  Autograd: Automatic Differentiation
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../cuda/index.html">
+                  CUDA Support
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../xpu/index.html">
+                  XPU Support
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../nn/index.html">
+                  Neural Network Modules (torch::nn)
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../optim/index.html">
+                  Optimizers (torch::optim)
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="index.html">
+                  Data Loading (torch::data)
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../serialize/index.html">
+                  Serialization (torch::serialize)
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../library/index.html">
+                  Torch Library API
+                </a>
+              </li>
+            
+              <li class=" ">
+                <a class="nav-link dropdown-item nav-internal" href="../stable/index.html">
+                  Torch Stable API
+                </a>
+              </li>
+            
+          </ul>
+        
+      </li>
+    
+      <li class="nav-item">
+        
+          
+          <a class="nav-link nav-internal" href="../../faq.html">
+            FAQ
+          </a>
+        
+      </li>
+    
+
+    
+    
+  </ul>
+</nav>
+</div>
+          
+        
+      </div>
+    
+    
+    
+      <div class="sidebar-header-items__end">
+        
+        
+          <div class="navbar-item"><!-- PyTorch.org site link - desktop only, two-line layout -->
+<!-- Note: The show_pytorch_org_link check is handled in layout.html's navbar_end block -->
+<a href="https://pytorch.org" class="pytorch-site-link nav-link nav-external" data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-title="Go to PyTorch.org">
+  <span class="pytorch-site-link-text">
+    <span>Go to</span>
+    <span>pytorch.org <i class="fa-solid fa-arrow-up-right-from-square external-icon"></i></span>
+  </span>
+</a></div>
+        
+        
+          <div class="navbar-item">
+  
+<form class="bd-search d-flex align-items-center"
+      action="../../search.html"
+      method="get">
+  <i class="fa-solid fa-magnifying-glass"></i>
+  <input type="search"
+         class="form-control"
+         name="q"
+         id="search-input"
+         placeholder="Search the docs ..."
+         aria-label="Search the docs ..."
+         autocomplete="off"
+         autocorrect="off"
+         autocapitalize="off"
+         spellcheck="false"/>
+  <span class="search-button__kbd-shortcut"><kbd class="kbd-shortcut__modifier">Ctrl</kbd>+<kbd>K</kbd></span>
+</form>
+</div>
+        
+          <div class="navbar-item">
+
+<script>
+document.write(`
+  <button class="btn btn-sm nav-link pst-navbar-icon theme-switch-button" title="light/dark" aria-label="light/dark" data-bs-placement="bottom" data-bs-toggle="tooltip">
+    <i class="theme-switch fa-solid fa-sun fa-lg" data-mode="light"></i>
+    <i class="theme-switch fa-solid fa-moon fa-lg" data-mode="dark"></i>
+    <i class="theme-switch fa-solid fa-circle-half-stroke fa-lg" data-mode="auto"></i>
+  </button>
+`);
+</script></div>
+        
+          <div class="navbar-item"><ul class="navbar-icon-links"
+    aria-label="Icon Links">
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://x.com/PyTorch" title="X" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-x-twitter fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">X</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://github.com/pytorch/pytorch" title="GitHub" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-github fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">GitHub</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://discuss.pytorch.org/" title="PyTorch Forum" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-discourse fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyTorch Forum</span></a>
+        </li>
+        <li class="nav-item">
+          
+          
+          
+          
+          
+          
+          
+          
+          <a href="https://pypi.org/project/torch/" title="PyPi" class="nav-link pst-navbar-icon" rel="noopener" target="_blank" data-bs-toggle="tooltip" data-bs-placement="bottom"><i class="fa-brands fa-python fa-lg" aria-hidden="true"></i>
+            <span class="sr-only">PyPi</span></a>
+        </li>
+</ul></div>
+        
+      </div>
+    
+  </div>
+  
+    <div class="sidebar-primary-items__start sidebar-primary__section">
+        <div class="sidebar-primary-item">
+<nav class="bd-docs-nav bd-links"
+     aria-label="Section Navigation">
+  <p class="bd-links__title" role="heading" aria-level="1">Section Navigation</p>
+  <div class="bd-toc-item navbar-nav"><p aria-level="2" class="caption" role="heading"><span class="caption-text">Core</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../aten/index.html">ATen: Tensor Library</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../aten/tensor.html">Tensor Class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../aten/creation.html">Tensor Creation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../aten/indexing.html">Tensor Indexing</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../aten/accessors.html">Tensor Accessors</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../c10/index.html">C10: Core Utilities</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../c10/device.html">Device and DeviceType</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../c10/guards.html">Device Guards</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../c10/streams.html">Streams</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../c10/types.html">Core Types</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../c10/utilities.html">Utilities</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../autograd/index.html">Autograd: Automatic Differentiation</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../autograd/gradient.html">Gradient Computation</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../autograd/custom_functions.html">Custom Autograd Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../autograd/modes.html">Gradient Modes</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../cuda/index.html">CUDA Support</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../cuda/streams.html">CUDA Streams</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cuda/guards.html">CUDA Guards</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../cuda/utilities.html">CUDA Utility Functions</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../xpu/index.html">XPU Support</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../xpu/streams.html">XPU Streams</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../xpu/utilities.html">XPU Utility Functions</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">C++ Frontend</span></p>
+<ul class="current nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../nn/index.html">Neural Network Modules (torch::nn)</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../nn/containers.html">Containers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/convolution.html">Convolution Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/pooling.html">Pooling Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/linear.html">Linear Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/activation.html">Activation Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/normalization.html">Normalization Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/dropout.html">Dropout Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/embedding.html">Embedding Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/recurrent.html">Recurrent Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/transformer.html">Transformer Layers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/loss.html">Loss Functions</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/functional.html">Functional API</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../nn/utilities.html">Utilities</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../optim/index.html">Optimizers (torch::optim)</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../optim/gradient_descent.html">Gradient Descent Optimizers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../optim/adaptive.html">Adaptive Learning Rate Optimizers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../optim/second_order.html">Second-Order Optimizers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../optim/schedulers.html">Learning Rate Schedulers</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 current active has-children"><a class="reference internal" href="index.html">Data Loading (torch::data)</a><details open="open"><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul class="current">
+<li class="toctree-l2"><a class="reference internal" href="datasets.html">Datasets</a></li>
+<li class="toctree-l2 current active"><a class="current reference internal" href="#">DataLoader</a></li>
+<li class="toctree-l2"><a class="reference internal" href="samplers.html">Samplers</a></li>
+<li class="toctree-l2"><a class="reference internal" href="transforms.html">Transforms</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../serialize/index.html">Serialization (torch::serialize)</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../serialize/save_load.html">Saving and Loading</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../serialize/archives.html">Archives</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../serialize/checkpoints.html">Checkpoints</a></li>
+</ul>
+</details></li>
+</ul>
+<p aria-level="2" class="caption" role="heading"><span class="caption-text">Extensions</span></p>
+<ul class="nav bd-sidenav">
+<li class="toctree-l1 has-children"><a class="reference internal" href="../library/index.html">Torch Library API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../library/registration.html">Operator Registration</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../library/custom_classes.html">Custom Classes</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../library/versioning.html">Library Versioning</a></li>
+</ul>
+</details></li>
+<li class="toctree-l1 has-children"><a class="reference internal" href="../stable/index.html">Torch Stable API</a><details><summary><span class="toctree-toggle" role="presentation"><i class="fa-solid fa-chevron-down"></i></span></summary><ul>
+<li class="toctree-l2"><a class="reference internal" href="../stable/registration.html">Library Registration Macros</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../stable/operators.html">Stable Operators</a></li>
+<li class="toctree-l2"><a class="reference internal" href="../stable/utilities.html">Utilities</a></li>
+</ul>
+</details></li>
+</ul>
+</div>
+</nav></div>
+    </div>
+  
+  
+  <div class="sidebar-primary-items__end sidebar-primary__section">
+  </div>
+
+
+
+<div id="rtd-footer-container"></div>
+      </div>
+      
+      <main id="main-content" class="bd-main" role="main">
+        
+        
+          <div class="bd-content">
+            <div class="bd-article-container">
+              
+              <div class="bd-header-article d-print-none">
+<div class="header-article-items header-article__inner">
+  
+    <div class="header-article-items__start">
+      
+        <div class="header-article-item">
+
+
+
+<nav aria-label="Breadcrumb" class="d-print-none">
+  <ul class="bd-breadcrumbs">
+    
+    <li class="breadcrumb-item breadcrumb-home">
+      <a href="../../index.html" class="nav-link" aria-label="Home">
+        <i class="fa-solid fa-home"></i>
+      </a>
+    </li>
+    
+    <li class="breadcrumb-item"><a href="../index.html" class="nav-link">C++ API Reference</a></li>
+    
+    
+    <li class="breadcrumb-item"><a href="index.html" class="nav-link">Data Loading (torch::data)</a></li>
+    
+    <li class="breadcrumb-item active" aria-current="page">DataLoader</li>
+  </ul>
+</nav>
+</div>
+      
+    </div>
+  
+  
+    <div class="header-article-items__end">
+      
+        <div class="header-article-item">
+<div class="rating">
+    Rate this Page
+    <div class="stars">
+        
+        <span class="star" data-behavior="tutorial-rating" data-count="1" data-value="1">★</span>
+        
+        <span class="star" data-behavior="tutorial-rating" data-count="2" data-value="2">★</span>
+        
+        <span class="star" data-behavior="tutorial-rating" data-count="3" data-value="3">★</span>
+        
+        <span class="star" data-behavior="tutorial-rating" data-count="4" data-value="4">★</span>
+        
+        <span class="star" data-behavior="tutorial-rating" data-count="5" data-value="5">★</span>
+        
+    </div>
+</div>
+</div>
+      
+    </div>
+  
+</div>
+</div>
+              
+              
+
+<div id="searchbox"></div>
+<div id="pytorch-article">
+  <!-- Hidden breadcrumb schema for SEO only -->
+  <div style="display:none;" itemscope itemtype="https://schema.org/BreadcrumbList">
+    
+    <div itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+      <link itemprop="item" href="../index.html">
+      <meta itemprop="name" content="C++ API Reference">
+      <meta itemprop="position" content="1">
+    </div>
+    
+    <div itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+      <link itemprop="item" href="index.html">
+      <meta itemprop="name" content="Data Loading (torch::data)">
+      <meta itemprop="position" content="2">
+    </div>
+    
+    <div itemprop="itemListElement" itemscope itemtype="https://schema.org/ListItem">
+      <meta itemprop="name" content="DataLoader">
+      <meta itemprop="position" content="3">
+    </div>
+  </div>
+
+  
+  
+
+  
+              
+                
+<div id="searchbox"></div>
+                <article class="bd-article">
+                  
+  <section id="dataloader">
+<h1>DataLoader<a class="headerlink" href="#dataloader" title="Link to this heading">#</a></h1>
+<p>The DataLoader batches samples from a dataset and optionally shuffles and
+parallelizes the loading process. It is the main interface for iterating
+over training data.</p>
+<section id="dataloader-classes">
+<h2>DataLoader Classes<a class="headerlink" href="#dataloader-classes" title="Link to this heading">#</a></h2>
+<dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4I000EN5torch4data14DataLoaderBaseE">
+<span id="_CPPv3I000EN5torch4data14DataLoaderBaseE"></span><span id="_CPPv2I000EN5torch4data14DataLoaderBaseE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Dataset</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Batch</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">BatchRequest</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="PyTorchclasstorch_1_1data_1_1_data_loader_base"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">DataLoaderBase</span></span></span><a class="headerlink" href="#_CPPv4I000EN5torch4data14DataLoaderBaseE" title="Link to this definition">#</a><br /></dt>
+<dd><div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-types">Public Types</p>
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data14DataLoaderBase9BatchTypeE">
+<span id="_CPPv3N5torch4data14DataLoaderBase9BatchTypeE"></span><span id="_CPPv2N5torch4data14DataLoaderBase9BatchTypeE"></span><span class="target" id="PyTorchclasstorch_1_1data_1_1_data_loader_base_1a8c22a5a431c1bc76e74be087eff2a1a0"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">BatchType</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I000EN5torch4data14DataLoaderBaseE" title="torch::data::DataLoaderBase::Batch"><span class="n"><span class="pre">Batch</span></span></a><a class="headerlink" href="#_CPPv4N5torch4data14DataLoaderBase9BatchTypeE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data14DataLoaderBase16BatchRequestTypeE">
+<span id="_CPPv3N5torch4data14DataLoaderBase16BatchRequestTypeE"></span><span id="_CPPv2N5torch4data14DataLoaderBase16BatchRequestTypeE"></span><span class="target" id="PyTorchclasstorch_1_1data_1_1_data_loader_base_1ace74b5775881175ef42ee6b0aea0267e"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">BatchRequestType</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I000EN5torch4data14DataLoaderBaseE" title="torch::data::DataLoaderBase::BatchRequest"><span class="n"><span class="pre">BatchRequest</span></span></a><a class="headerlink" href="#_CPPv4N5torch4data14DataLoaderBase16BatchRequestTypeE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data14DataLoaderBase14DataLoaderBaseE17DataLoaderOptionsNSt10unique_ptrI7DatasetEE">
+<span id="_CPPv3N5torch4data14DataLoaderBase14DataLoaderBaseE17DataLoaderOptionsNSt10unique_ptrI7DatasetEE"></span><span id="_CPPv2N5torch4data14DataLoaderBase14DataLoaderBaseE17DataLoaderOptionsNSt10unique_ptrI7DatasetEE"></span><span id="torch::data::DataLoaderBase::DataLoaderBase__DataLoaderOptions.std::unique_ptr:Dataset:"></span><span class="target" id="PyTorchclasstorch_1_1data_1_1_data_loader_base_1ac1aabf7c48a140913237d2dd74db6f34"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">DataLoaderBase</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4N5torch4data17DataLoaderOptionsE" title="torch::data::DataLoaderOptions"><span class="n"><span class="pre">DataLoaderOptions</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">options</span></span>, <span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">unique_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I000EN5torch4data14DataLoaderBaseE" title="torch::data::DataLoaderBase::Dataset"><span class="n"><span class="pre">Dataset</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">main_thread_dataset</span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">nullptr</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5torch4data14DataLoaderBase14DataLoaderBaseE17DataLoaderOptionsNSt10unique_ptrI7DatasetEE" title="Link to this definition">#</a><br /></dt>
+<dd><p>Constructs a new DataLoader from a <code class="docutils literal notranslate"><span class="pre">dataset</span></code> to sample from, <code class="docutils literal notranslate"><span class="pre">options</span></code> to configure the DataLoader with, and a <code class="docutils literal notranslate"><span class="pre">sampler</span></code> that specifies the sampling strategy. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data14DataLoaderBase14DataLoaderBaseERK14DataLoaderBase">
+<span id="_CPPv3N5torch4data14DataLoaderBase14DataLoaderBaseERK14DataLoaderBase"></span><span id="_CPPv2N5torch4data14DataLoaderBase14DataLoaderBaseERK14DataLoaderBase"></span><span id="torch::data::DataLoaderBase::DataLoaderBase__DataLoaderBaseCR"></span><span class="target" id="PyTorchclasstorch_1_1data_1_1_data_loader_base_1ac4d6d9b47d82281be68ae65605c7ceca"></span><span class="sig-name descname"><span class="n"><span class="pre">DataLoaderBase</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4N5torch4data14DataLoaderBase14DataLoaderBaseERK14DataLoaderBase" title="torch::data::DataLoaderBase::DataLoaderBase"><span class="n"><span class="pre">DataLoaderBase</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">delete</span></span><a class="headerlink" href="#_CPPv4N5torch4data14DataLoaderBase14DataLoaderBaseERK14DataLoaderBase" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data14DataLoaderBase14DataLoaderBaseERR14DataLoaderBase">
+<span id="_CPPv3N5torch4data14DataLoaderBase14DataLoaderBaseERR14DataLoaderBase"></span><span id="_CPPv2N5torch4data14DataLoaderBase14DataLoaderBaseERR14DataLoaderBase"></span><span id="torch::data::DataLoaderBase::DataLoaderBase__DataLoaderBaseRR"></span><span class="target" id="PyTorchclasstorch_1_1data_1_1_data_loader_base_1ad3a8eb0eabcf22b13c20271e8e416881"></span><span class="sig-name descname"><span class="n"><span class="pre">DataLoaderBase</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4N5torch4data14DataLoaderBase14DataLoaderBaseERR14DataLoaderBase" title="torch::data::DataLoaderBase::DataLoaderBase"><span class="n"><span class="pre">DataLoaderBase</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">delete</span></span><a class="headerlink" href="#_CPPv4N5torch4data14DataLoaderBase14DataLoaderBaseERR14DataLoaderBase" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data14DataLoaderBaseaSERK14DataLoaderBase">
+<span id="_CPPv3N5torch4data14DataLoaderBaseaSERK14DataLoaderBase"></span><span id="_CPPv2N5torch4data14DataLoaderBaseaSERK14DataLoaderBase"></span><span id="torch::data::DataLoaderBase::assign-operator__DataLoaderBaseCR"></span><span class="target" id="PyTorchclasstorch_1_1data_1_1_data_loader_base_1ac34641b02e447b430ba61b790df5b8b5"></span><a class="reference internal" href="#_CPPv4I000EN5torch4data14DataLoaderBaseE" title="torch::data::DataLoaderBase"><span class="n"><span class="pre">DataLoaderBase</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">=</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I000EN5torch4data14DataLoaderBaseE" title="torch::data::DataLoaderBase"><span class="n"><span class="pre">DataLoaderBase</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">delete</span></span><a class="headerlink" href="#_CPPv4N5torch4data14DataLoaderBaseaSERK14DataLoaderBase" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data14DataLoaderBaseaSERR14DataLoaderBase">
+<span id="_CPPv3N5torch4data14DataLoaderBaseaSERR14DataLoaderBase"></span><span id="_CPPv2N5torch4data14DataLoaderBaseaSERR14DataLoaderBase"></span><span id="torch::data::DataLoaderBase::assign-operator__DataLoaderBaseRR"></span><span class="target" id="PyTorchclasstorch_1_1data_1_1_data_loader_base_1a3dbd142e5adc57a4bc157b5729600e74"></span><a class="reference internal" href="#_CPPv4I000EN5torch4data14DataLoaderBaseE" title="torch::data::DataLoaderBase"><span class="n"><span class="pre">DataLoaderBase</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">=</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I000EN5torch4data14DataLoaderBaseE" title="torch::data::DataLoaderBase"><span class="n"><span class="pre">DataLoaderBase</span></span></a><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">delete</span></span><a class="headerlink" href="#_CPPv4N5torch4data14DataLoaderBaseaSERR14DataLoaderBase" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data14DataLoaderBaseD0Ev">
+<span id="_CPPv3N5torch4data14DataLoaderBaseD0Ev"></span><span id="_CPPv2N5torch4data14DataLoaderBaseD0Ev"></span><span id="torch::data::DataLoaderBase::~DataLoaderBase"></span><span class="target" id="PyTorchclasstorch_1_1data_1_1_data_loader_base_1a385ecb355540ac34eb5ec721127dc5c9"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">virtual</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">~DataLoaderBase</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5torch4data14DataLoaderBaseD0Ev" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data14DataLoaderBase5beginEv">
+<span id="_CPPv3N5torch4data14DataLoaderBase5beginEv"></span><span id="_CPPv2N5torch4data14DataLoaderBase5beginEv"></span><span id="torch::data::DataLoaderBase::begin"></span><span class="target" id="PyTorchclasstorch_1_1data_1_1_data_loader_base_1a9a932b57ca185a126b4054321d52c40f"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN5torch4data8IteratorE" title="torch::data::Iterator"><span class="n"><span class="pre">Iterator</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I000EN5torch4data14DataLoaderBaseE" title="torch::data::DataLoaderBase::Batch"><span class="n"><span class="pre">Batch</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">begin</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5torch4data14DataLoaderBase5beginEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Returns an iterator into the DataLoader. </p>
+<p>The lifetime of the iterator is bound to the DataLoader. In C++ standards language, the category of the iterator is <code class="docutils literal notranslate"><span class="pre">OutputIterator</span></code>. See <a class="reference external" href="https://en.cppreference.com/w/cpp/named_req/OutputIterator">https://en.cppreference.com/w/cpp/named_req/OutputIterator</a> for what this means. In short: you may increment the iterator and dereference it, but cannot go back, or step forward more than one position at a time. When the DataLoader is exhausted, it will compare equal with the special “sentinel” iterator returned by <code class="docutils literal notranslate"><span class="pre">DataLoader::end()</span></code>. Most of the time, you should only use range-for loops to loop over the DataLoader, but standard algorithms like <code class="docutils literal notranslate"><span class="pre">std::copy(dataloader.begin(),</span> <span class="pre">dataloader.end(),</span> <span class="pre">output_iterator)</span></code> are supported too. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data14DataLoaderBase3endEv">
+<span id="_CPPv3N5torch4data14DataLoaderBase3endEv"></span><span id="_CPPv2N5torch4data14DataLoaderBase3endEv"></span><span id="torch::data::DataLoaderBase::end"></span><span class="target" id="PyTorchclasstorch_1_1data_1_1_data_loader_base_1aeaee3030fd7cf70b48dbbc5445e248ed"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN5torch4data8IteratorE" title="torch::data::Iterator"><span class="n"><span class="pre">Iterator</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I000EN5torch4data14DataLoaderBaseE" title="torch::data::DataLoaderBase::Batch"><span class="n"><span class="pre">Batch</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">end</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5torch4data14DataLoaderBase3endEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Returns a special “sentinel” iterator that compares equal with a non-sentinel iterator once the DataLoader is exhausted. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data14DataLoaderBase4joinEv">
+<span id="_CPPv3N5torch4data14DataLoaderBase4joinEv"></span><span id="_CPPv2N5torch4data14DataLoaderBase4joinEv"></span><span id="torch::data::DataLoaderBase::join"></span><span class="target" id="PyTorchclasstorch_1_1data_1_1_data_loader_base_1a5905b16e4685a40696a416ffc61b9ef1"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">void</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">join</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5torch4data14DataLoaderBase4joinEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Joins the DataLoader’s worker threads and drains internal queues. </p>
+<p>This function may only be invoked from the main thread (in which the DataLoader lives). </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5torch4data14DataLoaderBase7optionsEv">
+<span id="_CPPv3NK5torch4data14DataLoaderBase7optionsEv"></span><span id="_CPPv2NK5torch4data14DataLoaderBase7optionsEv"></span><span id="torch::data::DataLoaderBase::optionsC"></span><span class="target" id="PyTorchclasstorch_1_1data_1_1_data_loader_base_1a33cc5271a87513573afa540fa732793b"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">FullDataLoaderOptions</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">options</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK5torch4data14DataLoaderBase7optionsEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Returns the options with which the DataLoader was configured. </p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+</section>
+<section id="dataloaderoptions">
+<h2>DataLoaderOptions<a class="headerlink" href="#dataloaderoptions" title="Link to this heading">#</a></h2>
+<dl class="cpp struct">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data17DataLoaderOptionsE">
+<span id="_CPPv3N5torch4data17DataLoaderOptionsE"></span><span id="_CPPv2N5torch4data17DataLoaderOptionsE"></span><span id="torch::data::DataLoaderOptions"></span><span class="target" id="PyTorchstructtorch_1_1data_1_1_data_loader_options"></span><span class="k"><span class="pre">struct</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">DataLoaderOptions</span></span></span><a class="headerlink" href="#_CPPv4N5torch4data17DataLoaderOptionsE" title="Link to this definition">#</a><br /></dt>
+<dd><p>Options to configure a <code class="docutils literal notranslate"><span class="pre">DataLoader</span></code>. </p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data17DataLoaderOptions17DataLoaderOptionsEv">
+<span id="_CPPv3N5torch4data17DataLoaderOptions17DataLoaderOptionsEv"></span><span id="_CPPv2N5torch4data17DataLoaderOptions17DataLoaderOptionsEv"></span><span id="torch::data::DataLoaderOptions::DataLoaderOptions"></span><span class="target" id="PyTorchstructtorch_1_1data_1_1_data_loader_options_1a4d99f37bad11ca9fcb0488496d19b95a"></span><span class="sig-name descname"><span class="n"><span class="pre">DataLoaderOptions</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="k"><span class="pre">default</span></span><a class="headerlink" href="#_CPPv4N5torch4data17DataLoaderOptions17DataLoaderOptionsEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data17DataLoaderOptions17DataLoaderOptionsE6size_t">
+<span id="_CPPv3N5torch4data17DataLoaderOptions17DataLoaderOptionsE6size_t"></span><span id="_CPPv2N5torch4data17DataLoaderOptions17DataLoaderOptionsE6size_t"></span><span id="torch::data::DataLoaderOptions::DataLoaderOptions__s"></span><span class="target" id="PyTorchstructtorch_1_1data_1_1_data_loader_options_1a9d52a5b6ee59c8c8d776ed835ea559ed"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">DataLoaderOptions</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">batch_size</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5torch4data17DataLoaderOptions17DataLoaderOptionsE6size_t" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data17DataLoaderOptions10batch_sizeERK6size_t">
+<span id="_CPPv3N5torch4data17DataLoaderOptions10batch_sizeERK6size_t"></span><span id="_CPPv2N5torch4data17DataLoaderOptions10batch_sizeERK6size_t"></span><span id="torch::data::DataLoaderOptions::batch_size__sCR"></span><span class="target" id="PyTorchstructtorch_1_1data_1_1_data_loader_options_1af37bff9fa8114270f202adbe209c3f15"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">batch_size</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">new_batch_size</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="o"><span class="pre">-&gt;</span></span><span class="w"> </span><span class="k"><span class="pre">decltype</span></span><span class="p"><span class="pre">(</span></span><span class="o"><span class="pre">*</span></span><span class="k"><span class="pre">this</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N5torch4data17DataLoaderOptions10batch_sizeERK6size_t" title="Link to this definition">#</a><br /></dt>
+<dd><p>The size of each batch to fetch. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data17DataLoaderOptions10batch_sizeERR6size_t">
+<span id="_CPPv3N5torch4data17DataLoaderOptions10batch_sizeERR6size_t"></span><span id="_CPPv2N5torch4data17DataLoaderOptions10batch_sizeERR6size_t"></span><span id="torch::data::DataLoaderOptions::batch_size__sRR"></span><span class="target" id="PyTorchstructtorch_1_1data_1_1_data_loader_options_1ac40182c28d84177c2999b6c36a27deca"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">batch_size</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">new_batch_size</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="o"><span class="pre">-&gt;</span></span><span class="w"> </span><span class="k"><span class="pre">decltype</span></span><span class="p"><span class="pre">(</span></span><span class="o"><span class="pre">*</span></span><span class="k"><span class="pre">this</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N5torch4data17DataLoaderOptions10batch_sizeERR6size_t" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5torch4data17DataLoaderOptions10batch_sizeEv">
+<span id="_CPPv3NK5torch4data17DataLoaderOptions10batch_sizeEv"></span><span id="_CPPv2NK5torch4data17DataLoaderOptions10batch_sizeEv"></span><span id="torch::data::DataLoaderOptions::batch_sizeC"></span><span class="target" id="PyTorchstructtorch_1_1data_1_1_data_loader_options_1ae597517d6b14c465d49eb64c4097cdbc"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">batch_size</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK5torch4data17DataLoaderOptions10batch_sizeEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data17DataLoaderOptions10batch_sizeEv">
+<span id="_CPPv3N5torch4data17DataLoaderOptions10batch_sizeEv"></span><span id="_CPPv2N5torch4data17DataLoaderOptions10batch_sizeEv"></span><span id="torch::data::DataLoaderOptions::batch_size"></span><span class="target" id="PyTorchstructtorch_1_1data_1_1_data_loader_options_1a7ad194623a09fbf247a977e0db0d8761"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">batch_size</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N5torch4data17DataLoaderOptions10batch_sizeEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data17DataLoaderOptions7workersERK6size_t">
+<span id="_CPPv3N5torch4data17DataLoaderOptions7workersERK6size_t"></span><span id="_CPPv2N5torch4data17DataLoaderOptions7workersERK6size_t"></span><span id="torch::data::DataLoaderOptions::workers__sCR"></span><span class="target" id="PyTorchstructtorch_1_1data_1_1_data_loader_options_1a58c0e396a291636945ab00f6a7bd002d"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">workers</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">new_workers</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="o"><span class="pre">-&gt;</span></span><span class="w"> </span><span class="k"><span class="pre">decltype</span></span><span class="p"><span class="pre">(</span></span><span class="o"><span class="pre">*</span></span><span class="k"><span class="pre">this</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N5torch4data17DataLoaderOptions7workersERK6size_t" title="Link to this definition">#</a><br /></dt>
+<dd><p>The number of worker threads to launch. </p>
+<p>If zero, the main thread will synchronously perform the data loading. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data17DataLoaderOptions7workersERR6size_t">
+<span id="_CPPv3N5torch4data17DataLoaderOptions7workersERR6size_t"></span><span id="_CPPv2N5torch4data17DataLoaderOptions7workersERR6size_t"></span><span id="torch::data::DataLoaderOptions::workers__sRR"></span><span class="target" id="PyTorchstructtorch_1_1data_1_1_data_loader_options_1a70f00a95d7353596f02f17add228f8a4"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">workers</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">new_workers</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="o"><span class="pre">-&gt;</span></span><span class="w"> </span><span class="k"><span class="pre">decltype</span></span><span class="p"><span class="pre">(</span></span><span class="o"><span class="pre">*</span></span><span class="k"><span class="pre">this</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N5torch4data17DataLoaderOptions7workersERR6size_t" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5torch4data17DataLoaderOptions7workersEv">
+<span id="_CPPv3NK5torch4data17DataLoaderOptions7workersEv"></span><span id="_CPPv2NK5torch4data17DataLoaderOptions7workersEv"></span><span id="torch::data::DataLoaderOptions::workersC"></span><span class="target" id="PyTorchstructtorch_1_1data_1_1_data_loader_options_1a392c27663978c85925431be264fcf44d"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">workers</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK5torch4data17DataLoaderOptions7workersEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data17DataLoaderOptions7workersEv">
+<span id="_CPPv3N5torch4data17DataLoaderOptions7workersEv"></span><span id="_CPPv2N5torch4data17DataLoaderOptions7workersEv"></span><span id="torch::data::DataLoaderOptions::workers"></span><span class="target" id="PyTorchstructtorch_1_1data_1_1_data_loader_options_1aba90c8e0509bf6db046137133c96db38"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">size_t</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">workers</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N5torch4data17DataLoaderOptions7workersEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data17DataLoaderOptions8max_jobsERKNSt8optionalI6size_tEE">
+<span id="_CPPv3N5torch4data17DataLoaderOptions8max_jobsERKNSt8optionalI6size_tEE"></span><span id="_CPPv2N5torch4data17DataLoaderOptions8max_jobsERKNSt8optionalI6size_tEE"></span><span id="torch::data::DataLoaderOptions::max_jobs__std::optional:s:CR"></span><span class="target" id="PyTorchstructtorch_1_1data_1_1_data_loader_options_1a356d4e24348b80c58abbaad456d12143"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">max_jobs</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">optional</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">size_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">new_max_jobs</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="o"><span class="pre">-&gt;</span></span><span class="w"> </span><span class="k"><span class="pre">decltype</span></span><span class="p"><span class="pre">(</span></span><span class="o"><span class="pre">*</span></span><span class="k"><span class="pre">this</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N5torch4data17DataLoaderOptions8max_jobsERKNSt8optionalI6size_tEE" title="Link to this definition">#</a><br /></dt>
+<dd><p>The maximum number of jobs to enqueue for fetching by worker threads. </p>
+<p>Defaults to two times the number of worker threads. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data17DataLoaderOptions8max_jobsERRNSt8optionalI6size_tEE">
+<span id="_CPPv3N5torch4data17DataLoaderOptions8max_jobsERRNSt8optionalI6size_tEE"></span><span id="_CPPv2N5torch4data17DataLoaderOptions8max_jobsERRNSt8optionalI6size_tEE"></span><span id="torch::data::DataLoaderOptions::max_jobs__std::optional:s:RR"></span><span class="target" id="PyTorchstructtorch_1_1data_1_1_data_loader_options_1aa8d3423ff2cb70727cd9e69c338920c6"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">max_jobs</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">optional</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">size_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">new_max_jobs</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="o"><span class="pre">-&gt;</span></span><span class="w"> </span><span class="k"><span class="pre">decltype</span></span><span class="p"><span class="pre">(</span></span><span class="o"><span class="pre">*</span></span><span class="k"><span class="pre">this</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N5torch4data17DataLoaderOptions8max_jobsERRNSt8optionalI6size_tEE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5torch4data17DataLoaderOptions8max_jobsEv">
+<span id="_CPPv3NK5torch4data17DataLoaderOptions8max_jobsEv"></span><span id="_CPPv2NK5torch4data17DataLoaderOptions8max_jobsEv"></span><span id="torch::data::DataLoaderOptions::max_jobsC"></span><span class="target" id="PyTorchstructtorch_1_1data_1_1_data_loader_options_1abcaaecd6ab5b743c2105eef70200c9f7"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">optional</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">size_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">max_jobs</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK5torch4data17DataLoaderOptions8max_jobsEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data17DataLoaderOptions8max_jobsEv">
+<span id="_CPPv3N5torch4data17DataLoaderOptions8max_jobsEv"></span><span id="_CPPv2N5torch4data17DataLoaderOptions8max_jobsEv"></span><span id="torch::data::DataLoaderOptions::max_jobs"></span><span class="target" id="PyTorchstructtorch_1_1data_1_1_data_loader_options_1aa31f59d800c1e5e5d17d823002cb68fc"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">optional</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">size_t</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">max_jobs</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N5torch4data17DataLoaderOptions8max_jobsEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data17DataLoaderOptions7timeoutERKNSt8optionalINSt6chrono12millisecondsEEE">
+<span id="_CPPv3N5torch4data17DataLoaderOptions7timeoutERKNSt8optionalINSt6chrono12millisecondsEEE"></span><span id="_CPPv2N5torch4data17DataLoaderOptions7timeoutERKNSt8optionalINSt6chrono12millisecondsEEE"></span><span id="torch::data::DataLoaderOptions::timeout__std::optional:std::chrono::milliseconds:CR"></span><span class="target" id="PyTorchstructtorch_1_1data_1_1_data_loader_options_1ab8863d1e54d55ed43f9e0b6b8a880554"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">timeout</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">optional</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">chrono</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">milliseconds</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">new_timeout</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="o"><span class="pre">-&gt;</span></span><span class="w"> </span><span class="k"><span class="pre">decltype</span></span><span class="p"><span class="pre">(</span></span><span class="o"><span class="pre">*</span></span><span class="k"><span class="pre">this</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N5torch4data17DataLoaderOptions7timeoutERKNSt8optionalINSt6chrono12millisecondsEEE" title="Link to this definition">#</a><br /></dt>
+<dd><p>An optional limit on the time to wait for the next batch. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data17DataLoaderOptions7timeoutERRNSt8optionalINSt6chrono12millisecondsEEE">
+<span id="_CPPv3N5torch4data17DataLoaderOptions7timeoutERRNSt8optionalINSt6chrono12millisecondsEEE"></span><span id="_CPPv2N5torch4data17DataLoaderOptions7timeoutERRNSt8optionalINSt6chrono12millisecondsEEE"></span><span id="torch::data::DataLoaderOptions::timeout__std::optional:std::chrono::milliseconds:RR"></span><span class="target" id="PyTorchstructtorch_1_1data_1_1_data_loader_options_1a6257c4f099b373e13d15019d750183af"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">timeout</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">optional</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">chrono</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">milliseconds</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">new_timeout</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="o"><span class="pre">-&gt;</span></span><span class="w"> </span><span class="k"><span class="pre">decltype</span></span><span class="p"><span class="pre">(</span></span><span class="o"><span class="pre">*</span></span><span class="k"><span class="pre">this</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N5torch4data17DataLoaderOptions7timeoutERRNSt8optionalINSt6chrono12millisecondsEEE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5torch4data17DataLoaderOptions7timeoutEv">
+<span id="_CPPv3NK5torch4data17DataLoaderOptions7timeoutEv"></span><span id="_CPPv2NK5torch4data17DataLoaderOptions7timeoutEv"></span><span id="torch::data::DataLoaderOptions::timeoutC"></span><span class="target" id="PyTorchstructtorch_1_1data_1_1_data_loader_options_1ac509e039ada0d8a572016c0e0fb965e6"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">optional</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">chrono</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">milliseconds</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">timeout</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK5torch4data17DataLoaderOptions7timeoutEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data17DataLoaderOptions7timeoutEv">
+<span id="_CPPv3N5torch4data17DataLoaderOptions7timeoutEv"></span><span id="_CPPv2N5torch4data17DataLoaderOptions7timeoutEv"></span><span id="torch::data::DataLoaderOptions::timeout"></span><span class="target" id="PyTorchstructtorch_1_1data_1_1_data_loader_options_1aed3a4ad44207f53e792e06ddaf5ea54e"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">optional</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">chrono</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">milliseconds</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">timeout</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N5torch4data17DataLoaderOptions7timeoutEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data17DataLoaderOptions16enforce_orderingERKb">
+<span id="_CPPv3N5torch4data17DataLoaderOptions16enforce_orderingERKb"></span><span id="_CPPv2N5torch4data17DataLoaderOptions16enforce_orderingERKb"></span><span id="torch::data::DataLoaderOptions::enforce_ordering__bCR"></span><span class="target" id="PyTorchstructtorch_1_1data_1_1_data_loader_options_1a0c94e52abac09d5ab199b6f621e49e23"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">enforce_ordering</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">new_enforce_ordering</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="o"><span class="pre">-&gt;</span></span><span class="w"> </span><span class="k"><span class="pre">decltype</span></span><span class="p"><span class="pre">(</span></span><span class="o"><span class="pre">*</span></span><span class="k"><span class="pre">this</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N5torch4data17DataLoaderOptions16enforce_orderingERKb" title="Link to this definition">#</a><br /></dt>
+<dd><p>Whether to enforce ordering of batches when multiple are loaded asynchronously by worker threads. </p>
+<p>Set to <code class="docutils literal notranslate"><span class="pre">false</span></code> for better performance if you do not care about determinism. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data17DataLoaderOptions16enforce_orderingERRb">
+<span id="_CPPv3N5torch4data17DataLoaderOptions16enforce_orderingERRb"></span><span id="_CPPv2N5torch4data17DataLoaderOptions16enforce_orderingERRb"></span><span id="torch::data::DataLoaderOptions::enforce_ordering__bRR"></span><span class="target" id="PyTorchstructtorch_1_1data_1_1_data_loader_options_1a6b4655ce34efc2a6034f333b5b2ed8ef"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">enforce_ordering</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">new_enforce_ordering</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="o"><span class="pre">-&gt;</span></span><span class="w"> </span><span class="k"><span class="pre">decltype</span></span><span class="p"><span class="pre">(</span></span><span class="o"><span class="pre">*</span></span><span class="k"><span class="pre">this</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N5torch4data17DataLoaderOptions16enforce_orderingERRb" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5torch4data17DataLoaderOptions16enforce_orderingEv">
+<span id="_CPPv3NK5torch4data17DataLoaderOptions16enforce_orderingEv"></span><span id="_CPPv2NK5torch4data17DataLoaderOptions16enforce_orderingEv"></span><span id="torch::data::DataLoaderOptions::enforce_orderingC"></span><span class="target" id="PyTorchstructtorch_1_1data_1_1_data_loader_options_1aeae5e44775ca0c74d6f66388d9d48ce4"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">enforce_ordering</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK5torch4data17DataLoaderOptions16enforce_orderingEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data17DataLoaderOptions16enforce_orderingEv">
+<span id="_CPPv3N5torch4data17DataLoaderOptions16enforce_orderingEv"></span><span id="_CPPv2N5torch4data17DataLoaderOptions16enforce_orderingEv"></span><span id="torch::data::DataLoaderOptions::enforce_ordering"></span><span class="target" id="PyTorchstructtorch_1_1data_1_1_data_loader_options_1a32e8febada59dbef78cd9acaf9ce7012"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">enforce_ordering</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N5torch4data17DataLoaderOptions16enforce_orderingEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data17DataLoaderOptions9drop_lastERKb">
+<span id="_CPPv3N5torch4data17DataLoaderOptions9drop_lastERKb"></span><span id="_CPPv2N5torch4data17DataLoaderOptions9drop_lastERKb"></span><span id="torch::data::DataLoaderOptions::drop_last__bCR"></span><span class="target" id="PyTorchstructtorch_1_1data_1_1_data_loader_options_1a980e4fd393127886cda6b12fe74d3659"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">drop_last</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">new_drop_last</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="o"><span class="pre">-&gt;</span></span><span class="w"> </span><span class="k"><span class="pre">decltype</span></span><span class="p"><span class="pre">(</span></span><span class="o"><span class="pre">*</span></span><span class="k"><span class="pre">this</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N5torch4data17DataLoaderOptions9drop_lastERKb" title="Link to this definition">#</a><br /></dt>
+<dd><p>Whether to omit the last batch if it contains less than <code class="docutils literal notranslate"><span class="pre">batch_size</span></code> examples. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data17DataLoaderOptions9drop_lastERRb">
+<span id="_CPPv3N5torch4data17DataLoaderOptions9drop_lastERRb"></span><span id="_CPPv2N5torch4data17DataLoaderOptions9drop_lastERRb"></span><span id="torch::data::DataLoaderOptions::drop_last__bRR"></span><span class="target" id="PyTorchstructtorch_1_1data_1_1_data_loader_options_1a9c4db634864e2b0445116103124f718a"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">auto</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">drop_last</span></span></span><span class="sig-paren">(</span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">new_drop_last</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="o"><span class="pre">-&gt;</span></span><span class="w"> </span><span class="k"><span class="pre">decltype</span></span><span class="p"><span class="pre">(</span></span><span class="o"><span class="pre">*</span></span><span class="k"><span class="pre">this</span></span><span class="p"><span class="pre">)</span></span><a class="headerlink" href="#_CPPv4N5torch4data17DataLoaderOptions9drop_lastERRb" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5torch4data17DataLoaderOptions9drop_lastEv">
+<span id="_CPPv3NK5torch4data17DataLoaderOptions9drop_lastEv"></span><span id="_CPPv2NK5torch4data17DataLoaderOptions9drop_lastEv"></span><span id="torch::data::DataLoaderOptions::drop_lastC"></span><span class="target" id="PyTorchstructtorch_1_1data_1_1_data_loader_options_1a4ef2f0f75499bdc082c94f2d7e7263aa"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">drop_last</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4NK5torch4data17DataLoaderOptions9drop_lastEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data17DataLoaderOptions9drop_lastEv">
+<span id="_CPPv3N5torch4data17DataLoaderOptions9drop_lastEv"></span><span id="_CPPv2N5torch4data17DataLoaderOptions9drop_lastEv"></span><span id="torch::data::DataLoaderOptions::drop_last"></span><span class="target" id="PyTorchstructtorch_1_1data_1_1_data_loader_options_1a10065624b37a8de7afd0a3abb3dd6795"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="n"><span class="pre">drop_last</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">noexcept</span></span><a class="headerlink" href="#_CPPv4N5torch4data17DataLoaderOptions9drop_lastEv" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+</div>
+</dd></dl>
+
+</section>
+<section id="statefuldataloader">
+<h2>StatefulDataLoader<a class="headerlink" href="#statefuldataloader" title="Link to this heading">#</a></h2>
+<p>A DataLoader for <code class="docutils literal notranslate"><span class="pre">StatefulDataset</span></code> types that manage their own batching logic
+internally.</p>
+<dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4I0EN5torch4data18StatefulDataLoaderE">
+<span id="_CPPv3I0EN5torch4data18StatefulDataLoaderE"></span><span id="_CPPv2I0EN5torch4data18StatefulDataLoaderE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Dataset</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="PyTorchclasstorch_1_1data_1_1_stateful_data_loader"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">StatefulDataLoader</span></span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><span class="n"><span class="pre">torch</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">::</span></span><a class="reference internal" href="#_CPPv4I000EN5torch4data14DataLoaderBaseE" title="torch::data::DataLoaderBase"><span class="n"><span class="pre">DataLoaderBase</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5torch4data18StatefulDataLoaderE" title="torch::data::StatefulDataLoader::Dataset"><span class="n"><span class="pre">Dataset</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN5torch4data18StatefulDataLoaderE" title="torch::data::StatefulDataLoader::Dataset"><span class="n"><span class="pre">Dataset</span></span></a><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">BatchType</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">value_type</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN5torch4data18StatefulDataLoaderE" title="torch::data::StatefulDataLoader::Dataset"><span class="n"><span class="pre">Dataset</span></span></a><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">BatchRequestType</span></span><span class="p"><span class="pre">&gt;</span></span><a class="headerlink" href="#_CPPv4I0EN5torch4data18StatefulDataLoaderE" title="Link to this definition">#</a><br /></dt>
+<dd><p>A dataloader for stateful datasets. </p>
+<p>A dataloader for stateful datatasets differs from one for stateless datasets one in that the dataset is shared among worker threads, and that this dataset is itself responsible for producing batches rather than depending on a sampler. The statefulness here actually refers to the dataset. The <a class="reference internal" href="#PyTorchclasstorch_1_1data_1_1_stateful_data_loader"><span class="std std-ref">StatefulDataLoader</span></a> simply alters the data loading algorithm to accommodate the stateful, shared nature of the dataset. Note that the dataset must be thread safe if more than one worker thread is used.</p>
+<p>A stateful dataloader is created by calling <code class="docutils literal notranslate"><span class="pre">make_data_loader</span></code> with a stateful dataset. </p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-types">Public Types</p>
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data18StatefulDataLoader5superE">
+<span id="_CPPv3N5torch4data18StatefulDataLoader5superE"></span><span id="_CPPv2N5torch4data18StatefulDataLoader5superE"></span><span class="target" id="PyTorchclasstorch_1_1data_1_1_stateful_data_loader_1a3cd9e3200e3fa196c3321d464e040de7"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">super</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I000EN5torch4data14DataLoaderBaseE" title="torch::data::DataLoaderBase"><span class="n"><span class="pre">DataLoaderBase</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5torch4data18StatefulDataLoaderE" title="torch::data::StatefulDataLoader::Dataset"><span class="n"><span class="pre">Dataset</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN5torch4data18StatefulDataLoaderE" title="torch::data::StatefulDataLoader::Dataset"><span class="n"><span class="pre">Dataset</span></span></a><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">BatchType</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">value_type</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN5torch4data18StatefulDataLoaderE" title="torch::data::StatefulDataLoader::Dataset"><span class="n"><span class="pre">Dataset</span></span></a><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">BatchRequestType</span></span><span class="p"><span class="pre">&gt;</span></span><a class="headerlink" href="#_CPPv4N5torch4data18StatefulDataLoader5superE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data18StatefulDataLoader16BatchRequestTypeE">
+<span id="_CPPv3N5torch4data18StatefulDataLoader16BatchRequestTypeE"></span><span id="_CPPv2N5torch4data18StatefulDataLoader16BatchRequestTypeE"></span><span class="target" id="PyTorchclasstorch_1_1data_1_1_stateful_data_loader_1ace74b5775881175ef42ee6b0aea0267e"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">BatchRequestType</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">BatchRequest</span></span><a class="headerlink" href="#_CPPv4N5torch4data18StatefulDataLoader16BatchRequestTypeE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data18StatefulDataLoader18StatefulDataLoaderE7Dataset17DataLoaderOptions">
+<span id="_CPPv3N5torch4data18StatefulDataLoader18StatefulDataLoaderE7Dataset17DataLoaderOptions"></span><span id="_CPPv2N5torch4data18StatefulDataLoader18StatefulDataLoaderE7Dataset17DataLoaderOptions"></span><span id="torch::data::StatefulDataLoader::StatefulDataLoader__Dataset.DataLoaderOptions"></span><span class="target" id="PyTorchclasstorch_1_1data_1_1_stateful_data_loader_1aeb355d3eae226bd9174e8daacf64ac70"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">StatefulDataLoader</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I0EN5torch4data18StatefulDataLoaderE" title="torch::data::StatefulDataLoader::Dataset"><span class="n"><span class="pre">Dataset</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">dataset</span></span>, <a class="reference internal" href="#_CPPv4N5torch4data17DataLoaderOptionsE" title="torch::data::DataLoaderOptions"><span class="n"><span class="pre">DataLoaderOptions</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">options</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5torch4data18StatefulDataLoader18StatefulDataLoaderE7Dataset17DataLoaderOptions" title="Link to this definition">#</a><br /></dt>
+<dd><p>Constructs the <code class="docutils literal notranslate"><a class="reference internal" href="#PyTorchclasstorch_1_1data_1_1_stateful_data_loader"><span class="std std-ref"><span class="pre">StatefulDataLoader</span></span></a></code> from a <code class="docutils literal notranslate"><span class="pre">dataset</span></code> and some <code class="docutils literal notranslate"><span class="pre">options</span></code>. </p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+</section>
+<section id="statelessdataloader">
+<h2>StatelessDataLoader<a class="headerlink" href="#statelessdataloader" title="Link to this heading">#</a></h2>
+<p>A DataLoader for <code class="docutils literal notranslate"><span class="pre">Dataset</span></code> types that use external samplers for batching.</p>
+<dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4I00EN5torch4data19StatelessDataLoaderE">
+<span id="_CPPv3I00EN5torch4data19StatelessDataLoaderE"></span><span id="_CPPv2I00EN5torch4data19StatelessDataLoaderE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Dataset</span></span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Sampler</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="PyTorchclasstorch_1_1data_1_1_stateless_data_loader"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">StatelessDataLoader</span></span></span><span class="w"> </span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="k"><span class="pre">public</span></span><span class="w"> </span><span class="n"><span class="pre">torch</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">::</span></span><a class="reference internal" href="#_CPPv4I000EN5torch4data14DataLoaderBaseE" title="torch::data::DataLoaderBase"><span class="n"><span class="pre">DataLoaderBase</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00EN5torch4data19StatelessDataLoaderE" title="torch::data::StatelessDataLoader::Dataset"><span class="n"><span class="pre">Dataset</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I00EN5torch4data19StatelessDataLoaderE" title="torch::data::StatelessDataLoader::Dataset"><span class="n"><span class="pre">Dataset</span></span></a><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">BatchType</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I00EN5torch4data19StatelessDataLoaderE" title="torch::data::StatelessDataLoader::Sampler"><span class="n"><span class="pre">Sampler</span></span></a><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">BatchRequestType</span></span><span class="p"><span class="pre">&gt;</span></span><a class="headerlink" href="#_CPPv4I00EN5torch4data19StatelessDataLoaderE" title="Link to this definition">#</a><br /></dt>
+<dd><p>A dataloader for stateless datasets. </p>
+<p>This dataloader follows the traditional PyTorch dataloader design, whereby a (possibly) stateful sampler produces <em>batch requests</em> for a stateless dataset, which acts as a simple batch request to batch mapping. The batch request will often be an array of indices, and if the dataset is a simple image dataset, the dataset would produce the images at those indices. </p>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-types">Public Types</p>
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data19StatelessDataLoader5superE">
+<span id="_CPPv3N5torch4data19StatelessDataLoader5superE"></span><span id="_CPPv2N5torch4data19StatelessDataLoader5superE"></span><span class="target" id="PyTorchclasstorch_1_1data_1_1_stateless_data_loader_1a3edebc45688ccf34cbf82519995b9a69"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">super</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I000EN5torch4data14DataLoaderBaseE" title="torch::data::DataLoaderBase"><span class="n"><span class="pre">DataLoaderBase</span></span></a><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I00EN5torch4data19StatelessDataLoaderE" title="torch::data::StatelessDataLoader::Dataset"><span class="n"><span class="pre">Dataset</span></span></a><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I00EN5torch4data19StatelessDataLoaderE" title="torch::data::StatelessDataLoader::Dataset"><span class="n"><span class="pre">Dataset</span></span></a><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">BatchType</span></span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I00EN5torch4data19StatelessDataLoaderE" title="torch::data::StatelessDataLoader::Sampler"><span class="n"><span class="pre">Sampler</span></span></a><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">BatchRequestType</span></span><span class="p"><span class="pre">&gt;</span></span><a class="headerlink" href="#_CPPv4N5torch4data19StatelessDataLoader5superE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data19StatelessDataLoader16BatchRequestTypeE">
+<span id="_CPPv3N5torch4data19StatelessDataLoader16BatchRequestTypeE"></span><span id="_CPPv2N5torch4data19StatelessDataLoader16BatchRequestTypeE"></span><span class="target" id="PyTorchclasstorch_1_1data_1_1_stateless_data_loader_1ace74b5775881175ef42ee6b0aea0267e"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">BatchRequestType</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">BatchRequest</span></span><a class="headerlink" href="#_CPPv4N5torch4data19StatelessDataLoader16BatchRequestTypeE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data19StatelessDataLoader19StatelessDataLoaderE7Dataset7Sampler17DataLoaderOptions">
+<span id="_CPPv3N5torch4data19StatelessDataLoader19StatelessDataLoaderE7Dataset7Sampler17DataLoaderOptions"></span><span id="_CPPv2N5torch4data19StatelessDataLoader19StatelessDataLoaderE7Dataset7Sampler17DataLoaderOptions"></span><span id="torch::data::StatelessDataLoader::StatelessDataLoader__Dataset.Sampler.DataLoaderOptions"></span><span class="target" id="PyTorchclasstorch_1_1data_1_1_stateless_data_loader_1a59cd01f1bcfc152a26cd6df79c10a5e0"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">StatelessDataLoader</span></span></span><span class="sig-paren">(</span><a class="reference internal" href="#_CPPv4I00EN5torch4data19StatelessDataLoaderE" title="torch::data::StatelessDataLoader::Dataset"><span class="n"><span class="pre">Dataset</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">dataset</span></span>, <a class="reference internal" href="#_CPPv4I00EN5torch4data19StatelessDataLoaderE" title="torch::data::StatelessDataLoader::Sampler"><span class="n"><span class="pre">Sampler</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">sampler</span></span>, <a class="reference internal" href="#_CPPv4N5torch4data17DataLoaderOptionsE" title="torch::data::DataLoaderOptions"><span class="n"><span class="pre">DataLoaderOptions</span></span></a><span class="w"> </span><span class="n sig-param"><span class="pre">options</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5torch4data19StatelessDataLoader19StatelessDataLoaderE7Dataset7Sampler17DataLoaderOptions" title="Link to this definition">#</a><br /></dt>
+<dd><p>Constructs the <code class="docutils literal notranslate"><a class="reference internal" href="#PyTorchclasstorch_1_1data_1_1_stateless_data_loader"><span class="std std-ref"><span class="pre">StatelessDataLoader</span></span></a></code> from a <code class="docutils literal notranslate"><span class="pre">dataset</span></code>, a <code class="docutils literal notranslate"><span class="pre">sampler</span></code> and some <code class="docutils literal notranslate"><span class="pre">options</span></code>. </p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+</section>
+<section id="iterator">
+<h2>Iterator<a class="headerlink" href="#iterator" title="Link to this heading">#</a></h2>
+<dl class="cpp class">
+<dt class="sig sig-object cpp" id="_CPPv4I0EN5torch4data8IteratorE">
+<span id="_CPPv3I0EN5torch4data8IteratorE"></span><span id="_CPPv2I0EN5torch4data8IteratorE"></span><span class="k"><span class="pre">template</span></span><span class="p"><span class="pre">&lt;</span></span><span class="k"><span class="pre">typename</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Batch</span></span></span><span class="p"><span class="pre">&gt;</span></span><br /><span class="target" id="PyTorchclasstorch_1_1data_1_1_iterator"></span><span class="k"><span class="pre">class</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Iterator</span></span></span><a class="headerlink" href="#_CPPv4I0EN5torch4data8IteratorE" title="Link to this definition">#</a><br /></dt>
+<dd><div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-types">Public Types</p>
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data8Iterator15difference_typeE">
+<span id="_CPPv3N5torch4data8Iterator15difference_typeE"></span><span id="_CPPv2N5torch4data8Iterator15difference_typeE"></span><span class="target" id="PyTorchclasstorch_1_1data_1_1_iterator_1a697ffd86ea1f15092857dc72361347c5"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">difference_type</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">ptrdiff_t</span></span><a class="headerlink" href="#_CPPv4N5torch4data8Iterator15difference_typeE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data8Iterator10value_typeE">
+<span id="_CPPv3N5torch4data8Iterator10value_typeE"></span><span id="_CPPv2N5torch4data8Iterator10value_typeE"></span><span class="target" id="PyTorchclasstorch_1_1data_1_1_iterator_1a994edf42effb304a062c16d6f0032c97"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">value_type</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN5torch4data8IteratorE" title="torch::data::Iterator::Batch"><span class="n"><span class="pre">Batch</span></span></a><a class="headerlink" href="#_CPPv4N5torch4data8Iterator10value_typeE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data8Iterator7pointerE">
+<span id="_CPPv3N5torch4data8Iterator7pointerE"></span><span id="_CPPv2N5torch4data8Iterator7pointerE"></span><span class="target" id="PyTorchclasstorch_1_1data_1_1_iterator_1a053f78c6a9f67dd72bf277da2a92f764"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">pointer</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN5torch4data8IteratorE" title="torch::data::Iterator::Batch"><span class="n"><span class="pre">Batch</span></span></a><span class="p"><span class="pre">*</span></span><a class="headerlink" href="#_CPPv4N5torch4data8Iterator7pointerE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data8Iterator9referenceE">
+<span id="_CPPv3N5torch4data8Iterator9referenceE"></span><span id="_CPPv2N5torch4data8Iterator9referenceE"></span><span class="target" id="PyTorchclasstorch_1_1data_1_1_iterator_1ae61c9a796969b5357346ba568daa34ea"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">reference</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN5torch4data8IteratorE" title="torch::data::Iterator::Batch"><span class="n"><span class="pre">Batch</span></span></a><span class="p"><span class="pre">&amp;</span></span><a class="headerlink" href="#_CPPv4N5torch4data8Iterator9referenceE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp type">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data8Iterator17iterator_categoryE">
+<span id="_CPPv3N5torch4data8Iterator17iterator_categoryE"></span><span id="_CPPv2N5torch4data8Iterator17iterator_categoryE"></span><span class="target" id="PyTorchclasstorch_1_1data_1_1_iterator_1a88c81a144c5d2a8a7830d9ae0dd8e6f5"></span><span class="k"><span class="pre">using</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">iterator_category</span></span></span><span class="w"> </span><span class="p"><span class="pre">=</span></span><span class="w"> </span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">input_iterator_tag</span></span><a class="headerlink" href="#_CPPv4N5torch4data8Iterator17iterator_categoryE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+</div>
+<div class="breathe-sectiondef docutils container">
+<p class="breathe-sectiondef-title rubric" id="breathe-section-title-public-functions">Public Functions</p>
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data8Iterator8IteratorENSt10unique_ptrIN6detail12IteratorImplI5BatchEEEE">
+<span id="_CPPv3N5torch4data8Iterator8IteratorENSt10unique_ptrIN6detail12IteratorImplI5BatchEEEE"></span><span id="_CPPv2N5torch4data8Iterator8IteratorENSt10unique_ptrIN6detail12IteratorImplI5BatchEEEE"></span><span id="torch::data::Iterator::Iterator__std::unique_ptr:detail::IteratorImpl:Batch::"></span><span class="target" id="PyTorchclasstorch_1_1data_1_1_iterator_1a0873a0b6d1fd6eb51f2dddf225717e3b"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="k"><span class="pre">explicit</span></span><span class="w"> </span><span class="sig-name descname"><span class="n"><span class="pre">Iterator</span></span></span><span class="sig-paren">(</span><span class="n"><span class="pre">std</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">unique_ptr</span></span><span class="p"><span class="pre">&lt;</span></span><span class="n"><span class="pre">detail</span></span><span class="p"><span class="pre">::</span></span><span class="n"><span class="pre">IteratorImpl</span></span><span class="p"><span class="pre">&lt;</span></span><a class="reference internal" href="#_CPPv4I0EN5torch4data8IteratorE" title="torch::data::Iterator::Batch"><span class="n"><span class="pre">Batch</span></span></a><span class="p"><span class="pre">&gt;</span></span><span class="p"><span class="pre">&gt;</span></span><span class="w"> </span><span class="n sig-param"><span class="pre">impl</span></span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5torch4data8Iterator8IteratorENSt10unique_ptrIN6detail12IteratorImplI5BatchEEEE" title="Link to this definition">#</a><br /></dt>
+<dd></dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data8IteratorppEv">
+<span id="_CPPv3N5torch4data8IteratorppEv"></span><span id="_CPPv2N5torch4data8IteratorppEv"></span><span id="torch::data::Iterator::inc-operator"></span><span class="target" id="PyTorchclasstorch_1_1data_1_1_iterator_1acc291c840e3988c5319dde12d61b3af2"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN5torch4data8IteratorE" title="torch::data::Iterator"><span class="n"><span class="pre">Iterator</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">++</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5torch4data8IteratorppEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Increments the iterator. </p>
+<p>Only permitted for valid iterators (not past the end). </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data8IteratormlEv">
+<span id="_CPPv3N5torch4data8IteratormlEv"></span><span id="_CPPv2N5torch4data8IteratormlEv"></span><span id="torch::data::Iterator::mul-operator"></span><span class="target" id="PyTorchclasstorch_1_1data_1_1_iterator_1ab59abbbddbb9b2a83f3024d56fce452f"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN5torch4data8IteratorE" title="torch::data::Iterator::Batch"><span class="n"><span class="pre">Batch</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">*</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5torch4data8IteratormlEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Returns the current batch. </p>
+<p>Only permitted for valid iterators (not past the end). </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4N5torch4data8IteratorptEv">
+<span id="_CPPv3N5torch4data8IteratorptEv"></span><span id="_CPPv2N5torch4data8IteratorptEv"></span><span id="torch::data::Iterator::pointer-operator"></span><span class="target" id="PyTorchclasstorch_1_1data_1_1_iterator_1af07f5b96beff1db3da508c45cb8a6dbd"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN5torch4data8IteratorE" title="torch::data::Iterator::Batch"><span class="n"><span class="pre">Batch</span></span></a><span class="w"> </span><span class="p"><span class="pre">*</span></span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">-&gt;</span></span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#_CPPv4N5torch4data8IteratorptEv" title="Link to this definition">#</a><br /></dt>
+<dd><p>Returns a pointer to the current batch. </p>
+<p>Only permitted for valid iterators (not past the end). </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5torch4data8IteratoreqERK8Iterator">
+<span id="_CPPv3NK5torch4data8IteratoreqERK8Iterator"></span><span id="_CPPv2NK5torch4data8IteratoreqERK8Iterator"></span><span id="torch::data::Iterator::eq-operator__IteratorCRC"></span><span class="target" id="PyTorchclasstorch_1_1data_1_1_iterator_1a64515b1df69db6a323862bc5520eb869"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">==</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN5torch4data8IteratorE" title="torch::data::Iterator"><span class="n"><span class="pre">Iterator</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">other</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK5torch4data8IteratoreqERK8Iterator" title="Link to this definition">#</a><br /></dt>
+<dd><p>Compares two iterators for equality. </p>
+</dd></dl>
+
+<dl class="cpp function">
+<dt class="sig sig-object cpp" id="_CPPv4NK5torch4data8IteratorneERK8Iterator">
+<span id="_CPPv3NK5torch4data8IteratorneERK8Iterator"></span><span id="_CPPv2NK5torch4data8IteratorneERK8Iterator"></span><span id="torch::data::Iterator::neq-operator__IteratorCRC"></span><span class="target" id="PyTorchclasstorch_1_1data_1_1_iterator_1a33960eeb9ea28474ea34b8959f10a238"></span><span class="k"><span class="pre">inline</span></span><span class="w"> </span><span class="kt"><span class="pre">bool</span></span><span class="w"> </span><span class="sig-name descname"><span class="k"><span class="pre">operator</span></span><span class="o"><span class="pre">!=</span></span></span><span class="sig-paren">(</span><span class="k"><span class="pre">const</span></span><span class="w"> </span><a class="reference internal" href="#_CPPv4I0EN5torch4data8IteratorE" title="torch::data::Iterator"><span class="n"><span class="pre">Iterator</span></span></a><span class="w"> </span><span class="p"><span class="pre">&amp;</span></span><span class="n sig-param"><span class="pre">other</span></span><span class="sig-paren">)</span><span class="w"> </span><span class="k"><span class="pre">const</span></span><a class="headerlink" href="#_CPPv4NK5torch4data8IteratorneERK8Iterator" title="Link to this definition">#</a><br /></dt>
+<dd><p>Compares two iterators for inequality. </p>
+</dd></dl>
+
+</div>
+</dd></dl>
+
+</section>
+<section id="creating-a-dataloader">
+<h2>Creating a DataLoader<a class="headerlink" href="#creating-a-dataloader" title="Link to this heading">#</a></h2>
+<p>Use <code class="docutils literal notranslate"><span class="pre">make_data_loader</span></code> to create a DataLoader from a dataset:</p>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="k">auto</span><span class="w"> </span><span class="n">data_loader</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">data</span><span class="o">::</span><span class="n">make_data_loader</span><span class="p">(</span>
+<span class="w">    </span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">dataset</span><span class="p">),</span>
+<span class="w">    </span><span class="n">torch</span><span class="o">::</span><span class="n">data</span><span class="o">::</span><span class="n">DataLoaderOptions</span><span class="p">()</span>
+<span class="w">        </span><span class="p">.</span><span class="n">batch_size</span><span class="p">(</span><span class="mi">64</span><span class="p">)</span>
+<span class="w">        </span><span class="p">.</span><span class="n">workers</span><span class="p">(</span><span class="mi">4</span><span class="p">));</span>
+
+<span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">batch</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="o">*</span><span class="n">data_loader</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">data</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">batch</span><span class="p">.</span><span class="n">data</span><span class="p">;</span>
+<span class="w">    </span><span class="k">auto</span><span class="w"> </span><span class="n">target</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">batch</span><span class="p">.</span><span class="n">target</span><span class="p">;</span>
+<span class="w">    </span><span class="c1">// Train on batch</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+<section id="complete-training-example">
+<h2>Complete Training Example<a class="headerlink" href="#complete-training-example" title="Link to this heading">#</a></h2>
+<div class="highlight-cpp notranslate"><div class="highlight"><pre><span></span><span class="cp">#include</span><span class="w"> </span><span class="cpf">&lt;torch/torch.h&gt;</span>
+
+<span class="kt">int</span><span class="w"> </span><span class="nf">main</span><span class="p">()</span><span class="w"> </span><span class="p">{</span>
+<span class="w">  </span><span class="c1">// Load dataset</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">dataset</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">data</span><span class="o">::</span><span class="n">datasets</span><span class="o">::</span><span class="n">MNIST</span><span class="p">(</span><span class="s">&quot;./data&quot;</span><span class="p">)</span>
+<span class="w">      </span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="n">torch</span><span class="o">::</span><span class="n">data</span><span class="o">::</span><span class="n">transforms</span><span class="o">::</span><span class="n">Normalize</span><span class="o">&lt;&gt;</span><span class="p">(</span><span class="mf">0.1307</span><span class="p">,</span><span class="w"> </span><span class="mf">0.3081</span><span class="p">))</span>
+<span class="w">      </span><span class="p">.</span><span class="n">map</span><span class="p">(</span><span class="n">torch</span><span class="o">::</span><span class="n">data</span><span class="o">::</span><span class="n">transforms</span><span class="o">::</span><span class="n">Stack</span><span class="o">&lt;&gt;</span><span class="p">());</span>
+
+<span class="w">  </span><span class="c1">// Create data loader</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">data_loader</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">data</span><span class="o">::</span><span class="n">make_data_loader</span><span class="p">(</span>
+<span class="w">      </span><span class="n">std</span><span class="o">::</span><span class="n">move</span><span class="p">(</span><span class="n">dataset</span><span class="p">),</span>
+<span class="w">      </span><span class="n">torch</span><span class="o">::</span><span class="n">data</span><span class="o">::</span><span class="n">DataLoaderOptions</span><span class="p">().</span><span class="n">batch_size</span><span class="p">(</span><span class="mi">64</span><span class="p">).</span><span class="n">workers</span><span class="p">(</span><span class="mi">2</span><span class="p">));</span>
+
+<span class="w">  </span><span class="c1">// Create model and optimizer</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">model</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">std</span><span class="o">::</span><span class="n">make_shared</span><span class="o">&lt;</span><span class="n">Net</span><span class="o">&gt;</span><span class="p">();</span>
+<span class="w">  </span><span class="k">auto</span><span class="w"> </span><span class="n">optimizer</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">optim</span><span class="o">::</span><span class="n">Adam</span><span class="p">(</span><span class="n">model</span><span class="o">-&gt;</span><span class="n">parameters</span><span class="p">(),</span><span class="w"> </span><span class="mf">0.001</span><span class="p">);</span>
+
+<span class="w">  </span><span class="c1">// Training loop</span>
+<span class="w">  </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="kt">size_t</span><span class="w"> </span><span class="n">epoch</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="mi">1</span><span class="p">;</span><span class="w"> </span><span class="n">epoch</span><span class="w"> </span><span class="o">&lt;=</span><span class="w"> </span><span class="mi">10</span><span class="p">;</span><span class="w"> </span><span class="o">++</span><span class="n">epoch</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">    </span><span class="k">for</span><span class="w"> </span><span class="p">(</span><span class="k">auto</span><span class="o">&amp;</span><span class="w"> </span><span class="n">batch</span><span class="w"> </span><span class="o">:</span><span class="w"> </span><span class="o">*</span><span class="n">data_loader</span><span class="p">)</span><span class="w"> </span><span class="p">{</span>
+<span class="w">      </span><span class="n">optimizer</span><span class="p">.</span><span class="n">zero_grad</span><span class="p">();</span>
+<span class="w">      </span><span class="k">auto</span><span class="w"> </span><span class="n">output</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">model</span><span class="o">-&gt;</span><span class="n">forward</span><span class="p">(</span><span class="n">batch</span><span class="p">.</span><span class="n">data</span><span class="p">);</span>
+<span class="w">      </span><span class="k">auto</span><span class="w"> </span><span class="n">loss</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="n">torch</span><span class="o">::</span><span class="n">nll_loss</span><span class="p">(</span><span class="n">output</span><span class="p">,</span><span class="w"> </span><span class="n">batch</span><span class="p">.</span><span class="n">target</span><span class="p">);</span>
+<span class="w">      </span><span class="n">loss</span><span class="p">.</span><span class="n">backward</span><span class="p">();</span>
+<span class="w">      </span><span class="n">optimizer</span><span class="p">.</span><span class="n">step</span><span class="p">();</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">}</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</section>
+</section>
+
+
+                </article>
+              
+</div>
+
+              
+              
+                <footer class="bd-footer-article">
+                  <div class="footer-article-items footer-article__inner">
+  
+    <div class="footer-article-item">
+<div class="feedback">
+  
+<div class="rating">
+    Rate this Page
+    <div class="stars">
+        
+        <span class="star" data-behavior="tutorial-rating" data-count="1" data-value="1">★</span>
+        
+        <span class="star" data-behavior="tutorial-rating" data-count="2" data-value="2">★</span>
+        
+        <span class="star" data-behavior="tutorial-rating" data-count="3" data-value="3">★</span>
+        
+        <span class="star" data-behavior="tutorial-rating" data-count="4" data-value="4">★</span>
+        
+        <span class="star" data-behavior="tutorial-rating" data-count="5" data-value="5">★</span>
+        
+    </div>
+</div>
+
+  <div class="feedback-send">
+    <button class="feedback-btn"
+            onclick="openGitHubIssue()"
+            data-bs-title="Create a GitHub Issue"
+            data-bs-placement="bottom"
+            data-bs-toggle="tooltip"
+            data-gtm="feedback-btn-click">Send Feedback
+    </button>
+  </div>
+</div>
+
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="datasets.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Datasets</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="samplers.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Samplers</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+
+<div class="footer-info">
+  <p class="copyright">
+    
+  </p>
+
+  <p class="theme-version">
+    Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.4.
+  </p>
+</div>
+</div>
+  
+</div>
+                </footer>
+              
+              
+              
+                <footer class="prev-next-footer d-print-none">
+                  
+<div class="prev-next-area">
+    <a class="left-prev"
+       href="datasets.html"
+       title="previous page">
+      <i class="fa-solid fa-angle-left"></i>
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">previous</p>
+        <p class="prev-next-title">Datasets</p>
+      </div>
+    </a>
+    <a class="right-next"
+       href="samplers.html"
+       title="next page">
+      <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">Samplers</p>
+      </div>
+      <i class="fa-solid fa-angle-right"></i>
+    </a>
+</div>
+                </footer>
+              
+            </div>
+            
+            
+              
+                <div class="bd-sidebar-secondary bd-toc">
+<div class="sidebar-secondary-items sidebar-secondary__inner">
+    
+       <div class="sidebar-secondary-item">
+<div
+    id="pst-page-navigation-heading-2"
+    class="page-toc tocsection onthispage">
+    <i class="fa-solid fa-list"></i> On this page
+  </div>
+  <nav class="bd-toc-nav page-toc" aria-labelledby="pst-page-navigation-heading-2">
+    <ul class="visible nav section-nav flex-column">
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#dataloader-classes">DataLoader Classes</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I000EN5torch4data14DataLoaderBaseE"><code class="docutils literal notranslate"><span class="pre">torch::data::DataLoaderBase</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data14DataLoaderBase9BatchTypeE"><code class="docutils literal notranslate"><span class="pre">BatchType</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data14DataLoaderBase16BatchRequestTypeE"><code class="docutils literal notranslate"><span class="pre">BatchRequestType</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data14DataLoaderBase14DataLoaderBaseE17DataLoaderOptionsNSt10unique_ptrI7DatasetEE"><code class="docutils literal notranslate"><span class="pre">DataLoaderBase()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data14DataLoaderBase14DataLoaderBaseERK14DataLoaderBase"><code class="docutils literal notranslate"><span class="pre">DataLoaderBase()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data14DataLoaderBase14DataLoaderBaseERR14DataLoaderBase"><code class="docutils literal notranslate"><span class="pre">DataLoaderBase()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data14DataLoaderBaseaSERK14DataLoaderBase"><code class="docutils literal notranslate"><span class="pre">operator=()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data14DataLoaderBaseaSERR14DataLoaderBase"><code class="docutils literal notranslate"><span class="pre">operator=()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data14DataLoaderBaseD0Ev"><code class="docutils literal notranslate"><span class="pre">~DataLoaderBase()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data14DataLoaderBase5beginEv"><code class="docutils literal notranslate"><span class="pre">begin()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data14DataLoaderBase3endEv"><code class="docutils literal notranslate"><span class="pre">end()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data14DataLoaderBase4joinEv"><code class="docutils literal notranslate"><span class="pre">join()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK5torch4data14DataLoaderBase7optionsEv"><code class="docutils literal notranslate"><span class="pre">options()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#dataloaderoptions">DataLoaderOptions</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data17DataLoaderOptionsE"><code class="docutils literal notranslate"><span class="pre">torch::data::DataLoaderOptions</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data17DataLoaderOptions17DataLoaderOptionsEv"><code class="docutils literal notranslate"><span class="pre">DataLoaderOptions()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data17DataLoaderOptions17DataLoaderOptionsE6size_t"><code class="docutils literal notranslate"><span class="pre">DataLoaderOptions()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data17DataLoaderOptions10batch_sizeERK6size_t"><code class="docutils literal notranslate"><span class="pre">batch_size()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data17DataLoaderOptions10batch_sizeERR6size_t"><code class="docutils literal notranslate"><span class="pre">batch_size()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK5torch4data17DataLoaderOptions10batch_sizeEv"><code class="docutils literal notranslate"><span class="pre">batch_size()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data17DataLoaderOptions10batch_sizeEv"><code class="docutils literal notranslate"><span class="pre">batch_size()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data17DataLoaderOptions7workersERK6size_t"><code class="docutils literal notranslate"><span class="pre">workers()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data17DataLoaderOptions7workersERR6size_t"><code class="docutils literal notranslate"><span class="pre">workers()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK5torch4data17DataLoaderOptions7workersEv"><code class="docutils literal notranslate"><span class="pre">workers()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data17DataLoaderOptions7workersEv"><code class="docutils literal notranslate"><span class="pre">workers()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data17DataLoaderOptions8max_jobsERKNSt8optionalI6size_tEE"><code class="docutils literal notranslate"><span class="pre">max_jobs()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data17DataLoaderOptions8max_jobsERRNSt8optionalI6size_tEE"><code class="docutils literal notranslate"><span class="pre">max_jobs()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK5torch4data17DataLoaderOptions8max_jobsEv"><code class="docutils literal notranslate"><span class="pre">max_jobs()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data17DataLoaderOptions8max_jobsEv"><code class="docutils literal notranslate"><span class="pre">max_jobs()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data17DataLoaderOptions7timeoutERKNSt8optionalINSt6chrono12millisecondsEEE"><code class="docutils literal notranslate"><span class="pre">timeout()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data17DataLoaderOptions7timeoutERRNSt8optionalINSt6chrono12millisecondsEEE"><code class="docutils literal notranslate"><span class="pre">timeout()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK5torch4data17DataLoaderOptions7timeoutEv"><code class="docutils literal notranslate"><span class="pre">timeout()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data17DataLoaderOptions7timeoutEv"><code class="docutils literal notranslate"><span class="pre">timeout()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data17DataLoaderOptions16enforce_orderingERKb"><code class="docutils literal notranslate"><span class="pre">enforce_ordering()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data17DataLoaderOptions16enforce_orderingERRb"><code class="docutils literal notranslate"><span class="pre">enforce_ordering()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK5torch4data17DataLoaderOptions16enforce_orderingEv"><code class="docutils literal notranslate"><span class="pre">enforce_ordering()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data17DataLoaderOptions16enforce_orderingEv"><code class="docutils literal notranslate"><span class="pre">enforce_ordering()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data17DataLoaderOptions9drop_lastERKb"><code class="docutils literal notranslate"><span class="pre">drop_last()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data17DataLoaderOptions9drop_lastERRb"><code class="docutils literal notranslate"><span class="pre">drop_last()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK5torch4data17DataLoaderOptions9drop_lastEv"><code class="docutils literal notranslate"><span class="pre">drop_last()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data17DataLoaderOptions9drop_lastEv"><code class="docutils literal notranslate"><span class="pre">drop_last()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#statefuldataloader">StatefulDataLoader</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0EN5torch4data18StatefulDataLoaderE"><code class="docutils literal notranslate"><span class="pre">torch::data::StatefulDataLoader</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data18StatefulDataLoader5superE"><code class="docutils literal notranslate"><span class="pre">super</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data18StatefulDataLoader16BatchRequestTypeE"><code class="docutils literal notranslate"><span class="pre">BatchRequestType</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data18StatefulDataLoader18StatefulDataLoaderE7Dataset17DataLoaderOptions"><code class="docutils literal notranslate"><span class="pre">StatefulDataLoader()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#statelessdataloader">StatelessDataLoader</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I00EN5torch4data19StatelessDataLoaderE"><code class="docutils literal notranslate"><span class="pre">torch::data::StatelessDataLoader</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data19StatelessDataLoader5superE"><code class="docutils literal notranslate"><span class="pre">super</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data19StatelessDataLoader16BatchRequestTypeE"><code class="docutils literal notranslate"><span class="pre">BatchRequestType</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data19StatelessDataLoader19StatelessDataLoaderE7Dataset7Sampler17DataLoaderOptions"><code class="docutils literal notranslate"><span class="pre">StatelessDataLoader()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#iterator">Iterator</a><ul class="nav section-nav flex-column">
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4I0EN5torch4data8IteratorE"><code class="docutils literal notranslate"><span class="pre">torch::data::Iterator</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data8Iterator15difference_typeE"><code class="docutils literal notranslate"><span class="pre">difference_type</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data8Iterator10value_typeE"><code class="docutils literal notranslate"><span class="pre">value_type</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data8Iterator7pointerE"><code class="docutils literal notranslate"><span class="pre">pointer</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data8Iterator9referenceE"><code class="docutils literal notranslate"><span class="pre">reference</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data8Iterator17iterator_categoryE"><code class="docutils literal notranslate"><span class="pre">iterator_category</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data8Iterator8IteratorENSt10unique_ptrIN6detail12IteratorImplI5BatchEEEE"><code class="docutils literal notranslate"><span class="pre">Iterator()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data8IteratorppEv"><code class="docutils literal notranslate"><span class="pre">operator++()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data8IteratormlEv"><code class="docutils literal notranslate"><span class="pre">operator*()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4N5torch4data8IteratorptEv"><code class="docutils literal notranslate"><span class="pre">operator-&gt;()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK5torch4data8IteratoreqERK8Iterator"><code class="docutils literal notranslate"><span class="pre">operator==()</span></code></a></li>
+<li class="toc-h3 nav-item toc-entry"><a class="reference internal nav-link" href="#_CPPv4NK5torch4data8IteratorneERK8Iterator"><code class="docutils literal notranslate"><span class="pre">operator!=()</span></code></a></li>
+</ul>
+</li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#creating-a-dataloader">Creating a DataLoader</a></li>
+<li class="toc-h2 nav-item toc-entry"><a class="reference internal nav-link" href="#complete-training-example">Complete Training Example</a></li>
+</ul>
+  </nav></div>
+    
+       <div class="sidebar-secondary-item">
+    <div class="tocsection sourcelink">
+      <a href="../../_sources/api/data/dataloader.md.txt">
+        <i class="fa-solid fa-file-lines"></i> Show Source
+      </a>
+    </div>
+</div>
+    
+
+
+
+
+<div class="sidebar-secondary-item">
+  <div class="sidebar-heading">PyTorch Libraries</div>
+  <ul style="list-style-type: none; padding: 0; padding-bottom: 80px;">
+  
+   <li><a class="nav-link nav-external" href="https://docs.pytorch.org/executorch" style="color: var(--pst-color-text-muted)">ExecuTorch</a></li>
+  
+   <li><a class="nav-link nav-external" href="https://docs.pytorch.org/helion" style="color: var(--pst-color-text-muted)">Helion</a></li>
+  
+   <li><a class="nav-link nav-external" href="https://docs.pytorch.org/ao" style="color: var(--pst-color-text-muted)">torchao</a></li>
+  
+   <li><a class="nav-link nav-external" href="https://github.com/pytorch/kineto" style="color: var(--pst-color-text-muted)">kineto</a></li>
+  
+   <li><a class="nav-link nav-external" href="https://github.com/pytorch/torchtitan" style="color: var(--pst-color-text-muted)">torchtitan</a></li>
+  
+   <li><a class="nav-link nav-external" href="https://docs.pytorch.org/rl" style="color: var(--pst-color-text-muted)">TorchRL</a></li>
+  
+   <li><a class="nav-link nav-external" href="https://docs.pytorch.org/vision" style="color: var(--pst-color-text-muted)">torchvision</a></li>
+  
+   <li><a class="nav-link nav-external" href="https://docs.pytorch.org/audio" style="color: var(--pst-color-text-muted)">torchaudio</a></li>
+  
+   <li><a class="nav-link nav-external" href="https://docs.pytorch.org/tensordict" style="color: var(--pst-color-text-muted)">tensordict</a></li>
+  
+   <li><a class="nav-link nav-external" href="https://docs.pytorch.org/xla" style="color: var(--pst-color-text-muted)">PyTorch on XLA Devices</a></li>
+  
+  </ul>
+</div>
+
+</div>
+</div>
+              
+            
+          </div>
+          <footer class="bd-footer-content">
+            
+          </footer>
+        
+      </main>
+    </div>
+  </div>
+  
+  <!-- Scripts loaded after <body> so the DOM is not blocked -->
+  <script src="../../_static/scripts/bootstrap.js?digest=dfe6caa3a7d634c4db9b"></script>
+<script src="../../_static/scripts/pydata-sphinx-theme.js?digest=dfe6caa3a7d634c4db9b"></script>
+
+  
+
+<div class="container-fluid docs-tutorials-resources" id="docs-tutorials-resources">
+  <div class="container">
+    <div class="row">
+      <div class="col-md-4">
+        <h2>Docs</h2>
+        <p>Access comprehensive developer documentation for PyTorch</p>
+        <a class="with-right-arrow" href="https://docs.pytorch.org/docs/stable/index.html">View Docs</a>
+      </div>
+
+      <div class="col-md-4">
+        <h2>Tutorials</h2>
+        <p>Get in-depth tutorials for beginners and advanced developers</p>
+        <a class="with-right-arrow" href="https://docs.pytorch.org/tutorials">View Tutorials</a>
+      </div>
+
+      <div class="col-md-4">
+        <h2>Resources</h2>
+        <p>Find development resources and get your questions answered</p>
+        <a class="with-right-arrow" href="https://pytorch.org/resources">View Resources</a>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+
+
+<footer class="site-footer">
+
+  <div class="container footer-container">
+
+    <div class="newsletter" id="newsletter">
+
+      <p class="newsletter__title is-style-max-width-800"><strong>Stay in touch</strong> for updates, event info, and
+        the latest news</p>
+
+
+      <script charset="utf-8" type="text/javascript" src="//js.hsforms.net/forms/embed/v2.js"></script>
+      <script>
+        hbspt.forms.create({
+          region: "na1",
+          portalId: "8112310",
+          formId: "2fb2231c-000b-4ec5-88a0-1ab242549c9e"
+        });
+      </script>
+
+
+      <p class="newsletter__privacy">By submitting this form, I consent to receive marketing emails from the LF and its
+        projects regarding their events, training, research, developments, and related announcements. I understand that
+        I can unsubscribe at any time using the links in the footers of the emails I receive. <a
+          href="https://www.linuxfoundation.org/privacy/">Privacy Policy</a>.</p>
+
+    </div>
+
+    <div class="lf-grid">
+      <ul class="social-links">
+        <li><a href="https://www.facebook.com/pytorch" target="_blank" title="PyTorch on Facebook">
+            <svg xmlns="http://www.w3.org/2000/svg" viewbox="-0.51 -0.26 26.45 26.45" aria-label="Facebook">
+              <path fill="currentColor"
+                d="M25.497 13.075c0-2.45-.698-4.848-2.011-6.911a12.765 12.765 0 0 0-5.398-4.73A12.671 12.671 0 0 0 11.008.38a12.705 12.705 0 0 0-6.529 2.95A12.827 12.827 0 0 0 .563 9.358a12.896 12.896 0 0 0-.07 7.201 12.831 12.831 0 0 0 3.801 6.103 12.709 12.709 0 0 0 6.471 3.078v-8.957H7.53v-3.708h3.235v-2.824c0-3.213 1.903-4.988 4.813-4.988.956.014 1.909.097 2.852.25V8.67h-1.607a1.83 1.83 0 0 0-1.518.497 1.854 1.854 0 0 0-.561 1.505v2.404h3.535l-.563 3.708h-2.97v8.957a12.725 12.725 0 0 0 7.697-4.337 12.87 12.87 0 0 0 3.054-8.328z" />
+            </svg>
+          </a></li>
+        <li><a href="https://twitter.com/pytorch" target="_blank" title="PyTorch on X">
+            <svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 300 300" aria-label="X">
+              <path fill="currentColor"
+                d="M178.57 127.15 290.27 0h-26.46l-97.03 110.38L89.34 0H0l117.13 166.93L0 300.25h26.46l102.4-116.59 81.8 116.59h89.34M36.01 19.54H76.66l187.13 262.13h-40.66" />
+            </svg>
+          </a></li>
+        <li><a href="https://www.youtube.com/pytorch" target="_blank" title="PyTorch on YouTube">
+            <svg xmlns="http://www.w3.org/2000/svg" viewbox="0.21 0.27 34.45 25.07" aria-label="YouTube">
+              <path fill="currentColor"
+                d="M33.729 6.084s-.327-2.33-1.317-3.356a4.691 4.691 0 0 0-3.32-1.432c-4.634-.34-11.589-.34-11.589-.34h-.014s-6.954 0-11.59.342a4.692 4.692 0 0 0-3.32 1.432c-.993 1.025-1.315 3.354-1.315 3.354a52.189 52.189 0 0 0-.331 5.473v2.566c.014 1.829.125 3.656.331 5.472 0 0 .322 2.33 1.316 3.36 1.26 1.345 2.916 1.3 3.653 1.445 2.65.26 11.263.34 11.263.34s6.96-.01 11.597-.353a4.691 4.691 0 0 0 3.32-1.432c.993-1.026 1.316-3.356 1.316-3.356.206-1.817.316-3.644.33-5.473v-2.57a52.26 52.26 0 0 0-.33-5.472zM14.076 17.232V7.729l8.951 4.768-8.95 4.735z" />
+            </svg>
+          </a></li>
+        <li><a href="https://www.linkedin.com/company/pytorch" target="_blank" title="PyTorch on LinkedIn">
+            <svg xmlns="http://www.w3.org/2000/svg" viewbox="-10.23 -10.23 531.96 531.96" aria-label="LinkedIn">
+              <rect width="512" height="512" rx="0" fill="currentColor" />
+              <circle fill="#000" cx="142" cy="138" r="37" />
+              <path stroke="#000" stroke-width="66" d="M244 194v198M142 194v198" />
+              <path fill="#000"
+                d="M276 282c0-20 13-40 36-40 24 0 33 18 33 45v105h66V279c0-61-32-89-76-89-34 0-51 19-59 32" />
+            </svg>
+          </a></li>
+        <li><a href="https://pytorch.slack.com" target="_blank" title="PyTorch Slack">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0.16 -0.03 21.19 21.19" aria-label="Slack">
+              <path fill="currentColor"
+                d="M4.896 13.27a2.147 2.147 0 0 1-2.141 2.142A2.147 2.147 0 0 1 .613 13.27c0-1.178.963-2.141 2.142-2.141h2.141v2.141zm1.08 0c0-1.178.962-2.141 2.141-2.141s2.142.963 2.142 2.141v5.363a2.147 2.147 0 0 1-2.142 2.141 2.147 2.147 0 0 1-2.141-2.142V13.27zm2.141-8.6a2.147 2.147 0 0 1-2.141-2.14c0-1.18.962-2.142 2.141-2.142s2.142.963 2.142 2.141v2.142H8.117zm0 1.08c1.179 0 2.141.962 2.141 2.141a2.147 2.147 0 0 1-2.141 2.142H2.755A2.147 2.147 0 0 1 .613 7.89c0-1.179.963-2.141 2.142-2.141h5.362zm8.599 2.141c0-1.179.963-2.141 2.141-2.141 1.179 0 2.143.962 2.143 2.14a2.147 2.147 0 0 1-2.142 2.142h-2.141V7.89zm-1.08 0a2.147 2.147 0 0 1-2.141 2.142 2.147 2.147 0 0 1-2.141-2.142V2.53c0-1.178.962-2.141 2.141-2.141s2.142.963 2.142 2.141v5.362zm-2.141 8.6c1.179 0 2.142.962 2.142 2.14a2.147 2.147 0 0 1-2.142 2.142 2.147 2.147 0 0 1-2.141-2.141V16.49h2.141zm0-1.08a2.147 2.147 0 0 1-2.141-2.141c0-1.179.962-2.142 2.141-2.142h5.362c1.179 0 2.142.963 2.142 2.142a2.147 2.147 0 0 1-2.142 2.142h-5.362z">
+              </path>
+            </svg>
+          </a></li>
+        <li><a href="https://pytorch.org/wechat" title="PyTorch on WeChat">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0.14 -0.17 38.02 33.02" aria-label="WeChat">
+              <path fill="currentColor"
+                d="M26.289 10.976a12.972 12.972 0 0 0-8.742 3.53 10.386 10.386 0 0 0-3.224 8.795c-1.326-.164-2.535-.345-3.75-.448a2.332 2.332 0 0 0-1.273.216c-1.18.666-2.311 1.418-3.652 2.255.246-1.112.405-2.087.687-3.024a1.15 1.15 0 0 0-.523-1.52C1.737 17.902.02 13.601 1.307 9.165c1.189-4.1 4.11-6.587 8.077-7.884A13.54 13.54 0 0 1 24.18 5.617a10.135 10.135 0 0 1 2.109 5.359zM10.668 9.594a1.564 1.564 0 0 0-2.095-1.472 1.52 1.52 0 0 0-.895 1.964 1.502 1.502 0 0 0 1.391.966 1.545 1.545 0 0 0 1.598-1.46v.002zm8.15-1.566a1.567 1.567 0 0 0-1.528 1.543 1.528 1.528 0 0 0 1.571 1.492 1.52 1.52 0 0 0 1.375-2.117 1.518 1.518 0 0 0-1.415-.919l-.003.001z">
+              </path>
+              <path fill="currentColor"
+                d="M33.914 32.137c-1.075-.478-2.062-1.196-3.11-1.306-1.049-.11-2.145.494-3.24.605a10.821 10.821 0 0 1-8.781-2.864c-4.682-4.33-4.013-10.97 1.403-14.518 4.811-3.154 11.874-2.102 15.268 2.273a8.671 8.671 0 0 1-1.002 12.095c-1.046.929-1.422 1.693-.751 2.917.102.257.174.525.213.798zM21.68 20.292a1.264 1.264 0 1 0 .01-2.528 1.264 1.264 0 0 0-.01 2.528zm7.887-2.526a1.266 1.266 0 0 0-1.256 1.21 1.247 1.247 0 1 0 1.256-1.21z">
+              </path>
+            </svg>
+          </a></li>
+      </ul>
+    </div>
+    
+    <div class="privacy-policy">
+      <div class="copyright">
+      
+        <p>
+          &copy; PyTorch. Copyright © The Linux Foundation®. All rights reserved. The Linux Foundation has registered
+          trademarks and uses trademarks. For more information, including terms of use, privacy policy, and trademark
+          usage, please see our <a href="https://www.linuxfoundation.org/legal/policies">Policies</a> page. <a
+            href="https://www.linuxfoundation.org/trademark-usage">Trademark Usage</a>. <a
+            href="http://www.linuxfoundation.org/privacy">Privacy Policy</a>.
+        </p>
+        
+      </div>
+    </div>
+
+
+  </div>
+</footer>
+
+<div class="cookie-banner-wrapper">
+  <div class="container">
+    <p class="gdpr-notice">To analyze traffic and optimize your experience, we serve cookies on this site. By clicking or navigating, you agree to allow our usage of cookies. As the current maintainers of this site, Facebook’s Cookies Policy applies. Learn more, including about available controls: <a href="https://opensource.fb.com/legal/cookie-policy">Cookies Policy</a>.</p>
+    <img class="close-button" src="../../_static/img/pytorch-x.svg">
+  </div>
+</div>
+  
+  <footer class="bd-footer">
+<div class="bd-footer__inner bd-page-width">
+  
+    <div class="footer-items__start">
+      
+        <div class="footer-item">
+
+  <p class="copyright">
+    
+      © Copyright PyTorch Contributors.
+      <br/>
+    
+  </p>
+</div>
+      
+        <div class="footer-item">
+
+  <p class="sphinx-version">
+    Created using <a href="https://www.sphinx-doc.org/">Sphinx</a> 7.2.6.
+    <br/>
+  </p>
+</div>
+      
+    </div>
+  
+  
+  
+    <div class="footer-items__end">
+      
+        <div class="footer-item">
+<p class="theme-version">
+  Built with the <a href="https://pydata-sphinx-theme.readthedocs.io/en/stable/index.html">PyData Sphinx Theme</a> 0.15.4.
+</p></div>
+      
+    </div>
+  
+</div>
+
+  </footer>
+  <script type="application/ld+json">
+    {
+       "@context": "https://schema.org",
+       "@type": "Article",
+       "name": "DataLoader",
+       "headline": "DataLoader",
+       "description": "DataLoader in PyTorch C++ \u2014 parallel data loading with batching, sampling, and multi-worker support.",
+       "url": "/api/data/dataloader.html",
+       "articleBody": "DataLoader# The DataLoader batches samples from a dataset and optionally shuffles and parallelizes the loading process. It is the main interface for iterating over training data. DataLoader Classes# template\u003ctypename Dataset, typename Batch, typename BatchRequest\u003eclass DataLoaderBase# Public Types using BatchType = Batch# using BatchRequestType = BatchRequest# Public Functions inline DataLoaderBase(DataLoaderOptions options, std::unique_ptr\u003cDataset\u003e main_thread_dataset = nullptr)# Constructs a new DataLoader from a dataset to sample from, options to configure the DataLoader with, and a sampler that specifies the sampling strategy. DataLoaderBase(const DataLoaderBase\u0026) = delete# DataLoaderBase(DataLoaderBase\u0026\u0026) = delete# DataLoaderBase \u0026operator=(const DataLoaderBase\u0026) = delete# DataLoaderBase \u0026operator=(DataLoaderBase\u0026\u0026) = delete# inline virtual ~DataLoaderBase()# inline Iterator\u003cBatch\u003e begin()# Returns an iterator into the DataLoader. The lifetime of the iterator is bound to the DataLoader. In C++ standards language, the category of the iterator is OutputIterator. See https://en.cppreference.com/w/cpp/named_req/OutputIterator for what this means. In short: you may increment the iterator and dereference it, but cannot go back, or step forward more than one position at a time. When the DataLoader is exhausted, it will compare equal with the special \u201csentinel\u201d iterator returned by DataLoader::end(). Most of the time, you should only use range-for loops to loop over the DataLoader, but standard algorithms like std::copy(dataloader.begin(), dataloader.end(), output_iterator) are supported too. inline Iterator\u003cBatch\u003e end()# Returns a special \u201csentinel\u201d iterator that compares equal with a non-sentinel iterator once the DataLoader is exhausted. inline void join()# Joins the DataLoader\u2019s worker threads and drains internal queues. This function may only be invoked from the main thread (in which the DataLoader lives). inline const FullDataLoaderOptions \u0026options() const noexcept# Returns the options with which the DataLoader was configured. DataLoaderOptions# struct DataLoaderOptions# Options to configure a DataLoader. Public Functions DataLoaderOptions() = default# inline DataLoaderOptions(size_t batch_size)# inline auto batch_size(const size_t \u0026new_batch_size) -\u003e decltype(*this)# The size of each batch to fetch. inline auto batch_size(size_t \u0026\u0026new_batch_size) -\u003e decltype(*this)# inline const size_t \u0026batch_size() const noexcept# inline size_t \u0026batch_size() noexcept# inline auto workers(const size_t \u0026new_workers) -\u003e decltype(*this)# The number of worker threads to launch. If zero, the main thread will synchronously perform the data loading. inline auto workers(size_t \u0026\u0026new_workers) -\u003e decltype(*this)# inline const size_t \u0026workers() const noexcept# inline size_t \u0026workers() noexcept# inline auto max_jobs(const std::optional\u003csize_t\u003e \u0026new_max_jobs) -\u003e decltype(*this)# The maximum number of jobs to enqueue for fetching by worker threads. Defaults to two times the number of worker threads. inline auto max_jobs(std::optional\u003csize_t\u003e \u0026\u0026new_max_jobs) -\u003e decltype(*this)# inline const std::optional\u003csize_t\u003e \u0026max_jobs() const noexcept# inline std::optional\u003csize_t\u003e \u0026max_jobs() noexcept# inline auto timeout(const std::optional\u003cstd::chrono::milliseconds\u003e \u0026new_timeout) -\u003e decltype(*this)# An optional limit on the time to wait for the next batch. inline auto timeout(std::optional\u003cstd::chrono::milliseconds\u003e \u0026\u0026new_timeout) -\u003e decltype(*this)# inline const std::optional\u003cstd::chrono::milliseconds\u003e \u0026timeout() const noexcept# inline std::optional\u003cstd::chrono::milliseconds\u003e \u0026timeout() noexcept# inline auto enforce_ordering(const bool \u0026new_enforce_ordering) -\u003e decltype(*this)# Whether to enforce ordering of batches when multiple are loaded asynchronously by worker threads. Set to false for better performance if you do not care about determinism. inline auto enforce_ordering(bool \u0026\u0026new_enforce_ordering) -\u003e decltype(*this)# inline const bool \u0026enforce_ordering() const noexcept# inline bool \u0026enforce_ordering() noexcept# inline auto drop_last(const bool \u0026new_drop_last) -\u003e decltype(*this)# Whether to omit the last batch if it contains less than batch_size examples. inline auto drop_last(bool \u0026\u0026new_drop_last) -\u003e decltype(*this)# inline const bool \u0026drop_last() const noexcept# inline bool \u0026drop_last() noexcept# StatefulDataLoader# A DataLoader for StatefulDataset types that manage their own batching logic internally. template\u003ctypename Dataset\u003eclass StatefulDataLoader : public torch::data::DataLoaderBase\u003cDataset, Dataset::BatchType::value_type, Dataset::BatchRequestType\u003e# A dataloader for stateful datasets. A dataloader for stateful datatasets differs from one for stateless datasets one in that the dataset is shared among worker threads, and that this dataset is itself responsible for producing batches rather than depending on a sampler. The statefulness here actually refers to the dataset. The StatefulDataLoader simply alters the data loading algorithm to accommodate the stateful, shared nature of the dataset. Note that the dataset must be thread safe if more than one worker thread is used. A stateful dataloader is created by calling make_data_loader with a stateful dataset. Public Types using super = DataLoaderBase\u003cDataset, typename Dataset::BatchType::value_type, typename Dataset::BatchRequestType\u003e# using BatchRequestType = BatchRequest# Public Functions inline StatefulDataLoader(Dataset dataset, DataLoaderOptions options)# Constructs the StatefulDataLoader from a dataset and some options. StatelessDataLoader# A DataLoader for Dataset types that use external samplers for batching. template\u003ctypename Dataset, typename Sampler\u003eclass StatelessDataLoader : public torch::data::DataLoaderBase\u003cDataset, Dataset::BatchType, Sampler::BatchRequestType\u003e# A dataloader for stateless datasets. This dataloader follows the traditional PyTorch dataloader design, whereby a (possibly) stateful sampler produces batch requests for a stateless dataset, which acts as a simple batch request to batch mapping. The batch request will often be an array of indices, and if the dataset is a simple image dataset, the dataset would produce the images at those indices. Public Types using super = DataLoaderBase\u003cDataset, typename Dataset::BatchType, typename Sampler::BatchRequestType\u003e# using BatchRequestType = BatchRequest# Public Functions inline StatelessDataLoader(Dataset dataset, Sampler sampler, DataLoaderOptions options)# Constructs the StatelessDataLoader from a dataset, a sampler and some options. Iterator# template\u003ctypename Batch\u003eclass Iterator# Public Types using difference_type = std::ptrdiff_t# using value_type = Batch# using pointer = Batch*# using reference = Batch\u0026# using iterator_category = std::input_iterator_tag# Public Functions inline explicit Iterator(std::unique_ptr\u003cdetail::IteratorImpl\u003cBatch\u003e\u003e impl)# inline Iterator \u0026operator++()# Increments the iterator. Only permitted for valid iterators (not past the end). inline Batch \u0026operator*()# Returns the current batch. Only permitted for valid iterators (not past the end). inline Batch *operator-\u003e()# Returns a pointer to the current batch. Only permitted for valid iterators (not past the end). inline bool operator==(const Iterator \u0026other) const# Compares two iterators for equality. inline bool operator!=(const Iterator \u0026other) const# Compares two iterators for inequality. Creating a DataLoader# Use make_data_loader to create a DataLoader from a dataset: auto data_loader = torch::data::make_data_loader( std::move(dataset), torch::data::DataLoaderOptions() .batch_size(64) .workers(4)); for (auto\u0026 batch : *data_loader) { auto data = batch.data; auto target = batch.target; // Train on batch } Complete Training Example# #include \u003ctorch/torch.h\u003e int main() { // Load dataset auto dataset = torch::data::datasets::MNIST(\"./data\") .map(torch::data::transforms::Normalize\u003c\u003e(0.1307, 0.3081)) .map(torch::data::transforms::Stack\u003c\u003e()); // Create data loader auto data_loader = torch::data::make_data_loader( std::move(dataset), torch::data::DataLoaderOptions().batch_size(64).workers(2)); // Create model and optimizer auto model = std::make_shared\u003cNet\u003e(); auto optimizer = torch::optim::Adam(model-\u003eparameters(), 0.001); // Training loop for (size_t epoch = 1; epoch \u003c= 10; ++epoch) { for (auto\u0026 batch : *data_loader) { optimizer.zero_grad(); auto output = model-\u003eforward(batch.data); auto loss = torch::nll_loss(output, batch.target); loss.backward(); optimizer.step(); } } }",
+       "author": {
+         "@type": "Organization",
+         "name": "PyTorch Contributors",
+         "url": "https://pytorch.org"
+       },
+       "image": "https://pytorch.org/docs/stable/_static/img/pytorch_seo.png",
+       "mainEntityOfPage": {
+         "@type": "WebPage",
+         "@id": "/api/data/dataloader.html"
+       },
+       "datePublished": "2023-01-01T00:00:00Z",
+       "dateModified": "2023-01-01T00:00:00Z"
+     }
+ </script>
+  <script>
+    // Tutorials Call to action event tracking
+    $("[data-behavior='call-to-action-event']").on('click', function () {
+      fbq('trackCustom', "Download", {
+        tutorialTitle: $('h1:first').text(),
+        downloadLink: this.href,
+        tutorialLink: window.location.href,
+        downloadTitle: $(this).attr("data-response")
+      });
+      if (typeof gtag === 'function') {
+        gtag('event', 'click', {
+          'event_category': $(this).attr("data-response"),
+          'event_label': $("h1").first().text(),
+          'tutorial_link': window.location.href
+        });
+      }
+    });
+  </script>
+  
+  </body>
+</html>
