@@ -32,12 +32,12 @@
             <td></td>
             <td class="headerItem">Lines:</td>
             <td class="headerCovTableEntry">3</td>
-            <td class="headerCovTableEntry">17</td>
-            <td class="headerCovTableEntryLo">17.6 %</td>
+            <td class="headerCovTableEntry">18</td>
+            <td class="headerCovTableEntryLo">16.7 %</td>
           </tr>
           <tr>
             <td class="headerItem">Date:</td>
-            <td class="headerValue">2026-04-13 01:06:01</td>
+            <td class="headerValue">2026-04-14 01:09:25</td>
             <td></td>
           </tr>
           <tr>
@@ -200,52 +200,56 @@
 <a name="134"><span class="lineNum">     134 </span>            :   // on this stream has completed running on the device.</a>
 <a name="135"><span class="lineNum">     135 </span><span class="lineNoCov">          0 :   void synchronize() const;</span></a>
 <a name="136"><span class="lineNum">     136 </span>            : </a>
-<a name="137"><span class="lineNum">     137 </span>            :   // The purpose of this function is to more conveniently permit binding</a>
-<a name="138"><span class="lineNum">     138 </span>            :   // of Stream to and from Python.  Without packing, I have to setup a whole</a>
-<a name="139"><span class="lineNum">     139 </span>            :   // class with two fields (device and stream id); with packing I can just</a>
-<a name="140"><span class="lineNum">     140 </span>            :   // store a single uint64_t.</a>
-<a name="141"><span class="lineNum">     141 </span>            :   //</a>
-<a name="142"><span class="lineNum">     142 </span>            :   // The particular way we pack streams into a uint64_t is considered an</a>
-<a name="143"><span class="lineNum">     143 </span>            :   // implementation detail and should not be relied upon.</a>
-<a name="144"><span class="lineNum">     144 </span><span class="lineNoCov">          0 :   uint64_t hash() const noexcept {</span></a>
-<a name="145"><span class="lineNum">     145 </span>            :     // Concat these together into a 64-bit integer</a>
-<a name="146"><span class="lineNum">     146 </span>            :     uint64_t bits = static_cast&lt;uint64_t&gt;(device_type()) &lt;&lt; 56 |</a>
-<a name="147"><span class="lineNum">     147 </span>            :         static_cast&lt;uint64_t&gt;(device_index()) &lt;&lt; 48 |</a>
-<a name="148"><span class="lineNum">     148 </span>            :         // Remove the sign extension part of the 64-bit address because</a>
-<a name="149"><span class="lineNum">     149 </span>            :         // the id might be used to hold a pointer.</a>
-<a name="150"><span class="lineNum">     150 </span>            :         (static_cast&lt;uint64_t&gt;(id()) &amp; ((1ull &lt;&lt; 48) - 1));</a>
-<a name="151"><span class="lineNum">     151 </span>            :     return bits;</a>
-<a name="152"><span class="lineNum">     152 </span>            :   }</a>
-<a name="153"><span class="lineNum">     153 </span>            : </a>
-<a name="154"><span class="lineNum">     154 </span>            :   struct StreamData3 pack3() const {</a>
-<a name="155"><span class="lineNum">     155 </span>            :     return {id(), device_index(), device_type()};</a>
+<a name="137"><span class="lineNum">     137 </span>            :   // Return the stream is currently recording work for graph capture. True while</a>
+<a name="138"><span class="lineNum">     138 </span>            :   // the stream is in capture mode, false otherwise.</a>
+<a name="139"><span class="lineNum">     139 </span><span class="lineNoCov">          0 :   bool is_capturing() const;</span></a>
+<a name="140"><span class="lineNum">     140 </span>            : </a>
+<a name="141"><span class="lineNum">     141 </span>            :   // The purpose of this function is to more conveniently permit binding</a>
+<a name="142"><span class="lineNum">     142 </span>            :   // of Stream to and from Python.  Without packing, I have to setup a whole</a>
+<a name="143"><span class="lineNum">     143 </span>            :   // class with two fields (device and stream id); with packing I can just</a>
+<a name="144"><span class="lineNum">     144 </span>            :   // store a single uint64_t.</a>
+<a name="145"><span class="lineNum">     145 </span>            :   //</a>
+<a name="146"><span class="lineNum">     146 </span>            :   // The particular way we pack streams into a uint64_t is considered an</a>
+<a name="147"><span class="lineNum">     147 </span>            :   // implementation detail and should not be relied upon.</a>
+<a name="148"><span class="lineNum">     148 </span><span class="lineNoCov">          0 :   uint64_t hash() const noexcept {</span></a>
+<a name="149"><span class="lineNum">     149 </span>            :     // Concat these together into a 64-bit integer</a>
+<a name="150"><span class="lineNum">     150 </span>            :     uint64_t bits = static_cast&lt;uint64_t&gt;(device_type()) &lt;&lt; 56 |</a>
+<a name="151"><span class="lineNum">     151 </span>            :         static_cast&lt;uint64_t&gt;(device_index()) &lt;&lt; 48 |</a>
+<a name="152"><span class="lineNum">     152 </span>            :         // Remove the sign extension part of the 64-bit address because</a>
+<a name="153"><span class="lineNum">     153 </span>            :         // the id might be used to hold a pointer.</a>
+<a name="154"><span class="lineNum">     154 </span>            :         (static_cast&lt;uint64_t&gt;(id()) &amp; ((1ull &lt;&lt; 48) - 1));</a>
+<a name="155"><span class="lineNum">     155 </span>            :     return bits;</a>
 <a name="156"><span class="lineNum">     156 </span>            :   }</a>
 <a name="157"><span class="lineNum">     157 </span>            : </a>
-<a name="158"><span class="lineNum">     158 </span><span class="lineNoCov">          0 :   static Stream unpack3(</span></a>
-<a name="159"><span class="lineNum">     159 </span>            :       StreamId stream_id,</a>
-<a name="160"><span class="lineNum">     160 </span>            :       DeviceIndex device_index,</a>
-<a name="161"><span class="lineNum">     161 </span>            :       DeviceType device_type) {</a>
-<a name="162"><span class="lineNum">     162 </span>            :     TORCH_CHECK(isValidDeviceType(device_type));</a>
-<a name="163"><span class="lineNum">     163 </span>            :     return Stream(UNSAFE, Device(device_type, device_index), stream_id);</a>
-<a name="164"><span class="lineNum">     164 </span>            :   }</a>
-<a name="165"><span class="lineNum">     165 </span>            : </a>
-<a name="166"><span class="lineNum">     166 </span>            :   // I decided NOT to provide setters on this class, because really,</a>
-<a name="167"><span class="lineNum">     167 </span>            :   // why would you change the device of a stream?  Just construct</a>
-<a name="168"><span class="lineNum">     168 </span>            :   // it correctly from the beginning dude.</a>
-<a name="169"><span class="lineNum">     169 </span>            : };</a>
-<a name="170"><span class="lineNum">     170 </span>            : </a>
-<a name="171"><span class="lineNum">     171 </span><span class="lineNoCov">          0 : C10_API std::ostream&amp; operator&lt;&lt;(std::ostream&amp; stream, const Stream&amp; s);</span></a>
-<a name="172"><span class="lineNum">     172 </span>            : </a>
-<a name="173"><span class="lineNum">     173 </span>            : } // namespace c10</a>
+<a name="158"><span class="lineNum">     158 </span>            :   struct StreamData3 pack3() const {</a>
+<a name="159"><span class="lineNum">     159 </span>            :     return {id(), device_index(), device_type()};</a>
+<a name="160"><span class="lineNum">     160 </span>            :   }</a>
+<a name="161"><span class="lineNum">     161 </span>            : </a>
+<a name="162"><span class="lineNum">     162 </span><span class="lineNoCov">          0 :   static Stream unpack3(</span></a>
+<a name="163"><span class="lineNum">     163 </span>            :       StreamId stream_id,</a>
+<a name="164"><span class="lineNum">     164 </span>            :       DeviceIndex device_index,</a>
+<a name="165"><span class="lineNum">     165 </span>            :       DeviceType device_type) {</a>
+<a name="166"><span class="lineNum">     166 </span>            :     TORCH_CHECK(isValidDeviceType(device_type));</a>
+<a name="167"><span class="lineNum">     167 </span>            :     return Stream(UNSAFE, Device(device_type, device_index), stream_id);</a>
+<a name="168"><span class="lineNum">     168 </span>            :   }</a>
+<a name="169"><span class="lineNum">     169 </span>            : </a>
+<a name="170"><span class="lineNum">     170 </span>            :   // I decided NOT to provide setters on this class, because really,</a>
+<a name="171"><span class="lineNum">     171 </span>            :   // why would you change the device of a stream?  Just construct</a>
+<a name="172"><span class="lineNum">     172 </span>            :   // it correctly from the beginning dude.</a>
+<a name="173"><span class="lineNum">     173 </span>            : };</a>
 <a name="174"><span class="lineNum">     174 </span>            : </a>
-<a name="175"><span class="lineNum">     175 </span>            : namespace std {</a>
-<a name="176"><span class="lineNum">     176 </span>            : template &lt;&gt;</a>
-<a name="177"><span class="lineNum">     177 </span>            : struct hash&lt;c10::Stream&gt; {</a>
-<a name="178"><span class="lineNum">     178 </span>            :   size_t operator()(c10::Stream s) const noexcept {</a>
-<a name="179"><span class="lineNum">     179 </span>            :     return std::hash&lt;uint64_t&gt;{}(s.hash());</a>
-<a name="180"><span class="lineNum">     180 </span>            :   }</a>
-<a name="181"><span class="lineNum">     181 </span>            : };</a>
-<a name="182"><span class="lineNum">     182 </span>            : } // namespace std</a>
+<a name="175"><span class="lineNum">     175 </span><span class="lineNoCov">          0 : C10_API std::ostream&amp; operator&lt;&lt;(std::ostream&amp; stream, const Stream&amp; s);</span></a>
+<a name="176"><span class="lineNum">     176 </span>            : </a>
+<a name="177"><span class="lineNum">     177 </span>            : } // namespace c10</a>
+<a name="178"><span class="lineNum">     178 </span>            : </a>
+<a name="179"><span class="lineNum">     179 </span>            : namespace std {</a>
+<a name="180"><span class="lineNum">     180 </span>            : template &lt;&gt;</a>
+<a name="181"><span class="lineNum">     181 </span>            : struct hash&lt;c10::Stream&gt; {</a>
+<a name="182"><span class="lineNum">     182 </span>            :   size_t operator()(c10::Stream s) const noexcept {</a>
+<a name="183"><span class="lineNum">     183 </span>            :     return std::hash&lt;uint64_t&gt;{}(s.hash());</a>
+<a name="184"><span class="lineNum">     184 </span>            :   }</a>
+<a name="185"><span class="lineNum">     185 </span>            : };</a>
+<a name="186"><span class="lineNum">     186 </span>            : } // namespace std</a>
 </pre>
       </td>
     </tr>
