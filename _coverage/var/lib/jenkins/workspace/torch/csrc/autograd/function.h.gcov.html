@@ -31,13 +31,13 @@
             <td class="headerValue">PyTorch C++ API Doc Coverage</td>
             <td></td>
             <td class="headerItem">Lines:</td>
-            <td class="headerCovTableEntry">25</td>
-            <td class="headerCovTableEntry">80</td>
-            <td class="headerCovTableEntryLo">31.2 %</td>
+            <td class="headerCovTableEntry">26</td>
+            <td class="headerCovTableEntry">81</td>
+            <td class="headerCovTableEntryLo">32.1 %</td>
           </tr>
           <tr>
             <td class="headerItem">Date:</td>
-            <td class="headerValue">2026-04-15 22:21:52</td>
+            <td class="headerValue">2026-04-16 01:04:24</td>
             <td></td>
           </tr>
           <tr>
@@ -472,389 +472,393 @@
 <a name="406"><span class="lineNum">     406 </span>            :   /// Returns the name of the dynamic type of the function, for debugging.</a>
 <a name="407"><span class="lineNum">     407 </span><span class="lineCov">          1 :   virtual std::string name() const;</span></a>
 <a name="408"><span class="lineNum">     408 </span>            : </a>
-<a name="409"><span class="lineNum">     409 </span>            :   /// The difference between functions `should_compute_output` and</a>
-<a name="410"><span class="lineNum">     410 </span>            :   /// `task_should_compute_output`:</a>
-<a name="411"><span class="lineNum">     411 </span>            :   /// - `should_compute_output` should only be used during graph construction</a>
-<a name="412"><span class="lineNum">     412 </span>            :   /// and takes into account only requires_grad information</a>
-<a name="413"><span class="lineNum">     413 </span>            :   /// - `task_should_compute_output` should only be called during the backward</a>
-<a name="414"><span class="lineNum">     414 </span>            :   /// pass (unless called directly through grad_fn) and takes into account the</a>
-<a name="415"><span class="lineNum">     415 </span>            :   /// current graph task.  Specifically, the autograd engine trims unnecessary</a>
-<a name="416"><span class="lineNum">     416 </span>            :   /// edges when `inputs` are specified, and during backward untrimmed nodes</a>
-<a name="417"><span class="lineNum">     417 </span>            :   /// left on the graph can/should check `task_should_compute_output` to see if</a>
-<a name="418"><span class="lineNum">     418 </span>            :   /// any outgoing edges have been trimmed by the engine. If that is the case,</a>
-<a name="419"><span class="lineNum">     419 </span>            :   /// gradient computation wrt those edges can be omitted.</a>
-<a name="420"><span class="lineNum">     420 </span>            :   ///</a>
-<a name="421"><span class="lineNum">     421 </span>            :   /// Returns true if the particular output edge is active, and that particular</a>
-<a name="422"><span class="lineNum">     422 </span>            :   /// output of this function should be computed.</a>
-<a name="423"><span class="lineNum">     423 </span><span class="lineCov">          1 :   bool should_compute_output(size_t output_edge_index) const {</span></a>
-<a name="424"><span class="lineNum">     424 </span>            :     TORCH_CHECK(output_edge_index &lt; num_outputs(), &quot;Index out of range&quot;);</a>
-<a name="425"><span class="lineNum">     425 </span>            :     return next_edges_[output_edge_index].is_valid();</a>
-<a name="426"><span class="lineNum">     426 </span>            :   }</a>
-<a name="427"><span class="lineNum">     427 </span>            : </a>
-<a name="428"><span class="lineNum">     428 </span>            :   /// Returns true if any of the output edges in any of the ranges are active.</a>
-<a name="429"><span class="lineNum">     429 </span><span class="lineCov">          1 :   bool should_compute_output(std::initializer_list&lt;IndexRange&gt; idxs) const {</span></a>
-<a name="430"><span class="lineNum">     430 </span>            :     return std::any_of(idxs.begin(), idxs.end(), [this](IndexRange range) {</a>
-<a name="431"><span class="lineNum">     431 </span>            :       for (const auto i : c10::irange(range.first, range.second)) {</a>
-<a name="432"><span class="lineNum">     432 </span>            :         if (should_compute_output(i))</a>
-<a name="433"><span class="lineNum">     433 </span>            :           return true;</a>
-<a name="434"><span class="lineNum">     434 </span>            :       }</a>
-<a name="435"><span class="lineNum">     435 </span>            :       return false;</a>
-<a name="436"><span class="lineNum">     436 </span>            :     });</a>
-<a name="437"><span class="lineNum">     437 </span>            :   }</a>
-<a name="438"><span class="lineNum">     438 </span>            : </a>
-<a name="439"><span class="lineNum">     439 </span>            :   /// Same as the above `should_compute_output` function but will also</a>
-<a name="440"><span class="lineNum">     440 </span>            :   /// check whether this edge is needed within the current graph task.</a>
-<a name="441"><span class="lineNum">     441 </span><span class="lineCov">          1 :   bool task_should_compute_output(size_t output_edge_index) const {</span></a>
-<a name="442"><span class="lineNum">     442 </span>            :     TORCH_CHECK(output_edge_index &lt; num_outputs(), &quot;Index out of range&quot;);</a>
-<a name="443"><span class="lineNum">     443 </span>            :     const auto&amp; next = next_edges_[output_edge_index];</a>
-<a name="444"><span class="lineNum">     444 </span>            :     if (next.is_valid()) {</a>
-<a name="445"><span class="lineNum">     445 </span>            :       const auto exec_info = get_current_graph_task_exec_info();</a>
-<a name="446"><span class="lineNum">     446 </span>            :       if (exec_info &amp;&amp; !exec_info-&gt;empty()) {</a>
-<a name="447"><span class="lineNum">     447 </span>            :         auto it = exec_info-&gt;find(next.function.get());</a>
-<a name="448"><span class="lineNum">     448 </span>            :         if (it == exec_info-&gt;end() || !it-&gt;second.should_execute()) {</a>
-<a name="449"><span class="lineNum">     449 </span>            :           return false; // this edge is not needed for the current graph_task</a>
-<a name="450"><span class="lineNum">     450 </span>            :         }</a>
-<a name="451"><span class="lineNum">     451 </span>            :       }</a>
-<a name="452"><span class="lineNum">     452 </span>            :       return true;</a>
-<a name="453"><span class="lineNum">     453 </span>            :     }</a>
-<a name="454"><span class="lineNum">     454 </span>            :     return false;</a>
-<a name="455"><span class="lineNum">     455 </span>            :   }</a>
-<a name="456"><span class="lineNum">     456 </span>            : </a>
-<a name="457"><span class="lineNum">     457 </span>            :   /// Returns true if any of the output edges in any of the ranges are active</a>
-<a name="458"><span class="lineNum">     458 </span>            :   /// and should be computed in the current graph task.</a>
-<a name="459"><span class="lineNum">     459 </span><span class="lineCov">          1 :   bool task_should_compute_output(</span></a>
-<a name="460"><span class="lineNum">     460 </span>            :       std::initializer_list&lt;IndexRange&gt; idxs) const {</a>
-<a name="461"><span class="lineNum">     461 </span>            :     return std::any_of(idxs.begin(), idxs.end(), [this](IndexRange range) {</a>
-<a name="462"><span class="lineNum">     462 </span>            :       for (const auto i : c10::irange(range.first, range.second)) {</a>
-<a name="463"><span class="lineNum">     463 </span>            :         if (task_should_compute_output(i))</a>
-<a name="464"><span class="lineNum">     464 </span>            :           return true;</a>
-<a name="465"><span class="lineNum">     465 </span>            :       }</a>
-<a name="466"><span class="lineNum">     466 </span>            :       return false;</a>
-<a name="467"><span class="lineNum">     467 </span>            :     });</a>
-<a name="468"><span class="lineNum">     468 </span>            :   }</a>
-<a name="469"><span class="lineNum">     469 </span>            : </a>
-<a name="470"><span class="lineNum">     470 </span>            :   /// Returns the `PyObject` stored for this `Node` (for Python</a>
-<a name="471"><span class="lineNum">     471 </span>            :   /// interaction).</a>
-<a name="472"><span class="lineNum">     472 </span><span class="lineCov">          1 :   PyObject* pyobj() const noexcept {</span></a>
-<a name="473"><span class="lineNum">     473 </span>            :     return pyobj_;</a>
-<a name="474"><span class="lineNum">     474 </span>            :   }</a>
-<a name="475"><span class="lineNum">     475 </span>            : </a>
-<a name="476"><span class="lineNum">     476 </span>            :   /// Sets the `PyObject` stored for this `Node` (for Python interaction).</a>
-<a name="477"><span class="lineNum">     477 </span><span class="lineCov">          1 :   void set_pyobj(PyObject* pyobj) noexcept {</span></a>
-<a name="478"><span class="lineNum">     478 </span>            :     pyobj_ = pyobj;</a>
-<a name="479"><span class="lineNum">     479 </span>            :   }</a>
-<a name="480"><span class="lineNum">     480 </span>            : </a>
-<a name="481"><span class="lineNum">     481 </span>            :   /// Returns the anomaly metadata stored for this `Node`.</a>
-<a name="482"><span class="lineNum">     482 </span>            :   /// If none exist, creates a new empty one.</a>
-<a name="483"><span class="lineNum">     483 </span><span class="lineCov">          1 :   AnomalyMetadata* metadata() noexcept;</span></a>
+<a name="409"><span class="lineNum">     409 </span>            :   /// Returns the name of the corresponding forward op by stripping the</a>
+<a name="410"><span class="lineNum">     410 </span>            :   /// &quot;Backward&lt;N&gt;&quot; suffix from name(), if present.</a>
+<a name="411"><span class="lineNum">     411 </span><span class="lineCov">          1 :   std::string forward_op_name() const;</span></a>
+<a name="412"><span class="lineNum">     412 </span>            : </a>
+<a name="413"><span class="lineNum">     413 </span>            :   /// The difference between functions `should_compute_output` and</a>
+<a name="414"><span class="lineNum">     414 </span>            :   /// `task_should_compute_output`:</a>
+<a name="415"><span class="lineNum">     415 </span>            :   /// - `should_compute_output` should only be used during graph construction</a>
+<a name="416"><span class="lineNum">     416 </span>            :   /// and takes into account only requires_grad information</a>
+<a name="417"><span class="lineNum">     417 </span>            :   /// - `task_should_compute_output` should only be called during the backward</a>
+<a name="418"><span class="lineNum">     418 </span>            :   /// pass (unless called directly through grad_fn) and takes into account the</a>
+<a name="419"><span class="lineNum">     419 </span>            :   /// current graph task.  Specifically, the autograd engine trims unnecessary</a>
+<a name="420"><span class="lineNum">     420 </span>            :   /// edges when `inputs` are specified, and during backward untrimmed nodes</a>
+<a name="421"><span class="lineNum">     421 </span>            :   /// left on the graph can/should check `task_should_compute_output` to see if</a>
+<a name="422"><span class="lineNum">     422 </span>            :   /// any outgoing edges have been trimmed by the engine. If that is the case,</a>
+<a name="423"><span class="lineNum">     423 </span>            :   /// gradient computation wrt those edges can be omitted.</a>
+<a name="424"><span class="lineNum">     424 </span>            :   ///</a>
+<a name="425"><span class="lineNum">     425 </span>            :   /// Returns true if the particular output edge is active, and that particular</a>
+<a name="426"><span class="lineNum">     426 </span>            :   /// output of this function should be computed.</a>
+<a name="427"><span class="lineNum">     427 </span><span class="lineCov">          1 :   bool should_compute_output(size_t output_edge_index) const {</span></a>
+<a name="428"><span class="lineNum">     428 </span>            :     TORCH_CHECK(output_edge_index &lt; num_outputs(), &quot;Index out of range&quot;);</a>
+<a name="429"><span class="lineNum">     429 </span>            :     return next_edges_[output_edge_index].is_valid();</a>
+<a name="430"><span class="lineNum">     430 </span>            :   }</a>
+<a name="431"><span class="lineNum">     431 </span>            : </a>
+<a name="432"><span class="lineNum">     432 </span>            :   /// Returns true if any of the output edges in any of the ranges are active.</a>
+<a name="433"><span class="lineNum">     433 </span><span class="lineCov">          1 :   bool should_compute_output(std::initializer_list&lt;IndexRange&gt; idxs) const {</span></a>
+<a name="434"><span class="lineNum">     434 </span>            :     return std::any_of(idxs.begin(), idxs.end(), [this](IndexRange range) {</a>
+<a name="435"><span class="lineNum">     435 </span>            :       for (const auto i : c10::irange(range.first, range.second)) {</a>
+<a name="436"><span class="lineNum">     436 </span>            :         if (should_compute_output(i))</a>
+<a name="437"><span class="lineNum">     437 </span>            :           return true;</a>
+<a name="438"><span class="lineNum">     438 </span>            :       }</a>
+<a name="439"><span class="lineNum">     439 </span>            :       return false;</a>
+<a name="440"><span class="lineNum">     440 </span>            :     });</a>
+<a name="441"><span class="lineNum">     441 </span>            :   }</a>
+<a name="442"><span class="lineNum">     442 </span>            : </a>
+<a name="443"><span class="lineNum">     443 </span>            :   /// Same as the above `should_compute_output` function but will also</a>
+<a name="444"><span class="lineNum">     444 </span>            :   /// check whether this edge is needed within the current graph task.</a>
+<a name="445"><span class="lineNum">     445 </span><span class="lineCov">          1 :   bool task_should_compute_output(size_t output_edge_index) const {</span></a>
+<a name="446"><span class="lineNum">     446 </span>            :     TORCH_CHECK(output_edge_index &lt; num_outputs(), &quot;Index out of range&quot;);</a>
+<a name="447"><span class="lineNum">     447 </span>            :     const auto&amp; next = next_edges_[output_edge_index];</a>
+<a name="448"><span class="lineNum">     448 </span>            :     if (next.is_valid()) {</a>
+<a name="449"><span class="lineNum">     449 </span>            :       const auto exec_info = get_current_graph_task_exec_info();</a>
+<a name="450"><span class="lineNum">     450 </span>            :       if (exec_info &amp;&amp; !exec_info-&gt;empty()) {</a>
+<a name="451"><span class="lineNum">     451 </span>            :         auto it = exec_info-&gt;find(next.function.get());</a>
+<a name="452"><span class="lineNum">     452 </span>            :         if (it == exec_info-&gt;end() || !it-&gt;second.should_execute()) {</a>
+<a name="453"><span class="lineNum">     453 </span>            :           return false; // this edge is not needed for the current graph_task</a>
+<a name="454"><span class="lineNum">     454 </span>            :         }</a>
+<a name="455"><span class="lineNum">     455 </span>            :       }</a>
+<a name="456"><span class="lineNum">     456 </span>            :       return true;</a>
+<a name="457"><span class="lineNum">     457 </span>            :     }</a>
+<a name="458"><span class="lineNum">     458 </span>            :     return false;</a>
+<a name="459"><span class="lineNum">     459 </span>            :   }</a>
+<a name="460"><span class="lineNum">     460 </span>            : </a>
+<a name="461"><span class="lineNum">     461 </span>            :   /// Returns true if any of the output edges in any of the ranges are active</a>
+<a name="462"><span class="lineNum">     462 </span>            :   /// and should be computed in the current graph task.</a>
+<a name="463"><span class="lineNum">     463 </span><span class="lineCov">          1 :   bool task_should_compute_output(</span></a>
+<a name="464"><span class="lineNum">     464 </span>            :       std::initializer_list&lt;IndexRange&gt; idxs) const {</a>
+<a name="465"><span class="lineNum">     465 </span>            :     return std::any_of(idxs.begin(), idxs.end(), [this](IndexRange range) {</a>
+<a name="466"><span class="lineNum">     466 </span>            :       for (const auto i : c10::irange(range.first, range.second)) {</a>
+<a name="467"><span class="lineNum">     467 </span>            :         if (task_should_compute_output(i))</a>
+<a name="468"><span class="lineNum">     468 </span>            :           return true;</a>
+<a name="469"><span class="lineNum">     469 </span>            :       }</a>
+<a name="470"><span class="lineNum">     470 </span>            :       return false;</a>
+<a name="471"><span class="lineNum">     471 </span>            :     });</a>
+<a name="472"><span class="lineNum">     472 </span>            :   }</a>
+<a name="473"><span class="lineNum">     473 </span>            : </a>
+<a name="474"><span class="lineNum">     474 </span>            :   /// Returns the `PyObject` stored for this `Node` (for Python</a>
+<a name="475"><span class="lineNum">     475 </span>            :   /// interaction).</a>
+<a name="476"><span class="lineNum">     476 </span><span class="lineCov">          1 :   PyObject* pyobj() const noexcept {</span></a>
+<a name="477"><span class="lineNum">     477 </span>            :     return pyobj_;</a>
+<a name="478"><span class="lineNum">     478 </span>            :   }</a>
+<a name="479"><span class="lineNum">     479 </span>            : </a>
+<a name="480"><span class="lineNum">     480 </span>            :   /// Sets the `PyObject` stored for this `Node` (for Python interaction).</a>
+<a name="481"><span class="lineNum">     481 </span><span class="lineCov">          1 :   void set_pyobj(PyObject* pyobj) noexcept {</span></a>
+<a name="482"><span class="lineNum">     482 </span>            :     pyobj_ = pyobj;</a>
+<a name="483"><span class="lineNum">     483 </span>            :   }</a>
 <a name="484"><span class="lineNum">     484 </span>            : </a>
-<a name="485"><span class="lineNum">     485 </span>            :   // Hook API</a>
-<a name="486"><span class="lineNum">     486 </span>            :   //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</a>
-<a name="487"><span class="lineNum">     487 </span>            : </a>
-<a name="488"><span class="lineNum">     488 </span><span class="lineNoCov">          0 :   uintptr_t add_post_hook(std::unique_ptr&lt;FunctionPostHook&gt;&amp;&amp; post_hook) {</span></a>
-<a name="489"><span class="lineNum">     489 </span>            :     post_hooks_.emplace_back(std::move(post_hook));</a>
-<a name="490"><span class="lineNum">     490 </span>            :     // Use the raw pointer as the unique key to identify this hook. This key</a>
-<a name="491"><span class="lineNum">     491 </span>            :     // can then be used in del_post_hook(key) to remove this hook.</a>
-<a name="492"><span class="lineNum">     492 </span>            :     return reinterpret_cast&lt;std::uintptr_t&gt;(post_hooks_.back().get());</a>
-<a name="493"><span class="lineNum">     493 </span>            :   }</a>
-<a name="494"><span class="lineNum">     494 </span>            : </a>
-<a name="495"><span class="lineNum">     495 </span><span class="lineNoCov">          0 :   const std::vector&lt;std::unique_ptr&lt;FunctionPostHook&gt;&gt;&amp; post_hooks()</span></a>
-<a name="496"><span class="lineNum">     496 </span>            :       const noexcept {</a>
-<a name="497"><span class="lineNum">     497 </span>            :     return post_hooks_;</a>
-<a name="498"><span class="lineNum">     498 </span>            :   }</a>
-<a name="499"><span class="lineNum">     499 </span>            : </a>
-<a name="500"><span class="lineNum">     500 </span>            :   // delete a post hook matching the key</a>
-<a name="501"><span class="lineNum">     501 </span><span class="lineNoCov">          0 :   bool del_post_hook(const uintptr_t&amp; key) {</span></a>
-<a name="502"><span class="lineNum">     502 </span>            :     for (auto it = post_hooks_.begin(); it != post_hooks_.end(); ++it) {</a>
-<a name="503"><span class="lineNum">     503 </span>            :       if (key == reinterpret_cast&lt;std::uintptr_t&gt;(it-&gt;get())) {</a>
-<a name="504"><span class="lineNum">     504 </span>            :         post_hooks_.erase(it);</a>
-<a name="505"><span class="lineNum">     505 </span>            :         return true;</a>
-<a name="506"><span class="lineNum">     506 </span>            :       }</a>
-<a name="507"><span class="lineNum">     507 </span>            :     }</a>
-<a name="508"><span class="lineNum">     508 </span>            :     return false;</a>
-<a name="509"><span class="lineNum">     509 </span>            :   }</a>
-<a name="510"><span class="lineNum">     510 </span>            : </a>
-<a name="511"><span class="lineNum">     511 </span><span class="lineNoCov">          0 :   std::vector&lt;std::unique_ptr&lt;FunctionPostHook&gt;&gt;&amp; post_hooks() noexcept {</span></a>
-<a name="512"><span class="lineNum">     512 </span>            :     return post_hooks_;</a>
+<a name="485"><span class="lineNum">     485 </span>            :   /// Returns the anomaly metadata stored for this `Node`.</a>
+<a name="486"><span class="lineNum">     486 </span>            :   /// If none exist, creates a new empty one.</a>
+<a name="487"><span class="lineNum">     487 </span><span class="lineCov">          1 :   AnomalyMetadata* metadata() noexcept;</span></a>
+<a name="488"><span class="lineNum">     488 </span>            : </a>
+<a name="489"><span class="lineNum">     489 </span>            :   // Hook API</a>
+<a name="490"><span class="lineNum">     490 </span>            :   //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</a>
+<a name="491"><span class="lineNum">     491 </span>            : </a>
+<a name="492"><span class="lineNum">     492 </span><span class="lineNoCov">          0 :   uintptr_t add_post_hook(std::unique_ptr&lt;FunctionPostHook&gt;&amp;&amp; post_hook) {</span></a>
+<a name="493"><span class="lineNum">     493 </span>            :     post_hooks_.emplace_back(std::move(post_hook));</a>
+<a name="494"><span class="lineNum">     494 </span>            :     // Use the raw pointer as the unique key to identify this hook. This key</a>
+<a name="495"><span class="lineNum">     495 </span>            :     // can then be used in del_post_hook(key) to remove this hook.</a>
+<a name="496"><span class="lineNum">     496 </span>            :     return reinterpret_cast&lt;std::uintptr_t&gt;(post_hooks_.back().get());</a>
+<a name="497"><span class="lineNum">     497 </span>            :   }</a>
+<a name="498"><span class="lineNum">     498 </span>            : </a>
+<a name="499"><span class="lineNum">     499 </span><span class="lineNoCov">          0 :   const std::vector&lt;std::unique_ptr&lt;FunctionPostHook&gt;&gt;&amp; post_hooks()</span></a>
+<a name="500"><span class="lineNum">     500 </span>            :       const noexcept {</a>
+<a name="501"><span class="lineNum">     501 </span>            :     return post_hooks_;</a>
+<a name="502"><span class="lineNum">     502 </span>            :   }</a>
+<a name="503"><span class="lineNum">     503 </span>            : </a>
+<a name="504"><span class="lineNum">     504 </span>            :   // delete a post hook matching the key</a>
+<a name="505"><span class="lineNum">     505 </span><span class="lineNoCov">          0 :   bool del_post_hook(const uintptr_t&amp; key) {</span></a>
+<a name="506"><span class="lineNum">     506 </span>            :     for (auto it = post_hooks_.begin(); it != post_hooks_.end(); ++it) {</a>
+<a name="507"><span class="lineNum">     507 </span>            :       if (key == reinterpret_cast&lt;std::uintptr_t&gt;(it-&gt;get())) {</a>
+<a name="508"><span class="lineNum">     508 </span>            :         post_hooks_.erase(it);</a>
+<a name="509"><span class="lineNum">     509 </span>            :         return true;</a>
+<a name="510"><span class="lineNum">     510 </span>            :       }</a>
+<a name="511"><span class="lineNum">     511 </span>            :     }</a>
+<a name="512"><span class="lineNum">     512 </span>            :     return false;</a>
 <a name="513"><span class="lineNum">     513 </span>            :   }</a>
 <a name="514"><span class="lineNum">     514 </span>            : </a>
-<a name="515"><span class="lineNum">     515 </span><span class="lineNoCov">          0 :   void add_pre_hook(std::unique_ptr&lt;FunctionPreHook&gt;&amp;&amp; pre_hook) {</span></a>
-<a name="516"><span class="lineNum">     516 </span>            :     pre_hooks_.emplace_back(std::move(pre_hook));</a>
+<a name="515"><span class="lineNum">     515 </span><span class="lineNoCov">          0 :   std::vector&lt;std::unique_ptr&lt;FunctionPostHook&gt;&gt;&amp; post_hooks() noexcept {</span></a>
+<a name="516"><span class="lineNum">     516 </span>            :     return post_hooks_;</a>
 <a name="517"><span class="lineNum">     517 </span>            :   }</a>
 <a name="518"><span class="lineNum">     518 </span>            : </a>
-<a name="519"><span class="lineNum">     519 </span><span class="lineNoCov">          0 :   void add_tensor_pre_hook(std::unique_ptr&lt;FunctionPreHook&gt;&amp;&amp; pre_hook) {</span></a>
-<a name="520"><span class="lineNum">     520 </span>            :     tensor_pre_hooks_.emplace_back(std::move(pre_hook));</a>
+<a name="519"><span class="lineNum">     519 </span><span class="lineNoCov">          0 :   void add_pre_hook(std::unique_ptr&lt;FunctionPreHook&gt;&amp;&amp; pre_hook) {</span></a>
+<a name="520"><span class="lineNum">     520 </span>            :     pre_hooks_.emplace_back(std::move(pre_hook));</a>
 <a name="521"><span class="lineNum">     521 </span>            :   }</a>
 <a name="522"><span class="lineNum">     522 </span>            : </a>
-<a name="523"><span class="lineNum">     523 </span><span class="lineNoCov">          0 :   void add_retains_grad_hook(</span></a>
-<a name="524"><span class="lineNum">     524 </span>            :       std::unique_ptr&lt;FunctionPreHook&gt;&amp;&amp; pre_hook,</a>
-<a name="525"><span class="lineNum">     525 </span>            :       size_t output_idx) {</a>
-<a name="526"><span class="lineNum">     526 </span>            :     retains_grad_hooks_[output_idx] = std::move(pre_hook);</a>
-<a name="527"><span class="lineNum">     527 </span>            :   }</a>
-<a name="528"><span class="lineNum">     528 </span>            : </a>
-<a name="529"><span class="lineNum">     529 </span><span class="lineNoCov">          0 :   std::unique_ptr&lt;FunctionPreHook&gt; pop_retains_grad_hook(size_t output_idx) {</span></a>
-<a name="530"><span class="lineNum">     530 </span>            :     auto ret = std::move(retains_grad_hooks_[output_idx]);</a>
-<a name="531"><span class="lineNum">     531 </span>            :     retains_grad_hooks_.erase(output_idx);</a>
-<a name="532"><span class="lineNum">     532 </span>            :     return ret;</a>
-<a name="533"><span class="lineNum">     533 </span>            :   }</a>
-<a name="534"><span class="lineNum">     534 </span>            : </a>
-<a name="535"><span class="lineNum">     535 </span><span class="lineNoCov">          0 :   const std::vector&lt;std::unique_ptr&lt;FunctionPreHook&gt;&gt;&amp; pre_hooks()</span></a>
-<a name="536"><span class="lineNum">     536 </span>            :       const noexcept {</a>
-<a name="537"><span class="lineNum">     537 </span>            :     return pre_hooks_;</a>
-<a name="538"><span class="lineNum">     538 </span>            :   }</a>
-<a name="539"><span class="lineNum">     539 </span>            : </a>
-<a name="540"><span class="lineNum">     540 </span><span class="lineNoCov">          0 :   std::vector&lt;std::unique_ptr&lt;FunctionPreHook&gt;&gt;&amp; pre_hooks() noexcept {</span></a>
+<a name="523"><span class="lineNum">     523 </span><span class="lineNoCov">          0 :   void add_tensor_pre_hook(std::unique_ptr&lt;FunctionPreHook&gt;&amp;&amp; pre_hook) {</span></a>
+<a name="524"><span class="lineNum">     524 </span>            :     tensor_pre_hooks_.emplace_back(std::move(pre_hook));</a>
+<a name="525"><span class="lineNum">     525 </span>            :   }</a>
+<a name="526"><span class="lineNum">     526 </span>            : </a>
+<a name="527"><span class="lineNum">     527 </span><span class="lineNoCov">          0 :   void add_retains_grad_hook(</span></a>
+<a name="528"><span class="lineNum">     528 </span>            :       std::unique_ptr&lt;FunctionPreHook&gt;&amp;&amp; pre_hook,</a>
+<a name="529"><span class="lineNum">     529 </span>            :       size_t output_idx) {</a>
+<a name="530"><span class="lineNum">     530 </span>            :     retains_grad_hooks_[output_idx] = std::move(pre_hook);</a>
+<a name="531"><span class="lineNum">     531 </span>            :   }</a>
+<a name="532"><span class="lineNum">     532 </span>            : </a>
+<a name="533"><span class="lineNum">     533 </span><span class="lineNoCov">          0 :   std::unique_ptr&lt;FunctionPreHook&gt; pop_retains_grad_hook(size_t output_idx) {</span></a>
+<a name="534"><span class="lineNum">     534 </span>            :     auto ret = std::move(retains_grad_hooks_[output_idx]);</a>
+<a name="535"><span class="lineNum">     535 </span>            :     retains_grad_hooks_.erase(output_idx);</a>
+<a name="536"><span class="lineNum">     536 </span>            :     return ret;</a>
+<a name="537"><span class="lineNum">     537 </span>            :   }</a>
+<a name="538"><span class="lineNum">     538 </span>            : </a>
+<a name="539"><span class="lineNum">     539 </span><span class="lineNoCov">          0 :   const std::vector&lt;std::unique_ptr&lt;FunctionPreHook&gt;&gt;&amp; pre_hooks()</span></a>
+<a name="540"><span class="lineNum">     540 </span>            :       const noexcept {</a>
 <a name="541"><span class="lineNum">     541 </span>            :     return pre_hooks_;</a>
 <a name="542"><span class="lineNum">     542 </span>            :   }</a>
 <a name="543"><span class="lineNum">     543 </span>            : </a>
-<a name="544"><span class="lineNum">     544 </span>            :   virtual std::vector&lt;std::unique_ptr&lt;FunctionPreHook&gt;&gt;&amp;</a>
-<a name="545"><span class="lineNum">     545 </span><span class="lineNoCov">          0 :   tensor_pre_hooks() noexcept {</span></a>
-<a name="546"><span class="lineNum">     546 </span>            :     return tensor_pre_hooks_;</a>
-<a name="547"><span class="lineNum">     547 </span>            :   }</a>
-<a name="548"><span class="lineNum">     548 </span>            : </a>
-<a name="549"><span class="lineNum">     549 </span><span class="lineNoCov">          0 :   virtual std::unique_ptr&lt;PostAccumulateGradHook&gt;&amp; tensor_post_acc_grad_hooks()</span></a>
-<a name="550"><span class="lineNum">     550 </span>            :       const noexcept {</a>
-<a name="551"><span class="lineNum">     551 </span>            :     static std::unique_ptr&lt;PostAccumulateGradHook&gt; empty = nullptr;</a>
-<a name="552"><span class="lineNum">     552 </span>            :     return empty;</a>
-<a name="553"><span class="lineNum">     553 </span>            :   }</a>
-<a name="554"><span class="lineNum">     554 </span>            : </a>
-<a name="555"><span class="lineNum">     555 </span>            :   std::unordered_map&lt;size_t, std::unique_ptr&lt;FunctionPreHook&gt;&gt;&amp;</a>
-<a name="556"><span class="lineNum">     556 </span><span class="lineNoCov">          0 :   retains_grad_hooks() noexcept {</span></a>
-<a name="557"><span class="lineNum">     557 </span>            :     return retains_grad_hooks_;</a>
-<a name="558"><span class="lineNum">     558 </span>            :   }</a>
-<a name="559"><span class="lineNum">     559 </span>            : </a>
-<a name="560"><span class="lineNum">     560 </span>            :   // Customization Points for Subclasses</a>
-<a name="561"><span class="lineNum">     561 </span>            :   //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</a>
-<a name="562"><span class="lineNum">     562 </span>            : </a>
-<a name="563"><span class="lineNum">     563 </span>            :   /// Releases saved variables if the operation won't be reused.</a>
-<a name="564"><span class="lineNum">     564 </span><span class="lineCov">          1 :   virtual void release_variables() {}</span></a>
-<a name="565"><span class="lineNum">     565 </span>            : </a>
-<a name="566"><span class="lineNum">     566 </span>            :   /// Called before an apply if `release_variables()` is going to be called.</a>
-<a name="567"><span class="lineNum">     567 </span>            :   /// Allows larger ops like `InterpreterAutogradFunction` to incrementally</a>
-<a name="568"><span class="lineNum">     568 </span>            :   /// release variables as they run.</a>
-<a name="569"><span class="lineNum">     569 </span><span class="lineCov">          1 :   virtual void will_release_variables() {}</span></a>
-<a name="570"><span class="lineNum">     570 </span>            : </a>
-<a name="571"><span class="lineNum">     571 </span>            :   /// Returns true if this function is traceable. An op is traceable if all</a>
-<a name="572"><span class="lineNum">     572 </span>            :   /// operations happening within `apply()` are performed on autograd</a>
-<a name="573"><span class="lineNum">     573 </span>            :   /// `Variables` (i.e. apply mostly instantiates and applies other functions).</a>
-<a name="574"><span class="lineNum">     574 </span><span class="lineCov">          1 :   virtual bool is_traceable() {</span></a>
-<a name="575"><span class="lineNum">     575 </span>            :     return false;</a>
-<a name="576"><span class="lineNum">     576 </span>            :   }</a>
-<a name="577"><span class="lineNum">     577 </span>            : </a>
-<a name="578"><span class="lineNum">     578 </span>            :   /// A `Node` is said to pass state transparently to backward, if the</a>
-<a name="579"><span class="lineNum">     579 </span>            :   /// state consists only of (Saved)Variables and only non-variable objects</a>
-<a name="580"><span class="lineNum">     580 </span>            :   /// that parameterize the operation in some way that defines the graph</a>
-<a name="581"><span class="lineNum">     581 </span>            :   /// structure AND the backward function is traceable. In particular,</a>
-<a name="582"><span class="lineNum">     582 </span>            :   /// parametrization MUST NOT depend on the data of any `Variable`.</a>
-<a name="583"><span class="lineNum">     583 </span>            :   /// TODO: it might be possible to handle cases where backward is</a>
-<a name="584"><span class="lineNum">     584 </span>            :   /// non-traceable but state passing could be considered transparent. This</a>
-<a name="585"><span class="lineNum">     585 </span>            :   /// will probably depend on saved_variable_list being mutable.</a>
-<a name="586"><span class="lineNum">     586 </span>            :   /// NOTE: this value matters only if is_traceable() returns false.</a>
-<a name="587"><span class="lineNum">     587 </span><span class="lineCov">          1 :   virtual bool passes_state_transparently() {</span></a>
-<a name="588"><span class="lineNum">     588 </span>            :     return false;</a>
-<a name="589"><span class="lineNum">     589 </span>            :   }</a>
-<a name="590"><span class="lineNum">     590 </span>            : </a>
-<a name="591"><span class="lineNum">     591 </span>            :   // see [Note: Compiled Autograd]</a>
-<a name="592"><span class="lineNum">     592 </span>            :   // Used by compiled autograd to</a>
-<a name="593"><span class="lineNum">     593 </span>            :   //   1) Extract tensors/symint args</a>
-<a name="594"><span class="lineNum">     594 </span>            :   //   2) Collect node information for specialization and caching</a>
-<a name="595"><span class="lineNum">     595 </span>            :   // Implementations in subclasses should call args.collect() with all node</a>
-<a name="596"><span class="lineNum">     596 </span>            :   // attrs. These functions are only called during backward.</a>
-<a name="597"><span class="lineNum">     597 </span><span class="lineNoCov">          0 :   virtual void compiled_args(CompiledNodeArgs&amp; args) const {</span></a>
-<a name="598"><span class="lineNum">     598 </span>            :     TORCH_CHECK_NOT_IMPLEMENTED(</a>
-<a name="599"><span class="lineNum">     599 </span>            :         false, std::string(&quot;compiled_args not implemented: &quot;) + name());</a>
-<a name="600"><span class="lineNum">     600 </span>            :   }</a>
-<a name="601"><span class="lineNum">     601 </span>            : </a>
-<a name="602"><span class="lineNum">     602 </span>            :   // Used by compiled autograd to call apply() with different saved tensors</a>
-<a name="603"><span class="lineNum">     603 </span>            :   // Implementations should call saved.before() on all attrs, then apply(), then</a>
-<a name="604"><span class="lineNum">     604 </span>            :   // saved.after() on all attrs in the same order.</a>
-<a name="605"><span class="lineNum">     605 </span><span class="lineNoCov">          0 :   virtual variable_list apply_with_saved(</span></a>
-<a name="606"><span class="lineNum">     606 </span>            :       const variable_list&amp; inputs,</a>
-<a name="607"><span class="lineNum">     607 </span>            :       SwapSavedVariables&amp; saved) {</a>
-<a name="608"><span class="lineNum">     608 </span>            :     TORCH_CHECK_NOT_IMPLEMENTED(</a>
-<a name="609"><span class="lineNum">     609 </span>            :         false, std::string(&quot;apply_with_saved not implemented: &quot;) + name());</a>
-<a name="610"><span class="lineNum">     610 </span>            :   }</a>
-<a name="611"><span class="lineNum">     611 </span>            : </a>
-<a name="612"><span class="lineNum">     612 </span>            :   // If this node is the AOTBackward node produced by torch.compile.</a>
-<a name="613"><span class="lineNum">     613 </span>            :   // Compiled Autograd special-cases on this information.</a>
-<a name="614"><span class="lineNum">     614 </span><span class="lineNoCov">          0 :   virtual bool is_aot_backward() const {</span></a>
-<a name="615"><span class="lineNum">     615 </span>            :     return false;</a>
-<a name="616"><span class="lineNum">     616 </span>            :   }</a>
-<a name="617"><span class="lineNum">     617 </span>            : </a>
-<a name="618"><span class="lineNum">     618 </span>            :  protected:</a>
-<a name="619"><span class="lineNum">     619 </span>            :   /// Performs the `Node`'s actual operation.</a>
-<a name="620"><span class="lineNum">     620 </span>            :   virtual variable_list apply(variable_list&amp;&amp; inputs) = 0;</a>
+<a name="544"><span class="lineNum">     544 </span><span class="lineNoCov">          0 :   std::vector&lt;std::unique_ptr&lt;FunctionPreHook&gt;&gt;&amp; pre_hooks() noexcept {</span></a>
+<a name="545"><span class="lineNum">     545 </span>            :     return pre_hooks_;</a>
+<a name="546"><span class="lineNum">     546 </span>            :   }</a>
+<a name="547"><span class="lineNum">     547 </span>            : </a>
+<a name="548"><span class="lineNum">     548 </span>            :   virtual std::vector&lt;std::unique_ptr&lt;FunctionPreHook&gt;&gt;&amp;</a>
+<a name="549"><span class="lineNum">     549 </span><span class="lineNoCov">          0 :   tensor_pre_hooks() noexcept {</span></a>
+<a name="550"><span class="lineNum">     550 </span>            :     return tensor_pre_hooks_;</a>
+<a name="551"><span class="lineNum">     551 </span>            :   }</a>
+<a name="552"><span class="lineNum">     552 </span>            : </a>
+<a name="553"><span class="lineNum">     553 </span><span class="lineNoCov">          0 :   virtual std::unique_ptr&lt;PostAccumulateGradHook&gt;&amp; tensor_post_acc_grad_hooks()</span></a>
+<a name="554"><span class="lineNum">     554 </span>            :       const noexcept {</a>
+<a name="555"><span class="lineNum">     555 </span>            :     static std::unique_ptr&lt;PostAccumulateGradHook&gt; empty = nullptr;</a>
+<a name="556"><span class="lineNum">     556 </span>            :     return empty;</a>
+<a name="557"><span class="lineNum">     557 </span>            :   }</a>
+<a name="558"><span class="lineNum">     558 </span>            : </a>
+<a name="559"><span class="lineNum">     559 </span>            :   std::unordered_map&lt;size_t, std::unique_ptr&lt;FunctionPreHook&gt;&gt;&amp;</a>
+<a name="560"><span class="lineNum">     560 </span><span class="lineNoCov">          0 :   retains_grad_hooks() noexcept {</span></a>
+<a name="561"><span class="lineNum">     561 </span>            :     return retains_grad_hooks_;</a>
+<a name="562"><span class="lineNum">     562 </span>            :   }</a>
+<a name="563"><span class="lineNum">     563 </span>            : </a>
+<a name="564"><span class="lineNum">     564 </span>            :   // Customization Points for Subclasses</a>
+<a name="565"><span class="lineNum">     565 </span>            :   //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</a>
+<a name="566"><span class="lineNum">     566 </span>            : </a>
+<a name="567"><span class="lineNum">     567 </span>            :   /// Releases saved variables if the operation won't be reused.</a>
+<a name="568"><span class="lineNum">     568 </span><span class="lineCov">          1 :   virtual void release_variables() {}</span></a>
+<a name="569"><span class="lineNum">     569 </span>            : </a>
+<a name="570"><span class="lineNum">     570 </span>            :   /// Called before an apply if `release_variables()` is going to be called.</a>
+<a name="571"><span class="lineNum">     571 </span>            :   /// Allows larger ops like `InterpreterAutogradFunction` to incrementally</a>
+<a name="572"><span class="lineNum">     572 </span>            :   /// release variables as they run.</a>
+<a name="573"><span class="lineNum">     573 </span><span class="lineCov">          1 :   virtual void will_release_variables() {}</span></a>
+<a name="574"><span class="lineNum">     574 </span>            : </a>
+<a name="575"><span class="lineNum">     575 </span>            :   /// Returns true if this function is traceable. An op is traceable if all</a>
+<a name="576"><span class="lineNum">     576 </span>            :   /// operations happening within `apply()` are performed on autograd</a>
+<a name="577"><span class="lineNum">     577 </span>            :   /// `Variables` (i.e. apply mostly instantiates and applies other functions).</a>
+<a name="578"><span class="lineNum">     578 </span><span class="lineCov">          1 :   virtual bool is_traceable() {</span></a>
+<a name="579"><span class="lineNum">     579 </span>            :     return false;</a>
+<a name="580"><span class="lineNum">     580 </span>            :   }</a>
+<a name="581"><span class="lineNum">     581 </span>            : </a>
+<a name="582"><span class="lineNum">     582 </span>            :   /// A `Node` is said to pass state transparently to backward, if the</a>
+<a name="583"><span class="lineNum">     583 </span>            :   /// state consists only of (Saved)Variables and only non-variable objects</a>
+<a name="584"><span class="lineNum">     584 </span>            :   /// that parameterize the operation in some way that defines the graph</a>
+<a name="585"><span class="lineNum">     585 </span>            :   /// structure AND the backward function is traceable. In particular,</a>
+<a name="586"><span class="lineNum">     586 </span>            :   /// parametrization MUST NOT depend on the data of any `Variable`.</a>
+<a name="587"><span class="lineNum">     587 </span>            :   /// TODO: it might be possible to handle cases where backward is</a>
+<a name="588"><span class="lineNum">     588 </span>            :   /// non-traceable but state passing could be considered transparent. This</a>
+<a name="589"><span class="lineNum">     589 </span>            :   /// will probably depend on saved_variable_list being mutable.</a>
+<a name="590"><span class="lineNum">     590 </span>            :   /// NOTE: this value matters only if is_traceable() returns false.</a>
+<a name="591"><span class="lineNum">     591 </span><span class="lineCov">          1 :   virtual bool passes_state_transparently() {</span></a>
+<a name="592"><span class="lineNum">     592 </span>            :     return false;</a>
+<a name="593"><span class="lineNum">     593 </span>            :   }</a>
+<a name="594"><span class="lineNum">     594 </span>            : </a>
+<a name="595"><span class="lineNum">     595 </span>            :   // see [Note: Compiled Autograd]</a>
+<a name="596"><span class="lineNum">     596 </span>            :   // Used by compiled autograd to</a>
+<a name="597"><span class="lineNum">     597 </span>            :   //   1) Extract tensors/symint args</a>
+<a name="598"><span class="lineNum">     598 </span>            :   //   2) Collect node information for specialization and caching</a>
+<a name="599"><span class="lineNum">     599 </span>            :   // Implementations in subclasses should call args.collect() with all node</a>
+<a name="600"><span class="lineNum">     600 </span>            :   // attrs. These functions are only called during backward.</a>
+<a name="601"><span class="lineNum">     601 </span><span class="lineNoCov">          0 :   virtual void compiled_args(CompiledNodeArgs&amp; args) const {</span></a>
+<a name="602"><span class="lineNum">     602 </span>            :     TORCH_CHECK_NOT_IMPLEMENTED(</a>
+<a name="603"><span class="lineNum">     603 </span>            :         false, std::string(&quot;compiled_args not implemented: &quot;) + name());</a>
+<a name="604"><span class="lineNum">     604 </span>            :   }</a>
+<a name="605"><span class="lineNum">     605 </span>            : </a>
+<a name="606"><span class="lineNum">     606 </span>            :   // Used by compiled autograd to call apply() with different saved tensors</a>
+<a name="607"><span class="lineNum">     607 </span>            :   // Implementations should call saved.before() on all attrs, then apply(), then</a>
+<a name="608"><span class="lineNum">     608 </span>            :   // saved.after() on all attrs in the same order.</a>
+<a name="609"><span class="lineNum">     609 </span><span class="lineNoCov">          0 :   virtual variable_list apply_with_saved(</span></a>
+<a name="610"><span class="lineNum">     610 </span>            :       const variable_list&amp; inputs,</a>
+<a name="611"><span class="lineNum">     611 </span>            :       SwapSavedVariables&amp; saved) {</a>
+<a name="612"><span class="lineNum">     612 </span>            :     TORCH_CHECK_NOT_IMPLEMENTED(</a>
+<a name="613"><span class="lineNum">     613 </span>            :         false, std::string(&quot;apply_with_saved not implemented: &quot;) + name());</a>
+<a name="614"><span class="lineNum">     614 </span>            :   }</a>
+<a name="615"><span class="lineNum">     615 </span>            : </a>
+<a name="616"><span class="lineNum">     616 </span>            :   // If this node is the AOTBackward node produced by torch.compile.</a>
+<a name="617"><span class="lineNum">     617 </span>            :   // Compiled Autograd special-cases on this information.</a>
+<a name="618"><span class="lineNum">     618 </span><span class="lineNoCov">          0 :   virtual bool is_aot_backward() const {</span></a>
+<a name="619"><span class="lineNum">     619 </span>            :     return false;</a>
+<a name="620"><span class="lineNum">     620 </span>            :   }</a>
 <a name="621"><span class="lineNum">     621 </span>            : </a>
-<a name="622"><span class="lineNum">     622 </span>            :   /// Calls `apply()`, but instruments it with tracing machinery.</a>
-<a name="623"><span class="lineNum">     623 </span>            :   variable_list traced_apply(variable_list inputs);</a>
-<a name="624"><span class="lineNum">     624 </span>            : </a>
-<a name="625"><span class="lineNum">     625 </span>            :   // Sequence number used to correlate backward nodes with forward ops in the</a>
-<a name="626"><span class="lineNum">     626 </span>            :   // profiler and provide determinism in the engine.</a>
-<a name="627"><span class="lineNum">     627 </span>            :   // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)</a>
-<a name="628"><span class="lineNum">     628 </span>            :   uint64_t sequence_nr_;</a>
-<a name="629"><span class="lineNum">     629 </span>            : </a>
-<a name="630"><span class="lineNum">     630 </span>            :   // See NOTE [ Topological Number ]</a>
-<a name="631"><span class="lineNum">     631 </span>            :   uint64_t topological_nr_ = 0;</a>
-<a name="632"><span class="lineNum">     632 </span>            : </a>
-<a name="633"><span class="lineNum">     633 </span>            :   // Tracks whether this node has been added as the next_edge of another node</a>
-<a name="634"><span class="lineNum">     634 </span>            :   // via set_next_edge(s), which always calls topological_nr() of all its</a>
-<a name="635"><span class="lineNum">     635 </span>            :   // children See NOTE [ Topological Number ] for why we need this.</a>
-<a name="636"><span class="lineNum">     636 </span>            :   mutable bool has_parent_ = false;</a>
-<a name="637"><span class="lineNum">     637 </span>            : </a>
-<a name="638"><span class="lineNum">     638 </span>            :   // Id of the thread that created the instance</a>
-<a name="639"><span class="lineNum">     639 </span>            :   uint64_t thread_id_ = 0;</a>
-<a name="640"><span class="lineNum">     640 </span>            : </a>
-<a name="641"><span class="lineNum">     641 </span>            :   // Note [Thread Safety on Autograd Node]</a>
-<a name="642"><span class="lineNum">     642 </span>            :   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</a>
-<a name="643"><span class="lineNum">     643 </span>            :   // Autograd Engine let the owning thread which calls Engine::execute to drive</a>
-<a name="644"><span class="lineNum">     644 </span>            :   // the GraphTask execution, there might be cases that part of the GraphTask is</a>
-<a name="645"><span class="lineNum">     645 </span>            :   // shared across different `backward()` or `grad()` calls, i.e. fork new</a>
-<a name="646"><span class="lineNum">     646 </span>            :   // threads in the middle of the forward and call `backward()` separately from</a>
-<a name="647"><span class="lineNum">     647 </span>            :   // different threads. We need to protect the thread safety on NodeTask to</a>
-<a name="648"><span class="lineNum">     648 </span>            :   // prevent data racing on shared variables read/write.</a>
-<a name="649"><span class="lineNum">     649 </span>            :   //</a>
-<a name="650"><span class="lineNum">     650 </span>            :   // NB: This is only needed for Autograd Nodes that runs on CPU, technically</a>
-<a name="651"><span class="lineNum">     651 </span>            :   // &quot;CUDA&quot;, &quot;XLA&quot; nodes don't need locking because device threads are always</a>
-<a name="652"><span class="lineNum">     652 </span>            :   // single threaded.</a>
+<a name="622"><span class="lineNum">     622 </span>            :  protected:</a>
+<a name="623"><span class="lineNum">     623 </span>            :   /// Performs the `Node`'s actual operation.</a>
+<a name="624"><span class="lineNum">     624 </span>            :   virtual variable_list apply(variable_list&amp;&amp; inputs) = 0;</a>
+<a name="625"><span class="lineNum">     625 </span>            : </a>
+<a name="626"><span class="lineNum">     626 </span>            :   /// Calls `apply()`, but instruments it with tracing machinery.</a>
+<a name="627"><span class="lineNum">     627 </span>            :   variable_list traced_apply(variable_list inputs);</a>
+<a name="628"><span class="lineNum">     628 </span>            : </a>
+<a name="629"><span class="lineNum">     629 </span>            :   // Sequence number used to correlate backward nodes with forward ops in the</a>
+<a name="630"><span class="lineNum">     630 </span>            :   // profiler and provide determinism in the engine.</a>
+<a name="631"><span class="lineNum">     631 </span>            :   // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)</a>
+<a name="632"><span class="lineNum">     632 </span>            :   uint64_t sequence_nr_;</a>
+<a name="633"><span class="lineNum">     633 </span>            : </a>
+<a name="634"><span class="lineNum">     634 </span>            :   // See NOTE [ Topological Number ]</a>
+<a name="635"><span class="lineNum">     635 </span>            :   uint64_t topological_nr_ = 0;</a>
+<a name="636"><span class="lineNum">     636 </span>            : </a>
+<a name="637"><span class="lineNum">     637 </span>            :   // Tracks whether this node has been added as the next_edge of another node</a>
+<a name="638"><span class="lineNum">     638 </span>            :   // via set_next_edge(s), which always calls topological_nr() of all its</a>
+<a name="639"><span class="lineNum">     639 </span>            :   // children See NOTE [ Topological Number ] for why we need this.</a>
+<a name="640"><span class="lineNum">     640 </span>            :   mutable bool has_parent_ = false;</a>
+<a name="641"><span class="lineNum">     641 </span>            : </a>
+<a name="642"><span class="lineNum">     642 </span>            :   // Id of the thread that created the instance</a>
+<a name="643"><span class="lineNum">     643 </span>            :   uint64_t thread_id_ = 0;</a>
+<a name="644"><span class="lineNum">     644 </span>            : </a>
+<a name="645"><span class="lineNum">     645 </span>            :   // Note [Thread Safety on Autograd Node]</a>
+<a name="646"><span class="lineNum">     646 </span>            :   // ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</a>
+<a name="647"><span class="lineNum">     647 </span>            :   // Autograd Engine let the owning thread which calls Engine::execute to drive</a>
+<a name="648"><span class="lineNum">     648 </span>            :   // the GraphTask execution, there might be cases that part of the GraphTask is</a>
+<a name="649"><span class="lineNum">     649 </span>            :   // shared across different `backward()` or `grad()` calls, i.e. fork new</a>
+<a name="650"><span class="lineNum">     650 </span>            :   // threads in the middle of the forward and call `backward()` separately from</a>
+<a name="651"><span class="lineNum">     651 </span>            :   // different threads. We need to protect the thread safety on NodeTask to</a>
+<a name="652"><span class="lineNum">     652 </span>            :   // prevent data racing on shared variables read/write.</a>
 <a name="653"><span class="lineNum">     653 </span>            :   //</a>
-<a name="654"><span class="lineNum">     654 </span>            :   // Here we add a thread mutex to help protect the Node's thread safety, so</a>
-<a name="655"><span class="lineNum">     655 </span>            :   // that different threads cannot race the shared data when executing the same</a>
-<a name="656"><span class="lineNum">     656 </span>            :   // NodeTask from multiple CPU threads. It IS the user/developer responsibility</a>
-<a name="657"><span class="lineNum">     657 </span>            :   // to take advantage of this mutex to protect the thread safety of their</a>
-<a name="658"><span class="lineNum">     658 </span>            :   // autograd Node. The general strategy of thread safety on autograd Node:</a>
-<a name="659"><span class="lineNum">     659 </span>            :   //</a>
-<a name="660"><span class="lineNum">     660 </span>            :   // 1. User should lock the mutex during Node::release_variables() if the Node</a>
-<a name="661"><span class="lineNum">     661 </span>            :   // needs</a>
-<a name="662"><span class="lineNum">     662 </span>            :   //    to release the variables on the fly, this serve the purpose that when we</a>
-<a name="663"><span class="lineNum">     663 </span>            :   //    release saved_variables from one thread, no other threads can release</a>
-<a name="664"><span class="lineNum">     664 </span>            :   //    the saved variables concurrently. call the Node::apply(),</a>
-<a name="665"><span class="lineNum">     665 </span>            :   // 2. User should lock the mutex during Node::apply(), this is to ensure Node</a>
-<a name="666"><span class="lineNum">     666 </span>            :   // that</a>
-<a name="667"><span class="lineNum">     667 </span>            :   //    writing to the shared variable are not racing across threads (i.e.</a>
-<a name="668"><span class="lineNum">     668 </span>            :   //    AccumulateGrad and custom C++ Autograd Node if writing to shared</a>
-<a name="669"><span class="lineNum">     669 </span>            :   //    variables )</a>
-<a name="670"><span class="lineNum">     670 </span>            :   // 3. item 2 and item 3 should work together so that when we release saved</a>
-<a name="671"><span class="lineNum">     671 </span>            :   // variables</a>
-<a name="672"><span class="lineNum">     672 </span>            :   //    from one thread, no other threads can call Node::apply(), this ensures</a>
-<a name="673"><span class="lineNum">     673 </span>            :   //    the variable references from other threads aren't dangling.</a>
-<a name="674"><span class="lineNum">     674 </span>            :   // 4. if the Node don't release any variables and no shared data read/write in</a>
-<a name="675"><span class="lineNum">     675 </span>            :   // the Node</a>
-<a name="676"><span class="lineNum">     676 </span>            :   //    i.e. purely functional, user don't need to lock the mutex</a>
-<a name="677"><span class="lineNum">     677 </span>            :   //</a>
-<a name="678"><span class="lineNum">     678 </span>            :   // This way we could protect the thread safety on Autograd Node, but we could</a>
-<a name="679"><span class="lineNum">     679 </span>            :   // still not protect the thread safety on Node pre/post C++ hooks (python</a>
-<a name="680"><span class="lineNum">     680 </span>            :   // hooks are automatically thread safe), we rely on the user to write thread</a>
-<a name="681"><span class="lineNum">     681 </span>            :   // safe C++ hooks if they want the hook to be correctly applied in</a>
-<a name="682"><span class="lineNum">     682 </span>            :   // multithreading environment.</a>
-<a name="683"><span class="lineNum">     683 </span>            :   std::mutex mutex_;</a>
-<a name="684"><span class="lineNum">     684 </span>            : </a>
-<a name="685"><span class="lineNum">     685 </span>            :   edge_list next_edges_;</a>
-<a name="686"><span class="lineNum">     686 </span>            :   PyObject* pyobj_ = nullptr; // weak reference</a>
-<a name="687"><span class="lineNum">     687 </span>            :   std::unique_ptr&lt;AnomalyMetadata&gt; anomaly_metadata_ = nullptr;</a>
+<a name="654"><span class="lineNum">     654 </span>            :   // NB: This is only needed for Autograd Nodes that runs on CPU, technically</a>
+<a name="655"><span class="lineNum">     655 </span>            :   // &quot;CUDA&quot;, &quot;XLA&quot; nodes don't need locking because device threads are always</a>
+<a name="656"><span class="lineNum">     656 </span>            :   // single threaded.</a>
+<a name="657"><span class="lineNum">     657 </span>            :   //</a>
+<a name="658"><span class="lineNum">     658 </span>            :   // Here we add a thread mutex to help protect the Node's thread safety, so</a>
+<a name="659"><span class="lineNum">     659 </span>            :   // that different threads cannot race the shared data when executing the same</a>
+<a name="660"><span class="lineNum">     660 </span>            :   // NodeTask from multiple CPU threads. It IS the user/developer responsibility</a>
+<a name="661"><span class="lineNum">     661 </span>            :   // to take advantage of this mutex to protect the thread safety of their</a>
+<a name="662"><span class="lineNum">     662 </span>            :   // autograd Node. The general strategy of thread safety on autograd Node:</a>
+<a name="663"><span class="lineNum">     663 </span>            :   //</a>
+<a name="664"><span class="lineNum">     664 </span>            :   // 1. User should lock the mutex during Node::release_variables() if the Node</a>
+<a name="665"><span class="lineNum">     665 </span>            :   // needs</a>
+<a name="666"><span class="lineNum">     666 </span>            :   //    to release the variables on the fly, this serve the purpose that when we</a>
+<a name="667"><span class="lineNum">     667 </span>            :   //    release saved_variables from one thread, no other threads can release</a>
+<a name="668"><span class="lineNum">     668 </span>            :   //    the saved variables concurrently. call the Node::apply(),</a>
+<a name="669"><span class="lineNum">     669 </span>            :   // 2. User should lock the mutex during Node::apply(), this is to ensure Node</a>
+<a name="670"><span class="lineNum">     670 </span>            :   // that</a>
+<a name="671"><span class="lineNum">     671 </span>            :   //    writing to the shared variable are not racing across threads (i.e.</a>
+<a name="672"><span class="lineNum">     672 </span>            :   //    AccumulateGrad and custom C++ Autograd Node if writing to shared</a>
+<a name="673"><span class="lineNum">     673 </span>            :   //    variables )</a>
+<a name="674"><span class="lineNum">     674 </span>            :   // 3. item 2 and item 3 should work together so that when we release saved</a>
+<a name="675"><span class="lineNum">     675 </span>            :   // variables</a>
+<a name="676"><span class="lineNum">     676 </span>            :   //    from one thread, no other threads can call Node::apply(), this ensures</a>
+<a name="677"><span class="lineNum">     677 </span>            :   //    the variable references from other threads aren't dangling.</a>
+<a name="678"><span class="lineNum">     678 </span>            :   // 4. if the Node don't release any variables and no shared data read/write in</a>
+<a name="679"><span class="lineNum">     679 </span>            :   // the Node</a>
+<a name="680"><span class="lineNum">     680 </span>            :   //    i.e. purely functional, user don't need to lock the mutex</a>
+<a name="681"><span class="lineNum">     681 </span>            :   //</a>
+<a name="682"><span class="lineNum">     682 </span>            :   // This way we could protect the thread safety on Autograd Node, but we could</a>
+<a name="683"><span class="lineNum">     683 </span>            :   // still not protect the thread safety on Node pre/post C++ hooks (python</a>
+<a name="684"><span class="lineNum">     684 </span>            :   // hooks are automatically thread safe), we rely on the user to write thread</a>
+<a name="685"><span class="lineNum">     685 </span>            :   // safe C++ hooks if they want the hook to be correctly applied in</a>
+<a name="686"><span class="lineNum">     686 </span>            :   // multithreading environment.</a>
+<a name="687"><span class="lineNum">     687 </span>            :   std::mutex mutex_;</a>
 <a name="688"><span class="lineNum">     688 </span>            : </a>
-<a name="689"><span class="lineNum">     689 </span>            :   // NOTE [Hooks ordering]</a>
-<a name="690"><span class="lineNum">     690 </span>            :   // We have 3 separate fields for pre hooks registered to the autograd nodes</a>
-<a name="691"><span class="lineNum">     691 </span>            :   // because the conditions under which they execute are different, and we</a>
-<a name="692"><span class="lineNum">     692 </span>            :   // want more fine-grained control over the order in which different types</a>
-<a name="693"><span class="lineNum">     693 </span>            :   // of hooks are executed.</a>
-<a name="694"><span class="lineNum">     694 </span>            :   // - pre_hooks  are only executed when the node itself is executed</a>
-<a name="695"><span class="lineNum">     695 </span>            :   // - tensor_pre_hook is executed as long as the engine traverses over it</a>
-<a name="696"><span class="lineNum">     696 </span>            :   //   even if that node won't be executed.</a>
-<a name="697"><span class="lineNum">     697 </span>            :   // - retains_grad_hook are like tensor_pre_hooks except they are always</a>
-<a name="698"><span class="lineNum">     698 </span>            :   //   ordered after all other tensor pre hooks</a>
-<a name="699"><span class="lineNum">     699 </span>            :   std::vector&lt;std::unique_ptr&lt;FunctionPreHook&gt;&gt; pre_hooks_;</a>
-<a name="700"><span class="lineNum">     700 </span>            :   std::vector&lt;std::unique_ptr&lt;FunctionPreHook&gt;&gt; tensor_pre_hooks_;</a>
-<a name="701"><span class="lineNum">     701 </span>            :   std::unordered_map&lt;size_t, std::unique_ptr&lt;FunctionPreHook&gt;&gt;</a>
-<a name="702"><span class="lineNum">     702 </span>            :       retains_grad_hooks_;</a>
-<a name="703"><span class="lineNum">     703 </span>            :   std::vector&lt;std::unique_ptr&lt;FunctionPostHook&gt;&gt; post_hooks_;</a>
-<a name="704"><span class="lineNum">     704 </span>            :   at::SmallVector&lt;InputMetadata, 2&gt; input_metadata_;</a>
-<a name="705"><span class="lineNum">     705 </span>            : };</a>
-<a name="706"><span class="lineNum">     706 </span>            : </a>
-<a name="707"><span class="lineNum">     707 </span>            : /// See Node::is_traceable() for definition.</a>
-<a name="708"><span class="lineNum">     708 </span><span class="lineCov">          1 : struct TraceableFunction : public Node {</span></a>
-<a name="709"><span class="lineNum">     709 </span><span class="lineNoCov">          0 :   using Node::Node;</span></a>
-<a name="710"><span class="lineNum">     710 </span><span class="lineCov">          1 :   bool is_traceable() final {</span></a>
-<a name="711"><span class="lineNum">     711 </span>            :     return true;</a>
-<a name="712"><span class="lineNum">     712 </span>            :   }</a>
-<a name="713"><span class="lineNum">     713 </span>            : };</a>
-<a name="714"><span class="lineNum">     714 </span>            : </a>
-<a name="715"><span class="lineNum">     715 </span>            : //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</a>
-<a name="716"><span class="lineNum">     716 </span>            : //                       Associated Free Nodes</a>
-<a name="717"><span class="lineNum">     717 </span>            : //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</a>
+<a name="689"><span class="lineNum">     689 </span>            :   edge_list next_edges_;</a>
+<a name="690"><span class="lineNum">     690 </span>            :   PyObject* pyobj_ = nullptr; // weak reference</a>
+<a name="691"><span class="lineNum">     691 </span>            :   std::unique_ptr&lt;AnomalyMetadata&gt; anomaly_metadata_ = nullptr;</a>
+<a name="692"><span class="lineNum">     692 </span>            : </a>
+<a name="693"><span class="lineNum">     693 </span>            :   // NOTE [Hooks ordering]</a>
+<a name="694"><span class="lineNum">     694 </span>            :   // We have 3 separate fields for pre hooks registered to the autograd nodes</a>
+<a name="695"><span class="lineNum">     695 </span>            :   // because the conditions under which they execute are different, and we</a>
+<a name="696"><span class="lineNum">     696 </span>            :   // want more fine-grained control over the order in which different types</a>
+<a name="697"><span class="lineNum">     697 </span>            :   // of hooks are executed.</a>
+<a name="698"><span class="lineNum">     698 </span>            :   // - pre_hooks  are only executed when the node itself is executed</a>
+<a name="699"><span class="lineNum">     699 </span>            :   // - tensor_pre_hook is executed as long as the engine traverses over it</a>
+<a name="700"><span class="lineNum">     700 </span>            :   //   even if that node won't be executed.</a>
+<a name="701"><span class="lineNum">     701 </span>            :   // - retains_grad_hook are like tensor_pre_hooks except they are always</a>
+<a name="702"><span class="lineNum">     702 </span>            :   //   ordered after all other tensor pre hooks</a>
+<a name="703"><span class="lineNum">     703 </span>            :   std::vector&lt;std::unique_ptr&lt;FunctionPreHook&gt;&gt; pre_hooks_;</a>
+<a name="704"><span class="lineNum">     704 </span>            :   std::vector&lt;std::unique_ptr&lt;FunctionPreHook&gt;&gt; tensor_pre_hooks_;</a>
+<a name="705"><span class="lineNum">     705 </span>            :   std::unordered_map&lt;size_t, std::unique_ptr&lt;FunctionPreHook&gt;&gt;</a>
+<a name="706"><span class="lineNum">     706 </span>            :       retains_grad_hooks_;</a>
+<a name="707"><span class="lineNum">     707 </span>            :   std::vector&lt;std::unique_ptr&lt;FunctionPostHook&gt;&gt; post_hooks_;</a>
+<a name="708"><span class="lineNum">     708 </span>            :   at::SmallVector&lt;InputMetadata, 2&gt; input_metadata_;</a>
+<a name="709"><span class="lineNum">     709 </span>            : };</a>
+<a name="710"><span class="lineNum">     710 </span>            : </a>
+<a name="711"><span class="lineNum">     711 </span>            : /// See Node::is_traceable() for definition.</a>
+<a name="712"><span class="lineNum">     712 </span><span class="lineCov">          1 : struct TraceableFunction : public Node {</span></a>
+<a name="713"><span class="lineNum">     713 </span><span class="lineNoCov">          0 :   using Node::Node;</span></a>
+<a name="714"><span class="lineNum">     714 </span><span class="lineCov">          1 :   bool is_traceable() final {</span></a>
+<a name="715"><span class="lineNum">     715 </span>            :     return true;</a>
+<a name="716"><span class="lineNum">     716 </span>            :   }</a>
+<a name="717"><span class="lineNum">     717 </span>            : };</a>
 <a name="718"><span class="lineNum">     718 </span>            : </a>
-<a name="719"><span class="lineNum">     719 </span>            : namespace detail {</a>
-<a name="720"><span class="lineNum">     720 </span>            : // Implementation of `collect_next_edges` (see below).</a>
-<a name="721"><span class="lineNum">     721 </span><span class="lineNoCov">          0 : struct MakeNextFunctionList : IterArgs&lt;MakeNextFunctionList&gt; {</span></a>
-<a name="722"><span class="lineNum">     722 </span>            :   edge_list next_edges;</a>
-<a name="723"><span class="lineNum">     723 </span>            :   using IterArgs&lt;MakeNextFunctionList&gt;::operator();</a>
-<a name="724"><span class="lineNum">     724 </span><span class="lineNoCov">          0 :   void operator()(const Variable&amp; variable) {</span></a>
-<a name="725"><span class="lineNum">     725 </span>            :     if (variable.defined()) {</a>
-<a name="726"><span class="lineNum">     726 </span>            :       next_edges.emplace_back(impl::gradient_edge(variable));</a>
-<a name="727"><span class="lineNum">     727 </span>            :     } else {</a>
-<a name="728"><span class="lineNum">     728 </span>            :       next_edges.emplace_back();</a>
-<a name="729"><span class="lineNum">     729 </span>            :     }</a>
-<a name="730"><span class="lineNum">     730 </span>            :   }</a>
-<a name="731"><span class="lineNum">     731 </span><span class="lineNoCov">          0 :   void operator()(const Variable* variable) {</span></a>
-<a name="732"><span class="lineNum">     732 </span>            :     operator()(*variable);</a>
-<a name="733"><span class="lineNum">     733 </span>            :   }</a>
-<a name="734"><span class="lineNum">     734 </span><span class="lineNoCov">          0 :   void operator()(const std::optional&lt;Variable&gt;&amp; variable) {</span></a>
-<a name="735"><span class="lineNum">     735 </span>            :     if (variable.has_value()) {</a>
-<a name="736"><span class="lineNum">     736 </span>            :       operator()(*variable);</a>
-<a name="737"><span class="lineNum">     737 </span>            :     } else {</a>
-<a name="738"><span class="lineNum">     738 </span>            :       next_edges.emplace_back();</a>
-<a name="739"><span class="lineNum">     739 </span>            :     }</a>
-<a name="740"><span class="lineNum">     740 </span>            :   }</a>
-<a name="741"><span class="lineNum">     741 </span>            : };</a>
-<a name="742"><span class="lineNum">     742 </span>            : } // namespace detail</a>
-<a name="743"><span class="lineNum">     743 </span>            : </a>
-<a name="744"><span class="lineNum">     744 </span>            : /// Create an `Edge` between the given `variable` and the `function`, which is</a>
-<a name="745"><span class="lineNum">     745 </span>            : /// assumed to be the gradient function of this variable (i.e. the function</a>
-<a name="746"><span class="lineNum">     746 </span>            : /// through which this variable is backpropagated during the backward pass).</a>
-<a name="747"><span class="lineNum">     747 </span>            : /// This sets the `grad_fn` property of the `variable`. This function assumes</a>
-<a name="748"><span class="lineNum">     748 </span>            : /// that the `Variable` is a new input to the gradient function and its</a>
-<a name="749"><span class="lineNum">     749 </span>            : /// `input_nr` thus equal to `function-&gt;num_inputs()`. Additionally, it</a>
-<a name="750"><span class="lineNum">     750 </span>            : /// increments the `Node`'s number of inputs by one. Approximately</a>
-<a name="751"><span class="lineNum">     751 </span>            : /// equivalent to `variable.set_gradient_edge(function,</a>
-<a name="752"><span class="lineNum">     752 </span>            : /// function-&gt;add_input_metadata(variable.dispatch_type(), variable.sizes()))`.</a>
-<a name="753"><span class="lineNum">     753 </span>            : /// If you don't want the `Node`'s `num_inputs` to be incremented, use</a>
-<a name="754"><span class="lineNum">     754 </span>            : /// `set_gradient_edge` directly.</a>
-<a name="755"><span class="lineNum">     755 </span><span class="lineCov">          1 : inline void create_gradient_edge(</span></a>
-<a name="756"><span class="lineNum">     756 </span>            :     Variable&amp; variable,</a>
-<a name="757"><span class="lineNum">     757 </span>            :     std::shared_ptr&lt;Node&gt; function) {</a>
-<a name="758"><span class="lineNum">     758 </span>            :   // Copy before move.</a>
-<a name="759"><span class="lineNum">     759 </span>            :   const auto input_nr = function-&gt;add_input_metadata(variable);</a>
-<a name="760"><span class="lineNum">     760 </span>            :   impl::set_gradient_edge(variable, {std::move(function), input_nr});</a>
-<a name="761"><span class="lineNum">     761 </span>            : }</a>
-<a name="762"><span class="lineNum">     762 </span>            : </a>
-<a name="763"><span class="lineNum">     763 </span>            : /// Return true if any of the variables in the list require a gradient.</a>
-<a name="764"><span class="lineNum">     764 </span><span class="lineCov">          1 : inline bool any_variable_requires_grad(const variable_list&amp; variables) {</span></a>
-<a name="765"><span class="lineNum">     765 </span>            :   return std::any_of(</a>
-<a name="766"><span class="lineNum">     766 </span>            :       variables.begin(), variables.end(), [](const Variable&amp; variable) {</a>
-<a name="767"><span class="lineNum">     767 </span>            :         return variable.defined() &amp;&amp; variable.requires_grad();</a>
-<a name="768"><span class="lineNum">     768 </span>            :       });</a>
-<a name="769"><span class="lineNum">     769 </span>            : }</a>
-<a name="770"><span class="lineNum">     770 </span>            : </a>
-<a name="771"><span class="lineNum">     771 </span>            : /// Return the next edges of all the given variables, or tuples of variables.</a>
-<a name="772"><span class="lineNum">     772 </span>            : template &lt;typename... Variables&gt;</a>
-<a name="773"><span class="lineNum">     773 </span><span class="lineCov">          1 : edge_list collect_next_edges(Variables&amp;&amp;... variables) {</span></a>
-<a name="774"><span class="lineNum">     774 </span>            :   detail::MakeNextFunctionList make;</a>
-<a name="775"><span class="lineNum">     775 </span>            :   make.apply(std::forward&lt;Variables&gt;(variables)...);</a>
-<a name="776"><span class="lineNum">     776 </span>            :   return std::move(make.next_edges);</a>
-<a name="777"><span class="lineNum">     777 </span>            : }</a>
-<a name="778"><span class="lineNum">     778 </span>            : </a>
-<a name="779"><span class="lineNum">     779 </span><span class="lineNoCov">          0 : struct TypeAndSize {</span></a>
-<a name="780"><span class="lineNum">     780 </span><span class="lineNoCov">          0 :   TypeAndSize() = default;</span></a>
-<a name="781"><span class="lineNum">     781 </span>            :   /* implicit */</a>
-<a name="782"><span class="lineNum">     782 </span><span class="lineNoCov">          0 :   TypeAndSize(const at::Tensor&amp; t)</span></a>
-<a name="783"><span class="lineNum">     783 </span>            :       : sym_sizes(t.sym_sizes().vec()), options(t.options()) {}</a>
-<a name="784"><span class="lineNum">     784 </span>            : </a>
-<a name="785"><span class="lineNum">     785 </span><span class="lineNoCov">          0 :   at::Tensor zeros();</span></a>
-<a name="786"><span class="lineNum">     786 </span>            : </a>
-<a name="787"><span class="lineNum">     787 </span>            :   std::vector&lt;c10::SymInt&gt; sym_sizes;</a>
-<a name="788"><span class="lineNum">     788 </span>            :   at::TensorOptions options;</a>
-<a name="789"><span class="lineNum">     789 </span>            : };</a>
+<a name="719"><span class="lineNum">     719 </span>            : //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</a>
+<a name="720"><span class="lineNum">     720 </span>            : //                       Associated Free Nodes</a>
+<a name="721"><span class="lineNum">     721 </span>            : //~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~</a>
+<a name="722"><span class="lineNum">     722 </span>            : </a>
+<a name="723"><span class="lineNum">     723 </span>            : namespace detail {</a>
+<a name="724"><span class="lineNum">     724 </span>            : // Implementation of `collect_next_edges` (see below).</a>
+<a name="725"><span class="lineNum">     725 </span><span class="lineNoCov">          0 : struct MakeNextFunctionList : IterArgs&lt;MakeNextFunctionList&gt; {</span></a>
+<a name="726"><span class="lineNum">     726 </span>            :   edge_list next_edges;</a>
+<a name="727"><span class="lineNum">     727 </span>            :   using IterArgs&lt;MakeNextFunctionList&gt;::operator();</a>
+<a name="728"><span class="lineNum">     728 </span><span class="lineNoCov">          0 :   void operator()(const Variable&amp; variable) {</span></a>
+<a name="729"><span class="lineNum">     729 </span>            :     if (variable.defined()) {</a>
+<a name="730"><span class="lineNum">     730 </span>            :       next_edges.emplace_back(impl::gradient_edge(variable));</a>
+<a name="731"><span class="lineNum">     731 </span>            :     } else {</a>
+<a name="732"><span class="lineNum">     732 </span>            :       next_edges.emplace_back();</a>
+<a name="733"><span class="lineNum">     733 </span>            :     }</a>
+<a name="734"><span class="lineNum">     734 </span>            :   }</a>
+<a name="735"><span class="lineNum">     735 </span><span class="lineNoCov">          0 :   void operator()(const Variable* variable) {</span></a>
+<a name="736"><span class="lineNum">     736 </span>            :     operator()(*variable);</a>
+<a name="737"><span class="lineNum">     737 </span>            :   }</a>
+<a name="738"><span class="lineNum">     738 </span><span class="lineNoCov">          0 :   void operator()(const std::optional&lt;Variable&gt;&amp; variable) {</span></a>
+<a name="739"><span class="lineNum">     739 </span>            :     if (variable.has_value()) {</a>
+<a name="740"><span class="lineNum">     740 </span>            :       operator()(*variable);</a>
+<a name="741"><span class="lineNum">     741 </span>            :     } else {</a>
+<a name="742"><span class="lineNum">     742 </span>            :       next_edges.emplace_back();</a>
+<a name="743"><span class="lineNum">     743 </span>            :     }</a>
+<a name="744"><span class="lineNum">     744 </span>            :   }</a>
+<a name="745"><span class="lineNum">     745 </span>            : };</a>
+<a name="746"><span class="lineNum">     746 </span>            : } // namespace detail</a>
+<a name="747"><span class="lineNum">     747 </span>            : </a>
+<a name="748"><span class="lineNum">     748 </span>            : /// Create an `Edge` between the given `variable` and the `function`, which is</a>
+<a name="749"><span class="lineNum">     749 </span>            : /// assumed to be the gradient function of this variable (i.e. the function</a>
+<a name="750"><span class="lineNum">     750 </span>            : /// through which this variable is backpropagated during the backward pass).</a>
+<a name="751"><span class="lineNum">     751 </span>            : /// This sets the `grad_fn` property of the `variable`. This function assumes</a>
+<a name="752"><span class="lineNum">     752 </span>            : /// that the `Variable` is a new input to the gradient function and its</a>
+<a name="753"><span class="lineNum">     753 </span>            : /// `input_nr` thus equal to `function-&gt;num_inputs()`. Additionally, it</a>
+<a name="754"><span class="lineNum">     754 </span>            : /// increments the `Node`'s number of inputs by one. Approximately</a>
+<a name="755"><span class="lineNum">     755 </span>            : /// equivalent to `variable.set_gradient_edge(function,</a>
+<a name="756"><span class="lineNum">     756 </span>            : /// function-&gt;add_input_metadata(variable.dispatch_type(), variable.sizes()))`.</a>
+<a name="757"><span class="lineNum">     757 </span>            : /// If you don't want the `Node`'s `num_inputs` to be incremented, use</a>
+<a name="758"><span class="lineNum">     758 </span>            : /// `set_gradient_edge` directly.</a>
+<a name="759"><span class="lineNum">     759 </span><span class="lineCov">          1 : inline void create_gradient_edge(</span></a>
+<a name="760"><span class="lineNum">     760 </span>            :     Variable&amp; variable,</a>
+<a name="761"><span class="lineNum">     761 </span>            :     std::shared_ptr&lt;Node&gt; function) {</a>
+<a name="762"><span class="lineNum">     762 </span>            :   // Copy before move.</a>
+<a name="763"><span class="lineNum">     763 </span>            :   const auto input_nr = function-&gt;add_input_metadata(variable);</a>
+<a name="764"><span class="lineNum">     764 </span>            :   impl::set_gradient_edge(variable, {std::move(function), input_nr});</a>
+<a name="765"><span class="lineNum">     765 </span>            : }</a>
+<a name="766"><span class="lineNum">     766 </span>            : </a>
+<a name="767"><span class="lineNum">     767 </span>            : /// Return true if any of the variables in the list require a gradient.</a>
+<a name="768"><span class="lineNum">     768 </span><span class="lineCov">          1 : inline bool any_variable_requires_grad(const variable_list&amp; variables) {</span></a>
+<a name="769"><span class="lineNum">     769 </span>            :   return std::any_of(</a>
+<a name="770"><span class="lineNum">     770 </span>            :       variables.begin(), variables.end(), [](const Variable&amp; variable) {</a>
+<a name="771"><span class="lineNum">     771 </span>            :         return variable.defined() &amp;&amp; variable.requires_grad();</a>
+<a name="772"><span class="lineNum">     772 </span>            :       });</a>
+<a name="773"><span class="lineNum">     773 </span>            : }</a>
+<a name="774"><span class="lineNum">     774 </span>            : </a>
+<a name="775"><span class="lineNum">     775 </span>            : /// Return the next edges of all the given variables, or tuples of variables.</a>
+<a name="776"><span class="lineNum">     776 </span>            : template &lt;typename... Variables&gt;</a>
+<a name="777"><span class="lineNum">     777 </span><span class="lineCov">          1 : edge_list collect_next_edges(Variables&amp;&amp;... variables) {</span></a>
+<a name="778"><span class="lineNum">     778 </span>            :   detail::MakeNextFunctionList make;</a>
+<a name="779"><span class="lineNum">     779 </span>            :   make.apply(std::forward&lt;Variables&gt;(variables)...);</a>
+<a name="780"><span class="lineNum">     780 </span>            :   return std::move(make.next_edges);</a>
+<a name="781"><span class="lineNum">     781 </span>            : }</a>
+<a name="782"><span class="lineNum">     782 </span>            : </a>
+<a name="783"><span class="lineNum">     783 </span><span class="lineNoCov">          0 : struct TypeAndSize {</span></a>
+<a name="784"><span class="lineNum">     784 </span><span class="lineNoCov">          0 :   TypeAndSize() = default;</span></a>
+<a name="785"><span class="lineNum">     785 </span>            :   /* implicit */</a>
+<a name="786"><span class="lineNum">     786 </span><span class="lineNoCov">          0 :   TypeAndSize(const at::Tensor&amp; t)</span></a>
+<a name="787"><span class="lineNum">     787 </span>            :       : sym_sizes(t.sym_sizes().vec()), options(t.options()) {}</a>
+<a name="788"><span class="lineNum">     788 </span>            : </a>
+<a name="789"><span class="lineNum">     789 </span><span class="lineNoCov">          0 :   at::Tensor zeros();</span></a>
 <a name="790"><span class="lineNum">     790 </span>            : </a>
-<a name="791"><span class="lineNum">     791 </span>            : } // namespace torch::autograd</a>
+<a name="791"><span class="lineNum">     791 </span>            :   std::vector&lt;c10::SymInt&gt; sym_sizes;</a>
+<a name="792"><span class="lineNum">     792 </span>            :   at::TensorOptions options;</a>
+<a name="793"><span class="lineNum">     793 </span>            : };</a>
+<a name="794"><span class="lineNum">     794 </span>            : </a>
+<a name="795"><span class="lineNum">     795 </span>            : } // namespace torch::autograd</a>
 </pre>
       </td>
     </tr>
