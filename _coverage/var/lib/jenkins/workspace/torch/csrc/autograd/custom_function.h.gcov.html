@@ -32,12 +32,12 @@
             <td></td>
             <td class="headerItem">Lines:</td>
             <td class="headerCovTableEntry">7</td>
-            <td class="headerCovTableEntry">41</td>
-            <td class="headerCovTableEntryLo">17.1 %</td>
+            <td class="headerCovTableEntry">42</td>
+            <td class="headerCovTableEntryLo">16.7 %</td>
           </tr>
           <tr>
             <td class="headerItem">Date:</td>
-            <td class="headerValue">2026-04-30 01:14:12</td>
+            <td class="headerValue">2026-04-30 18:21:11</td>
             <td></td>
           </tr>
           <tr>
@@ -87,7 +87,7 @@
 <a name="21"><span class="lineNum">      21 </span>            :     const std::unordered_set&lt;at::TensorImpl*&gt;&amp; non_differentiable,</a>
 <a name="22"><span class="lineNum">      22 </span>            :     const std::unordered_set&lt;at::TensorImpl*&gt;&amp; dirty_inputs,</a>
 <a name="23"><span class="lineNum">      23 </span>            :     const at::ArrayRef&lt;std::optional&lt;Variable&gt;&gt; raw_outputs,</a>
-<a name="24"><span class="lineNum">      24 </span>            :     const std::shared_ptr&lt;Node&gt;&amp; cdata,</a>
+<a name="24"><span class="lineNum">      24 </span>            :     const c10::intrusive_ptr&lt;Node&gt;&amp; cdata,</a>
 <a name="25"><span class="lineNum">      25 </span>            :     const _jvp_fn_t&amp; jvp_user_function,</a>
 <a name="26"><span class="lineNum">      26 </span>            :     const std::unordered_set&lt;at::TensorImpl*&gt;&amp; to_save_if_setup_context,</a>
 <a name="27"><span class="lineNum">      27 </span>            :     const _view_as_self_fn_t&amp; view_as_self_fn,</a>
@@ -235,7 +235,7 @@
 <a name="169"><span class="lineNum">     169 </span>            :   // The CppNode in the autograd graph that owns this AutogradContext. We need a</a>
 <a name="170"><span class="lineNum">     170 </span>            :   // weak_ptr to avoid a refcycle. Since grad_fn_ owns this AutogradContext, it</a>
 <a name="171"><span class="lineNum">     171 </span>            :   // will always be alive when we want to use it.</a>
-<a name="172"><span class="lineNum">     172 </span>            :   std::weak_ptr&lt;Node&gt; grad_fn_;</a>
+<a name="172"><span class="lineNum">     172 </span>            :   c10::weak_intrusive_ptr&lt;Node&gt; grad_fn_{c10::intrusive_ptr&lt;Node&gt;()};</a>
 <a name="173"><span class="lineNum">     173 </span>            :   bool has_freed_buffers_{false};</a>
 <a name="174"><span class="lineNum">     174 </span>            : </a>
 <a name="175"><span class="lineNum">     175 </span>            :   // Compiled autograd overrides saved_variables() and needs_input_grad().</a>
@@ -349,301 +349,311 @@
 <a name="283"><span class="lineNum">     283 </span>            :   std::vector&lt;VariableInfo&gt; output_info_;</a>
 <a name="284"><span class="lineNum">     284 </span>            : </a>
 <a name="285"><span class="lineNum">     285 </span><span class="lineNoCov">          0 :   void release_variables() override;</span></a>
-<a name="286"><span class="lineNum">     286 </span>            : </a>
-<a name="287"><span class="lineNum">     287 </span><span class="lineNoCov">          0 :   void set_ctx_grad_fn(const std::shared_ptr&lt;Node&gt;&amp; node);</span></a>
-<a name="288"><span class="lineNum">     288 </span><span class="lineNoCov">          0 :   void save_variables_to_ctx();</span></a>
-<a name="289"><span class="lineNum">     289 </span>            : </a>
-<a name="290"><span class="lineNum">     290 </span><span class="lineNoCov">          0 :   void compiled_args(CompiledNodeArgs&amp; args) const override {</span></a>
-<a name="291"><span class="lineNum">     291 </span>            :     // although neither of the 2 methods below have uniqueness guarantees</a>
-<a name="292"><span class="lineNum">     292 </span>            :     // it is unlikely for them to collide at the same time</a>
-<a name="293"><span class="lineNum">     293 </span>            :     args.collect(static_cast&lt;uint64_t&gt;(typeid(T).hash_code()));</a>
-<a name="294"><span class="lineNum">     294 </span>            :     args.collect(std::string(typeid(T).name()));</a>
-<a name="295"><span class="lineNum">     295 </span>            : </a>
-<a name="296"><span class="lineNum">     296 </span>            :     args.collect(ctx_.saved_data);</a>
-<a name="297"><span class="lineNum">     297 </span>            :     TORCH_INTERNAL_ASSERT(ctx_.non_differentiable_.empty());</a>
-<a name="298"><span class="lineNum">     298 </span>            :     TORCH_INTERNAL_ASSERT(ctx_.dirty_inputs_.empty());</a>
-<a name="299"><span class="lineNum">     299 </span>            :     args.collect(</a>
-<a name="300"><span class="lineNum">     300 </span>            :         ctx_.saved_variables_, true); // always unpacked as output in eager</a>
-<a name="301"><span class="lineNum">     301 </span>            :     TORCH_INTERNAL_ASSERT(ctx_.to_save_.empty());</a>
-<a name="302"><span class="lineNum">     302 </span>            :     args.collect(ctx_.materialize_grads_);</a>
-<a name="303"><span class="lineNum">     303 </span>            :     args.collect(ctx_.has_freed_buffers_);</a>
-<a name="304"><span class="lineNum">     304 </span>            :     args.collect(is_variable_input_);</a>
-<a name="305"><span class="lineNum">     305 </span>            :     args.collect(input_info_);</a>
-<a name="306"><span class="lineNum">     306 </span>            :     args.collect(output_info_);</a>
-<a name="307"><span class="lineNum">     307 </span>            :   }</a>
-<a name="308"><span class="lineNum">     308 </span>            : </a>
-<a name="309"><span class="lineNum">     309 </span><span class="lineNoCov">          0 :   variable_list apply_with_saved(</span></a>
-<a name="310"><span class="lineNum">     310 </span>            :       const variable_list&amp; inputs,</a>
-<a name="311"><span class="lineNum">     311 </span>            :       SwapSavedVariables&amp; saved) override {</a>
-<a name="312"><span class="lineNum">     312 </span>            :     saved.before(ctx_.saved_data);</a>
-<a name="313"><span class="lineNum">     313 </span>            :     TORCH_INTERNAL_ASSERT(ctx_.non_differentiable_.empty());</a>
-<a name="314"><span class="lineNum">     314 </span>            :     TORCH_INTERNAL_ASSERT(ctx_.dirty_inputs_.empty());</a>
-<a name="315"><span class="lineNum">     315 </span>            :     saved.before(ctx_.saved_variables_);</a>
-<a name="316"><span class="lineNum">     316 </span>            :     TORCH_INTERNAL_ASSERT(ctx_.to_save_.empty());</a>
-<a name="317"><span class="lineNum">     317 </span>            :     saved.before(ctx_.materialize_grads_);</a>
-<a name="318"><span class="lineNum">     318 </span>            :     saved.before(ctx_.has_freed_buffers_);</a>
-<a name="319"><span class="lineNum">     319 </span>            :     saved.before(input_info_);</a>
-<a name="320"><span class="lineNum">     320 </span>            :     saved.before(output_info_);</a>
-<a name="321"><span class="lineNum">     321 </span>            : </a>
-<a name="322"><span class="lineNum">     322 </span>            :     PackedArgs packed_args;</a>
-<a name="323"><span class="lineNum">     323 </span>            :     packed_args.pack_saved_data(ctx_.saved_data);</a>
-<a name="324"><span class="lineNum">     324 </span>            :     variable_list saved_variables = ctx_.get_saved_variables();</a>
-<a name="325"><span class="lineNum">     325 </span>            :     packed_args.pack(saved_variables);</a>
-<a name="326"><span class="lineNum">     326 </span>            :     packed_args.pack(ctx_.materialize_grads_);</a>
-<a name="327"><span class="lineNum">     327 </span>            :     packed_args.pack(ctx_.has_freed_buffers_);</a>
-<a name="328"><span class="lineNum">     328 </span>            : </a>
-<a name="329"><span class="lineNum">     329 </span>            :     std::vector&lt;bool&gt; needs_input_grad;</a>
-<a name="330"><span class="lineNum">     330 </span>            :     {</a>
-<a name="331"><span class="lineNum">     331 </span>            :       auto ptr = ctx_.grad_fn_.lock();</a>
-<a name="332"><span class="lineNum">     332 </span>            :       TORCH_INTERNAL_ASSERT(ptr);</a>
-<a name="333"><span class="lineNum">     333 </span>            :       for (const auto i : c10::irange(ptr-&gt;next_edges().size())) {</a>
-<a name="334"><span class="lineNum">     334 </span>            :         needs_input_grad.push_back(ptr-&gt;task_should_compute_output(i));</a>
-<a name="335"><span class="lineNum">     335 </span>            :       }</a>
-<a name="336"><span class="lineNum">     336 </span>            :     }</a>
-<a name="337"><span class="lineNum">     337 </span>            :     packed_args.pack(needs_input_grad);</a>
-<a name="338"><span class="lineNum">     338 </span>            : </a>
-<a name="339"><span class="lineNum">     339 </span>            :     packed_args.pack(output_info_);</a>
-<a name="340"><span class="lineNum">     340 </span>            :     packed_args.pack(is_variable_input_);</a>
-<a name="341"><span class="lineNum">     341 </span>            :     packed_args.pack(name());</a>
-<a name="342"><span class="lineNum">     342 </span>            :     auto args = std::move(packed_args).vec();</a>
-<a name="343"><span class="lineNum">     343 </span>            : </a>
-<a name="344"><span class="lineNum">     344 </span>            :     auto output_metadata = torch::dynamo::autograd::</a>
-<a name="345"><span class="lineNum">     345 </span>            :         IValuePacker&lt;std::vector&lt;std::optional&lt;InputMetadata&gt;&gt;&gt;::pack(</a>
-<a name="346"><span class="lineNum">     346 </span>            :             torch::dynamo::autograd::get_input_metadata(next_edges()));</a>
-<a name="347"><span class="lineNum">     347 </span>            : </a>
-<a name="348"><span class="lineNum">     348 </span>            :     const auto&amp; pyinterface = torch::dynamo::autograd::getPyCompilerInterface();</a>
-<a name="349"><span class="lineNum">     349 </span>            : </a>
-<a name="350"><span class="lineNum">     350 </span>            :     // Each time apply_with_saved is called, we bind a new function to Python.</a>
-<a name="351"><span class="lineNum">     351 </span>            :     // This is because the schema might be different on compiled autograd cache</a>
-<a name="352"><span class="lineNum">     352 </span>            :     // misses. An alternative is to pass the schema to Python so that it can be</a>
-<a name="353"><span class="lineNum">     353 </span>            :     // an input to a function, but the schema can't be put into an FX graph</a>
-<a name="354"><span class="lineNum">     354 </span>            :     // right now.</a>
-<a name="355"><span class="lineNum">     355 </span>            :     std::vector&lt;at::TypePtr&gt; schema;</a>
-<a name="356"><span class="lineNum">     356 </span>            :     schema.reserve(args.size());</a>
-<a name="357"><span class="lineNum">     357 </span>            :     for (const auto&amp; ivalue : args) {</a>
-<a name="358"><span class="lineNum">     358 </span>            :       if (ivalue.isTensor()) {</a>
-<a name="359"><span class="lineNum">     359 </span>            :         schema.emplace_back(at::TensorType::get());</a>
-<a name="360"><span class="lineNum">     360 </span>            :       } else {</a>
-<a name="361"><span class="lineNum">     361 </span>            :         schema.emplace_back(ivalue.type());</a>
-<a name="362"><span class="lineNum">     362 </span>            :       }</a>
-<a name="363"><span class="lineNum">     363 </span>            :     }</a>
-<a name="364"><span class="lineNum">     364 </span>            :     static_assert(</a>
-<a name="365"><span class="lineNum">     365 </span>            :         std::is_same_v&lt;std::remove_cv_t&lt;decltype(T::is_traceable)&gt;, bool&gt;);</a>
-<a name="366"><span class="lineNum">     366 </span>            :     auto fn_name = pyinterface-&gt;bind_function(</a>
-<a name="367"><span class="lineNum">     367 </span>            :         saved.get_py_compiler(),</a>
-<a name="368"><span class="lineNum">     368 </span>            :         std::string(typeid(T).name()),</a>
-<a name="369"><span class="lineNum">     369 </span>            :         CppNode_apply_functional_ivalue&lt;T&gt;,</a>
-<a name="370"><span class="lineNum">     370 </span>            :         schema,</a>
-<a name="371"><span class="lineNum">     371 </span>            :         /*is_custom_function*/ true,</a>
-<a name="372"><span class="lineNum">     372 </span>            :         /*is_traceable*/ T::is_traceable);</a>
-<a name="373"><span class="lineNum">     373 </span>            : </a>
-<a name="374"><span class="lineNum">     374 </span>            :     auto results = pyinterface-&gt;call_function(</a>
-<a name="375"><span class="lineNum">     375 </span>            :         saved.get_py_compiler(),</a>
-<a name="376"><span class="lineNum">     376 </span>            :         &quot;apply_functional&quot;,</a>
-<a name="377"><span class="lineNum">     377 </span>            :         fn_name,</a>
-<a name="378"><span class="lineNum">     378 </span>            :         inputs,</a>
-<a name="379"><span class="lineNum">     379 </span>            :         args,</a>
-<a name="380"><span class="lineNum">     380 </span>            :         output_metadata);</a>
-<a name="381"><span class="lineNum">     381 </span>            : </a>
-<a name="382"><span class="lineNum">     382 </span>            :     saved.after(ctx_.saved_data);</a>
-<a name="383"><span class="lineNum">     383 </span>            :     TORCH_INTERNAL_ASSERT(ctx_.non_differentiable_.empty());</a>
-<a name="384"><span class="lineNum">     384 </span>            :     TORCH_INTERNAL_ASSERT(ctx_.dirty_inputs_.empty());</a>
-<a name="385"><span class="lineNum">     385 </span>            :     saved.after(ctx_.saved_variables_);</a>
-<a name="386"><span class="lineNum">     386 </span>            :     TORCH_INTERNAL_ASSERT(ctx_.to_save_.empty());</a>
-<a name="387"><span class="lineNum">     387 </span>            :     saved.after(ctx_.materialize_grads_);</a>
-<a name="388"><span class="lineNum">     388 </span>            :     saved.after(ctx_.has_freed_buffers_);</a>
-<a name="389"><span class="lineNum">     389 </span>            :     saved.after(input_info_);</a>
-<a name="390"><span class="lineNum">     390 </span>            :     saved.after(output_info_);</a>
-<a name="391"><span class="lineNum">     391 </span>            :     return results;</a>
-<a name="392"><span class="lineNum">     392 </span>            :   }</a>
-<a name="393"><span class="lineNum">     393 </span>            : };</a>
-<a name="394"><span class="lineNum">     394 </span>            : </a>
-<a name="395"><span class="lineNum">     395 </span><span class="lineNoCov">          0 : struct ExtractVariables : IterArgs&lt;ExtractVariables&gt; {</span></a>
-<a name="396"><span class="lineNum">     396 </span>            :   // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)</a>
-<a name="397"><span class="lineNum">     397 </span>            :   std::vector&lt;bool&gt;&amp; is_var_;</a>
-<a name="398"><span class="lineNum">     398 </span>            :   // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)</a>
-<a name="399"><span class="lineNum">     399 </span>            :   variable_list&amp; list_;</a>
-<a name="400"><span class="lineNum">     400 </span><span class="lineNoCov">          0 :   ExtractVariables(std::vector&lt;bool&gt;&amp; is_var, variable_list&amp; list)</span></a>
-<a name="401"><span class="lineNum">     401 </span>            :       : is_var_(is_var), list_(list) {}</a>
-<a name="402"><span class="lineNum">     402 </span><span class="lineNoCov">          0 :   void operator()(const std::optional&lt;at::Tensor&gt;&amp; x) {</span></a>
-<a name="403"><span class="lineNum">     403 </span>            :     if (x.has_value() &amp;&amp; x.value().defined()) {</a>
-<a name="404"><span class="lineNum">     404 </span>            :       is_var_.push_back(true);</a>
-<a name="405"><span class="lineNum">     405 </span>            :       list_.emplace_back(x.value());</a>
-<a name="406"><span class="lineNum">     406 </span>            :     } else {</a>
-<a name="407"><span class="lineNum">     407 </span>            :       is_var_.push_back(false);</a>
-<a name="408"><span class="lineNum">     408 </span>            :     }</a>
-<a name="409"><span class="lineNum">     409 </span>            :   }</a>
-<a name="410"><span class="lineNum">     410 </span><span class="lineNoCov">          0 :   void operator()(const at::Tensor&amp; x) {</span></a>
-<a name="411"><span class="lineNum">     411 </span>            :     is_var_.push_back(true);</a>
-<a name="412"><span class="lineNum">     412 </span>            :     list_.emplace_back(x);</a>
-<a name="413"><span class="lineNum">     413 </span>            :   }</a>
-<a name="414"><span class="lineNum">     414 </span><span class="lineNoCov">          0 :   void operator()(const at::TensorList&amp; list) {</span></a>
-<a name="415"><span class="lineNum">     415 </span>            :     for (const at::Tensor&amp; x : list) {</a>
-<a name="416"><span class="lineNum">     416 </span>            :       is_var_.push_back(true);</a>
-<a name="417"><span class="lineNum">     417 </span>            :       list_.emplace_back(x);</a>
-<a name="418"><span class="lineNum">     418 </span>            :     }</a>
-<a name="419"><span class="lineNum">     419 </span>            :   }</a>
-<a name="420"><span class="lineNum">     420 </span>            :   template &lt;typename T&gt;</a>
-<a name="421"><span class="lineNum">     421 </span><span class="lineNoCov">          0 :   void operator()(const T&amp; x) {</span></a>
-<a name="422"><span class="lineNum">     422 </span>            :     is_var_.push_back(false);</a>
-<a name="423"><span class="lineNum">     423 </span>            :   }</a>
-<a name="424"><span class="lineNum">     424 </span>            : };</a>
-<a name="425"><span class="lineNum">     425 </span>            : </a>
-<a name="426"><span class="lineNum">     426 </span>            : template &lt;typename... Args&gt;</a>
-<a name="427"><span class="lineNum">     427 </span><span class="lineNoCov">          0 : inline void extract_vars(</span></a>
-<a name="428"><span class="lineNum">     428 </span>            :     std::vector&lt;bool&gt;&amp; is_var,</a>
-<a name="429"><span class="lineNum">     429 </span>            :     variable_list&amp; list,</a>
-<a name="430"><span class="lineNum">     430 </span>            :     Args&amp;&amp;... args) {</a>
-<a name="431"><span class="lineNum">     431 </span>            :   ExtractVariables(is_var, list).apply(std::forward&lt;Args&gt;(args)...);</a>
-<a name="432"><span class="lineNum">     432 </span>            : }</a>
-<a name="433"><span class="lineNum">     433 </span>            : </a>
-<a name="434"><span class="lineNum">     434 </span>            : template &lt;typename T&gt;</a>
-<a name="435"><span class="lineNum">     435 </span><span class="lineNoCov">          0 : std::enable_if_t&lt;std::is_same_v&lt;T, variable_list&gt;, T&gt; to_output_type(</span></a>
-<a name="436"><span class="lineNum">     436 </span>            :     std::vector&lt;std::optional&lt;Variable&gt;&gt;&amp; output_list) {</a>
-<a name="437"><span class="lineNum">     437 </span>            :   variable_list result;</a>
-<a name="438"><span class="lineNum">     438 </span>            :   std::transform(</a>
-<a name="439"><span class="lineNum">     439 </span>            :       output_list.begin(),</a>
-<a name="440"><span class="lineNum">     440 </span>            :       output_list.end(),</a>
-<a name="441"><span class="lineNum">     441 </span>            :       std::back_inserter(result),</a>
-<a name="442"><span class="lineNum">     442 </span>            :       [](const std::optional&lt;Variable&gt;&amp; var) { return *var; });</a>
-<a name="443"><span class="lineNum">     443 </span>            :   return result;</a>
-<a name="444"><span class="lineNum">     444 </span>            : }</a>
-<a name="445"><span class="lineNum">     445 </span>            : </a>
-<a name="446"><span class="lineNum">     446 </span>            : template &lt;typename T&gt;</a>
-<a name="447"><span class="lineNum">     447 </span><span class="lineNoCov">          0 : std::enable_if_t&lt;std::is_same_v&lt;T, Variable&gt;, T&gt; to_output_type(</span></a>
-<a name="448"><span class="lineNum">     448 </span>            :     std::vector&lt;std::optional&lt;Variable&gt;&gt;&amp; output_list) {</a>
-<a name="449"><span class="lineNum">     449 </span>            :   return *output_list[0];</a>
-<a name="450"><span class="lineNum">     450 </span>            : }</a>
-<a name="451"><span class="lineNum">     451 </span>            : </a>
-<a name="452"><span class="lineNum">     452 </span><span class="lineNoCov">          0 : inline std::vector&lt;std::optional&lt;Variable&gt;&gt; to_optional(Variable&amp; output) {</span></a>
-<a name="453"><span class="lineNum">     453 </span>            :   return std::vector&lt;std::optional&lt;Variable&gt;&gt;{output};</a>
-<a name="454"><span class="lineNum">     454 </span>            : }</a>
-<a name="455"><span class="lineNum">     455 </span>            : </a>
-<a name="456"><span class="lineNum">     456 </span><span class="lineNoCov">          0 : inline std::vector&lt;std::optional&lt;Variable&gt;&gt; to_optional(variable_list&amp; output) {</span></a>
-<a name="457"><span class="lineNum">     457 </span>            :   std::vector&lt;std::optional&lt;Variable&gt;&gt; result;</a>
-<a name="458"><span class="lineNum">     458 </span>            :   std::transform(</a>
-<a name="459"><span class="lineNum">     459 </span>            :       output.begin(),</a>
-<a name="460"><span class="lineNum">     460 </span>            :       output.end(),</a>
-<a name="461"><span class="lineNum">     461 </span>            :       std::back_inserter(result),</a>
-<a name="462"><span class="lineNum">     462 </span>            :       [](const Variable&amp; var) { return var; });</a>
-<a name="463"><span class="lineNum">     463 </span>            :   return result;</a>
-<a name="464"><span class="lineNum">     464 </span>            : }</a>
-<a name="465"><span class="lineNum">     465 </span>            : </a>
-<a name="466"><span class="lineNum">     466 </span>            : template &lt;class T&gt;</a>
-<a name="467"><span class="lineNum">     467 </span>            : template &lt;typename X, typename... Args&gt;</a>
-<a name="468"><span class="lineNum">     468 </span>            : auto Function&lt;T&gt;::apply(Args&amp;&amp;... args)</a>
-<a name="469"><span class="lineNum">     469 </span>            :     -&gt; std::enable_if_t&lt;std::is_same_v&lt;X, T&gt;, forward_t&lt;X, Args...&gt;&gt; {</a>
-<a name="470"><span class="lineNum">     470 </span>            :   const auto&amp; functorch_tls = at::functorch::functorchTLSAccessor();</a>
-<a name="471"><span class="lineNum">     471 </span>            :   if (functorch_tls) {</a>
-<a name="472"><span class="lineNum">     472 </span>            :     // Function support for functorch is handled in Python.</a>
-<a name="473"><span class="lineNum">     473 </span>            :     // Here we are dealing with a (C++) Function, which is not supported.</a>
-<a name="474"><span class="lineNum">     474 </span>            :     // Let's raise an error instead of being silently incorrect.</a>
-<a name="475"><span class="lineNum">     475 </span>            :     functorch_tls-&gt;checkSupportsCppAutogradFunction();</a>
-<a name="476"><span class="lineNum">     476 </span>            :   }</a>
-<a name="477"><span class="lineNum">     477 </span>            : </a>
-<a name="478"><span class="lineNum">     478 </span>            :   std::shared_ptr&lt;CppNode&lt;T&gt;&gt; node(new CppNode&lt;T&gt;(), deleteNode);</a>
-<a name="479"><span class="lineNum">     479 </span>            :   variable_list input_vars;</a>
-<a name="480"><span class="lineNum">     480 </span>            : </a>
-<a name="481"><span class="lineNum">     481 </span>            :   const size_t num_inputs = sizeof...(Args);</a>
-<a name="482"><span class="lineNum">     482 </span>            :   input_vars.reserve(num_inputs);</a>
-<a name="483"><span class="lineNum">     483 </span>            :   node-&gt;is_variable_input_.reserve(num_inputs);</a>
-<a name="484"><span class="lineNum">     484 </span>            :   // TODO Add tracing here</a>
-<a name="485"><span class="lineNum">     485 </span>            :   extract_vars(node-&gt;is_variable_input_, input_vars, args...);</a>
-<a name="486"><span class="lineNum">     486 </span>            : </a>
-<a name="487"><span class="lineNum">     487 </span>            :   bool is_executable =</a>
-<a name="488"><span class="lineNum">     488 </span>            :       GradMode::is_enabled() &amp;&amp; any_variable_requires_grad(input_vars);</a>
-<a name="489"><span class="lineNum">     489 </span>            :   auto next_edges =</a>
-<a name="490"><span class="lineNum">     490 </span>            :       (is_executable ? collect_next_edges(input_vars) : edge_list());</a>
-<a name="491"><span class="lineNum">     491 </span>            :   node-&gt;set_ctx_grad_fn(node);</a>
-<a name="492"><span class="lineNum">     492 </span>            :   node-&gt;set_next_edges(std::move(next_edges));</a>
-<a name="493"><span class="lineNum">     493 </span>            :   node-&gt;clear_input_metadata();</a>
-<a name="494"><span class="lineNum">     494 </span>            : </a>
-<a name="495"><span class="lineNum">     495 </span>            :   node-&gt;input_info_.reserve(input_vars.size());</a>
-<a name="496"><span class="lineNum">     496 </span>            :   for (auto&amp; var : input_vars) {</a>
-<a name="497"><span class="lineNum">     497 </span>            :     node-&gt;input_info_.emplace_back(var);</a>
-<a name="498"><span class="lineNum">     498 </span>            :   }</a>
-<a name="499"><span class="lineNum">     499 </span>            : </a>
-<a name="500"><span class="lineNum">     500 </span>            :   using forward_return_t = forward_t&lt;X, Args...&gt;;</a>
-<a name="501"><span class="lineNum">     501 </span>            :   forward_return_t outputs;</a>
-<a name="502"><span class="lineNum">     502 </span>            :   {</a>
-<a name="503"><span class="lineNum">     503 </span>            :     AutoGradMode grad_mode(false);</a>
-<a name="504"><span class="lineNum">     504 </span>            :     outputs = T::forward(&amp;node-&gt;ctx_, std::forward&lt;Args&gt;(args)...);</a>
-<a name="505"><span class="lineNum">     505 </span>            :   }</a>
-<a name="506"><span class="lineNum">     506 </span>            : </a>
-<a name="507"><span class="lineNum">     507 </span>            :   _jvp_fn_t jvp_fn = [](const variable_list&amp; inputs,</a>
-<a name="508"><span class="lineNum">     508 </span>            :                         const variable_list&amp; gI) -&gt; variable_list {</a>
-<a name="509"><span class="lineNum">     509 </span>            :     TORCH_CHECK(</a>
-<a name="510"><span class="lineNum">     510 </span>            :         false,</a>
-<a name="511"><span class="lineNum">     511 </span>            :         &quot;jvp is not implemented for the c++ API of custom Function yet.&quot;,</a>
-<a name="512"><span class="lineNum">     512 </span>            :         &quot;Please open a feature request on GitHub if you need this.&quot;);</a>
-<a name="513"><span class="lineNum">     513 </span>            :   };</a>
-<a name="514"><span class="lineNum">     514 </span>            : </a>
-<a name="515"><span class="lineNum">     515 </span>            :   auto view_as_self_fn = [](const at::Tensor&amp; x) -&gt; at::Tensor {</a>
-<a name="516"><span class="lineNum">     516 </span>            :     return x.view_as(x);</a>
-<a name="517"><span class="lineNum">     517 </span>            :   };</a>
-<a name="518"><span class="lineNum">     518 </span>            : </a>
-<a name="519"><span class="lineNum">     519 </span>            :   auto wrapped_outputs = _wrap_outputs(</a>
-<a name="520"><span class="lineNum">     520 </span>            :       input_vars,</a>
-<a name="521"><span class="lineNum">     521 </span>            :       node-&gt;ctx_.get_non_differentiable(),</a>
-<a name="522"><span class="lineNum">     522 </span>            :       node-&gt;ctx_.get_and_bump_dirty(),</a>
-<a name="523"><span class="lineNum">     523 </span>            :       to_optional(outputs),</a>
-<a name="524"><span class="lineNum">     524 </span>            :       is_executable ? node : nullptr,</a>
-<a name="525"><span class="lineNum">     525 </span>            :       jvp_fn,</a>
-<a name="526"><span class="lineNum">     526 </span>            :       {},</a>
-<a name="527"><span class="lineNum">     527 </span>            :       view_as_self_fn,</a>
-<a name="528"><span class="lineNum">     528 </span>            :       false);</a>
-<a name="529"><span class="lineNum">     529 </span>            : </a>
-<a name="530"><span class="lineNum">     530 </span>            :   node-&gt;output_info_.reserve(wrapped_outputs.size());</a>
-<a name="531"><span class="lineNum">     531 </span>            :   for (auto&amp; output : wrapped_outputs) {</a>
-<a name="532"><span class="lineNum">     532 </span>            :     if (is_executable &amp;&amp; output.has_value()) {</a>
-<a name="533"><span class="lineNum">     533 </span>            :       node-&gt;output_info_.emplace_back(output.value());</a>
-<a name="534"><span class="lineNum">     534 </span>            :     } else if (is_executable) {</a>
-<a name="535"><span class="lineNum">     535 </span>            :       node-&gt;output_info_.emplace_back();</a>
-<a name="536"><span class="lineNum">     536 </span>            :     }</a>
-<a name="537"><span class="lineNum">     537 </span>            :   }</a>
-<a name="538"><span class="lineNum">     538 </span>            : </a>
-<a name="539"><span class="lineNum">     539 </span>            :   if (is_executable) {</a>
-<a name="540"><span class="lineNum">     540 </span>            :     node-&gt;save_variables_to_ctx();</a>
-<a name="541"><span class="lineNum">     541 </span>            :   }</a>
-<a name="542"><span class="lineNum">     542 </span>            : </a>
-<a name="543"><span class="lineNum">     543 </span>            :   // wrapped_outputs will be a variable_list so, convert it to the correct</a>
-<a name="544"><span class="lineNum">     544 </span>            :   // return type. Only Variable and variable_list are accepted as return types.</a>
-<a name="545"><span class="lineNum">     545 </span>            :   return to_output_type&lt;forward_return_t&gt;(wrapped_outputs);</a>
-<a name="546"><span class="lineNum">     546 </span>            : }</a>
-<a name="547"><span class="lineNum">     547 </span>            : </a>
-<a name="548"><span class="lineNum">     548 </span>            : // The logic here is the same as PyNode::apply, so changes to it should be done</a>
-<a name="549"><span class="lineNum">     549 </span>            : // in both the places</a>
-<a name="550"><span class="lineNum">     550 </span>            : template &lt;class T&gt;</a>
-<a name="551"><span class="lineNum">     551 </span>            : // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)</a>
-<a name="552"><span class="lineNum">     552 </span>            : variable_list CppNode&lt;T&gt;::apply(variable_list&amp;&amp; inputs) {</a>
-<a name="553"><span class="lineNum">     553 </span>            :   // Acquire lock to here protect thread safety on custom C++ Autograd Node</a>
-<a name="554"><span class="lineNum">     554 </span>            :   // This is needed for the custom Autograd Node since we don't know if the</a>
-<a name="555"><span class="lineNum">     555 </span>            :   // user defined Node will write to the shared data during backward.</a>
-<a name="556"><span class="lineNum">     556 </span>            :   // see Note [Thread Safety on Autograd Node]</a>
-<a name="557"><span class="lineNum">     557 </span>            :   std::lock_guard&lt;std::mutex&gt; lock(mutex_);</a>
-<a name="558"><span class="lineNum">     558 </span>            :   return CppNode_apply_functional&lt;T&gt;(</a>
-<a name="559"><span class="lineNum">     559 </span>            :       std::move(inputs), ctx_, is_variable_input_, output_info_, name());</a>
-<a name="560"><span class="lineNum">     560 </span>            : }</a>
-<a name="561"><span class="lineNum">     561 </span>            : </a>
-<a name="562"><span class="lineNum">     562 </span>            : template &lt;class T&gt;</a>
-<a name="563"><span class="lineNum">     563 </span>            : void CppNode&lt;T&gt;::release_variables() {</a>
-<a name="564"><span class="lineNum">     564 </span>            :   // lock to ensure thread safety, see [Thread Safety on Autograd Node]</a>
-<a name="565"><span class="lineNum">     565 </span>            :   std::lock_guard&lt;std::mutex&gt; lock(mutex_);</a>
-<a name="566"><span class="lineNum">     566 </span>            :   ctx_.saved_variables_.clear();</a>
-<a name="567"><span class="lineNum">     567 </span>            :   ctx_.has_freed_buffers_ = true;</a>
-<a name="568"><span class="lineNum">     568 </span>            : }</a>
-<a name="569"><span class="lineNum">     569 </span>            : </a>
-<a name="570"><span class="lineNum">     570 </span>            : template &lt;class T&gt;</a>
-<a name="571"><span class="lineNum">     571 </span>            : void CppNode&lt;T&gt;::save_variables_to_ctx() {</a>
-<a name="572"><span class="lineNum">     572 </span>            :   ctx_.save_variables();</a>
-<a name="573"><span class="lineNum">     573 </span>            : }</a>
+<a name="286"><span class="lineNum">     286 </span><span class="lineNoCov">          0 :   void release_resources() override;</span></a>
+<a name="287"><span class="lineNum">     287 </span>            : </a>
+<a name="288"><span class="lineNum">     288 </span><span class="lineNoCov">          0 :   void set_ctx_grad_fn(const c10::intrusive_ptr&lt;Node&gt;&amp; node);</span></a>
+<a name="289"><span class="lineNum">     289 </span><span class="lineNoCov">          0 :   void save_variables_to_ctx();</span></a>
+<a name="290"><span class="lineNum">     290 </span>            : </a>
+<a name="291"><span class="lineNum">     291 </span><span class="lineNoCov">          0 :   void compiled_args(CompiledNodeArgs&amp; args) const override {</span></a>
+<a name="292"><span class="lineNum">     292 </span>            :     // although neither of the 2 methods below have uniqueness guarantees</a>
+<a name="293"><span class="lineNum">     293 </span>            :     // it is unlikely for them to collide at the same time</a>
+<a name="294"><span class="lineNum">     294 </span>            :     args.collect(static_cast&lt;uint64_t&gt;(typeid(T).hash_code()));</a>
+<a name="295"><span class="lineNum">     295 </span>            :     args.collect(std::string(typeid(T).name()));</a>
+<a name="296"><span class="lineNum">     296 </span>            : </a>
+<a name="297"><span class="lineNum">     297 </span>            :     args.collect(ctx_.saved_data);</a>
+<a name="298"><span class="lineNum">     298 </span>            :     TORCH_INTERNAL_ASSERT(ctx_.non_differentiable_.empty());</a>
+<a name="299"><span class="lineNum">     299 </span>            :     TORCH_INTERNAL_ASSERT(ctx_.dirty_inputs_.empty());</a>
+<a name="300"><span class="lineNum">     300 </span>            :     args.collect(</a>
+<a name="301"><span class="lineNum">     301 </span>            :         ctx_.saved_variables_, true); // always unpacked as output in eager</a>
+<a name="302"><span class="lineNum">     302 </span>            :     TORCH_INTERNAL_ASSERT(ctx_.to_save_.empty());</a>
+<a name="303"><span class="lineNum">     303 </span>            :     args.collect(ctx_.materialize_grads_);</a>
+<a name="304"><span class="lineNum">     304 </span>            :     args.collect(ctx_.has_freed_buffers_);</a>
+<a name="305"><span class="lineNum">     305 </span>            :     args.collect(is_variable_input_);</a>
+<a name="306"><span class="lineNum">     306 </span>            :     args.collect(input_info_);</a>
+<a name="307"><span class="lineNum">     307 </span>            :     args.collect(output_info_);</a>
+<a name="308"><span class="lineNum">     308 </span>            :   }</a>
+<a name="309"><span class="lineNum">     309 </span>            : </a>
+<a name="310"><span class="lineNum">     310 </span><span class="lineNoCov">          0 :   variable_list apply_with_saved(</span></a>
+<a name="311"><span class="lineNum">     311 </span>            :       const variable_list&amp; inputs,</a>
+<a name="312"><span class="lineNum">     312 </span>            :       SwapSavedVariables&amp; saved) override {</a>
+<a name="313"><span class="lineNum">     313 </span>            :     saved.before(ctx_.saved_data);</a>
+<a name="314"><span class="lineNum">     314 </span>            :     TORCH_INTERNAL_ASSERT(ctx_.non_differentiable_.empty());</a>
+<a name="315"><span class="lineNum">     315 </span>            :     TORCH_INTERNAL_ASSERT(ctx_.dirty_inputs_.empty());</a>
+<a name="316"><span class="lineNum">     316 </span>            :     saved.before(ctx_.saved_variables_);</a>
+<a name="317"><span class="lineNum">     317 </span>            :     TORCH_INTERNAL_ASSERT(ctx_.to_save_.empty());</a>
+<a name="318"><span class="lineNum">     318 </span>            :     saved.before(ctx_.materialize_grads_);</a>
+<a name="319"><span class="lineNum">     319 </span>            :     saved.before(ctx_.has_freed_buffers_);</a>
+<a name="320"><span class="lineNum">     320 </span>            :     saved.before(input_info_);</a>
+<a name="321"><span class="lineNum">     321 </span>            :     saved.before(output_info_);</a>
+<a name="322"><span class="lineNum">     322 </span>            : </a>
+<a name="323"><span class="lineNum">     323 </span>            :     PackedArgs packed_args;</a>
+<a name="324"><span class="lineNum">     324 </span>            :     packed_args.pack_saved_data(ctx_.saved_data);</a>
+<a name="325"><span class="lineNum">     325 </span>            :     variable_list saved_variables = ctx_.get_saved_variables();</a>
+<a name="326"><span class="lineNum">     326 </span>            :     packed_args.pack(saved_variables);</a>
+<a name="327"><span class="lineNum">     327 </span>            :     packed_args.pack(ctx_.materialize_grads_);</a>
+<a name="328"><span class="lineNum">     328 </span>            :     packed_args.pack(ctx_.has_freed_buffers_);</a>
+<a name="329"><span class="lineNum">     329 </span>            : </a>
+<a name="330"><span class="lineNum">     330 </span>            :     std::vector&lt;bool&gt; needs_input_grad;</a>
+<a name="331"><span class="lineNum">     331 </span>            :     {</a>
+<a name="332"><span class="lineNum">     332 </span>            :       auto ptr = ctx_.grad_fn_.lock();</a>
+<a name="333"><span class="lineNum">     333 </span>            :       TORCH_INTERNAL_ASSERT(ptr);</a>
+<a name="334"><span class="lineNum">     334 </span>            :       for (const auto i : c10::irange(ptr-&gt;next_edges().size())) {</a>
+<a name="335"><span class="lineNum">     335 </span>            :         needs_input_grad.push_back(ptr-&gt;task_should_compute_output(i));</a>
+<a name="336"><span class="lineNum">     336 </span>            :       }</a>
+<a name="337"><span class="lineNum">     337 </span>            :     }</a>
+<a name="338"><span class="lineNum">     338 </span>            :     packed_args.pack(needs_input_grad);</a>
+<a name="339"><span class="lineNum">     339 </span>            : </a>
+<a name="340"><span class="lineNum">     340 </span>            :     packed_args.pack(output_info_);</a>
+<a name="341"><span class="lineNum">     341 </span>            :     packed_args.pack(is_variable_input_);</a>
+<a name="342"><span class="lineNum">     342 </span>            :     packed_args.pack(name());</a>
+<a name="343"><span class="lineNum">     343 </span>            :     auto args = std::move(packed_args).vec();</a>
+<a name="344"><span class="lineNum">     344 </span>            : </a>
+<a name="345"><span class="lineNum">     345 </span>            :     auto output_metadata = torch::dynamo::autograd::</a>
+<a name="346"><span class="lineNum">     346 </span>            :         IValuePacker&lt;std::vector&lt;std::optional&lt;InputMetadata&gt;&gt;&gt;::pack(</a>
+<a name="347"><span class="lineNum">     347 </span>            :             torch::dynamo::autograd::get_input_metadata(next_edges()));</a>
+<a name="348"><span class="lineNum">     348 </span>            : </a>
+<a name="349"><span class="lineNum">     349 </span>            :     const auto&amp; pyinterface = torch::dynamo::autograd::getPyCompilerInterface();</a>
+<a name="350"><span class="lineNum">     350 </span>            : </a>
+<a name="351"><span class="lineNum">     351 </span>            :     // Each time apply_with_saved is called, we bind a new function to Python.</a>
+<a name="352"><span class="lineNum">     352 </span>            :     // This is because the schema might be different on compiled autograd cache</a>
+<a name="353"><span class="lineNum">     353 </span>            :     // misses. An alternative is to pass the schema to Python so that it can be</a>
+<a name="354"><span class="lineNum">     354 </span>            :     // an input to a function, but the schema can't be put into an FX graph</a>
+<a name="355"><span class="lineNum">     355 </span>            :     // right now.</a>
+<a name="356"><span class="lineNum">     356 </span>            :     std::vector&lt;at::TypePtr&gt; schema;</a>
+<a name="357"><span class="lineNum">     357 </span>            :     schema.reserve(args.size());</a>
+<a name="358"><span class="lineNum">     358 </span>            :     for (const auto&amp; ivalue : args) {</a>
+<a name="359"><span class="lineNum">     359 </span>            :       if (ivalue.isTensor()) {</a>
+<a name="360"><span class="lineNum">     360 </span>            :         schema.emplace_back(at::TensorType::get());</a>
+<a name="361"><span class="lineNum">     361 </span>            :       } else {</a>
+<a name="362"><span class="lineNum">     362 </span>            :         schema.emplace_back(ivalue.type());</a>
+<a name="363"><span class="lineNum">     363 </span>            :       }</a>
+<a name="364"><span class="lineNum">     364 </span>            :     }</a>
+<a name="365"><span class="lineNum">     365 </span>            :     static_assert(</a>
+<a name="366"><span class="lineNum">     366 </span>            :         std::is_same_v&lt;std::remove_cv_t&lt;decltype(T::is_traceable)&gt;, bool&gt;);</a>
+<a name="367"><span class="lineNum">     367 </span>            :     auto fn_name = pyinterface-&gt;bind_function(</a>
+<a name="368"><span class="lineNum">     368 </span>            :         saved.get_py_compiler(),</a>
+<a name="369"><span class="lineNum">     369 </span>            :         std::string(typeid(T).name()),</a>
+<a name="370"><span class="lineNum">     370 </span>            :         CppNode_apply_functional_ivalue&lt;T&gt;,</a>
+<a name="371"><span class="lineNum">     371 </span>            :         schema,</a>
+<a name="372"><span class="lineNum">     372 </span>            :         /*is_custom_function*/ true,</a>
+<a name="373"><span class="lineNum">     373 </span>            :         /*is_traceable*/ T::is_traceable);</a>
+<a name="374"><span class="lineNum">     374 </span>            : </a>
+<a name="375"><span class="lineNum">     375 </span>            :     auto results = pyinterface-&gt;call_function(</a>
+<a name="376"><span class="lineNum">     376 </span>            :         saved.get_py_compiler(),</a>
+<a name="377"><span class="lineNum">     377 </span>            :         &quot;apply_functional&quot;,</a>
+<a name="378"><span class="lineNum">     378 </span>            :         fn_name,</a>
+<a name="379"><span class="lineNum">     379 </span>            :         inputs,</a>
+<a name="380"><span class="lineNum">     380 </span>            :         args,</a>
+<a name="381"><span class="lineNum">     381 </span>            :         output_metadata);</a>
+<a name="382"><span class="lineNum">     382 </span>            : </a>
+<a name="383"><span class="lineNum">     383 </span>            :     saved.after(ctx_.saved_data);</a>
+<a name="384"><span class="lineNum">     384 </span>            :     TORCH_INTERNAL_ASSERT(ctx_.non_differentiable_.empty());</a>
+<a name="385"><span class="lineNum">     385 </span>            :     TORCH_INTERNAL_ASSERT(ctx_.dirty_inputs_.empty());</a>
+<a name="386"><span class="lineNum">     386 </span>            :     saved.after(ctx_.saved_variables_);</a>
+<a name="387"><span class="lineNum">     387 </span>            :     TORCH_INTERNAL_ASSERT(ctx_.to_save_.empty());</a>
+<a name="388"><span class="lineNum">     388 </span>            :     saved.after(ctx_.materialize_grads_);</a>
+<a name="389"><span class="lineNum">     389 </span>            :     saved.after(ctx_.has_freed_buffers_);</a>
+<a name="390"><span class="lineNum">     390 </span>            :     saved.after(input_info_);</a>
+<a name="391"><span class="lineNum">     391 </span>            :     saved.after(output_info_);</a>
+<a name="392"><span class="lineNum">     392 </span>            :     return results;</a>
+<a name="393"><span class="lineNum">     393 </span>            :   }</a>
+<a name="394"><span class="lineNum">     394 </span>            : };</a>
+<a name="395"><span class="lineNum">     395 </span>            : </a>
+<a name="396"><span class="lineNum">     396 </span><span class="lineNoCov">          0 : struct ExtractVariables : IterArgs&lt;ExtractVariables&gt; {</span></a>
+<a name="397"><span class="lineNum">     397 </span>            :   // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)</a>
+<a name="398"><span class="lineNum">     398 </span>            :   std::vector&lt;bool&gt;&amp; is_var_;</a>
+<a name="399"><span class="lineNum">     399 </span>            :   // NOLINTNEXTLINE(cppcoreguidelines-avoid-const-or-ref-data-members)</a>
+<a name="400"><span class="lineNum">     400 </span>            :   variable_list&amp; list_;</a>
+<a name="401"><span class="lineNum">     401 </span><span class="lineNoCov">          0 :   ExtractVariables(std::vector&lt;bool&gt;&amp; is_var, variable_list&amp; list)</span></a>
+<a name="402"><span class="lineNum">     402 </span>            :       : is_var_(is_var), list_(list) {}</a>
+<a name="403"><span class="lineNum">     403 </span><span class="lineNoCov">          0 :   void operator()(const std::optional&lt;at::Tensor&gt;&amp; x) {</span></a>
+<a name="404"><span class="lineNum">     404 </span>            :     if (x.has_value() &amp;&amp; x.value().defined()) {</a>
+<a name="405"><span class="lineNum">     405 </span>            :       is_var_.push_back(true);</a>
+<a name="406"><span class="lineNum">     406 </span>            :       list_.emplace_back(x.value());</a>
+<a name="407"><span class="lineNum">     407 </span>            :     } else {</a>
+<a name="408"><span class="lineNum">     408 </span>            :       is_var_.push_back(false);</a>
+<a name="409"><span class="lineNum">     409 </span>            :     }</a>
+<a name="410"><span class="lineNum">     410 </span>            :   }</a>
+<a name="411"><span class="lineNum">     411 </span><span class="lineNoCov">          0 :   void operator()(const at::Tensor&amp; x) {</span></a>
+<a name="412"><span class="lineNum">     412 </span>            :     is_var_.push_back(true);</a>
+<a name="413"><span class="lineNum">     413 </span>            :     list_.emplace_back(x);</a>
+<a name="414"><span class="lineNum">     414 </span>            :   }</a>
+<a name="415"><span class="lineNum">     415 </span><span class="lineNoCov">          0 :   void operator()(const at::TensorList&amp; list) {</span></a>
+<a name="416"><span class="lineNum">     416 </span>            :     for (const at::Tensor&amp; x : list) {</a>
+<a name="417"><span class="lineNum">     417 </span>            :       is_var_.push_back(true);</a>
+<a name="418"><span class="lineNum">     418 </span>            :       list_.emplace_back(x);</a>
+<a name="419"><span class="lineNum">     419 </span>            :     }</a>
+<a name="420"><span class="lineNum">     420 </span>            :   }</a>
+<a name="421"><span class="lineNum">     421 </span>            :   template &lt;typename T&gt;</a>
+<a name="422"><span class="lineNum">     422 </span><span class="lineNoCov">          0 :   void operator()(const T&amp; x) {</span></a>
+<a name="423"><span class="lineNum">     423 </span>            :     is_var_.push_back(false);</a>
+<a name="424"><span class="lineNum">     424 </span>            :   }</a>
+<a name="425"><span class="lineNum">     425 </span>            : };</a>
+<a name="426"><span class="lineNum">     426 </span>            : </a>
+<a name="427"><span class="lineNum">     427 </span>            : template &lt;typename... Args&gt;</a>
+<a name="428"><span class="lineNum">     428 </span><span class="lineNoCov">          0 : inline void extract_vars(</span></a>
+<a name="429"><span class="lineNum">     429 </span>            :     std::vector&lt;bool&gt;&amp; is_var,</a>
+<a name="430"><span class="lineNum">     430 </span>            :     variable_list&amp; list,</a>
+<a name="431"><span class="lineNum">     431 </span>            :     Args&amp;&amp;... args) {</a>
+<a name="432"><span class="lineNum">     432 </span>            :   ExtractVariables(is_var, list).apply(std::forward&lt;Args&gt;(args)...);</a>
+<a name="433"><span class="lineNum">     433 </span>            : }</a>
+<a name="434"><span class="lineNum">     434 </span>            : </a>
+<a name="435"><span class="lineNum">     435 </span>            : template &lt;typename T&gt;</a>
+<a name="436"><span class="lineNum">     436 </span><span class="lineNoCov">          0 : std::enable_if_t&lt;std::is_same_v&lt;T, variable_list&gt;, T&gt; to_output_type(</span></a>
+<a name="437"><span class="lineNum">     437 </span>            :     std::vector&lt;std::optional&lt;Variable&gt;&gt;&amp; output_list) {</a>
+<a name="438"><span class="lineNum">     438 </span>            :   variable_list result;</a>
+<a name="439"><span class="lineNum">     439 </span>            :   std::transform(</a>
+<a name="440"><span class="lineNum">     440 </span>            :       output_list.begin(),</a>
+<a name="441"><span class="lineNum">     441 </span>            :       output_list.end(),</a>
+<a name="442"><span class="lineNum">     442 </span>            :       std::back_inserter(result),</a>
+<a name="443"><span class="lineNum">     443 </span>            :       [](const std::optional&lt;Variable&gt;&amp; var) { return *var; });</a>
+<a name="444"><span class="lineNum">     444 </span>            :   return result;</a>
+<a name="445"><span class="lineNum">     445 </span>            : }</a>
+<a name="446"><span class="lineNum">     446 </span>            : </a>
+<a name="447"><span class="lineNum">     447 </span>            : template &lt;typename T&gt;</a>
+<a name="448"><span class="lineNum">     448 </span><span class="lineNoCov">          0 : std::enable_if_t&lt;std::is_same_v&lt;T, Variable&gt;, T&gt; to_output_type(</span></a>
+<a name="449"><span class="lineNum">     449 </span>            :     std::vector&lt;std::optional&lt;Variable&gt;&gt;&amp; output_list) {</a>
+<a name="450"><span class="lineNum">     450 </span>            :   return *output_list[0];</a>
+<a name="451"><span class="lineNum">     451 </span>            : }</a>
+<a name="452"><span class="lineNum">     452 </span>            : </a>
+<a name="453"><span class="lineNum">     453 </span><span class="lineNoCov">          0 : inline std::vector&lt;std::optional&lt;Variable&gt;&gt; to_optional(Variable&amp; output) {</span></a>
+<a name="454"><span class="lineNum">     454 </span>            :   return std::vector&lt;std::optional&lt;Variable&gt;&gt;{output};</a>
+<a name="455"><span class="lineNum">     455 </span>            : }</a>
+<a name="456"><span class="lineNum">     456 </span>            : </a>
+<a name="457"><span class="lineNum">     457 </span><span class="lineNoCov">          0 : inline std::vector&lt;std::optional&lt;Variable&gt;&gt; to_optional(variable_list&amp; output) {</span></a>
+<a name="458"><span class="lineNum">     458 </span>            :   std::vector&lt;std::optional&lt;Variable&gt;&gt; result;</a>
+<a name="459"><span class="lineNum">     459 </span>            :   std::transform(</a>
+<a name="460"><span class="lineNum">     460 </span>            :       output.begin(),</a>
+<a name="461"><span class="lineNum">     461 </span>            :       output.end(),</a>
+<a name="462"><span class="lineNum">     462 </span>            :       std::back_inserter(result),</a>
+<a name="463"><span class="lineNum">     463 </span>            :       [](const Variable&amp; var) { return var; });</a>
+<a name="464"><span class="lineNum">     464 </span>            :   return result;</a>
+<a name="465"><span class="lineNum">     465 </span>            : }</a>
+<a name="466"><span class="lineNum">     466 </span>            : </a>
+<a name="467"><span class="lineNum">     467 </span>            : template &lt;class T&gt;</a>
+<a name="468"><span class="lineNum">     468 </span>            : template &lt;typename X, typename... Args&gt;</a>
+<a name="469"><span class="lineNum">     469 </span>            : auto Function&lt;T&gt;::apply(Args&amp;&amp;... args)</a>
+<a name="470"><span class="lineNum">     470 </span>            :     -&gt; std::enable_if_t&lt;std::is_same_v&lt;X, T&gt;, forward_t&lt;X, Args...&gt;&gt; {</a>
+<a name="471"><span class="lineNum">     471 </span>            :   const auto&amp; functorch_tls = at::functorch::functorchTLSAccessor();</a>
+<a name="472"><span class="lineNum">     472 </span>            :   if (functorch_tls) {</a>
+<a name="473"><span class="lineNum">     473 </span>            :     // Function support for functorch is handled in Python.</a>
+<a name="474"><span class="lineNum">     474 </span>            :     // Here we are dealing with a (C++) Function, which is not supported.</a>
+<a name="475"><span class="lineNum">     475 </span>            :     // Let's raise an error instead of being silently incorrect.</a>
+<a name="476"><span class="lineNum">     476 </span>            :     functorch_tls-&gt;checkSupportsCppAutogradFunction();</a>
+<a name="477"><span class="lineNum">     477 </span>            :   }</a>
+<a name="478"><span class="lineNum">     478 </span>            : </a>
+<a name="479"><span class="lineNum">     479 </span>            :   auto node = c10::make_intrusive&lt;CppNode&lt;T&gt;&gt;();</a>
+<a name="480"><span class="lineNum">     480 </span>            :   variable_list input_vars;</a>
+<a name="481"><span class="lineNum">     481 </span>            : </a>
+<a name="482"><span class="lineNum">     482 </span>            :   const size_t num_inputs = sizeof...(Args);</a>
+<a name="483"><span class="lineNum">     483 </span>            :   input_vars.reserve(num_inputs);</a>
+<a name="484"><span class="lineNum">     484 </span>            :   node-&gt;is_variable_input_.reserve(num_inputs);</a>
+<a name="485"><span class="lineNum">     485 </span>            :   // TODO Add tracing here</a>
+<a name="486"><span class="lineNum">     486 </span>            :   extract_vars(node-&gt;is_variable_input_, input_vars, args...);</a>
+<a name="487"><span class="lineNum">     487 </span>            : </a>
+<a name="488"><span class="lineNum">     488 </span>            :   bool is_executable =</a>
+<a name="489"><span class="lineNum">     489 </span>            :       GradMode::is_enabled() &amp;&amp; any_variable_requires_grad(input_vars);</a>
+<a name="490"><span class="lineNum">     490 </span>            :   auto next_edges =</a>
+<a name="491"><span class="lineNum">     491 </span>            :       (is_executable ? collect_next_edges(input_vars) : edge_list());</a>
+<a name="492"><span class="lineNum">     492 </span>            :   node-&gt;set_ctx_grad_fn(node);</a>
+<a name="493"><span class="lineNum">     493 </span>            :   node-&gt;set_next_edges(std::move(next_edges));</a>
+<a name="494"><span class="lineNum">     494 </span>            :   node-&gt;clear_input_metadata();</a>
+<a name="495"><span class="lineNum">     495 </span>            : </a>
+<a name="496"><span class="lineNum">     496 </span>            :   node-&gt;input_info_.reserve(input_vars.size());</a>
+<a name="497"><span class="lineNum">     497 </span>            :   for (auto&amp; var : input_vars) {</a>
+<a name="498"><span class="lineNum">     498 </span>            :     node-&gt;input_info_.emplace_back(var);</a>
+<a name="499"><span class="lineNum">     499 </span>            :   }</a>
+<a name="500"><span class="lineNum">     500 </span>            : </a>
+<a name="501"><span class="lineNum">     501 </span>            :   using forward_return_t = forward_t&lt;X, Args...&gt;;</a>
+<a name="502"><span class="lineNum">     502 </span>            :   forward_return_t outputs;</a>
+<a name="503"><span class="lineNum">     503 </span>            :   {</a>
+<a name="504"><span class="lineNum">     504 </span>            :     AutoGradMode grad_mode(false);</a>
+<a name="505"><span class="lineNum">     505 </span>            :     outputs = T::forward(&amp;node-&gt;ctx_, std::forward&lt;Args&gt;(args)...);</a>
+<a name="506"><span class="lineNum">     506 </span>            :   }</a>
+<a name="507"><span class="lineNum">     507 </span>            : </a>
+<a name="508"><span class="lineNum">     508 </span>            :   _jvp_fn_t jvp_fn = [](const variable_list&amp; inputs,</a>
+<a name="509"><span class="lineNum">     509 </span>            :                         const variable_list&amp; gI) -&gt; variable_list {</a>
+<a name="510"><span class="lineNum">     510 </span>            :     TORCH_CHECK(</a>
+<a name="511"><span class="lineNum">     511 </span>            :         false,</a>
+<a name="512"><span class="lineNum">     512 </span>            :         &quot;jvp is not implemented for the c++ API of custom Function yet.&quot;,</a>
+<a name="513"><span class="lineNum">     513 </span>            :         &quot;Please open a feature request on GitHub if you need this.&quot;);</a>
+<a name="514"><span class="lineNum">     514 </span>            :   };</a>
+<a name="515"><span class="lineNum">     515 </span>            : </a>
+<a name="516"><span class="lineNum">     516 </span>            :   auto view_as_self_fn = [](const at::Tensor&amp; x) -&gt; at::Tensor {</a>
+<a name="517"><span class="lineNum">     517 </span>            :     return x.view_as(x);</a>
+<a name="518"><span class="lineNum">     518 </span>            :   };</a>
+<a name="519"><span class="lineNum">     519 </span>            : </a>
+<a name="520"><span class="lineNum">     520 </span>            :   auto wrapped_outputs = _wrap_outputs(</a>
+<a name="521"><span class="lineNum">     521 </span>            :       input_vars,</a>
+<a name="522"><span class="lineNum">     522 </span>            :       node-&gt;ctx_.get_non_differentiable(),</a>
+<a name="523"><span class="lineNum">     523 </span>            :       node-&gt;ctx_.get_and_bump_dirty(),</a>
+<a name="524"><span class="lineNum">     524 </span>            :       to_optional(outputs),</a>
+<a name="525"><span class="lineNum">     525 </span>            :       is_executable ? node : nullptr,</a>
+<a name="526"><span class="lineNum">     526 </span>            :       jvp_fn,</a>
+<a name="527"><span class="lineNum">     527 </span>            :       {},</a>
+<a name="528"><span class="lineNum">     528 </span>            :       view_as_self_fn,</a>
+<a name="529"><span class="lineNum">     529 </span>            :       false);</a>
+<a name="530"><span class="lineNum">     530 </span>            : </a>
+<a name="531"><span class="lineNum">     531 </span>            :   node-&gt;output_info_.reserve(wrapped_outputs.size());</a>
+<a name="532"><span class="lineNum">     532 </span>            :   for (auto&amp; output : wrapped_outputs) {</a>
+<a name="533"><span class="lineNum">     533 </span>            :     if (is_executable &amp;&amp; output.has_value()) {</a>
+<a name="534"><span class="lineNum">     534 </span>            :       node-&gt;output_info_.emplace_back(output.value());</a>
+<a name="535"><span class="lineNum">     535 </span>            :     } else if (is_executable) {</a>
+<a name="536"><span class="lineNum">     536 </span>            :       node-&gt;output_info_.emplace_back();</a>
+<a name="537"><span class="lineNum">     537 </span>            :     }</a>
+<a name="538"><span class="lineNum">     538 </span>            :   }</a>
+<a name="539"><span class="lineNum">     539 </span>            : </a>
+<a name="540"><span class="lineNum">     540 </span>            :   if (is_executable) {</a>
+<a name="541"><span class="lineNum">     541 </span>            :     node-&gt;save_variables_to_ctx();</a>
+<a name="542"><span class="lineNum">     542 </span>            :   }</a>
+<a name="543"><span class="lineNum">     543 </span>            : </a>
+<a name="544"><span class="lineNum">     544 </span>            :   // wrapped_outputs will be a variable_list so, convert it to the correct</a>
+<a name="545"><span class="lineNum">     545 </span>            :   // return type. Only Variable and variable_list are accepted as return types.</a>
+<a name="546"><span class="lineNum">     546 </span>            :   return to_output_type&lt;forward_return_t&gt;(wrapped_outputs);</a>
+<a name="547"><span class="lineNum">     547 </span>            : }</a>
+<a name="548"><span class="lineNum">     548 </span>            : </a>
+<a name="549"><span class="lineNum">     549 </span>            : // The logic here is the same as PyNode::apply, so changes to it should be done</a>
+<a name="550"><span class="lineNum">     550 </span>            : // in both the places</a>
+<a name="551"><span class="lineNum">     551 </span>            : template &lt;class T&gt;</a>
+<a name="552"><span class="lineNum">     552 </span>            : // NOLINTNEXTLINE(cppcoreguidelines-rvalue-reference-param-not-moved)</a>
+<a name="553"><span class="lineNum">     553 </span>            : variable_list CppNode&lt;T&gt;::apply(variable_list&amp;&amp; inputs) {</a>
+<a name="554"><span class="lineNum">     554 </span>            :   // Acquire lock to here protect thread safety on custom C++ Autograd Node</a>
+<a name="555"><span class="lineNum">     555 </span>            :   // This is needed for the custom Autograd Node since we don't know if the</a>
+<a name="556"><span class="lineNum">     556 </span>            :   // user defined Node will write to the shared data during backward.</a>
+<a name="557"><span class="lineNum">     557 </span>            :   // see Note [Thread Safety on Autograd Node]</a>
+<a name="558"><span class="lineNum">     558 </span>            :   std::lock_guard&lt;std::mutex&gt; lock(mutex_);</a>
+<a name="559"><span class="lineNum">     559 </span>            :   return CppNode_apply_functional&lt;T&gt;(</a>
+<a name="560"><span class="lineNum">     560 </span>            :       std::move(inputs), ctx_, is_variable_input_, output_info_, name());</a>
+<a name="561"><span class="lineNum">     561 </span>            : }</a>
+<a name="562"><span class="lineNum">     562 </span>            : </a>
+<a name="563"><span class="lineNum">     563 </span>            : template &lt;class T&gt;</a>
+<a name="564"><span class="lineNum">     564 </span>            : void CppNode&lt;T&gt;::release_variables() {</a>
+<a name="565"><span class="lineNum">     565 </span>            :   // lock to ensure thread safety, see [Thread Safety on Autograd Node]</a>
+<a name="566"><span class="lineNum">     566 </span>            :   std::lock_guard&lt;std::mutex&gt; lock(mutex_);</a>
+<a name="567"><span class="lineNum">     567 </span>            :   ctx_.saved_variables_.clear();</a>
+<a name="568"><span class="lineNum">     568 </span>            :   ctx_.has_freed_buffers_ = true;</a>
+<a name="569"><span class="lineNum">     569 </span>            : }</a>
+<a name="570"><span class="lineNum">     570 </span>            : </a>
+<a name="571"><span class="lineNum">     571 </span>            : template &lt;class T&gt;</a>
+<a name="572"><span class="lineNum">     572 </span>            : void CppNode&lt;T&gt;::release_resources() {</a>
+<a name="573"><span class="lineNum">     573 </span>            :   Node::release_resources();</a>
 <a name="574"><span class="lineNum">     574 </span>            : </a>
-<a name="575"><span class="lineNum">     575 </span>            : template &lt;class T&gt;</a>
-<a name="576"><span class="lineNum">     576 </span>            : void CppNode&lt;T&gt;::set_ctx_grad_fn(const std::shared_ptr&lt;Node&gt;&amp; node) {</a>
-<a name="577"><span class="lineNum">     577 </span>            :   ctx_.grad_fn_ = node;</a>
+<a name="575"><span class="lineNum">     575 </span>            :   // AutogradContext deletes copy/move, so destroy and reconstruct in place.</a>
+<a name="576"><span class="lineNum">     576 </span>            :   ctx_.~AutogradContext();</a>
+<a name="577"><span class="lineNum">     577 </span>            :   new (&amp;ctx_) AutogradContext();</a>
 <a name="578"><span class="lineNum">     578 </span>            : }</a>
 <a name="579"><span class="lineNum">     579 </span>            : </a>
-<a name="580"><span class="lineNum">     580 </span>            : } // namespace torch::autograd</a>
+<a name="580"><span class="lineNum">     580 </span>            : template &lt;class T&gt;</a>
+<a name="581"><span class="lineNum">     581 </span>            : void CppNode&lt;T&gt;::save_variables_to_ctx() {</a>
+<a name="582"><span class="lineNum">     582 </span>            :   ctx_.save_variables();</a>
+<a name="583"><span class="lineNum">     583 </span>            : }</a>
+<a name="584"><span class="lineNum">     584 </span>            : </a>
+<a name="585"><span class="lineNum">     585 </span>            : template &lt;class T&gt;</a>
+<a name="586"><span class="lineNum">     586 </span>            : void CppNode&lt;T&gt;::set_ctx_grad_fn(const c10::intrusive_ptr&lt;Node&gt;&amp; node) {</a>
+<a name="587"><span class="lineNum">     587 </span>            :   ctx_.grad_fn_ = node;</a>
+<a name="588"><span class="lineNum">     588 </span>            : }</a>
+<a name="589"><span class="lineNum">     589 </span>            : </a>
+<a name="590"><span class="lineNum">     590 </span>            : } // namespace torch::autograd</a>
 </pre>
       </td>
     </tr>
