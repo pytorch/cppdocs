@@ -134,15 +134,15 @@ Pretty prints the `ParameterList` module into the given `stream`.
 
 inline void append(torch::Tensor &¶m)
 
-push a given parameter at the end of the list
+push the a given parameter at the end of the list
 
 inline void append(const torch::Tensor ¶m)
 
-push a given parameter at the end of the list
+push the a given parameter at the end of the list
 
 inline void append(const [OrderedDict](../library/registration.html#_CPPv4I00EN5torch11OrderedDictE)<std::string, torch::Tensor>::Item &pair)
 
-push a given parameter at the end of the list And the key of the pair will be discarded, only the value will be added into the `ParameterList`
+push the a given parameter at the end of the list And the key of the pair will be discarded, only the value will be added into the `ParameterList`
 
 template<typename Container>
 inline void extend(const Container &container)

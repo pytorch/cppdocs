@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Date:</td>
-            <td class="headerValue">2026-05-03 01:11:04</td>
+            <td class="headerValue">2026-05-04 21:58:09</td>
             <td></td>
           </tr>
           <tr>
@@ -233,376 +233,355 @@
 <a name="167"><span class="lineNum">     167 </span>            : </a>
 <a name="168"><span class="lineNum">     168 </span>            :   /// Method registration API for static methods.</a>
 <a name="169"><span class="lineNum">     169 </span>            :   template &lt;typename Func&gt;</a>
-<a name="170"><span class="lineNum">     170 </span><span class="lineCov">          1 :   class_&amp; def_static(</span></a>
-<a name="171"><span class="lineNum">     171 </span>            :       std::string name,</a>
-<a name="172"><span class="lineNum">     172 </span>            :       Func func,</a>
-<a name="173"><span class="lineNum">     173 </span>            :       std::string doc_string = &quot;&quot;,</a>
-<a name="174"><span class="lineNum">     174 </span>            :       std::initializer_list&lt;arg&gt; default_args = {}) {</a>
-<a name="175"><span class="lineNum">     175 </span>            :     auto qualMethodName = qualClassName + &quot;.&quot; + name;</a>
-<a name="176"><span class="lineNum">     176 </span>            :     auto schema =</a>
-<a name="177"><span class="lineNum">     177 </span>            :         c10::inferFunctionSchemaSingleReturn&lt;Func&gt;(std::move(name), &quot;&quot;);</a>
-<a name="178"><span class="lineNum">     178 </span>            : </a>
-<a name="179"><span class="lineNum">     179 </span>            :     // If default values are provided for function arguments, there must be</a>
-<a name="180"><span class="lineNum">     180 </span>            :     // none (no default values) or default values for all function</a>
-<a name="181"><span class="lineNum">     181 </span>            :     // arguments. This is because argument names are not extracted by</a>
-<a name="182"><span class="lineNum">     182 </span>            :     // inferFunctionSchemaSingleReturn, and so there must be a torch::arg</a>
-<a name="183"><span class="lineNum">     183 </span>            :     // instance in default_args even for arguments that do not have an actual</a>
-<a name="184"><span class="lineNum">     184 </span>            :     // default value provided.</a>
-<a name="185"><span class="lineNum">     185 </span>            :     TORCH_CHECK(</a>
-<a name="186"><span class="lineNum">     186 </span>            :         default_args.size() == 0 ||</a>
-<a name="187"><span class="lineNum">     187 </span>            :             default_args.size() == schema.arguments().size(),</a>
-<a name="188"><span class="lineNum">     188 </span>            :         &quot;Default values must be specified for none or all arguments&quot;);</a>
-<a name="189"><span class="lineNum">     189 </span>            : </a>
-<a name="190"><span class="lineNum">     190 </span>            :     // If there are default args, copy the argument names and default values to</a>
-<a name="191"><span class="lineNum">     191 </span>            :     // the function schema.</a>
-<a name="192"><span class="lineNum">     192 </span>            :     if (default_args.size() &gt; 0) {</a>
-<a name="193"><span class="lineNum">     193 </span>            :         schema = withNewArgumentsStatic(schema, default_args);</a>
-<a name="194"><span class="lineNum">     194 </span>            :     }</a>
-<a name="195"><span class="lineNum">     195 </span>            : </a>
-<a name="196"><span class="lineNum">     196 </span>            :     auto wrapped_func =</a>
-<a name="197"><span class="lineNum">     197 </span>            :         [func = std::move(func)](jit::Stack&amp; stack) mutable -&gt; void {</a>
-<a name="198"><span class="lineNum">     198 </span>            :       using RetType =</a>
-<a name="199"><span class="lineNum">     199 </span>            :           typename c10::guts::infer_function_traits_t&lt;Func&gt;::return_type;</a>
-<a name="200"><span class="lineNum">     200 </span>            :       detail::BoxedProxy&lt;RetType, Func&gt;()(stack, func);</a>
-<a name="201"><span class="lineNum">     201 </span>            :     };</a>
-<a name="202"><span class="lineNum">     202 </span>            :     auto method = std::make_unique&lt;jit::BuiltinOpFunction&gt;(</a>
-<a name="203"><span class="lineNum">     203 </span>            :         std::move(qualMethodName),</a>
-<a name="204"><span class="lineNum">     204 </span>            :         std::move(schema),</a>
-<a name="205"><span class="lineNum">     205 </span>            :         std::move(wrapped_func),</a>
-<a name="206"><span class="lineNum">     206 </span>            :         std::move(doc_string));</a>
-<a name="207"><span class="lineNum">     207 </span>            : </a>
-<a name="208"><span class="lineNum">     208 </span>            :     classTypePtr-&gt;addStaticMethod(method.get());</a>
-<a name="209"><span class="lineNum">     209 </span>            :     registerCustomClassMethod(std::move(method));</a>
-<a name="210"><span class="lineNum">     210 </span>            :     return *this;</a>
-<a name="211"><span class="lineNum">     211 </span>            :   }</a>
-<a name="212"><span class="lineNum">     212 </span>            : </a>
-<a name="213"><span class="lineNum">     213 </span>            :   /// Property registration API for properties with both getter and setter</a>
-<a name="214"><span class="lineNum">     214 </span>            :   /// functions.</a>
-<a name="215"><span class="lineNum">     215 </span>            :   template &lt;typename GetterFunc, typename SetterFunc&gt;</a>
-<a name="216"><span class="lineNum">     216 </span><span class="lineCov">          1 :   class_&amp; def_property(</span></a>
-<a name="217"><span class="lineNum">     217 </span>            :       const std::string&amp; name,</a>
-<a name="218"><span class="lineNum">     218 </span>            :       GetterFunc getter_func,</a>
-<a name="219"><span class="lineNum">     219 </span>            :       SetterFunc setter_func,</a>
+<a name="170"><span class="lineNum">     170 </span><span class="lineCov">          1 :   class_&amp; def_static(std::string name, Func func, std::string doc_string = &quot;&quot;) {</span></a>
+<a name="171"><span class="lineNum">     171 </span>            :     auto qualMethodName = qualClassName + &quot;.&quot; + name;</a>
+<a name="172"><span class="lineNum">     172 </span>            :     auto schema =</a>
+<a name="173"><span class="lineNum">     173 </span>            :         c10::inferFunctionSchemaSingleReturn&lt;Func&gt;(std::move(name), &quot;&quot;);</a>
+<a name="174"><span class="lineNum">     174 </span>            : </a>
+<a name="175"><span class="lineNum">     175 </span>            :     auto wrapped_func =</a>
+<a name="176"><span class="lineNum">     176 </span>            :         [func = std::move(func)](jit::Stack&amp; stack) mutable -&gt; void {</a>
+<a name="177"><span class="lineNum">     177 </span>            :       using RetType =</a>
+<a name="178"><span class="lineNum">     178 </span>            :           typename c10::guts::infer_function_traits_t&lt;Func&gt;::return_type;</a>
+<a name="179"><span class="lineNum">     179 </span>            :       detail::BoxedProxy&lt;RetType, Func&gt;()(stack, func);</a>
+<a name="180"><span class="lineNum">     180 </span>            :     };</a>
+<a name="181"><span class="lineNum">     181 </span>            :     auto method = std::make_unique&lt;jit::BuiltinOpFunction&gt;(</a>
+<a name="182"><span class="lineNum">     182 </span>            :         std::move(qualMethodName),</a>
+<a name="183"><span class="lineNum">     183 </span>            :         std::move(schema),</a>
+<a name="184"><span class="lineNum">     184 </span>            :         std::move(wrapped_func),</a>
+<a name="185"><span class="lineNum">     185 </span>            :         std::move(doc_string));</a>
+<a name="186"><span class="lineNum">     186 </span>            : </a>
+<a name="187"><span class="lineNum">     187 </span>            :     classTypePtr-&gt;addStaticMethod(method.get());</a>
+<a name="188"><span class="lineNum">     188 </span>            :     registerCustomClassMethod(std::move(method));</a>
+<a name="189"><span class="lineNum">     189 </span>            :     return *this;</a>
+<a name="190"><span class="lineNum">     190 </span>            :   }</a>
+<a name="191"><span class="lineNum">     191 </span>            : </a>
+<a name="192"><span class="lineNum">     192 </span>            :   /// Property registration API for properties with both getter and setter</a>
+<a name="193"><span class="lineNum">     193 </span>            :   /// functions.</a>
+<a name="194"><span class="lineNum">     194 </span>            :   template &lt;typename GetterFunc, typename SetterFunc&gt;</a>
+<a name="195"><span class="lineNum">     195 </span><span class="lineCov">          1 :   class_&amp; def_property(</span></a>
+<a name="196"><span class="lineNum">     196 </span>            :       const std::string&amp; name,</a>
+<a name="197"><span class="lineNum">     197 </span>            :       GetterFunc getter_func,</a>
+<a name="198"><span class="lineNum">     198 </span>            :       SetterFunc setter_func,</a>
+<a name="199"><span class="lineNum">     199 </span>            :       std::string doc_string = &quot;&quot;) {</a>
+<a name="200"><span class="lineNum">     200 </span>            :     torch::jit::Function* getter{};</a>
+<a name="201"><span class="lineNum">     201 </span>            :     torch::jit::Function* setter{};</a>
+<a name="202"><span class="lineNum">     202 </span>            : </a>
+<a name="203"><span class="lineNum">     203 </span>            :     auto wrapped_getter =</a>
+<a name="204"><span class="lineNum">     204 </span>            :         detail::wrap_func&lt;CurClass, GetterFunc&gt;(std::move(getter_func));</a>
+<a name="205"><span class="lineNum">     205 </span>            :     getter = defineMethod(name + &quot;_getter&quot;, wrapped_getter, doc_string);</a>
+<a name="206"><span class="lineNum">     206 </span>            : </a>
+<a name="207"><span class="lineNum">     207 </span>            :     auto wrapped_setter =</a>
+<a name="208"><span class="lineNum">     208 </span>            :         detail::wrap_func&lt;CurClass, SetterFunc&gt;(std::move(setter_func));</a>
+<a name="209"><span class="lineNum">     209 </span>            :     setter = defineMethod(name + &quot;_setter&quot;, wrapped_setter, doc_string);</a>
+<a name="210"><span class="lineNum">     210 </span>            : </a>
+<a name="211"><span class="lineNum">     211 </span>            :     classTypePtr-&gt;addProperty(name, getter, setter);</a>
+<a name="212"><span class="lineNum">     212 </span>            :     return *this;</a>
+<a name="213"><span class="lineNum">     213 </span>            :   }</a>
+<a name="214"><span class="lineNum">     214 </span>            : </a>
+<a name="215"><span class="lineNum">     215 </span>            :   /// Property registration API for properties with only getter function.</a>
+<a name="216"><span class="lineNum">     216 </span>            :   template &lt;typename GetterFunc&gt;</a>
+<a name="217"><span class="lineNum">     217 </span><span class="lineCov">          1 :   class_&amp; def_property(</span></a>
+<a name="218"><span class="lineNum">     218 </span>            :       const std::string&amp; name,</a>
+<a name="219"><span class="lineNum">     219 </span>            :       GetterFunc getter_func,</a>
 <a name="220"><span class="lineNum">     220 </span>            :       std::string doc_string = &quot;&quot;) {</a>
 <a name="221"><span class="lineNum">     221 </span>            :     torch::jit::Function* getter{};</a>
-<a name="222"><span class="lineNum">     222 </span>            :     torch::jit::Function* setter{};</a>
-<a name="223"><span class="lineNum">     223 </span>            : </a>
-<a name="224"><span class="lineNum">     224 </span>            :     auto wrapped_getter =</a>
-<a name="225"><span class="lineNum">     225 </span>            :         detail::wrap_func&lt;CurClass, GetterFunc&gt;(std::move(getter_func));</a>
-<a name="226"><span class="lineNum">     226 </span>            :     getter = defineMethod(name + &quot;_getter&quot;, wrapped_getter, doc_string);</a>
-<a name="227"><span class="lineNum">     227 </span>            : </a>
-<a name="228"><span class="lineNum">     228 </span>            :     auto wrapped_setter =</a>
-<a name="229"><span class="lineNum">     229 </span>            :         detail::wrap_func&lt;CurClass, SetterFunc&gt;(std::move(setter_func));</a>
-<a name="230"><span class="lineNum">     230 </span>            :     setter = defineMethod(name + &quot;_setter&quot;, wrapped_setter, doc_string);</a>
-<a name="231"><span class="lineNum">     231 </span>            : </a>
-<a name="232"><span class="lineNum">     232 </span>            :     classTypePtr-&gt;addProperty(name, getter, setter);</a>
-<a name="233"><span class="lineNum">     233 </span>            :     return *this;</a>
-<a name="234"><span class="lineNum">     234 </span>            :   }</a>
-<a name="235"><span class="lineNum">     235 </span>            : </a>
-<a name="236"><span class="lineNum">     236 </span>            :   /// Property registration API for properties with only getter function.</a>
-<a name="237"><span class="lineNum">     237 </span>            :   template &lt;typename GetterFunc&gt;</a>
-<a name="238"><span class="lineNum">     238 </span><span class="lineCov">          1 :   class_&amp; def_property(</span></a>
-<a name="239"><span class="lineNum">     239 </span>            :       const std::string&amp; name,</a>
-<a name="240"><span class="lineNum">     240 </span>            :       GetterFunc getter_func,</a>
-<a name="241"><span class="lineNum">     241 </span>            :       std::string doc_string = &quot;&quot;) {</a>
-<a name="242"><span class="lineNum">     242 </span>            :     torch::jit::Function* getter{};</a>
+<a name="222"><span class="lineNum">     222 </span>            : </a>
+<a name="223"><span class="lineNum">     223 </span>            :     auto wrapped_getter =</a>
+<a name="224"><span class="lineNum">     224 </span>            :         detail::wrap_func&lt;CurClass, GetterFunc&gt;(std::move(getter_func));</a>
+<a name="225"><span class="lineNum">     225 </span>            :     getter = defineMethod(name + &quot;_getter&quot;, wrapped_getter, doc_string);</a>
+<a name="226"><span class="lineNum">     226 </span>            : </a>
+<a name="227"><span class="lineNum">     227 </span>            :     classTypePtr-&gt;addProperty(name, getter, nullptr);</a>
+<a name="228"><span class="lineNum">     228 </span>            :     return *this;</a>
+<a name="229"><span class="lineNum">     229 </span>            :   }</a>
+<a name="230"><span class="lineNum">     230 </span>            : </a>
+<a name="231"><span class="lineNum">     231 </span>            :   /// Property registration API for properties with read-write access.</a>
+<a name="232"><span class="lineNum">     232 </span>            :   template &lt;typename T&gt;</a>
+<a name="233"><span class="lineNum">     233 </span><span class="lineCov">          1 :   class_&amp; def_readwrite(const std::string&amp; name, T CurClass::*field) {</span></a>
+<a name="234"><span class="lineNum">     234 </span>            :     auto getter_func = [field =</a>
+<a name="235"><span class="lineNum">     235 </span>            :                             field](const c10::intrusive_ptr&lt;CurClass&gt;&amp; self) {</a>
+<a name="236"><span class="lineNum">     236 </span>            :       return self.get()-&gt;*field;</a>
+<a name="237"><span class="lineNum">     237 </span>            :     };</a>
+<a name="238"><span class="lineNum">     238 </span>            : </a>
+<a name="239"><span class="lineNum">     239 </span>            :     auto setter_func = [field = field](</a>
+<a name="240"><span class="lineNum">     240 </span>            :                            const c10::intrusive_ptr&lt;CurClass&gt;&amp; self, T value) {</a>
+<a name="241"><span class="lineNum">     241 </span>            :       self.get()-&gt;*field = value;</a>
+<a name="242"><span class="lineNum">     242 </span>            :     };</a>
 <a name="243"><span class="lineNum">     243 </span>            : </a>
-<a name="244"><span class="lineNum">     244 </span>            :     auto wrapped_getter =</a>
-<a name="245"><span class="lineNum">     245 </span>            :         detail::wrap_func&lt;CurClass, GetterFunc&gt;(std::move(getter_func));</a>
-<a name="246"><span class="lineNum">     246 </span>            :     getter = defineMethod(name + &quot;_getter&quot;, wrapped_getter, doc_string);</a>
-<a name="247"><span class="lineNum">     247 </span>            : </a>
-<a name="248"><span class="lineNum">     248 </span>            :     classTypePtr-&gt;addProperty(name, getter, nullptr);</a>
-<a name="249"><span class="lineNum">     249 </span>            :     return *this;</a>
-<a name="250"><span class="lineNum">     250 </span>            :   }</a>
-<a name="251"><span class="lineNum">     251 </span>            : </a>
-<a name="252"><span class="lineNum">     252 </span>            :   /// Property registration API for properties with read-write access.</a>
-<a name="253"><span class="lineNum">     253 </span>            :   template &lt;typename T&gt;</a>
-<a name="254"><span class="lineNum">     254 </span><span class="lineCov">          1 :   class_&amp; def_readwrite(const std::string&amp; name, T CurClass::*field) {</span></a>
-<a name="255"><span class="lineNum">     255 </span>            :     auto getter_func = [field =</a>
-<a name="256"><span class="lineNum">     256 </span>            :                             field](const c10::intrusive_ptr&lt;CurClass&gt;&amp; self) {</a>
-<a name="257"><span class="lineNum">     257 </span>            :       return self.get()-&gt;*field;</a>
-<a name="258"><span class="lineNum">     258 </span>            :     };</a>
-<a name="259"><span class="lineNum">     259 </span>            : </a>
-<a name="260"><span class="lineNum">     260 </span>            :     auto setter_func = [field = field](</a>
-<a name="261"><span class="lineNum">     261 </span>            :                            const c10::intrusive_ptr&lt;CurClass&gt;&amp; self, T value) {</a>
-<a name="262"><span class="lineNum">     262 </span>            :       self.get()-&gt;*field = value;</a>
-<a name="263"><span class="lineNum">     263 </span>            :     };</a>
-<a name="264"><span class="lineNum">     264 </span>            : </a>
-<a name="265"><span class="lineNum">     265 </span>            :     return def_property(name, getter_func, setter_func);</a>
-<a name="266"><span class="lineNum">     266 </span>            :   }</a>
-<a name="267"><span class="lineNum">     267 </span>            : </a>
-<a name="268"><span class="lineNum">     268 </span>            :   /// Property registration API for properties with read-only access.</a>
-<a name="269"><span class="lineNum">     269 </span>            :   template &lt;typename T&gt;</a>
-<a name="270"><span class="lineNum">     270 </span><span class="lineCov">          1 :   class_&amp; def_readonly(const std::string&amp; name, T CurClass::*field) {</span></a>
-<a name="271"><span class="lineNum">     271 </span>            :     auto getter_func =</a>
-<a name="272"><span class="lineNum">     272 </span>            :         [field = std::move(field)](const c10::intrusive_ptr&lt;CurClass&gt;&amp; self) {</a>
-<a name="273"><span class="lineNum">     273 </span>            :           return self.get()-&gt;*field;</a>
-<a name="274"><span class="lineNum">     274 </span>            :         };</a>
-<a name="275"><span class="lineNum">     275 </span>            : </a>
-<a name="276"><span class="lineNum">     276 </span>            :     return def_property(name, getter_func);</a>
-<a name="277"><span class="lineNum">     277 </span>            :   }</a>
-<a name="278"><span class="lineNum">     278 </span>            : </a>
-<a name="279"><span class="lineNum">     279 </span>            :   /// This is an unsafe method registration API added for adding custom JIT</a>
-<a name="280"><span class="lineNum">     280 </span>            :   /// backend support via custom C++ classes. It is not for general purpose use.</a>
-<a name="281"><span class="lineNum">     281 </span><span class="lineCov">          1 :   class_&amp; _def_unboxed(</span></a>
-<a name="282"><span class="lineNum">     282 </span>            :       const std::string&amp; name,</a>
-<a name="283"><span class="lineNum">     283 </span>            :       std::function&lt;void(jit::Stack&amp;)&gt; func,</a>
-<a name="284"><span class="lineNum">     284 </span>            :       c10::FunctionSchema schema,</a>
-<a name="285"><span class="lineNum">     285 </span>            :       std::string doc_string = &quot;&quot;) {</a>
-<a name="286"><span class="lineNum">     286 </span>            :     auto method = std::make_unique&lt;jit::BuiltinOpFunction&gt;(</a>
-<a name="287"><span class="lineNum">     287 </span>            :         qualClassName + &quot;.&quot; + name,</a>
-<a name="288"><span class="lineNum">     288 </span>            :         std::move(schema),</a>
-<a name="289"><span class="lineNum">     289 </span>            :         std::move(func),</a>
-<a name="290"><span class="lineNum">     290 </span>            :         std::move(doc_string));</a>
-<a name="291"><span class="lineNum">     291 </span>            :     classTypePtr-&gt;addMethod(method.get());</a>
-<a name="292"><span class="lineNum">     292 </span>            :     registerCustomClassMethod(std::move(method));</a>
-<a name="293"><span class="lineNum">     293 </span>            :     return *this;</a>
-<a name="294"><span class="lineNum">     294 </span>            :   }</a>
-<a name="295"><span class="lineNum">     295 </span>            : </a>
-<a name="296"><span class="lineNum">     296 </span>            :   /// def_pickle() is used to define exactly what state gets serialized</a>
-<a name="297"><span class="lineNum">     297 </span>            :   /// or deserialized for a given instance of a custom C++ class in</a>
-<a name="298"><span class="lineNum">     298 </span>            :   /// Python or TorchScript. This protocol is equivalent to the Pickle</a>
-<a name="299"><span class="lineNum">     299 </span>            :   /// concept of `__getstate__` and `__setstate__` from Python</a>
-<a name="300"><span class="lineNum">     300 </span>            :   /// (https://docs.python.org/2/library/pickle.html#object.__getstate__)</a>
-<a name="301"><span class="lineNum">     301 </span>            :   ///</a>
-<a name="302"><span class="lineNum">     302 </span>            :   /// Currently, both the `get_state` and `set_state` callables must be</a>
-<a name="303"><span class="lineNum">     303 </span>            :   /// C++ lambda expressions. They should have the following signatures,</a>
-<a name="304"><span class="lineNum">     304 </span>            :   /// where `CurClass` is the class you're registering and `T1` is some object</a>
-<a name="305"><span class="lineNum">     305 </span>            :   /// that encapsulates the state of the object.</a>
-<a name="306"><span class="lineNum">     306 </span>            :   ///</a>
-<a name="307"><span class="lineNum">     307 </span>            :   ///     __getstate__(intrusive_ptr&lt;CurClass&gt;) -&gt; T1</a>
-<a name="308"><span class="lineNum">     308 </span>            :   ///     __setstate__(T2) -&gt; intrusive_ptr&lt;CurClass&gt;</a>
-<a name="309"><span class="lineNum">     309 </span>            :   ///</a>
-<a name="310"><span class="lineNum">     310 </span>            :   /// `T1` must be an object that is convertible to IValue by the same rules</a>
-<a name="311"><span class="lineNum">     311 </span>            :   /// for custom op/method registration.</a>
-<a name="312"><span class="lineNum">     312 </span>            :   ///</a>
-<a name="313"><span class="lineNum">     313 </span>            :   /// For the common case, T1 == T2. T1 can also be a subtype of T2. An</a>
-<a name="314"><span class="lineNum">     314 </span>            :   /// example where it makes sense for T1 and T2 to differ is if __setstate__</a>
-<a name="315"><span class="lineNum">     315 </span>            :   /// handles legacy formats in a backwards compatible way.</a>
-<a name="316"><span class="lineNum">     316 </span>            :   ///</a>
-<a name="317"><span class="lineNum">     317 </span>            :   /// Example:</a>
-<a name="318"><span class="lineNum">     318 </span>            :   ///</a>
-<a name="319"><span class="lineNum">     319 </span>            :   ///     .def_pickle(</a>
-<a name="320"><span class="lineNum">     320 </span>            :   ///         // __getstate__</a>
-<a name="321"><span class="lineNum">     321 </span>            :   ///         [](const c10::intrusive_ptr&lt;MyStackClass&lt;std::string&gt;&gt;&amp; self) {</a>
-<a name="322"><span class="lineNum">     322 </span>            :   ///           return self-&gt;stack_;</a>
-<a name="323"><span class="lineNum">     323 </span>            :   ///         },</a>
-<a name="324"><span class="lineNum">     324 </span>            :   ///         [](std::vector&lt;std::string&gt; state) { // __setstate__</a>
-<a name="325"><span class="lineNum">     325 </span>            :   ///            return c10::make_intrusive&lt;MyStackClass&lt;std::string&gt;&gt;(</a>
-<a name="326"><span class="lineNum">     326 </span>            :   ///               std::vector&lt;std::string&gt;{&quot;i&quot;, &quot;was&quot;, &quot;deserialized&quot;});</a>
-<a name="327"><span class="lineNum">     327 </span>            :   ///         })</a>
-<a name="328"><span class="lineNum">     328 </span>            :   template &lt;typename GetStateFn, typename SetStateFn&gt;</a>
-<a name="329"><span class="lineNum">     329 </span><span class="lineCov">          1 :   class_&amp; def_pickle(GetStateFn&amp;&amp; get_state, SetStateFn&amp;&amp; set_state) {</span></a>
-<a name="330"><span class="lineNum">     330 </span>            :     static_assert(</a>
-<a name="331"><span class="lineNum">     331 </span>            :         c10::guts::is_stateless_lambda&lt;std::decay_t&lt;GetStateFn&gt;&gt;::value &amp;&amp;</a>
-<a name="332"><span class="lineNum">     332 </span>            :             c10::guts::is_stateless_lambda&lt;std::decay_t&lt;SetStateFn&gt;&gt;::value,</a>
-<a name="333"><span class="lineNum">     333 </span>            :         &quot;def_pickle() currently only supports lambdas as &quot;</a>
-<a name="334"><span class="lineNum">     334 </span>            :         &quot;__getstate__ and __setstate__ arguments.&quot;);</a>
-<a name="335"><span class="lineNum">     335 </span>            :     def(&quot;__getstate__&quot;, std::forward&lt;GetStateFn&gt;(get_state));</a>
+<a name="244"><span class="lineNum">     244 </span>            :     return def_property(name, getter_func, setter_func);</a>
+<a name="245"><span class="lineNum">     245 </span>            :   }</a>
+<a name="246"><span class="lineNum">     246 </span>            : </a>
+<a name="247"><span class="lineNum">     247 </span>            :   /// Property registration API for properties with read-only access.</a>
+<a name="248"><span class="lineNum">     248 </span>            :   template &lt;typename T&gt;</a>
+<a name="249"><span class="lineNum">     249 </span><span class="lineCov">          1 :   class_&amp; def_readonly(const std::string&amp; name, T CurClass::*field) {</span></a>
+<a name="250"><span class="lineNum">     250 </span>            :     auto getter_func =</a>
+<a name="251"><span class="lineNum">     251 </span>            :         [field = std::move(field)](const c10::intrusive_ptr&lt;CurClass&gt;&amp; self) {</a>
+<a name="252"><span class="lineNum">     252 </span>            :           return self.get()-&gt;*field;</a>
+<a name="253"><span class="lineNum">     253 </span>            :         };</a>
+<a name="254"><span class="lineNum">     254 </span>            : </a>
+<a name="255"><span class="lineNum">     255 </span>            :     return def_property(name, getter_func);</a>
+<a name="256"><span class="lineNum">     256 </span>            :   }</a>
+<a name="257"><span class="lineNum">     257 </span>            : </a>
+<a name="258"><span class="lineNum">     258 </span>            :   /// This is an unsafe method registration API added for adding custom JIT</a>
+<a name="259"><span class="lineNum">     259 </span>            :   /// backend support via custom C++ classes. It is not for general purpose use.</a>
+<a name="260"><span class="lineNum">     260 </span><span class="lineCov">          1 :   class_&amp; _def_unboxed(</span></a>
+<a name="261"><span class="lineNum">     261 </span>            :       const std::string&amp; name,</a>
+<a name="262"><span class="lineNum">     262 </span>            :       std::function&lt;void(jit::Stack&amp;)&gt; func,</a>
+<a name="263"><span class="lineNum">     263 </span>            :       c10::FunctionSchema schema,</a>
+<a name="264"><span class="lineNum">     264 </span>            :       std::string doc_string = &quot;&quot;) {</a>
+<a name="265"><span class="lineNum">     265 </span>            :     auto method = std::make_unique&lt;jit::BuiltinOpFunction&gt;(</a>
+<a name="266"><span class="lineNum">     266 </span>            :         qualClassName + &quot;.&quot; + name,</a>
+<a name="267"><span class="lineNum">     267 </span>            :         std::move(schema),</a>
+<a name="268"><span class="lineNum">     268 </span>            :         std::move(func),</a>
+<a name="269"><span class="lineNum">     269 </span>            :         std::move(doc_string));</a>
+<a name="270"><span class="lineNum">     270 </span>            :     classTypePtr-&gt;addMethod(method.get());</a>
+<a name="271"><span class="lineNum">     271 </span>            :     registerCustomClassMethod(std::move(method));</a>
+<a name="272"><span class="lineNum">     272 </span>            :     return *this;</a>
+<a name="273"><span class="lineNum">     273 </span>            :   }</a>
+<a name="274"><span class="lineNum">     274 </span>            : </a>
+<a name="275"><span class="lineNum">     275 </span>            :   /// def_pickle() is used to define exactly what state gets serialized</a>
+<a name="276"><span class="lineNum">     276 </span>            :   /// or deserialized for a given instance of a custom C++ class in</a>
+<a name="277"><span class="lineNum">     277 </span>            :   /// Python or TorchScript. This protocol is equivalent to the Pickle</a>
+<a name="278"><span class="lineNum">     278 </span>            :   /// concept of `__getstate__` and `__setstate__` from Python</a>
+<a name="279"><span class="lineNum">     279 </span>            :   /// (https://docs.python.org/2/library/pickle.html#object.__getstate__)</a>
+<a name="280"><span class="lineNum">     280 </span>            :   ///</a>
+<a name="281"><span class="lineNum">     281 </span>            :   /// Currently, both the `get_state` and `set_state` callables must be</a>
+<a name="282"><span class="lineNum">     282 </span>            :   /// C++ lambda expressions. They should have the following signatures,</a>
+<a name="283"><span class="lineNum">     283 </span>            :   /// where `CurClass` is the class you're registering and `T1` is some object</a>
+<a name="284"><span class="lineNum">     284 </span>            :   /// that encapsulates the state of the object.</a>
+<a name="285"><span class="lineNum">     285 </span>            :   ///</a>
+<a name="286"><span class="lineNum">     286 </span>            :   ///     __getstate__(intrusive_ptr&lt;CurClass&gt;) -&gt; T1</a>
+<a name="287"><span class="lineNum">     287 </span>            :   ///     __setstate__(T2) -&gt; intrusive_ptr&lt;CurClass&gt;</a>
+<a name="288"><span class="lineNum">     288 </span>            :   ///</a>
+<a name="289"><span class="lineNum">     289 </span>            :   /// `T1` must be an object that is convertible to IValue by the same rules</a>
+<a name="290"><span class="lineNum">     290 </span>            :   /// for custom op/method registration.</a>
+<a name="291"><span class="lineNum">     291 </span>            :   ///</a>
+<a name="292"><span class="lineNum">     292 </span>            :   /// For the common case, T1 == T2. T1 can also be a subtype of T2. An</a>
+<a name="293"><span class="lineNum">     293 </span>            :   /// example where it makes sense for T1 and T2 to differ is if __setstate__</a>
+<a name="294"><span class="lineNum">     294 </span>            :   /// handles legacy formats in a backwards compatible way.</a>
+<a name="295"><span class="lineNum">     295 </span>            :   ///</a>
+<a name="296"><span class="lineNum">     296 </span>            :   /// Example:</a>
+<a name="297"><span class="lineNum">     297 </span>            :   ///</a>
+<a name="298"><span class="lineNum">     298 </span>            :   ///     .def_pickle(</a>
+<a name="299"><span class="lineNum">     299 </span>            :   ///         // __getstate__</a>
+<a name="300"><span class="lineNum">     300 </span>            :   ///         [](const c10::intrusive_ptr&lt;MyStackClass&lt;std::string&gt;&gt;&amp; self) {</a>
+<a name="301"><span class="lineNum">     301 </span>            :   ///           return self-&gt;stack_;</a>
+<a name="302"><span class="lineNum">     302 </span>            :   ///         },</a>
+<a name="303"><span class="lineNum">     303 </span>            :   ///         [](std::vector&lt;std::string&gt; state) { // __setstate__</a>
+<a name="304"><span class="lineNum">     304 </span>            :   ///            return c10::make_intrusive&lt;MyStackClass&lt;std::string&gt;&gt;(</a>
+<a name="305"><span class="lineNum">     305 </span>            :   ///               std::vector&lt;std::string&gt;{&quot;i&quot;, &quot;was&quot;, &quot;deserialized&quot;});</a>
+<a name="306"><span class="lineNum">     306 </span>            :   ///         })</a>
+<a name="307"><span class="lineNum">     307 </span>            :   template &lt;typename GetStateFn, typename SetStateFn&gt;</a>
+<a name="308"><span class="lineNum">     308 </span><span class="lineCov">          1 :   class_&amp; def_pickle(GetStateFn&amp;&amp; get_state, SetStateFn&amp;&amp; set_state) {</span></a>
+<a name="309"><span class="lineNum">     309 </span>            :     static_assert(</a>
+<a name="310"><span class="lineNum">     310 </span>            :         c10::guts::is_stateless_lambda&lt;std::decay_t&lt;GetStateFn&gt;&gt;::value &amp;&amp;</a>
+<a name="311"><span class="lineNum">     311 </span>            :             c10::guts::is_stateless_lambda&lt;std::decay_t&lt;SetStateFn&gt;&gt;::value,</a>
+<a name="312"><span class="lineNum">     312 </span>            :         &quot;def_pickle() currently only supports lambdas as &quot;</a>
+<a name="313"><span class="lineNum">     313 </span>            :         &quot;__getstate__ and __setstate__ arguments.&quot;);</a>
+<a name="314"><span class="lineNum">     314 </span>            :     def(&quot;__getstate__&quot;, std::forward&lt;GetStateFn&gt;(get_state));</a>
+<a name="315"><span class="lineNum">     315 </span>            : </a>
+<a name="316"><span class="lineNum">     316 </span>            :     // __setstate__ needs to be registered with some custom handling:</a>
+<a name="317"><span class="lineNum">     317 </span>            :     // We need to wrap the invocation of the user-provided function</a>
+<a name="318"><span class="lineNum">     318 </span>            :     // such that we take the return value (i.e. c10::intrusive_ptr&lt;CurrClass&gt;)</a>
+<a name="319"><span class="lineNum">     319 </span>            :     // and assign it to the `capsule` attribute.</a>
+<a name="320"><span class="lineNum">     320 </span>            :     using SetStateTraits =</a>
+<a name="321"><span class="lineNum">     321 </span>            :         c10::guts::infer_function_traits_t&lt;std::decay_t&lt;SetStateFn&gt;&gt;;</a>
+<a name="322"><span class="lineNum">     322 </span>            :     using SetStateArg = typename c10::guts::typelist::head_t&lt;</a>
+<a name="323"><span class="lineNum">     323 </span>            :         typename SetStateTraits::parameter_types&gt;;</a>
+<a name="324"><span class="lineNum">     324 </span>            :     auto setstate_wrapper = [set_state = std::forward&lt;SetStateFn&gt;(set_state)](</a>
+<a name="325"><span class="lineNum">     325 </span>            :                                 c10::tagged_capsule&lt;CurClass&gt; self,</a>
+<a name="326"><span class="lineNum">     326 </span>            :                                 SetStateArg arg) {</a>
+<a name="327"><span class="lineNum">     327 </span>            :       c10::intrusive_ptr&lt;CurClass&gt; classObj =</a>
+<a name="328"><span class="lineNum">     328 </span>            :           std::invoke(set_state, std::move(arg));</a>
+<a name="329"><span class="lineNum">     329 </span>            :       auto object = self.ivalue.toObject();</a>
+<a name="330"><span class="lineNum">     330 </span>            :       object-&gt;setSlot(0, c10::IValue::make_capsule(classObj));</a>
+<a name="331"><span class="lineNum">     331 </span>            :     };</a>
+<a name="332"><span class="lineNum">     332 </span>            :     defineMethod(</a>
+<a name="333"><span class="lineNum">     333 </span>            :         &quot;__setstate__&quot;,</a>
+<a name="334"><span class="lineNum">     334 </span>            :         detail::wrap_func&lt;CurClass, decltype(setstate_wrapper)&gt;(</a>
+<a name="335"><span class="lineNum">     335 </span>            :             std::move(setstate_wrapper)));</a>
 <a name="336"><span class="lineNum">     336 </span>            : </a>
-<a name="337"><span class="lineNum">     337 </span>            :     // __setstate__ needs to be registered with some custom handling:</a>
-<a name="338"><span class="lineNum">     338 </span>            :     // We need to wrap the invocation of the user-provided function</a>
-<a name="339"><span class="lineNum">     339 </span>            :     // such that we take the return value (i.e. c10::intrusive_ptr&lt;CurrClass&gt;)</a>
-<a name="340"><span class="lineNum">     340 </span>            :     // and assign it to the `capsule` attribute.</a>
-<a name="341"><span class="lineNum">     341 </span>            :     using SetStateTraits =</a>
-<a name="342"><span class="lineNum">     342 </span>            :         c10::guts::infer_function_traits_t&lt;std::decay_t&lt;SetStateFn&gt;&gt;;</a>
-<a name="343"><span class="lineNum">     343 </span>            :     using SetStateArg = typename c10::guts::typelist::head_t&lt;</a>
-<a name="344"><span class="lineNum">     344 </span>            :         typename SetStateTraits::parameter_types&gt;;</a>
-<a name="345"><span class="lineNum">     345 </span>            :     auto setstate_wrapper = [set_state = std::forward&lt;SetStateFn&gt;(set_state)](</a>
-<a name="346"><span class="lineNum">     346 </span>            :                                 c10::tagged_capsule&lt;CurClass&gt; self,</a>
-<a name="347"><span class="lineNum">     347 </span>            :                                 SetStateArg arg) {</a>
-<a name="348"><span class="lineNum">     348 </span>            :       c10::intrusive_ptr&lt;CurClass&gt; classObj =</a>
-<a name="349"><span class="lineNum">     349 </span>            :           std::invoke(set_state, std::move(arg));</a>
-<a name="350"><span class="lineNum">     350 </span>            :       auto object = self.ivalue.toObject();</a>
-<a name="351"><span class="lineNum">     351 </span>            :       object-&gt;setSlot(0, c10::IValue::make_capsule(classObj));</a>
-<a name="352"><span class="lineNum">     352 </span>            :     };</a>
-<a name="353"><span class="lineNum">     353 </span>            :     defineMethod(</a>
-<a name="354"><span class="lineNum">     354 </span>            :         &quot;__setstate__&quot;,</a>
-<a name="355"><span class="lineNum">     355 </span>            :         detail::wrap_func&lt;CurClass, decltype(setstate_wrapper)&gt;(</a>
-<a name="356"><span class="lineNum">     356 </span>            :             std::move(setstate_wrapper)));</a>
-<a name="357"><span class="lineNum">     357 </span>            : </a>
-<a name="358"><span class="lineNum">     358 </span>            :     // type validation</a>
-<a name="359"><span class="lineNum">     359 </span>            :     auto getstate_schema = classTypePtr-&gt;getMethod(&quot;__getstate__&quot;).getSchema();</a>
-<a name="360"><span class="lineNum">     360 </span>            : #ifndef STRIP_ERROR_MESSAGES</a>
-<a name="361"><span class="lineNum">     361 </span>            :     auto format_getstate_schema = [&amp;getstate_schema]() {</a>
-<a name="362"><span class="lineNum">     362 </span>            :       std::stringstream ss;</a>
-<a name="363"><span class="lineNum">     363 </span>            :       ss &lt;&lt; getstate_schema;</a>
-<a name="364"><span class="lineNum">     364 </span>            :       return ss.str();</a>
-<a name="365"><span class="lineNum">     365 </span>            :     };</a>
-<a name="366"><span class="lineNum">     366 </span>            : #endif</a>
-<a name="367"><span class="lineNum">     367 </span>            :     TORCH_CHECK(</a>
-<a name="368"><span class="lineNum">     368 </span>            :         getstate_schema.arguments().size() == 1,</a>
-<a name="369"><span class="lineNum">     369 </span>            :         &quot;__getstate__ should take exactly one argument: self. Got: &quot;,</a>
-<a name="370"><span class="lineNum">     370 </span>            :         format_getstate_schema());</a>
-<a name="371"><span class="lineNum">     371 </span>            :     auto first_arg_type = getstate_schema.arguments().at(0).type();</a>
-<a name="372"><span class="lineNum">     372 </span>            :     TORCH_CHECK(</a>
-<a name="373"><span class="lineNum">     373 </span>            :         *first_arg_type == *classTypePtr,</a>
-<a name="374"><span class="lineNum">     374 </span>            :         &quot;self argument of __getstate__ must be the custom class type. Got &quot;,</a>
-<a name="375"><span class="lineNum">     375 </span>            :         first_arg_type-&gt;repr_str());</a>
-<a name="376"><span class="lineNum">     376 </span>            :     TORCH_CHECK(</a>
-<a name="377"><span class="lineNum">     377 </span>            :         getstate_schema.returns().size() == 1,</a>
-<a name="378"><span class="lineNum">     378 </span>            :         &quot;__getstate__ should return exactly one value for serialization. Got: &quot;,</a>
-<a name="379"><span class="lineNum">     379 </span>            :         format_getstate_schema());</a>
-<a name="380"><span class="lineNum">     380 </span>            : </a>
-<a name="381"><span class="lineNum">     381 </span>            :     auto ser_type = getstate_schema.returns().at(0).type();</a>
-<a name="382"><span class="lineNum">     382 </span>            :     auto setstate_schema = classTypePtr-&gt;getMethod(&quot;__setstate__&quot;).getSchema();</a>
-<a name="383"><span class="lineNum">     383 </span>            :     auto arg_type = setstate_schema.arguments().at(1).type();</a>
-<a name="384"><span class="lineNum">     384 </span>            :     TORCH_CHECK(</a>
-<a name="385"><span class="lineNum">     385 </span>            :         ser_type-&gt;isSubtypeOf(*arg_type),</a>
-<a name="386"><span class="lineNum">     386 </span>            :         &quot;__getstate__'s return type should be a subtype of &quot;</a>
-<a name="387"><span class="lineNum">     387 </span>            :         &quot;input argument of __setstate__. Got &quot;,</a>
-<a name="388"><span class="lineNum">     388 </span>            :         ser_type-&gt;repr_str(),</a>
-<a name="389"><span class="lineNum">     389 </span>            :         &quot; but expected &quot;,</a>
-<a name="390"><span class="lineNum">     390 </span>            :         arg_type-&gt;repr_str());</a>
-<a name="391"><span class="lineNum">     391 </span>            : </a>
-<a name="392"><span class="lineNum">     392 </span>            :     return *this;</a>
-<a name="393"><span class="lineNum">     393 </span>            :   }</a>
-<a name="394"><span class="lineNum">     394 </span>            : </a>
-<a name="395"><span class="lineNum">     395 </span>            :  private:</a>
-<a name="396"><span class="lineNum">     396 </span>            :   template &lt;typename Func&gt;</a>
-<a name="397"><span class="lineNum">     397 </span>            :   torch::jit::Function* defineMethod(</a>
-<a name="398"><span class="lineNum">     398 </span>            :       std::string name,</a>
-<a name="399"><span class="lineNum">     399 </span>            :       Func func,</a>
-<a name="400"><span class="lineNum">     400 </span>            :       std::string doc_string = &quot;&quot;,</a>
-<a name="401"><span class="lineNum">     401 </span>            :       std::initializer_list&lt;arg&gt; default_args = {}) {</a>
-<a name="402"><span class="lineNum">     402 </span>            :     auto qualMethodName = qualClassName + &quot;.&quot; + name;</a>
-<a name="403"><span class="lineNum">     403 </span>            :     auto schema =</a>
-<a name="404"><span class="lineNum">     404 </span>            :         c10::inferFunctionSchemaSingleReturn&lt;Func&gt;(std::move(name), &quot;&quot;);</a>
-<a name="405"><span class="lineNum">     405 </span>            : </a>
-<a name="406"><span class="lineNum">     406 </span>            :     // If default values are provided for function arguments, there must be</a>
-<a name="407"><span class="lineNum">     407 </span>            :     // none (no default values) or default values for all function</a>
-<a name="408"><span class="lineNum">     408 </span>            :     // arguments, except for self. This is because argument names are not</a>
-<a name="409"><span class="lineNum">     409 </span>            :     // extracted by inferFunctionSchemaSingleReturn, and so there must be a</a>
-<a name="410"><span class="lineNum">     410 </span>            :     // torch::arg instance in default_args even for arguments that do not</a>
-<a name="411"><span class="lineNum">     411 </span>            :     // have an actual default value provided.</a>
-<a name="412"><span class="lineNum">     412 </span>            :     TORCH_CHECK(</a>
-<a name="413"><span class="lineNum">     413 </span>            :         default_args.size() == 0 ||</a>
-<a name="414"><span class="lineNum">     414 </span>            :             default_args.size() == schema.arguments().size() - 1,</a>
-<a name="415"><span class="lineNum">     415 </span>            :         &quot;Default values must be specified for none or all arguments&quot;);</a>
+<a name="337"><span class="lineNum">     337 </span>            :     // type validation</a>
+<a name="338"><span class="lineNum">     338 </span>            :     auto getstate_schema = classTypePtr-&gt;getMethod(&quot;__getstate__&quot;).getSchema();</a>
+<a name="339"><span class="lineNum">     339 </span>            : #ifndef STRIP_ERROR_MESSAGES</a>
+<a name="340"><span class="lineNum">     340 </span>            :     auto format_getstate_schema = [&amp;getstate_schema]() {</a>
+<a name="341"><span class="lineNum">     341 </span>            :       std::stringstream ss;</a>
+<a name="342"><span class="lineNum">     342 </span>            :       ss &lt;&lt; getstate_schema;</a>
+<a name="343"><span class="lineNum">     343 </span>            :       return ss.str();</a>
+<a name="344"><span class="lineNum">     344 </span>            :     };</a>
+<a name="345"><span class="lineNum">     345 </span>            : #endif</a>
+<a name="346"><span class="lineNum">     346 </span>            :     TORCH_CHECK(</a>
+<a name="347"><span class="lineNum">     347 </span>            :         getstate_schema.arguments().size() == 1,</a>
+<a name="348"><span class="lineNum">     348 </span>            :         &quot;__getstate__ should take exactly one argument: self. Got: &quot;,</a>
+<a name="349"><span class="lineNum">     349 </span>            :         format_getstate_schema());</a>
+<a name="350"><span class="lineNum">     350 </span>            :     auto first_arg_type = getstate_schema.arguments().at(0).type();</a>
+<a name="351"><span class="lineNum">     351 </span>            :     TORCH_CHECK(</a>
+<a name="352"><span class="lineNum">     352 </span>            :         *first_arg_type == *classTypePtr,</a>
+<a name="353"><span class="lineNum">     353 </span>            :         &quot;self argument of __getstate__ must be the custom class type. Got &quot;,</a>
+<a name="354"><span class="lineNum">     354 </span>            :         first_arg_type-&gt;repr_str());</a>
+<a name="355"><span class="lineNum">     355 </span>            :     TORCH_CHECK(</a>
+<a name="356"><span class="lineNum">     356 </span>            :         getstate_schema.returns().size() == 1,</a>
+<a name="357"><span class="lineNum">     357 </span>            :         &quot;__getstate__ should return exactly one value for serialization. Got: &quot;,</a>
+<a name="358"><span class="lineNum">     358 </span>            :         format_getstate_schema());</a>
+<a name="359"><span class="lineNum">     359 </span>            : </a>
+<a name="360"><span class="lineNum">     360 </span>            :     auto ser_type = getstate_schema.returns().at(0).type();</a>
+<a name="361"><span class="lineNum">     361 </span>            :     auto setstate_schema = classTypePtr-&gt;getMethod(&quot;__setstate__&quot;).getSchema();</a>
+<a name="362"><span class="lineNum">     362 </span>            :     auto arg_type = setstate_schema.arguments().at(1).type();</a>
+<a name="363"><span class="lineNum">     363 </span>            :     TORCH_CHECK(</a>
+<a name="364"><span class="lineNum">     364 </span>            :         ser_type-&gt;isSubtypeOf(*arg_type),</a>
+<a name="365"><span class="lineNum">     365 </span>            :         &quot;__getstate__'s return type should be a subtype of &quot;</a>
+<a name="366"><span class="lineNum">     366 </span>            :         &quot;input argument of __setstate__. Got &quot;,</a>
+<a name="367"><span class="lineNum">     367 </span>            :         ser_type-&gt;repr_str(),</a>
+<a name="368"><span class="lineNum">     368 </span>            :         &quot; but expected &quot;,</a>
+<a name="369"><span class="lineNum">     369 </span>            :         arg_type-&gt;repr_str());</a>
+<a name="370"><span class="lineNum">     370 </span>            : </a>
+<a name="371"><span class="lineNum">     371 </span>            :     return *this;</a>
+<a name="372"><span class="lineNum">     372 </span>            :   }</a>
+<a name="373"><span class="lineNum">     373 </span>            : </a>
+<a name="374"><span class="lineNum">     374 </span>            :  private:</a>
+<a name="375"><span class="lineNum">     375 </span>            :   template &lt;typename Func&gt;</a>
+<a name="376"><span class="lineNum">     376 </span>            :   torch::jit::Function* defineMethod(</a>
+<a name="377"><span class="lineNum">     377 </span>            :       std::string name,</a>
+<a name="378"><span class="lineNum">     378 </span>            :       Func func,</a>
+<a name="379"><span class="lineNum">     379 </span>            :       std::string doc_string = &quot;&quot;,</a>
+<a name="380"><span class="lineNum">     380 </span>            :       std::initializer_list&lt;arg&gt; default_args = {}) {</a>
+<a name="381"><span class="lineNum">     381 </span>            :     auto qualMethodName = qualClassName + &quot;.&quot; + name;</a>
+<a name="382"><span class="lineNum">     382 </span>            :     auto schema =</a>
+<a name="383"><span class="lineNum">     383 </span>            :         c10::inferFunctionSchemaSingleReturn&lt;Func&gt;(std::move(name), &quot;&quot;);</a>
+<a name="384"><span class="lineNum">     384 </span>            : </a>
+<a name="385"><span class="lineNum">     385 </span>            :     // If default values are provided for function arguments, there must be</a>
+<a name="386"><span class="lineNum">     386 </span>            :     // none (no default values) or default values for all function</a>
+<a name="387"><span class="lineNum">     387 </span>            :     // arguments, except for self. This is because argument names are not</a>
+<a name="388"><span class="lineNum">     388 </span>            :     // extracted by inferFunctionSchemaSingleReturn, and so there must be a</a>
+<a name="389"><span class="lineNum">     389 </span>            :     // torch::arg instance in default_args even for arguments that do not</a>
+<a name="390"><span class="lineNum">     390 </span>            :     // have an actual default value provided.</a>
+<a name="391"><span class="lineNum">     391 </span>            :     TORCH_CHECK(</a>
+<a name="392"><span class="lineNum">     392 </span>            :         default_args.size() == 0 ||</a>
+<a name="393"><span class="lineNum">     393 </span>            :             default_args.size() == schema.arguments().size() - 1,</a>
+<a name="394"><span class="lineNum">     394 </span>            :         &quot;Default values must be specified for none or all arguments&quot;);</a>
+<a name="395"><span class="lineNum">     395 </span>            : </a>
+<a name="396"><span class="lineNum">     396 </span>            :     // If there are default args, copy the argument names and default values to</a>
+<a name="397"><span class="lineNum">     397 </span>            :     // the function schema.</a>
+<a name="398"><span class="lineNum">     398 </span>            :     if (default_args.size() &gt; 0) {</a>
+<a name="399"><span class="lineNum">     399 </span>            :       schema = withNewArguments(schema, default_args);</a>
+<a name="400"><span class="lineNum">     400 </span>            :     }</a>
+<a name="401"><span class="lineNum">     401 </span>            : </a>
+<a name="402"><span class="lineNum">     402 </span>            :     auto wrapped_func =</a>
+<a name="403"><span class="lineNum">     403 </span>            :         [func = std::move(func)](jit::Stack&amp; stack) mutable -&gt; void {</a>
+<a name="404"><span class="lineNum">     404 </span>            :       // TODO: we need to figure out how to profile calls to custom functions</a>
+<a name="405"><span class="lineNum">     405 </span>            :       // like this! Currently can't do it because the profiler stuff is in</a>
+<a name="406"><span class="lineNum">     406 </span>            :       // libtorch and not ATen</a>
+<a name="407"><span class="lineNum">     407 </span>            :       using RetType =</a>
+<a name="408"><span class="lineNum">     408 </span>            :           typename c10::guts::infer_function_traits_t&lt;Func&gt;::return_type;</a>
+<a name="409"><span class="lineNum">     409 </span>            :       detail::BoxedProxy&lt;RetType, Func&gt;()(stack, func);</a>
+<a name="410"><span class="lineNum">     410 </span>            :     };</a>
+<a name="411"><span class="lineNum">     411 </span>            :     auto method = std::make_unique&lt;jit::BuiltinOpFunction&gt;(</a>
+<a name="412"><span class="lineNum">     412 </span>            :         qualMethodName,</a>
+<a name="413"><span class="lineNum">     413 </span>            :         std::move(schema),</a>
+<a name="414"><span class="lineNum">     414 </span>            :         std::move(wrapped_func),</a>
+<a name="415"><span class="lineNum">     415 </span>            :         std::move(doc_string));</a>
 <a name="416"><span class="lineNum">     416 </span>            : </a>
-<a name="417"><span class="lineNum">     417 </span>            :     // If there are default args, copy the argument names and default values to</a>
-<a name="418"><span class="lineNum">     418 </span>            :     // the function schema.</a>
-<a name="419"><span class="lineNum">     419 </span>            :     if (default_args.size() &gt; 0) {</a>
-<a name="420"><span class="lineNum">     420 </span>            :       schema = withNewArguments(schema, default_args);</a>
-<a name="421"><span class="lineNum">     421 </span>            :     }</a>
-<a name="422"><span class="lineNum">     422 </span>            : </a>
-<a name="423"><span class="lineNum">     423 </span>            :     auto wrapped_func =</a>
-<a name="424"><span class="lineNum">     424 </span>            :         [func = std::move(func)](jit::Stack&amp; stack) mutable -&gt; void {</a>
-<a name="425"><span class="lineNum">     425 </span>            :       // TODO: we need to figure out how to profile calls to custom functions</a>
-<a name="426"><span class="lineNum">     426 </span>            :       // like this! Currently can't do it because the profiler stuff is in</a>
-<a name="427"><span class="lineNum">     427 </span>            :       // libtorch and not ATen</a>
-<a name="428"><span class="lineNum">     428 </span>            :       using RetType =</a>
-<a name="429"><span class="lineNum">     429 </span>            :           typename c10::guts::infer_function_traits_t&lt;Func&gt;::return_type;</a>
-<a name="430"><span class="lineNum">     430 </span>            :       detail::BoxedProxy&lt;RetType, Func&gt;()(stack, func);</a>
-<a name="431"><span class="lineNum">     431 </span>            :     };</a>
-<a name="432"><span class="lineNum">     432 </span>            :     auto method = std::make_unique&lt;jit::BuiltinOpFunction&gt;(</a>
-<a name="433"><span class="lineNum">     433 </span>            :         qualMethodName,</a>
-<a name="434"><span class="lineNum">     434 </span>            :         std::move(schema),</a>
-<a name="435"><span class="lineNum">     435 </span>            :         std::move(wrapped_func),</a>
-<a name="436"><span class="lineNum">     436 </span>            :         std::move(doc_string));</a>
-<a name="437"><span class="lineNum">     437 </span>            : </a>
-<a name="438"><span class="lineNum">     438 </span>            :     // Register the method here to keep the Method alive.</a>
-<a name="439"><span class="lineNum">     439 </span>            :     // ClassTypes do not hold ownership of their methods (normally it</a>
-<a name="440"><span class="lineNum">     440 </span>            :     // those are held by the CompilationUnit), so we need a proxy for</a>
-<a name="441"><span class="lineNum">     441 </span>            :     // that behavior here.</a>
-<a name="442"><span class="lineNum">     442 </span>            :     auto method_val = method.get();</a>
-<a name="443"><span class="lineNum">     443 </span>            :     classTypePtr-&gt;addMethod(method_val);</a>
-<a name="444"><span class="lineNum">     444 </span>            :     registerCustomClassMethod(std::move(method));</a>
-<a name="445"><span class="lineNum">     445 </span>            :     return method_val;</a>
-<a name="446"><span class="lineNum">     446 </span>            :   }</a>
-<a name="447"><span class="lineNum">     447 </span>            : };</a>
-<a name="448"><span class="lineNum">     448 </span>            : </a>
-<a name="449"><span class="lineNum">     449 </span>            : /// make_custom_class() is a convenient way to create an instance of a</a>
-<a name="450"><span class="lineNum">     450 </span>            : /// registered custom class and wrap it in an IValue, for example when you want</a>
-<a name="451"><span class="lineNum">     451 </span>            : /// to pass the object to TorchScript. Its syntax is equivalent to APIs like</a>
-<a name="452"><span class="lineNum">     452 </span>            : /// `std::make_shared&lt;&gt;` or `c10::make_intrusive&lt;&gt;`.</a>
-<a name="453"><span class="lineNum">     453 </span>            : ///</a>
-<a name="454"><span class="lineNum">     454 </span>            : /// For example, if you have a custom C++ class that can be constructed from an</a>
-<a name="455"><span class="lineNum">     455 </span>            : /// `int` and `std::string`, you might use this API like so:</a>
-<a name="456"><span class="lineNum">     456 </span>            : ///</a>
-<a name="457"><span class="lineNum">     457 </span>            : ///     IValue custom_class_iv = torch::make_custom_class&lt;MyClass&gt;(3,</a>
-<a name="458"><span class="lineNum">     458 </span>            : ///     &quot;foobarbaz&quot;);</a>
-<a name="459"><span class="lineNum">     459 </span>            : template &lt;typename CurClass, typename... CtorArgs&gt;</a>
-<a name="460"><span class="lineNum">     460 </span><span class="lineCov">          1 : c10::IValue make_custom_class(CtorArgs&amp;&amp;... args) {</span></a>
-<a name="461"><span class="lineNum">     461 </span>            :   auto userClassInstance =</a>
-<a name="462"><span class="lineNum">     462 </span>            :       c10::make_intrusive&lt;CurClass&gt;(std::forward&lt;CtorArgs&gt;(args)...);</a>
-<a name="463"><span class="lineNum">     463 </span>            :   return c10::IValue(std::move(userClassInstance));</a>
-<a name="464"><span class="lineNum">     464 </span>            : }</a>
-<a name="465"><span class="lineNum">     465 </span>            : </a>
-<a name="466"><span class="lineNum">     466 </span>            : // Alternative api for creating a torchbind class over torch::class_ this api is</a>
-<a name="467"><span class="lineNum">     467 </span>            : // preferred to prevent size regressions on Edge usecases. Must be used in</a>
-<a name="468"><span class="lineNum">     468 </span>            : // conjunction with TORCH_SELECTIVE_CLASS macro aka</a>
-<a name="469"><span class="lineNum">     469 </span>            : // selective_class&lt;foo&gt;(&quot;foo_namespace&quot;, TORCH_SELECTIVE_CLASS(&quot;foo&quot;))</a>
-<a name="470"><span class="lineNum">     470 </span>            : template &lt;class CurClass&gt;</a>
-<a name="471"><span class="lineNum">     471 </span><span class="lineNoCov">          0 : inline class_&lt;CurClass&gt; selective_class_(</span></a>
-<a name="472"><span class="lineNum">     472 </span>            :     const std::string&amp; namespace_name,</a>
-<a name="473"><span class="lineNum">     473 </span>            :     detail::SelectiveStr&lt;true&gt; className) {</a>
-<a name="474"><span class="lineNum">     474 </span>            :   auto class_name = std::string(className.operator const char*());</a>
-<a name="475"><span class="lineNum">     475 </span>            :   return torch::class_&lt;CurClass&gt;(namespace_name, class_name);</a>
-<a name="476"><span class="lineNum">     476 </span>            : }</a>
-<a name="477"><span class="lineNum">     477 </span>            : </a>
-<a name="478"><span class="lineNum">     478 </span>            : template &lt;class CurClass&gt;</a>
-<a name="479"><span class="lineNum">     479 </span><span class="lineNoCov">          0 : inline detail::ClassNotSelected selective_class_(</span></a>
-<a name="480"><span class="lineNum">     480 </span>            :     const std::string&amp; /*unused*/,</a>
-<a name="481"><span class="lineNum">     481 </span>            :     detail::SelectiveStr&lt;false&gt; /*unused*/) {</a>
-<a name="482"><span class="lineNum">     482 </span>            :   return detail::ClassNotSelected();</a>
-<a name="483"><span class="lineNum">     483 </span>            : }</a>
-<a name="484"><span class="lineNum">     484 </span>            : </a>
-<a name="485"><span class="lineNum">     485 </span>            : // jit namespace for backward-compatibility</a>
-<a name="486"><span class="lineNum">     486 </span>            : // We previously defined everything in torch::jit but moved it out to</a>
-<a name="487"><span class="lineNum">     487 </span>            : // better reflect that these features are not limited only to TorchScript</a>
-<a name="488"><span class="lineNum">     488 </span>            : namespace jit {</a>
-<a name="489"><span class="lineNum">     489 </span>            : </a>
-<a name="490"><span class="lineNum">     490 </span>            : using ::torch::class_;</a>
-<a name="491"><span class="lineNum">     491 </span>            : using ::torch::getCustomClass;</a>
-<a name="492"><span class="lineNum">     492 </span>            : using ::torch::init;</a>
-<a name="493"><span class="lineNum">     493 </span>            : using ::torch::isCustomClass;</a>
+<a name="417"><span class="lineNum">     417 </span>            :     // Register the method here to keep the Method alive.</a>
+<a name="418"><span class="lineNum">     418 </span>            :     // ClassTypes do not hold ownership of their methods (normally it</a>
+<a name="419"><span class="lineNum">     419 </span>            :     // those are held by the CompilationUnit), so we need a proxy for</a>
+<a name="420"><span class="lineNum">     420 </span>            :     // that behavior here.</a>
+<a name="421"><span class="lineNum">     421 </span>            :     auto method_val = method.get();</a>
+<a name="422"><span class="lineNum">     422 </span>            :     classTypePtr-&gt;addMethod(method_val);</a>
+<a name="423"><span class="lineNum">     423 </span>            :     registerCustomClassMethod(std::move(method));</a>
+<a name="424"><span class="lineNum">     424 </span>            :     return method_val;</a>
+<a name="425"><span class="lineNum">     425 </span>            :   }</a>
+<a name="426"><span class="lineNum">     426 </span>            : };</a>
+<a name="427"><span class="lineNum">     427 </span>            : </a>
+<a name="428"><span class="lineNum">     428 </span>            : /// make_custom_class() is a convenient way to create an instance of a</a>
+<a name="429"><span class="lineNum">     429 </span>            : /// registered custom class and wrap it in an IValue, for example when you want</a>
+<a name="430"><span class="lineNum">     430 </span>            : /// to pass the object to TorchScript. Its syntax is equivalent to APIs like</a>
+<a name="431"><span class="lineNum">     431 </span>            : /// `std::make_shared&lt;&gt;` or `c10::make_intrusive&lt;&gt;`.</a>
+<a name="432"><span class="lineNum">     432 </span>            : ///</a>
+<a name="433"><span class="lineNum">     433 </span>            : /// For example, if you have a custom C++ class that can be constructed from an</a>
+<a name="434"><span class="lineNum">     434 </span>            : /// `int` and `std::string`, you might use this API like so:</a>
+<a name="435"><span class="lineNum">     435 </span>            : ///</a>
+<a name="436"><span class="lineNum">     436 </span>            : ///     IValue custom_class_iv = torch::make_custom_class&lt;MyClass&gt;(3,</a>
+<a name="437"><span class="lineNum">     437 </span>            : ///     &quot;foobarbaz&quot;);</a>
+<a name="438"><span class="lineNum">     438 </span>            : template &lt;typename CurClass, typename... CtorArgs&gt;</a>
+<a name="439"><span class="lineNum">     439 </span><span class="lineCov">          1 : c10::IValue make_custom_class(CtorArgs&amp;&amp;... args) {</span></a>
+<a name="440"><span class="lineNum">     440 </span>            :   auto userClassInstance =</a>
+<a name="441"><span class="lineNum">     441 </span>            :       c10::make_intrusive&lt;CurClass&gt;(std::forward&lt;CtorArgs&gt;(args)...);</a>
+<a name="442"><span class="lineNum">     442 </span>            :   return c10::IValue(std::move(userClassInstance));</a>
+<a name="443"><span class="lineNum">     443 </span>            : }</a>
+<a name="444"><span class="lineNum">     444 </span>            : </a>
+<a name="445"><span class="lineNum">     445 </span>            : // Alternative api for creating a torchbind class over torch::class_ this api is</a>
+<a name="446"><span class="lineNum">     446 </span>            : // preferred to prevent size regressions on Edge usecases. Must be used in</a>
+<a name="447"><span class="lineNum">     447 </span>            : // conjunction with TORCH_SELECTIVE_CLASS macro aka</a>
+<a name="448"><span class="lineNum">     448 </span>            : // selective_class&lt;foo&gt;(&quot;foo_namespace&quot;, TORCH_SELECTIVE_CLASS(&quot;foo&quot;))</a>
+<a name="449"><span class="lineNum">     449 </span>            : template &lt;class CurClass&gt;</a>
+<a name="450"><span class="lineNum">     450 </span><span class="lineNoCov">          0 : inline class_&lt;CurClass&gt; selective_class_(</span></a>
+<a name="451"><span class="lineNum">     451 </span>            :     const std::string&amp; namespace_name,</a>
+<a name="452"><span class="lineNum">     452 </span>            :     detail::SelectiveStr&lt;true&gt; className) {</a>
+<a name="453"><span class="lineNum">     453 </span>            :   auto class_name = std::string(className.operator const char*());</a>
+<a name="454"><span class="lineNum">     454 </span>            :   return torch::class_&lt;CurClass&gt;(namespace_name, class_name);</a>
+<a name="455"><span class="lineNum">     455 </span>            : }</a>
+<a name="456"><span class="lineNum">     456 </span>            : </a>
+<a name="457"><span class="lineNum">     457 </span>            : template &lt;class CurClass&gt;</a>
+<a name="458"><span class="lineNum">     458 </span><span class="lineNoCov">          0 : inline detail::ClassNotSelected selective_class_(</span></a>
+<a name="459"><span class="lineNum">     459 </span>            :     const std::string&amp; /*unused*/,</a>
+<a name="460"><span class="lineNum">     460 </span>            :     detail::SelectiveStr&lt;false&gt; /*unused*/) {</a>
+<a name="461"><span class="lineNum">     461 </span>            :   return detail::ClassNotSelected();</a>
+<a name="462"><span class="lineNum">     462 </span>            : }</a>
+<a name="463"><span class="lineNum">     463 </span>            : </a>
+<a name="464"><span class="lineNum">     464 </span>            : // jit namespace for backward-compatibility</a>
+<a name="465"><span class="lineNum">     465 </span>            : // We previously defined everything in torch::jit but moved it out to</a>
+<a name="466"><span class="lineNum">     466 </span>            : // better reflect that these features are not limited only to TorchScript</a>
+<a name="467"><span class="lineNum">     467 </span>            : namespace jit {</a>
+<a name="468"><span class="lineNum">     468 </span>            : </a>
+<a name="469"><span class="lineNum">     469 </span>            : using ::torch::class_;</a>
+<a name="470"><span class="lineNum">     470 </span>            : using ::torch::getCustomClass;</a>
+<a name="471"><span class="lineNum">     471 </span>            : using ::torch::init;</a>
+<a name="472"><span class="lineNum">     472 </span>            : using ::torch::isCustomClass;</a>
+<a name="473"><span class="lineNum">     473 </span>            : </a>
+<a name="474"><span class="lineNum">     474 </span>            : } // namespace jit</a>
+<a name="475"><span class="lineNum">     475 </span>            : </a>
+<a name="476"><span class="lineNum">     476 </span>            : template &lt;class CurClass&gt;</a>
+<a name="477"><span class="lineNum">     477 </span><span class="lineNoCov">          0 : inline class_&lt;CurClass&gt; Library::class_(const std::string&amp; className) {</span></a>
+<a name="478"><span class="lineNum">     478 </span>            :   TORCH_CHECK(</a>
+<a name="479"><span class="lineNum">     479 </span>            :       kind_ == DEF || kind_ == FRAGMENT,</a>
+<a name="480"><span class="lineNum">     480 </span>            :       &quot;class_(\&quot;&quot;,</a>
+<a name="481"><span class="lineNum">     481 </span>            :       className,</a>
+<a name="482"><span class="lineNum">     482 </span>            :       &quot;\&quot;): Cannot define a class inside of a TORCH_LIBRARY_IMPL block.  &quot;</a>
+<a name="483"><span class="lineNum">     483 </span>            :       &quot;All class_()s should be placed in the (unique) TORCH_LIBRARY block for their namespace.  &quot;</a>
+<a name="484"><span class="lineNum">     484 </span>            :       &quot;(Error occurred at &quot;,</a>
+<a name="485"><span class="lineNum">     485 </span>            :       file_,</a>
+<a name="486"><span class="lineNum">     486 </span>            :       &quot;:&quot;,</a>
+<a name="487"><span class="lineNum">     487 </span>            :       line_,</a>
+<a name="488"><span class="lineNum">     488 </span>            :       &quot;)&quot;);</a>
+<a name="489"><span class="lineNum">     489 </span>            :   TORCH_INTERNAL_ASSERT(ns_.has_value(), file_, &quot;:&quot;, line_);</a>
+<a name="490"><span class="lineNum">     490 </span>            :   return torch::class_&lt;CurClass&gt;(*ns_, className);</a>
+<a name="491"><span class="lineNum">     491 </span>            : }</a>
+<a name="492"><span class="lineNum">     492 </span>            : </a>
+<a name="493"><span class="lineNum">     493 </span><span class="lineNoCov">          0 : const std::unordered_set&lt;std::string&gt; getAllCustomClassesNames();</span></a>
 <a name="494"><span class="lineNum">     494 </span>            : </a>
-<a name="495"><span class="lineNum">     495 </span>            : } // namespace jit</a>
-<a name="496"><span class="lineNum">     496 </span>            : </a>
-<a name="497"><span class="lineNum">     497 </span>            : template &lt;class CurClass&gt;</a>
-<a name="498"><span class="lineNum">     498 </span><span class="lineNoCov">          0 : inline class_&lt;CurClass&gt; Library::class_(const std::string&amp; className) {</span></a>
-<a name="499"><span class="lineNum">     499 </span>            :   TORCH_CHECK(</a>
-<a name="500"><span class="lineNum">     500 </span>            :       kind_ == DEF || kind_ == FRAGMENT,</a>
-<a name="501"><span class="lineNum">     501 </span>            :       &quot;class_(\&quot;&quot;,</a>
-<a name="502"><span class="lineNum">     502 </span>            :       className,</a>
-<a name="503"><span class="lineNum">     503 </span>            :       &quot;\&quot;): Cannot define a class inside of a TORCH_LIBRARY_IMPL block.  &quot;</a>
-<a name="504"><span class="lineNum">     504 </span>            :       &quot;All class_()s should be placed in the (unique) TORCH_LIBRARY block for their namespace.  &quot;</a>
-<a name="505"><span class="lineNum">     505 </span>            :       &quot;(Error occurred at &quot;,</a>
-<a name="506"><span class="lineNum">     506 </span>            :       file_,</a>
-<a name="507"><span class="lineNum">     507 </span>            :       &quot;:&quot;,</a>
-<a name="508"><span class="lineNum">     508 </span>            :       line_,</a>
-<a name="509"><span class="lineNum">     509 </span>            :       &quot;)&quot;);</a>
-<a name="510"><span class="lineNum">     510 </span>            :   TORCH_INTERNAL_ASSERT(ns_.has_value(), file_, &quot;:&quot;, line_);</a>
-<a name="511"><span class="lineNum">     511 </span>            :   return torch::class_&lt;CurClass&gt;(*ns_, className);</a>
-<a name="512"><span class="lineNum">     512 </span>            : }</a>
-<a name="513"><span class="lineNum">     513 </span>            : </a>
-<a name="514"><span class="lineNum">     514 </span><span class="lineNoCov">          0 : const std::unordered_set&lt;std::string&gt; getAllCustomClassesNames();</span></a>
-<a name="515"><span class="lineNum">     515 </span>            : </a>
-<a name="516"><span class="lineNum">     516 </span>            : template &lt;class CurClass&gt;</a>
-<a name="517"><span class="lineNum">     517 </span><span class="lineNoCov">          0 : inline class_&lt;CurClass&gt; Library::class_(detail::SelectiveStr&lt;true&gt; className) {</span></a>
-<a name="518"><span class="lineNum">     518 </span>            :   auto class_name = std::string(className.operator const char*());</a>
-<a name="519"><span class="lineNum">     519 </span>            :   TORCH_CHECK(</a>
-<a name="520"><span class="lineNum">     520 </span>            :       kind_ == DEF || kind_ == FRAGMENT,</a>
-<a name="521"><span class="lineNum">     521 </span>            :       &quot;class_(\&quot;&quot;,</a>
-<a name="522"><span class="lineNum">     522 </span>            :       class_name,</a>
-<a name="523"><span class="lineNum">     523 </span>            :       &quot;\&quot;): Cannot define a class inside of a TORCH_LIBRARY_IMPL block.  &quot;</a>
-<a name="524"><span class="lineNum">     524 </span>            :       &quot;All class_()s should be placed in the (unique) TORCH_LIBRARY block for their namespace.  &quot;</a>
-<a name="525"><span class="lineNum">     525 </span>            :       &quot;(Error occurred at &quot;,</a>
-<a name="526"><span class="lineNum">     526 </span>            :       file_,</a>
-<a name="527"><span class="lineNum">     527 </span>            :       &quot;:&quot;,</a>
-<a name="528"><span class="lineNum">     528 </span>            :       line_,</a>
-<a name="529"><span class="lineNum">     529 </span>            :       &quot;)&quot;);</a>
-<a name="530"><span class="lineNum">     530 </span>            :   TORCH_INTERNAL_ASSERT(ns_.has_value(), file_, &quot;:&quot;, line_);</a>
-<a name="531"><span class="lineNum">     531 </span>            :   return torch::class_&lt;CurClass&gt;(*ns_, class_name);</a>
-<a name="532"><span class="lineNum">     532 </span>            : }</a>
-<a name="533"><span class="lineNum">     533 </span>            : </a>
-<a name="534"><span class="lineNum">     534 </span>            : template &lt;class CurClass&gt;</a>
-<a name="535"><span class="lineNum">     535 </span>            : inline detail::ClassNotSelected Library::class_(detail::SelectiveStr&lt;false&gt; /*unused*/) {</a>
-<a name="536"><span class="lineNum">     536 </span>            :   return detail::ClassNotSelected();</a>
-<a name="537"><span class="lineNum">     537 </span>            : }</a>
-<a name="538"><span class="lineNum">     538 </span>            : </a>
-<a name="539"><span class="lineNum">     539 </span>            : } // namespace torch</a>
+<a name="495"><span class="lineNum">     495 </span>            : template &lt;class CurClass&gt;</a>
+<a name="496"><span class="lineNum">     496 </span><span class="lineNoCov">          0 : inline class_&lt;CurClass&gt; Library::class_(detail::SelectiveStr&lt;true&gt; className) {</span></a>
+<a name="497"><span class="lineNum">     497 </span>            :   auto class_name = std::string(className.operator const char*());</a>
+<a name="498"><span class="lineNum">     498 </span>            :   TORCH_CHECK(</a>
+<a name="499"><span class="lineNum">     499 </span>            :       kind_ == DEF || kind_ == FRAGMENT,</a>
+<a name="500"><span class="lineNum">     500 </span>            :       &quot;class_(\&quot;&quot;,</a>
+<a name="501"><span class="lineNum">     501 </span>            :       class_name,</a>
+<a name="502"><span class="lineNum">     502 </span>            :       &quot;\&quot;): Cannot define a class inside of a TORCH_LIBRARY_IMPL block.  &quot;</a>
+<a name="503"><span class="lineNum">     503 </span>            :       &quot;All class_()s should be placed in the (unique) TORCH_LIBRARY block for their namespace.  &quot;</a>
+<a name="504"><span class="lineNum">     504 </span>            :       &quot;(Error occurred at &quot;,</a>
+<a name="505"><span class="lineNum">     505 </span>            :       file_,</a>
+<a name="506"><span class="lineNum">     506 </span>            :       &quot;:&quot;,</a>
+<a name="507"><span class="lineNum">     507 </span>            :       line_,</a>
+<a name="508"><span class="lineNum">     508 </span>            :       &quot;)&quot;);</a>
+<a name="509"><span class="lineNum">     509 </span>            :   TORCH_INTERNAL_ASSERT(ns_.has_value(), file_, &quot;:&quot;, line_);</a>
+<a name="510"><span class="lineNum">     510 </span>            :   return torch::class_&lt;CurClass&gt;(*ns_, class_name);</a>
+<a name="511"><span class="lineNum">     511 </span>            : }</a>
+<a name="512"><span class="lineNum">     512 </span>            : </a>
+<a name="513"><span class="lineNum">     513 </span>            : template &lt;class CurClass&gt;</a>
+<a name="514"><span class="lineNum">     514 </span>            : inline detail::ClassNotSelected Library::class_(detail::SelectiveStr&lt;false&gt; /*unused*/) {</a>
+<a name="515"><span class="lineNum">     515 </span>            :   return detail::ClassNotSelected();</a>
+<a name="516"><span class="lineNum">     516 </span>            : }</a>
+<a name="517"><span class="lineNum">     517 </span>            : </a>
+<a name="518"><span class="lineNum">     518 </span>            : } // namespace torch</a>
 </pre>
       </td>
     </tr>

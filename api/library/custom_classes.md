@@ -64,7 +64,7 @@ Examples:
 ```
 
 template<typename Func>
-inline class_ &def_static(std::string name, Func func, std::string doc_string = "", std::initializer_list<arg> default_args = {})
+inline class_ &def_static(std::string name, Func func, std::string doc_string = "")
 
 Method registration API for static methods.
 
