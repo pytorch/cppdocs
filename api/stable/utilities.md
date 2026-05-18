@@ -7,7 +7,7 @@ tensors and CUDA operations.
 
 class DeviceGuard
 
-A stable ABI version of [c10::DeviceGuard](../aten/tensor.html#PyTorchclassc10_1_1_device_guard).
+A stable ABI version of [c10::DeviceGuard](../c10/guards.html#PyTorchclassc10_1_1_device_guard).
 
 RAII class that sets the current device to the specified device index on construction and restores the previous device on destruction.
 
