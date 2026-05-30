@@ -174,6 +174,10 @@ inline constexpr std::enable_if_t<std::is_constructible_v<ArrayRef<T>, Args&&...
 template<typename U, typename ...Args>
 inline constexpr ArrayRef<T> &emplace(std::initializer_list<U> il, Args&&... args) noexcept
 
+Friends
+
+inline friend bool operator==(OptionalArrayRef a1, ArrayRef<T> other)
+
 **Example:**
 
 ```
