@@ -139,7 +139,7 @@ class StatefulDataLoader : public torch::data::DataLoaderBase<Dataset, Dataset::
 
 A dataloader for stateful datasets.
 
-A dataloader for stateful datatasets differs from one for stateless datasets one in that the dataset is shared among worker threads, and that this dataset is itself responsible for producing batches rather than depending on a sampler. The statefulness here actually refers to the dataset. The StatefulDataLoader simply alters the data loading algorithm to accommodate the stateful, shared nature of the dataset. Note that the dataset must be thread safe if more than one worker thread is used.
+A dataloader for stateful datasets differs from one for stateless datasets one in that the dataset is shared among worker threads, and that this dataset is itself responsible for producing batches rather than depending on a sampler. The statefulness here actually refers to the dataset. The StatefulDataLoader simply alters the data loading algorithm to accommodate the stateful, shared nature of the dataset. Note that the dataset must be thread safe if more than one worker thread is used.
 
 A stateful dataloader is created by calling `make_data_loader` with a stateful dataset.
 

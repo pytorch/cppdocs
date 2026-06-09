@@ -135,7 +135,7 @@ class TransformerEncoderImpl : public torch::nn::[Cloneable](utilities.html#_CPP
 
 TransformerEncoder module.
 
-See [https://pytorch.org/docs/main/generated/torch.nn.TransformerEncoder.html](https://pytorch.org/docs/main/generated/torch.nn.TransformerEncoder.html) to learn abouut the exact behavior of this encoder layer module.
+See [https://pytorch.org/docs/main/generated/torch.nn.TransformerEncoder.html](https://pytorch.org/docs/main/generated/torch.nn.TransformerEncoder.html) to learn about the exact behavior of this encoder layer module.
 
 See the documentation for `torch::nn::TransformerEncoder` class to learn what constructor arguments are supported for this encoder module.
 
@@ -198,7 +198,7 @@ class TransformerDecoderImpl : public torch::nn::[Cloneable](utilities.html#_CPP
 
 TransformerDecoder is a stack of N decoder layers.
 
-See [https://pytorch.org/docs/main/generated/torch.nn.TransformerDecoder.html](https://pytorch.org/docs/main/generated/torch.nn.TransformerDecoder.html) to learn abouut the exact behavior of this decoder module
+See [https://pytorch.org/docs/main/generated/torch.nn.TransformerDecoder.html](https://pytorch.org/docs/main/generated/torch.nn.TransformerDecoder.html) to learn about the exact behavior of this decoder module
 
 See the documentation for `torch::nn::TransformerDecoderOptions` class to learn what constructor arguments are supported for this decoder module
 
@@ -257,7 +257,7 @@ class TransformerEncoderLayerImpl : public torch::nn::[Cloneable](utilities.html
 
 TransformerEncoderLayer module.
 
-See [https://pytorch.org/docs/main/generated/torch.nn.TransformerEncoderLayer.html](https://pytorch.org/docs/main/generated/torch.nn.TransformerEncoderLayer.html) to learn abouut the exact behavior of this encoder layer model
+See [https://pytorch.org/docs/main/generated/torch.nn.TransformerEncoderLayer.html](https://pytorch.org/docs/main/generated/torch.nn.TransformerEncoderLayer.html) to learn about the exact behavior of this encoder layer model
 
 See the documentation for `torch::nn::TransformerEncoderLayer` class to learn what constructor arguments are supported for this encoder layer model
 
@@ -310,15 +310,15 @@ pre feedforward, normalization layer
 
 [LayerNorm](normalization.html#_CPPv4N5torch2nn9LayerNormE) norm2 = nullptr
 
-post feedfastward, normalization layer
+post feedforward, normalization layer
 
 [Dropout](dropout.html#_CPPv4N5torch2nn7DropoutE) dropout1 = nullptr
 
-pre feedfastward, dropout layer
+pre feedforward, dropout layer
 
 [Dropout](dropout.html#_CPPv4N5torch2nn7DropoutE) dropout2 = nullptr
 
-post feedfastward, dropout layer
+post feedforward, dropout layer
 
 Friends
 
