@@ -245,6 +245,18 @@ Returns:
 
 true if the tensor is defined, false otherwise.
 
+inline bool has_storage() const
+
+Checks whether the tensor has an associated storage.
+
+Returns false for undefined tensors and for tensors that do not own a storage (e.g. sparse tensors).
+
+Minimum compatible version: PyTorch 2.14.
+
+Returns:
+
+true if the tensor has a storage, false otherwise.
+
 inline int64_t storage_offset() const
 
 Returns the storage offset of the tensor.
