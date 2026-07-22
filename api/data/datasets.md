@@ -201,7 +201,7 @@ Returns the transform being applied.
 template<typename ChunkReader, typename ChunkSampler = samplers::[RandomSampler](samplers.html#_CPPv4N5torch4data8samplers13RandomSamplerE), typename ExampleSampler = samplers::[RandomSampler](samplers.html#_CPPv4N5torch4data8samplers13RandomSamplerE)>
 class ChunkDataset : public torch::data::datasets::StatefulDataset<ChunkDataset<ChunkReader, samplers::[RandomSampler](samplers.html#_CPPv4N5torch4data8samplers13RandomSamplerE), samplers::[RandomSampler](samplers.html#_CPPv4N5torch4data8samplers13RandomSamplerE)>, ChunkReader::BatchType, size_t>
 
-A stateful dataset that support hierarchical sampling and prefetching of entre chunks.
+A stateful dataset that support hierarchical sampling and prefetching of entire chunks.
 
 Unlike regular dataset, chunk dataset require two samplers to operate and keeps an internal state. `ChunkSampler` selects, which chunk to load next, while the `ExampleSampler` determines the order of Examples that are returned in each `get_batch` call. The hierarchical sampling approach used here is inspired by this paper [https://proceedings.neurips.cc/paper_files/paper/2010/file/abea47ba24142ed16b7d8fbf2c740e0d-Paper.pdf](https://proceedings.neurips.cc/paper_files/paper/2010/file/abea47ba24142ed16b7d8fbf2c740e0d-Paper.pdf)
 
