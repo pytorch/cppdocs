@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Date:</td>
-            <td class="headerValue">2026-07-29 00:54:51</td>
+            <td class="headerValue">2026-07-30 01:02:36</td>
             <td></td>
           </tr>
           <tr>
@@ -179,186 +179,188 @@
 <a name="113"><span class="lineNum">     113 </span>            :     for (const auto i : c10::irange(devices.size())) {</a>
 <a name="114"><span class="lineNum">     114 </span>            :       autograd::set_history(replicas[i]-&gt;parameters_[parameter.key()], grad_fn);</a>
 <a name="115"><span class="lineNum">     115 </span>            :     }</a>
-<a name="116"><span class="lineNum">     116 </span>            :   }</a>
-<a name="117"><span class="lineNum">     117 </span>            : </a>
-<a name="118"><span class="lineNum">     118 </span>            :   for (auto&amp; buffer : module-&gt;named_buffers(/*recurse=*/false)) {</a>
-<a name="119"><span class="lineNum">     119 </span>            :     if (buffer.value().requires_grad()) {</a>
-<a name="120"><span class="lineNum">     120 </span>            :       auto grad_fn = c10::make_intrusive&lt;ReduceAdd&gt;((*buffer).device());</a>
-<a name="121"><span class="lineNum">     121 </span>            :       grad_fn-&gt;set_next_edges(autograd::collect_next_edges(*buffer));</a>
-<a name="122"><span class="lineNum">     122 </span>            : </a>
-<a name="123"><span class="lineNum">     123 </span>            :       for (const auto i : c10::irange(devices.size())) {</a>
-<a name="124"><span class="lineNum">     124 </span>            :         autograd::set_history(replicas[i]-&gt;buffers_[buffer.key()], grad_fn);</a>
-<a name="125"><span class="lineNum">     125 </span>            :       }</a>
-<a name="126"><span class="lineNum">     126 </span>            :     }</a>
-<a name="127"><span class="lineNum">     127 </span>            :   }</a>
-<a name="128"><span class="lineNum">     128 </span>            : </a>
-<a name="129"><span class="lineNum">     129 </span>            :   for (auto&amp; child : module-&gt;children_) {</a>
-<a name="130"><span class="lineNum">     130 </span>            :     std::vector&lt;std::shared_ptr&lt;Module&gt;&gt; child_replicas;</a>
-<a name="131"><span class="lineNum">     131 </span>            :     child_replicas.reserve(devices.size());</a>
-<a name="132"><span class="lineNum">     132 </span>            :     for (auto&amp; replica : replicas) {</a>
-<a name="133"><span class="lineNum">     133 </span>            :       child_replicas.push_back(replica-&gt;children_[child.key()]);</a>
-<a name="134"><span class="lineNum">     134 </span>            :     }</a>
-<a name="135"><span class="lineNum">     135 </span>            : </a>
-<a name="136"><span class="lineNum">     136 </span>            :     // recursively set gradient edges for all children</a>
-<a name="137"><span class="lineNum">     137 </span>            :     replicate_grad_edges(*child, child_replicas, devices);</a>
-<a name="138"><span class="lineNum">     138 </span>            :   }</a>
-<a name="139"><span class="lineNum">     139 </span>            : }</a>
-<a name="140"><span class="lineNum">     140 </span>            : </a>
-<a name="141"><span class="lineNum">     141 </span>            : namespace parallel {</a>
+<a name="116"><span class="lineNum">     116 </span>            :     autograd::fire_node_creation_hooks(grad_fn);</a>
+<a name="117"><span class="lineNum">     117 </span>            :   }</a>
+<a name="118"><span class="lineNum">     118 </span>            : </a>
+<a name="119"><span class="lineNum">     119 </span>            :   for (auto&amp; buffer : module-&gt;named_buffers(/*recurse=*/false)) {</a>
+<a name="120"><span class="lineNum">     120 </span>            :     if (buffer.value().requires_grad()) {</a>
+<a name="121"><span class="lineNum">     121 </span>            :       auto grad_fn = c10::make_intrusive&lt;ReduceAdd&gt;((*buffer).device());</a>
+<a name="122"><span class="lineNum">     122 </span>            :       grad_fn-&gt;set_next_edges(autograd::collect_next_edges(*buffer));</a>
+<a name="123"><span class="lineNum">     123 </span>            : </a>
+<a name="124"><span class="lineNum">     124 </span>            :       for (const auto i : c10::irange(devices.size())) {</a>
+<a name="125"><span class="lineNum">     125 </span>            :         autograd::set_history(replicas[i]-&gt;buffers_[buffer.key()], grad_fn);</a>
+<a name="126"><span class="lineNum">     126 </span>            :       }</a>
+<a name="127"><span class="lineNum">     127 </span>            :       autograd::fire_node_creation_hooks(grad_fn);</a>
+<a name="128"><span class="lineNum">     128 </span>            :     }</a>
+<a name="129"><span class="lineNum">     129 </span>            :   }</a>
+<a name="130"><span class="lineNum">     130 </span>            : </a>
+<a name="131"><span class="lineNum">     131 </span>            :   for (auto&amp; child : module-&gt;children_) {</a>
+<a name="132"><span class="lineNum">     132 </span>            :     std::vector&lt;std::shared_ptr&lt;Module&gt;&gt; child_replicas;</a>
+<a name="133"><span class="lineNum">     133 </span>            :     child_replicas.reserve(devices.size());</a>
+<a name="134"><span class="lineNum">     134 </span>            :     for (auto&amp; replica : replicas) {</a>
+<a name="135"><span class="lineNum">     135 </span>            :       child_replicas.push_back(replica-&gt;children_[child.key()]);</a>
+<a name="136"><span class="lineNum">     136 </span>            :     }</a>
+<a name="137"><span class="lineNum">     137 </span>            : </a>
+<a name="138"><span class="lineNum">     138 </span>            :     // recursively set gradient edges for all children</a>
+<a name="139"><span class="lineNum">     139 </span>            :     replicate_grad_edges(*child, child_replicas, devices);</a>
+<a name="140"><span class="lineNum">     140 </span>            :   }</a>
+<a name="141"><span class="lineNum">     141 </span>            : }</a>
 <a name="142"><span class="lineNum">     142 </span>            : </a>
-<a name="143"><span class="lineNum">     143 </span>            : /// Replicates a module on the given list of devices.</a>
-<a name="144"><span class="lineNum">     144 </span>            : /// A replica is created by calling `clone()` on the module. For this, the</a>
-<a name="145"><span class="lineNum">     145 </span>            : /// module must inherit from `nn::Cloneable`, or define its own `clone()`</a>
-<a name="146"><span class="lineNum">     146 </span>            : /// method, which is expected to perform a deep copy of the module.</a>
-<a name="147"><span class="lineNum">     147 </span>            : template &lt;typename ModuleType&gt;</a>
-<a name="148"><span class="lineNum">     148 </span><span class="lineCov">          1 : std::vector&lt;std::shared_ptr&lt;ModuleType&gt;&gt; replicate(</span></a>
-<a name="149"><span class="lineNum">     149 </span>            :     const std::shared_ptr&lt;ModuleType&gt;&amp; module,</a>
-<a name="150"><span class="lineNum">     150 </span>            :     const std::vector&lt;Device&gt;&amp; devices) {</a>
-<a name="151"><span class="lineNum">     151 </span>            :   std::vector&lt;std::shared_ptr&lt;ModuleType&gt;&gt; replicas;</a>
-<a name="152"><span class="lineNum">     152 </span>            :   replicas.reserve(devices.size());</a>
-<a name="153"><span class="lineNum">     153 </span>            :   for (const auto&amp; device : devices) {</a>
-<a name="154"><span class="lineNum">     154 </span>            :     replicas.push_back(</a>
-<a name="155"><span class="lineNum">     155 </span>            :         std::dynamic_pointer_cast&lt;ModuleType&gt;(module-&gt;clone(device)));</a>
-<a name="156"><span class="lineNum">     156 </span>            :   }</a>
-<a name="157"><span class="lineNum">     157 </span>            :   // Configure gradient edges to point from replica parameters to original</a>
-<a name="158"><span class="lineNum">     158 </span>            :   // module parameters. See [Replicating Modules]</a>
-<a name="159"><span class="lineNum">     159 </span>            :   replicate_grad_edges(module, replicas, devices);</a>
-<a name="160"><span class="lineNum">     160 </span>            :   return replicas;</a>
-<a name="161"><span class="lineNum">     161 </span>            : }</a>
-<a name="162"><span class="lineNum">     162 </span>            : </a>
-<a name="163"><span class="lineNum">     163 </span>            : /// Replicates a module holder on the given list of devices.</a>
-<a name="164"><span class="lineNum">     164 </span>            : /// This method allows calling `replicate()` with a module holder, such as</a>
-<a name="165"><span class="lineNum">     165 </span>            : /// `Linear`.</a>
-<a name="166"><span class="lineNum">     166 </span>            : template &lt;typename ModuleType&gt;</a>
-<a name="167"><span class="lineNum">     167 </span><span class="lineCov">          1 : std::vector&lt;ModuleHolder&lt;ModuleType&gt;&gt; replicate(</span></a>
-<a name="168"><span class="lineNum">     168 </span>            :     const ModuleHolder&lt;ModuleType&gt;&amp; module,</a>
-<a name="169"><span class="lineNum">     169 </span>            :     const std::vector&lt;Device&gt;&amp; devices) {</a>
-<a name="170"><span class="lineNum">     170 </span>            :   auto ptrs = replicate(module.ptr(), devices);</a>
-<a name="171"><span class="lineNum">     171 </span>            :   return std::vector&lt;ModuleHolder&lt;ModuleType&gt;&gt;(ptrs.begin(), ptrs.end());</a>
-<a name="172"><span class="lineNum">     172 </span>            : }</a>
-<a name="173"><span class="lineNum">     173 </span>            : </a>
-<a name="174"><span class="lineNum">     174 </span>            : /// Applies the given inputs to the given modules in a parallel fashion.</a>
-<a name="175"><span class="lineNum">     175 </span>            : /// Conceptually, a thread is spawned for each `(module, input)` pair, in which</a>
-<a name="176"><span class="lineNum">     176 </span>            : /// `forward()` is called on the module with its corresponding input. The</a>
-<a name="177"><span class="lineNum">     177 </span>            : /// outputs of the individual calls are stored in a vector and returned.</a>
-<a name="178"><span class="lineNum">     178 </span>            : ///</a>
-<a name="179"><span class="lineNum">     179 </span>            : /// The first exception caught by any thread is stashed and rethrown after all</a>
-<a name="180"><span class="lineNum">     180 </span>            : /// threads have completed their operation.</a>
-<a name="181"><span class="lineNum">     181 </span>            : ///</a>
-<a name="182"><span class="lineNum">     182 </span>            : /// Further remarks:</a>
-<a name="183"><span class="lineNum">     183 </span>            : /// 1. The length of the module container must match the length of the inputs.</a>
-<a name="184"><span class="lineNum">     184 </span>            : /// 2. If a list of devices is supplied, it must match the list of modules in</a>
-<a name="185"><span class="lineNum">     185 </span>            : /// length. Each device will be set to the current default device during the</a>
-<a name="186"><span class="lineNum">     186 </span>            : /// invocation of the respective module. This means any tensors allocated on the</a>
-<a name="187"><span class="lineNum">     187 </span>            : /// default device inside the module will be constructed on this device.</a>
-<a name="188"><span class="lineNum">     188 </span>            : template &lt;typename ModuleType&gt;</a>
-<a name="189"><span class="lineNum">     189 </span><span class="lineCov">          1 : std::vector&lt;Tensor&gt; parallel_apply(</span></a>
-<a name="190"><span class="lineNum">     190 </span>            :     std::vector&lt;ModuleType&gt;&amp; modules,</a>
-<a name="191"><span class="lineNum">     191 </span>            :     const std::vector&lt;Tensor&gt;&amp; inputs,</a>
-<a name="192"><span class="lineNum">     192 </span>            :     const std::optional&lt;std::vector&lt;Device&gt;&gt;&amp; devices = std::nullopt) {</a>
-<a name="193"><span class="lineNum">     193 </span>            :   TORCH_CHECK(</a>
-<a name="194"><span class="lineNum">     194 </span>            :       modules.size() == inputs.size(), &quot;Must have as many inputs as modules&quot;);</a>
-<a name="195"><span class="lineNum">     195 </span>            :   if (devices) {</a>
-<a name="196"><span class="lineNum">     196 </span>            :     TORCH_CHECK(</a>
-<a name="197"><span class="lineNum">     197 </span>            :         modules.size() == devices-&gt;size(),</a>
-<a name="198"><span class="lineNum">     198 </span>            :         &quot;Must have as many devices as modules&quot;);</a>
-<a name="199"><span class="lineNum">     199 </span>            :   }</a>
-<a name="200"><span class="lineNum">     200 </span>            : </a>
-<a name="201"><span class="lineNum">     201 </span>            :   std::vector&lt;Tensor&gt; outputs(modules.size());</a>
-<a name="202"><span class="lineNum">     202 </span>            :   std::mutex mutex;</a>
-<a name="203"><span class="lineNum">     203 </span>            : </a>
-<a name="204"><span class="lineNum">     204 </span>            :   // std::exception_ptr can be passed between threads:</a>
-<a name="205"><span class="lineNum">     205 </span>            :   // &gt; An instance of std::exception_ptr may be passed to another function,</a>
-<a name="206"><span class="lineNum">     206 </span>            :   // &gt; possibly on another thread, where the exception may be rethrown [...].</a>
-<a name="207"><span class="lineNum">     207 </span>            :   // https://en.cppreference.com/w/cpp/error/exception_ptr</a>
-<a name="208"><span class="lineNum">     208 </span>            :   std::exception_ptr exception;</a>
-<a name="209"><span class="lineNum">     209 </span>            : </a>
-<a name="210"><span class="lineNum">     210 </span>            :   at::parallel_for(</a>
-<a name="211"><span class="lineNum">     211 </span>            :       /*begin=*/0,</a>
-<a name="212"><span class="lineNum">     212 </span>            :       /*end=*/modules.size(),</a>
-<a name="213"><span class="lineNum">     213 </span>            :       /*grain_size=*/1,</a>
-<a name="214"><span class="lineNum">     214 </span>            :       [&amp;modules, &amp;inputs, &amp;devices, &amp;outputs, &amp;mutex, &amp;exception](</a>
-<a name="215"><span class="lineNum">     215 </span>            :           int64_t index, int64_t stop) {</a>
-<a name="216"><span class="lineNum">     216 </span>            :         for (; index &lt; stop; ++index) {</a>
-<a name="217"><span class="lineNum">     217 </span>            :           try {</a>
-<a name="218"><span class="lineNum">     218 </span>            :             auto output = modules[index]-&gt;forward(inputs[index]);</a>
-<a name="219"><span class="lineNum">     219 </span>            :             output =</a>
-<a name="220"><span class="lineNum">     220 </span>            :                 output.to(devices ? (*devices)[index] : inputs[index].device());</a>
-<a name="221"><span class="lineNum">     221 </span>            :             std::lock_guard&lt;std::mutex&gt; lock(mutex);</a>
-<a name="222"><span class="lineNum">     222 </span>            :             outputs[index] = output;</a>
-<a name="223"><span class="lineNum">     223 </span>            :           } catch (...) {</a>
-<a name="224"><span class="lineNum">     224 </span>            :             std::lock_guard&lt;std::mutex&gt; lock(mutex);</a>
-<a name="225"><span class="lineNum">     225 </span>            :             if (!exception) {</a>
-<a name="226"><span class="lineNum">     226 </span>            :               exception = std::current_exception();</a>
-<a name="227"><span class="lineNum">     227 </span>            :             }</a>
-<a name="228"><span class="lineNum">     228 </span>            :           }</a>
-<a name="229"><span class="lineNum">     229 </span>            :         }</a>
-<a name="230"><span class="lineNum">     230 </span>            :       });</a>
-<a name="231"><span class="lineNum">     231 </span>            : </a>
-<a name="232"><span class="lineNum">     232 </span>            :   if (exception) {</a>
-<a name="233"><span class="lineNum">     233 </span>            :     std::rethrow_exception(exception);</a>
-<a name="234"><span class="lineNum">     234 </span>            :   }</a>
-<a name="235"><span class="lineNum">     235 </span>            : </a>
-<a name="236"><span class="lineNum">     236 </span>            :   return outputs;</a>
-<a name="237"><span class="lineNum">     237 </span>            : }</a>
-<a name="238"><span class="lineNum">     238 </span>            : </a>
-<a name="239"><span class="lineNum">     239 </span>            : /// Evaluates `module(input)` in parallel across the given `devices`. If</a>
-<a name="240"><span class="lineNum">     240 </span>            : /// `devices` is not supplied, the invocation is parallelized across all</a>
-<a name="241"><span class="lineNum">     241 </span>            : /// available CUDA devices. If `output_device` is supplied, the final, combined</a>
-<a name="242"><span class="lineNum">     242 </span>            : /// tensor will be placed on this device. If not, it defaults to the first</a>
-<a name="243"><span class="lineNum">     243 </span>            : /// device in `devices`.</a>
-<a name="244"><span class="lineNum">     244 </span>            : ///</a>
-<a name="245"><span class="lineNum">     245 </span>            : /// In detail, this method performs the following four distinct steps:</a>
-<a name="246"><span class="lineNum">     246 </span>            : /// 1. *Scatter* the input to the given devices,</a>
-<a name="247"><span class="lineNum">     247 </span>            : /// 2. *Replicate* (deep clone) the model on each device,</a>
-<a name="248"><span class="lineNum">     248 </span>            : /// 3. *Evaluate* each module with its input on its device,</a>
-<a name="249"><span class="lineNum">     249 </span>            : /// 4. *Gather* the outputs of each replica into a single output tensor, located</a>
-<a name="250"><span class="lineNum">     250 </span>            : /// on the `output_device`.</a>
-<a name="251"><span class="lineNum">     251 </span>            : template &lt;typename ModuleType&gt;</a>
-<a name="252"><span class="lineNum">     252 </span><span class="lineCov">          1 : Tensor data_parallel(</span></a>
-<a name="253"><span class="lineNum">     253 </span>            :     ModuleType module,</a>
-<a name="254"><span class="lineNum">     254 </span>            :     Tensor input,</a>
-<a name="255"><span class="lineNum">     255 </span>            :     std::optional&lt;std::vector&lt;Device&gt;&gt; devices = std::nullopt,</a>
-<a name="256"><span class="lineNum">     256 </span>            :     std::optional&lt;Device&gt; output_device = std::nullopt,</a>
-<a name="257"><span class="lineNum">     257 </span>            :     int64_t dim = 0) {</a>
-<a name="258"><span class="lineNum">     258 </span>            :   if (!devices) {</a>
-<a name="259"><span class="lineNum">     259 </span>            :     const auto device_count = torch::cuda::device_count();</a>
-<a name="260"><span class="lineNum">     260 </span>            :     TORCH_CHECK(</a>
-<a name="261"><span class="lineNum">     261 </span>            :         device_count &gt; 0, &quot;Expected at least one CUDA device to be available&quot;);</a>
-<a name="262"><span class="lineNum">     262 </span>            :     devices = std::vector&lt;Device&gt;();</a>
-<a name="263"><span class="lineNum">     263 </span>            :     devices-&gt;reserve(device_count);</a>
-<a name="264"><span class="lineNum">     264 </span>            :     for (const auto index : c10::irange(device_count)) {</a>
-<a name="265"><span class="lineNum">     265 </span>            :       devices-&gt;emplace_back(kCUDA, static_cast&lt;torch::DeviceIndex&gt;(index));</a>
-<a name="266"><span class="lineNum">     266 </span>            :     }</a>
-<a name="267"><span class="lineNum">     267 </span>            :   }</a>
-<a name="268"><span class="lineNum">     268 </span>            :   if (!output_device) {</a>
-<a name="269"><span class="lineNum">     269 </span>            :     output_device = devices-&gt;front();</a>
-<a name="270"><span class="lineNum">     270 </span>            :   }</a>
-<a name="271"><span class="lineNum">     271 </span>            : </a>
-<a name="272"><span class="lineNum">     272 </span>            :   if (devices-&gt;size() == 1) {</a>
-<a name="273"><span class="lineNum">     273 </span>            :     module-&gt;to(devices-&gt;front());</a>
-<a name="274"><span class="lineNum">     274 </span>            :     input = input.to(devices-&gt;front());</a>
-<a name="275"><span class="lineNum">     275 </span>            :     return module-&gt;forward(std::move(input)).to(*output_device);</a>
-<a name="276"><span class="lineNum">     276 </span>            :   }</a>
-<a name="277"><span class="lineNum">     277 </span>            : </a>
-<a name="278"><span class="lineNum">     278 </span>            :   autograd::Scatter scatter(*devices, /*chunk_sizes=*/std::nullopt, dim);</a>
-<a name="279"><span class="lineNum">     279 </span>            :   auto scattered_inputs = fmap&lt;Tensor&gt;(scatter.apply({std::move(input)}));</a>
-<a name="280"><span class="lineNum">     280 </span>            :   // Input tensor might not be big enough to scale across all available devices</a>
-<a name="281"><span class="lineNum">     281 </span>            :   if (scattered_inputs.size() &lt; devices-&gt;size()) {</a>
-<a name="282"><span class="lineNum">     282 </span>            :     devices-&gt;resize(</a>
-<a name="283"><span class="lineNum">     283 </span>            :         scattered_inputs.size(),</a>
-<a name="284"><span class="lineNum">     284 </span>            :         Device(DeviceType::COMPILE_TIME_MAX_DEVICE_TYPES));</a>
-<a name="285"><span class="lineNum">     285 </span>            :   }</a>
-<a name="286"><span class="lineNum">     286 </span>            : </a>
-<a name="287"><span class="lineNum">     287 </span>            :   auto replicas = replicate(module, *devices);</a>
-<a name="288"><span class="lineNum">     288 </span>            :   auto outputs = parallel_apply(replicas, scattered_inputs, *devices);</a>
-<a name="289"><span class="lineNum">     289 </span>            :   return autograd::Gather(*output_device, dim)</a>
-<a name="290"><span class="lineNum">     290 </span>            :       .apply(fmap&lt;autograd::Variable&gt;(std::move(outputs)))</a>
-<a name="291"><span class="lineNum">     291 </span>            :       .front();</a>
-<a name="292"><span class="lineNum">     292 </span>            : }</a>
-<a name="293"><span class="lineNum">     293 </span>            : </a>
-<a name="294"><span class="lineNum">     294 </span>            : } // namespace parallel</a>
-<a name="295"><span class="lineNum">     295 </span>            : } // namespace torch::nn</a>
+<a name="143"><span class="lineNum">     143 </span>            : namespace parallel {</a>
+<a name="144"><span class="lineNum">     144 </span>            : </a>
+<a name="145"><span class="lineNum">     145 </span>            : /// Replicates a module on the given list of devices.</a>
+<a name="146"><span class="lineNum">     146 </span>            : /// A replica is created by calling `clone()` on the module. For this, the</a>
+<a name="147"><span class="lineNum">     147 </span>            : /// module must inherit from `nn::Cloneable`, or define its own `clone()`</a>
+<a name="148"><span class="lineNum">     148 </span>            : /// method, which is expected to perform a deep copy of the module.</a>
+<a name="149"><span class="lineNum">     149 </span>            : template &lt;typename ModuleType&gt;</a>
+<a name="150"><span class="lineNum">     150 </span><span class="lineCov">          1 : std::vector&lt;std::shared_ptr&lt;ModuleType&gt;&gt; replicate(</span></a>
+<a name="151"><span class="lineNum">     151 </span>            :     const std::shared_ptr&lt;ModuleType&gt;&amp; module,</a>
+<a name="152"><span class="lineNum">     152 </span>            :     const std::vector&lt;Device&gt;&amp; devices) {</a>
+<a name="153"><span class="lineNum">     153 </span>            :   std::vector&lt;std::shared_ptr&lt;ModuleType&gt;&gt; replicas;</a>
+<a name="154"><span class="lineNum">     154 </span>            :   replicas.reserve(devices.size());</a>
+<a name="155"><span class="lineNum">     155 </span>            :   for (const auto&amp; device : devices) {</a>
+<a name="156"><span class="lineNum">     156 </span>            :     replicas.push_back(</a>
+<a name="157"><span class="lineNum">     157 </span>            :         std::dynamic_pointer_cast&lt;ModuleType&gt;(module-&gt;clone(device)));</a>
+<a name="158"><span class="lineNum">     158 </span>            :   }</a>
+<a name="159"><span class="lineNum">     159 </span>            :   // Configure gradient edges to point from replica parameters to original</a>
+<a name="160"><span class="lineNum">     160 </span>            :   // module parameters. See [Replicating Modules]</a>
+<a name="161"><span class="lineNum">     161 </span>            :   replicate_grad_edges(module, replicas, devices);</a>
+<a name="162"><span class="lineNum">     162 </span>            :   return replicas;</a>
+<a name="163"><span class="lineNum">     163 </span>            : }</a>
+<a name="164"><span class="lineNum">     164 </span>            : </a>
+<a name="165"><span class="lineNum">     165 </span>            : /// Replicates a module holder on the given list of devices.</a>
+<a name="166"><span class="lineNum">     166 </span>            : /// This method allows calling `replicate()` with a module holder, such as</a>
+<a name="167"><span class="lineNum">     167 </span>            : /// `Linear`.</a>
+<a name="168"><span class="lineNum">     168 </span>            : template &lt;typename ModuleType&gt;</a>
+<a name="169"><span class="lineNum">     169 </span><span class="lineCov">          1 : std::vector&lt;ModuleHolder&lt;ModuleType&gt;&gt; replicate(</span></a>
+<a name="170"><span class="lineNum">     170 </span>            :     const ModuleHolder&lt;ModuleType&gt;&amp; module,</a>
+<a name="171"><span class="lineNum">     171 </span>            :     const std::vector&lt;Device&gt;&amp; devices) {</a>
+<a name="172"><span class="lineNum">     172 </span>            :   auto ptrs = replicate(module.ptr(), devices);</a>
+<a name="173"><span class="lineNum">     173 </span>            :   return std::vector&lt;ModuleHolder&lt;ModuleType&gt;&gt;(ptrs.begin(), ptrs.end());</a>
+<a name="174"><span class="lineNum">     174 </span>            : }</a>
+<a name="175"><span class="lineNum">     175 </span>            : </a>
+<a name="176"><span class="lineNum">     176 </span>            : /// Applies the given inputs to the given modules in a parallel fashion.</a>
+<a name="177"><span class="lineNum">     177 </span>            : /// Conceptually, a thread is spawned for each `(module, input)` pair, in which</a>
+<a name="178"><span class="lineNum">     178 </span>            : /// `forward()` is called on the module with its corresponding input. The</a>
+<a name="179"><span class="lineNum">     179 </span>            : /// outputs of the individual calls are stored in a vector and returned.</a>
+<a name="180"><span class="lineNum">     180 </span>            : ///</a>
+<a name="181"><span class="lineNum">     181 </span>            : /// The first exception caught by any thread is stashed and rethrown after all</a>
+<a name="182"><span class="lineNum">     182 </span>            : /// threads have completed their operation.</a>
+<a name="183"><span class="lineNum">     183 </span>            : ///</a>
+<a name="184"><span class="lineNum">     184 </span>            : /// Further remarks:</a>
+<a name="185"><span class="lineNum">     185 </span>            : /// 1. The length of the module container must match the length of the inputs.</a>
+<a name="186"><span class="lineNum">     186 </span>            : /// 2. If a list of devices is supplied, it must match the list of modules in</a>
+<a name="187"><span class="lineNum">     187 </span>            : /// length. Each device will be set to the current default device during the</a>
+<a name="188"><span class="lineNum">     188 </span>            : /// invocation of the respective module. This means any tensors allocated on the</a>
+<a name="189"><span class="lineNum">     189 </span>            : /// default device inside the module will be constructed on this device.</a>
+<a name="190"><span class="lineNum">     190 </span>            : template &lt;typename ModuleType&gt;</a>
+<a name="191"><span class="lineNum">     191 </span><span class="lineCov">          1 : std::vector&lt;Tensor&gt; parallel_apply(</span></a>
+<a name="192"><span class="lineNum">     192 </span>            :     std::vector&lt;ModuleType&gt;&amp; modules,</a>
+<a name="193"><span class="lineNum">     193 </span>            :     const std::vector&lt;Tensor&gt;&amp; inputs,</a>
+<a name="194"><span class="lineNum">     194 </span>            :     const std::optional&lt;std::vector&lt;Device&gt;&gt;&amp; devices = std::nullopt) {</a>
+<a name="195"><span class="lineNum">     195 </span>            :   TORCH_CHECK(</a>
+<a name="196"><span class="lineNum">     196 </span>            :       modules.size() == inputs.size(), &quot;Must have as many inputs as modules&quot;);</a>
+<a name="197"><span class="lineNum">     197 </span>            :   if (devices) {</a>
+<a name="198"><span class="lineNum">     198 </span>            :     TORCH_CHECK(</a>
+<a name="199"><span class="lineNum">     199 </span>            :         modules.size() == devices-&gt;size(),</a>
+<a name="200"><span class="lineNum">     200 </span>            :         &quot;Must have as many devices as modules&quot;);</a>
+<a name="201"><span class="lineNum">     201 </span>            :   }</a>
+<a name="202"><span class="lineNum">     202 </span>            : </a>
+<a name="203"><span class="lineNum">     203 </span>            :   std::vector&lt;Tensor&gt; outputs(modules.size());</a>
+<a name="204"><span class="lineNum">     204 </span>            :   std::mutex mutex;</a>
+<a name="205"><span class="lineNum">     205 </span>            : </a>
+<a name="206"><span class="lineNum">     206 </span>            :   // std::exception_ptr can be passed between threads:</a>
+<a name="207"><span class="lineNum">     207 </span>            :   // &gt; An instance of std::exception_ptr may be passed to another function,</a>
+<a name="208"><span class="lineNum">     208 </span>            :   // &gt; possibly on another thread, where the exception may be rethrown [...].</a>
+<a name="209"><span class="lineNum">     209 </span>            :   // https://en.cppreference.com/w/cpp/error/exception_ptr</a>
+<a name="210"><span class="lineNum">     210 </span>            :   std::exception_ptr exception;</a>
+<a name="211"><span class="lineNum">     211 </span>            : </a>
+<a name="212"><span class="lineNum">     212 </span>            :   at::parallel_for(</a>
+<a name="213"><span class="lineNum">     213 </span>            :       /*begin=*/0,</a>
+<a name="214"><span class="lineNum">     214 </span>            :       /*end=*/modules.size(),</a>
+<a name="215"><span class="lineNum">     215 </span>            :       /*grain_size=*/1,</a>
+<a name="216"><span class="lineNum">     216 </span>            :       [&amp;modules, &amp;inputs, &amp;devices, &amp;outputs, &amp;mutex, &amp;exception](</a>
+<a name="217"><span class="lineNum">     217 </span>            :           int64_t index, int64_t stop) {</a>
+<a name="218"><span class="lineNum">     218 </span>            :         for (; index &lt; stop; ++index) {</a>
+<a name="219"><span class="lineNum">     219 </span>            :           try {</a>
+<a name="220"><span class="lineNum">     220 </span>            :             auto output = modules[index]-&gt;forward(inputs[index]);</a>
+<a name="221"><span class="lineNum">     221 </span>            :             output =</a>
+<a name="222"><span class="lineNum">     222 </span>            :                 output.to(devices ? (*devices)[index] : inputs[index].device());</a>
+<a name="223"><span class="lineNum">     223 </span>            :             std::lock_guard&lt;std::mutex&gt; lock(mutex);</a>
+<a name="224"><span class="lineNum">     224 </span>            :             outputs[index] = output;</a>
+<a name="225"><span class="lineNum">     225 </span>            :           } catch (...) {</a>
+<a name="226"><span class="lineNum">     226 </span>            :             std::lock_guard&lt;std::mutex&gt; lock(mutex);</a>
+<a name="227"><span class="lineNum">     227 </span>            :             if (!exception) {</a>
+<a name="228"><span class="lineNum">     228 </span>            :               exception = std::current_exception();</a>
+<a name="229"><span class="lineNum">     229 </span>            :             }</a>
+<a name="230"><span class="lineNum">     230 </span>            :           }</a>
+<a name="231"><span class="lineNum">     231 </span>            :         }</a>
+<a name="232"><span class="lineNum">     232 </span>            :       });</a>
+<a name="233"><span class="lineNum">     233 </span>            : </a>
+<a name="234"><span class="lineNum">     234 </span>            :   if (exception) {</a>
+<a name="235"><span class="lineNum">     235 </span>            :     std::rethrow_exception(exception);</a>
+<a name="236"><span class="lineNum">     236 </span>            :   }</a>
+<a name="237"><span class="lineNum">     237 </span>            : </a>
+<a name="238"><span class="lineNum">     238 </span>            :   return outputs;</a>
+<a name="239"><span class="lineNum">     239 </span>            : }</a>
+<a name="240"><span class="lineNum">     240 </span>            : </a>
+<a name="241"><span class="lineNum">     241 </span>            : /// Evaluates `module(input)` in parallel across the given `devices`. If</a>
+<a name="242"><span class="lineNum">     242 </span>            : /// `devices` is not supplied, the invocation is parallelized across all</a>
+<a name="243"><span class="lineNum">     243 </span>            : /// available CUDA devices. If `output_device` is supplied, the final, combined</a>
+<a name="244"><span class="lineNum">     244 </span>            : /// tensor will be placed on this device. If not, it defaults to the first</a>
+<a name="245"><span class="lineNum">     245 </span>            : /// device in `devices`.</a>
+<a name="246"><span class="lineNum">     246 </span>            : ///</a>
+<a name="247"><span class="lineNum">     247 </span>            : /// In detail, this method performs the following four distinct steps:</a>
+<a name="248"><span class="lineNum">     248 </span>            : /// 1. *Scatter* the input to the given devices,</a>
+<a name="249"><span class="lineNum">     249 </span>            : /// 2. *Replicate* (deep clone) the model on each device,</a>
+<a name="250"><span class="lineNum">     250 </span>            : /// 3. *Evaluate* each module with its input on its device,</a>
+<a name="251"><span class="lineNum">     251 </span>            : /// 4. *Gather* the outputs of each replica into a single output tensor, located</a>
+<a name="252"><span class="lineNum">     252 </span>            : /// on the `output_device`.</a>
+<a name="253"><span class="lineNum">     253 </span>            : template &lt;typename ModuleType&gt;</a>
+<a name="254"><span class="lineNum">     254 </span><span class="lineCov">          1 : Tensor data_parallel(</span></a>
+<a name="255"><span class="lineNum">     255 </span>            :     ModuleType module,</a>
+<a name="256"><span class="lineNum">     256 </span>            :     Tensor input,</a>
+<a name="257"><span class="lineNum">     257 </span>            :     std::optional&lt;std::vector&lt;Device&gt;&gt; devices = std::nullopt,</a>
+<a name="258"><span class="lineNum">     258 </span>            :     std::optional&lt;Device&gt; output_device = std::nullopt,</a>
+<a name="259"><span class="lineNum">     259 </span>            :     int64_t dim = 0) {</a>
+<a name="260"><span class="lineNum">     260 </span>            :   if (!devices) {</a>
+<a name="261"><span class="lineNum">     261 </span>            :     const auto device_count = torch::cuda::device_count();</a>
+<a name="262"><span class="lineNum">     262 </span>            :     TORCH_CHECK(</a>
+<a name="263"><span class="lineNum">     263 </span>            :         device_count &gt; 0, &quot;Expected at least one CUDA device to be available&quot;);</a>
+<a name="264"><span class="lineNum">     264 </span>            :     devices = std::vector&lt;Device&gt;();</a>
+<a name="265"><span class="lineNum">     265 </span>            :     devices-&gt;reserve(device_count);</a>
+<a name="266"><span class="lineNum">     266 </span>            :     for (const auto index : c10::irange(device_count)) {</a>
+<a name="267"><span class="lineNum">     267 </span>            :       devices-&gt;emplace_back(kCUDA, static_cast&lt;torch::DeviceIndex&gt;(index));</a>
+<a name="268"><span class="lineNum">     268 </span>            :     }</a>
+<a name="269"><span class="lineNum">     269 </span>            :   }</a>
+<a name="270"><span class="lineNum">     270 </span>            :   if (!output_device) {</a>
+<a name="271"><span class="lineNum">     271 </span>            :     output_device = devices-&gt;front();</a>
+<a name="272"><span class="lineNum">     272 </span>            :   }</a>
+<a name="273"><span class="lineNum">     273 </span>            : </a>
+<a name="274"><span class="lineNum">     274 </span>            :   if (devices-&gt;size() == 1) {</a>
+<a name="275"><span class="lineNum">     275 </span>            :     module-&gt;to(devices-&gt;front());</a>
+<a name="276"><span class="lineNum">     276 </span>            :     input = input.to(devices-&gt;front());</a>
+<a name="277"><span class="lineNum">     277 </span>            :     return module-&gt;forward(std::move(input)).to(*output_device);</a>
+<a name="278"><span class="lineNum">     278 </span>            :   }</a>
+<a name="279"><span class="lineNum">     279 </span>            : </a>
+<a name="280"><span class="lineNum">     280 </span>            :   autograd::Scatter scatter(*devices, /*chunk_sizes=*/std::nullopt, dim);</a>
+<a name="281"><span class="lineNum">     281 </span>            :   auto scattered_inputs = fmap&lt;Tensor&gt;(scatter.apply({std::move(input)}));</a>
+<a name="282"><span class="lineNum">     282 </span>            :   // Input tensor might not be big enough to scale across all available devices</a>
+<a name="283"><span class="lineNum">     283 </span>            :   if (scattered_inputs.size() &lt; devices-&gt;size()) {</a>
+<a name="284"><span class="lineNum">     284 </span>            :     devices-&gt;resize(</a>
+<a name="285"><span class="lineNum">     285 </span>            :         scattered_inputs.size(),</a>
+<a name="286"><span class="lineNum">     286 </span>            :         Device(DeviceType::COMPILE_TIME_MAX_DEVICE_TYPES));</a>
+<a name="287"><span class="lineNum">     287 </span>            :   }</a>
+<a name="288"><span class="lineNum">     288 </span>            : </a>
+<a name="289"><span class="lineNum">     289 </span>            :   auto replicas = replicate(module, *devices);</a>
+<a name="290"><span class="lineNum">     290 </span>            :   auto outputs = parallel_apply(replicas, scattered_inputs, *devices);</a>
+<a name="291"><span class="lineNum">     291 </span>            :   return autograd::Gather(*output_device, dim)</a>
+<a name="292"><span class="lineNum">     292 </span>            :       .apply(fmap&lt;autograd::Variable&gt;(std::move(outputs)))</a>
+<a name="293"><span class="lineNum">     293 </span>            :       .front();</a>
+<a name="294"><span class="lineNum">     294 </span>            : }</a>
+<a name="295"><span class="lineNum">     295 </span>            : </a>
+<a name="296"><span class="lineNum">     296 </span>            : } // namespace parallel</a>
+<a name="297"><span class="lineNum">     297 </span>            : } // namespace torch::nn</a>
 </pre>
       </td>
     </tr>
