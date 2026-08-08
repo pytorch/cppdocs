@@ -658,6 +658,40 @@ Returns:
 
 A view tensor with the specified shape.
 
+inline torch::stable::Tensor torch::stable::view(const torch::stable::Tensor &self, torch::headeronly::ScalarType dtype)
+
+Stable version of the view.dtype op.
+
+Returns a view of the input tensor with the same data reinterpreted as the given dtype. This is a different overload than the shape-based view op.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.14.
+
+Parameters:
+
+- **self** - The input tensor.
+- **dtype** - The dtype to reinterpret the data as.
+
+Returns:
+
+A view of the input tensor with the specified dtype.
+
+inline torch::stable::Tensor torch::stable::permute(const torch::stable::Tensor &self, torch::headeronly::IntHeaderOnlyArrayRef dims)
+
+Stable version of the permute op.
+
+Returns a view of the input tensor with its dimensions rearranged according to dims. The returned tensor shares the same underlying data with the input.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.14.
+
+Parameters:
+
+- **self** - The input tensor.
+- **dims** - The desired ordering of dimensions.
+
+Returns:
+
+A permuted view of the input tensor.
+
 inline torch::stable::Tensor torch::stable::flatten(const torch::stable::Tensor &self, int64_t start_dim = 0, int64_t end_dim = -1)
 
 Stable version of the flatten.using_ints op.
@@ -750,6 +784,24 @@ Returns:
 
 A tensor with one fewer dimension.
 
+inline torch::stable::Tensor torch::stable::index_select(const torch::stable::Tensor &self, int64_t dim, const torch::stable::Tensor &index)
+
+Stable version of the index_select op.
+
+Returns a new tensor which indexes the input tensor along dimension dim using the entries in index.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.14.
+
+Parameters:
+
+- **self** - The input tensor.
+- **dim** - The dimension to index along.
+- **index** - A 1-D tensor of indices to select.
+
+Returns:
+
+A tensor with values selected along dim.
+
 inline torch::stable::Tensor torch::stable::narrow(torch::stable::Tensor &self, int64_t dim, int64_t start, int64_t length)
 
 Stable version of the narrow.default op.
@@ -839,6 +891,22 @@ Parameters:
 Returns:
 
 A tensor on the specified device.
+
+inline bool torch::stable::is_pinned(const torch::stable::Tensor &self)
+
+Stable version of the is_pinned op.
+
+Returns true if the tensor's storage is allocated in pinned memory.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.14.
+
+Parameters:
+
+**self** - The input tensor.
+
+Returns:
+
+true if the tensor is pinned, false otherwise.
 
 ## In-place Operations
 
@@ -1016,3 +1084,88 @@ Parameters:
 Returns:
 
 The result of self - alpha * other.
+
+inline torch::stable::Tensor torch::stable::bitwise_and(const torch::stable::Tensor &self, const torch::stable::Tensor &other)
+
+Stable version of the bitwise_and.Tensor op.
+
+Computes the element-wise bitwise AND of self and other.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.14.
+
+Parameters:
+
+- **self** - The first input tensor.
+- **other** - The second input tensor.
+
+Returns:
+
+The result of the bitwise AND.
+
+inline torch::stable::Tensor torch::stable::bitwise_or(const torch::stable::Tensor &self, const torch::stable::Tensor &other)
+
+Stable version of the bitwise_or.Tensor op.
+
+Computes the element-wise bitwise OR of self and other.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.14.
+
+Parameters:
+
+- **self** - The first input tensor.
+- **other** - The second input tensor.
+
+Returns:
+
+The result of the bitwise OR.
+
+inline torch::stable::Tensor torch::stable::bitwise_left_shift(const torch::stable::Tensor &self, const torch::stable::Tensor &other)
+
+Stable version of the bitwise_left_shift.Tensor op.
+
+Computes the element-wise left bitwise shift of self by other.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.14.
+
+Parameters:
+
+- **self** - The input tensor to shift.
+- **other** - The tensor of shift amounts.
+
+Returns:
+
+The result of the left bitwise shift.
+
+inline torch::stable::Tensor torch::stable::bitwise_right_shift(const torch::stable::Tensor &self, const torch::stable::Tensor &other)
+
+Stable version of the bitwise_right_shift.Tensor op.
+
+Computes the element-wise right bitwise shift of self by other.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.14.
+
+Parameters:
+
+- **self** - The input tensor to shift.
+- **other** - The tensor of shift amounts.
+
+Returns:
+
+The result of the right bitwise shift.
+
+inline torch::stable::Tensor torch::stable::floor_divide(const torch::stable::Tensor &self, const torch::stable::Tensor &other)
+
+Stable version of the floor_divide op.
+
+Computes the element-wise floor division of self by other.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.14.
+
+Parameters:
+
+- **self** - The dividend tensor.
+- **other** - The divisor tensor.
+
+Returns:
+
+The result of floor division.
