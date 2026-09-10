@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Date:</td>
-            <td class="headerValue">2026-09-09 00:53:32</td>
+            <td class="headerValue">2026-09-10 00:52:31</td>
             <td></td>
           </tr>
           <tr>
@@ -738,294 +738,295 @@
 <a name="672"><span class="lineNum">     672 </span>            :   TORCH_INTERNAL_ASSERT(embed_dim == embed_dim_to_check);</a>
 <a name="673"><span class="lineNum">     673 </span>            :   TORCH_INTERNAL_ASSERT(key.sizes() == value.sizes());</a>
 <a name="674"><span class="lineNum">     674 </span>            : </a>
-<a name="675"><span class="lineNum">     675 </span>            :   const auto head_dim = embed_dim / num_heads;</a>
-<a name="676"><span class="lineNum">     676 </span>            :   TORCH_CHECK(</a>
-<a name="677"><span class="lineNum">     677 </span>            :       head_dim * num_heads == embed_dim,</a>
-<a name="678"><span class="lineNum">     678 </span>            :       &quot;embed_dim must be divisible by num_heads&quot;);</a>
-<a name="679"><span class="lineNum">     679 </span>            :   const auto scaling = 1 / std::sqrt(head_dim);</a>
-<a name="680"><span class="lineNum">     680 </span>            : </a>
-<a name="681"><span class="lineNum">     681 </span>            :   Tensor q, k, v;</a>
-<a name="682"><span class="lineNum">     682 </span>            :   if (!use_separate_proj_weight) {</a>
-<a name="683"><span class="lineNum">     683 </span>            :     if (torch::equal(query, key) &amp;&amp; torch::equal(key, value)) {</a>
-<a name="684"><span class="lineNum">     684 </span>            :       // self-attention</a>
-<a name="685"><span class="lineNum">     685 </span>            :       const auto chunks =</a>
-<a name="686"><span class="lineNum">     686 </span>            :           F::linear(query, in_proj_weight, in_proj_bias).chunk(3, /*dim=*/-1);</a>
-<a name="687"><span class="lineNum">     687 </span>            :       q = chunks[0];</a>
-<a name="688"><span class="lineNum">     688 </span>            :       k = chunks[1];</a>
-<a name="689"><span class="lineNum">     689 </span>            :       v = chunks[2];</a>
-<a name="690"><span class="lineNum">     690 </span>            :     } else if (torch::equal(key, value)) {</a>
-<a name="691"><span class="lineNum">     691 </span>            :       // encoder-decoder attention</a>
-<a name="692"><span class="lineNum">     692 </span>            :       // This is inline in_proj function with in_proj_weight and in_proj_bias</a>
-<a name="693"><span class="lineNum">     693 </span>            :       auto _b = in_proj_bias;</a>
-<a name="694"><span class="lineNum">     694 </span>            :       int64_t _start = 0;</a>
-<a name="695"><span class="lineNum">     695 </span>            :       auto _end = embed_dim;</a>
-<a name="696"><span class="lineNum">     696 </span>            :       auto _w = in_proj_weight.slice(/*dim=*/0, _start, _end);</a>
-<a name="697"><span class="lineNum">     697 </span>            :       if (_b.defined()) {</a>
-<a name="698"><span class="lineNum">     698 </span>            :         _b = _b.slice(/*dim=*/0, _start, _end);</a>
-<a name="699"><span class="lineNum">     699 </span>            :       }</a>
-<a name="700"><span class="lineNum">     700 </span>            :       q = F::linear(query, _w, _b);</a>
-<a name="701"><span class="lineNum">     701 </span>            : </a>
-<a name="702"><span class="lineNum">     702 </span>            :       if (!key.defined()) {</a>
-<a name="703"><span class="lineNum">     703 </span>            :         TORCH_INTERNAL_ASSERT(!value.defined());</a>
-<a name="704"><span class="lineNum">     704 </span>            :         k.reset();</a>
-<a name="705"><span class="lineNum">     705 </span>            :         v.reset();</a>
-<a name="706"><span class="lineNum">     706 </span>            :       } else {</a>
-<a name="707"><span class="lineNum">     707 </span>            :         // This is inline in_proj function with in_proj_weight and in_proj_bias</a>
-<a name="708"><span class="lineNum">     708 </span>            :         _b = in_proj_bias;</a>
-<a name="709"><span class="lineNum">     709 </span>            :         _start = embed_dim;</a>
-<a name="710"><span class="lineNum">     710 </span>            :         _w = in_proj_weight.slice(/*dim=*/0, _start);</a>
-<a name="711"><span class="lineNum">     711 </span>            :         if (_b.defined()) {</a>
-<a name="712"><span class="lineNum">     712 </span>            :           _b = _b.slice(/*dim=*/0, _start);</a>
-<a name="713"><span class="lineNum">     713 </span>            :         }</a>
-<a name="714"><span class="lineNum">     714 </span>            :         const auto chunks = F::linear(key, _w, _b).chunk(2, /*dim=*/-1);</a>
-<a name="715"><span class="lineNum">     715 </span>            :         k = chunks[0];</a>
-<a name="716"><span class="lineNum">     716 </span>            :         v = chunks[1];</a>
-<a name="717"><span class="lineNum">     717 </span>            :       }</a>
-<a name="718"><span class="lineNum">     718 </span>            :     } else {</a>
-<a name="719"><span class="lineNum">     719 </span>            :       // This is inline in_proj function with in_proj_weight and in_proj_bias</a>
-<a name="720"><span class="lineNum">     720 </span>            :       auto _b = in_proj_bias;</a>
-<a name="721"><span class="lineNum">     721 </span>            :       int64_t _start = 0;</a>
-<a name="722"><span class="lineNum">     722 </span>            :       auto _end = embed_dim;</a>
-<a name="723"><span class="lineNum">     723 </span>            :       auto _w = in_proj_weight.slice(/*dim=*/0, _start, _end);</a>
-<a name="724"><span class="lineNum">     724 </span>            :       if (_b.defined()) {</a>
-<a name="725"><span class="lineNum">     725 </span>            :         _b = _b.slice(/*dim=*/0, _start, _end);</a>
-<a name="726"><span class="lineNum">     726 </span>            :       }</a>
-<a name="727"><span class="lineNum">     727 </span>            :       q = F::linear(query, _w, _b);</a>
-<a name="728"><span class="lineNum">     728 </span>            : </a>
-<a name="729"><span class="lineNum">     729 </span>            :       // This is inline in_proj function with in_proj_weight and in_proj_bias</a>
-<a name="730"><span class="lineNum">     730 </span>            :       _b = in_proj_bias;</a>
-<a name="731"><span class="lineNum">     731 </span>            :       _start = embed_dim;</a>
-<a name="732"><span class="lineNum">     732 </span>            :       _end = embed_dim * 2;</a>
-<a name="733"><span class="lineNum">     733 </span>            :       _w = in_proj_weight.slice(/*dim=*/0, _start, _end);</a>
-<a name="734"><span class="lineNum">     734 </span>            :       if (_b.defined()) {</a>
-<a name="735"><span class="lineNum">     735 </span>            :         _b = _b.slice(/*dim=*/0, _start, _end);</a>
-<a name="736"><span class="lineNum">     736 </span>            :       }</a>
-<a name="737"><span class="lineNum">     737 </span>            :       k = F::linear(key, _w, _b);</a>
-<a name="738"><span class="lineNum">     738 </span>            : </a>
-<a name="739"><span class="lineNum">     739 </span>            :       // This is inline in_proj function with in_proj_weight and in_proj_bias</a>
-<a name="740"><span class="lineNum">     740 </span>            :       _b = in_proj_bias;</a>
-<a name="741"><span class="lineNum">     741 </span>            :       _start = embed_dim * 2;</a>
-<a name="742"><span class="lineNum">     742 </span>            :       _w = in_proj_weight.slice(/*dim=*/0, _start);</a>
-<a name="743"><span class="lineNum">     743 </span>            :       if (_b.defined()) {</a>
-<a name="744"><span class="lineNum">     744 </span>            :         _b = _b.slice(0, _start);</a>
-<a name="745"><span class="lineNum">     745 </span>            :       }</a>
-<a name="746"><span class="lineNum">     746 </span>            :       v = F::linear(value, _w, _b);</a>
-<a name="747"><span class="lineNum">     747 </span>            :     }</a>
-<a name="748"><span class="lineNum">     748 </span>            :   } else {</a>
-<a name="749"><span class="lineNum">     749 </span>            :     const auto&amp; q_proj_weight_non_opt = q_proj_weight;</a>
-<a name="750"><span class="lineNum">     750 </span>            :     {</a>
-<a name="751"><span class="lineNum">     751 </span>            :       const auto sizes = q_proj_weight_non_opt.sizes();</a>
-<a name="752"><span class="lineNum">     752 </span>            :       const auto len1 = sizes[0];</a>
-<a name="753"><span class="lineNum">     753 </span>            :       const auto len2 = sizes[1];</a>
-<a name="754"><span class="lineNum">     754 </span>            :       TORCH_CHECK(len1 == embed_dim &amp;&amp; len2 == query.size(-1));</a>
-<a name="755"><span class="lineNum">     755 </span>            :     }</a>
-<a name="756"><span class="lineNum">     756 </span>            : </a>
-<a name="757"><span class="lineNum">     757 </span>            :     const auto&amp; k_proj_weight_non_opt = k_proj_weight;</a>
-<a name="758"><span class="lineNum">     758 </span>            :     {</a>
-<a name="759"><span class="lineNum">     759 </span>            :       const auto sizes = k_proj_weight_non_opt.sizes();</a>
-<a name="760"><span class="lineNum">     760 </span>            :       const auto len1 = sizes[0];</a>
-<a name="761"><span class="lineNum">     761 </span>            :       const auto len2 = sizes[1];</a>
-<a name="762"><span class="lineNum">     762 </span>            :       TORCH_CHECK(len1 == embed_dim &amp;&amp; len2 == key.size(-1));</a>
-<a name="763"><span class="lineNum">     763 </span>            :     }</a>
-<a name="764"><span class="lineNum">     764 </span>            : </a>
-<a name="765"><span class="lineNum">     765 </span>            :     const auto&amp; v_proj_weight_non_opt = v_proj_weight;</a>
-<a name="766"><span class="lineNum">     766 </span>            :     {</a>
-<a name="767"><span class="lineNum">     767 </span>            :       const auto sizes = v_proj_weight_non_opt.sizes();</a>
-<a name="768"><span class="lineNum">     768 </span>            :       const auto len1 = sizes[0];</a>
-<a name="769"><span class="lineNum">     769 </span>            :       const auto len2 = sizes[1];</a>
-<a name="770"><span class="lineNum">     770 </span>            :       TORCH_CHECK(len1 == embed_dim &amp;&amp; len2 == value.size(-1));</a>
-<a name="771"><span class="lineNum">     771 </span>            :     }</a>
-<a name="772"><span class="lineNum">     772 </span>            : </a>
-<a name="773"><span class="lineNum">     773 </span>            :     if (in_proj_bias.defined()) {</a>
-<a name="774"><span class="lineNum">     774 </span>            :       q = F::linear(</a>
-<a name="775"><span class="lineNum">     775 </span>            :           query,</a>
-<a name="776"><span class="lineNum">     776 </span>            :           q_proj_weight_non_opt,</a>
-<a name="777"><span class="lineNum">     777 </span>            :           in_proj_bias.slice(/*dim=*/0, 0, embed_dim));</a>
-<a name="778"><span class="lineNum">     778 </span>            :       k = F::linear(</a>
-<a name="779"><span class="lineNum">     779 </span>            :           key,</a>
-<a name="780"><span class="lineNum">     780 </span>            :           k_proj_weight_non_opt,</a>
-<a name="781"><span class="lineNum">     781 </span>            :           in_proj_bias.slice(/*dim=*/0, embed_dim, (embed_dim * 2)));</a>
-<a name="782"><span class="lineNum">     782 </span>            :       v = F::linear(</a>
-<a name="783"><span class="lineNum">     783 </span>            :           value,</a>
-<a name="784"><span class="lineNum">     784 </span>            :           v_proj_weight_non_opt,</a>
-<a name="785"><span class="lineNum">     785 </span>            :           in_proj_bias.slice(/*dim=*/0, (embed_dim * 2)));</a>
-<a name="786"><span class="lineNum">     786 </span>            :     } else {</a>
-<a name="787"><span class="lineNum">     787 </span>            :       q = F::linear(query, q_proj_weight_non_opt, in_proj_bias);</a>
-<a name="788"><span class="lineNum">     788 </span>            :       k = F::linear(key, k_proj_weight_non_opt, in_proj_bias);</a>
-<a name="789"><span class="lineNum">     789 </span>            :       v = F::linear(value, v_proj_weight_non_opt, in_proj_bias);</a>
-<a name="790"><span class="lineNum">     790 </span>            :     }</a>
-<a name="791"><span class="lineNum">     791 </span>            :   }</a>
-<a name="792"><span class="lineNum">     792 </span>            :   q = q * scaling;</a>
-<a name="793"><span class="lineNum">     793 </span>            :   Tensor attn_mask_ = attn_mask;</a>
-<a name="794"><span class="lineNum">     794 </span>            :   Tensor key_padding_mask_ = key_padding_mask;</a>
-<a name="795"><span class="lineNum">     795 </span>            :   if (bias_k.defined() &amp;&amp; bias_v.defined()) {</a>
-<a name="796"><span class="lineNum">     796 </span>            :     if (!static_k.defined() &amp;&amp; !static_v.defined()) {</a>
-<a name="797"><span class="lineNum">     797 </span>            :       k = torch::cat({k, bias_k.repeat({1, bsz, 1})});</a>
-<a name="798"><span class="lineNum">     798 </span>            :       v = torch::cat({v, bias_v.repeat({1, bsz, 1})});</a>
-<a name="799"><span class="lineNum">     799 </span>            :       if (attn_mask_.defined()) {</a>
-<a name="800"><span class="lineNum">     800 </span>            :         attn_mask_ = torch::cat(</a>
-<a name="801"><span class="lineNum">     801 </span>            :             {attn_mask_,</a>
-<a name="802"><span class="lineNum">     802 </span>            :              torch::zeros(</a>
-<a name="803"><span class="lineNum">     803 </span>            :                  {attn_mask_.size(0), 1},</a>
-<a name="804"><span class="lineNum">     804 </span>            :                  at::TensorOptions(attn_mask_.dtype())</a>
-<a name="805"><span class="lineNum">     805 </span>            :                      .device(attn_mask_.device()))},</a>
-<a name="806"><span class="lineNum">     806 </span>            :             /*dim=*/1);</a>
-<a name="807"><span class="lineNum">     807 </span>            :       }</a>
-<a name="808"><span class="lineNum">     808 </span>            :       if (key_padding_mask_.defined()) {</a>
-<a name="809"><span class="lineNum">     809 </span>            :         key_padding_mask_ = torch::cat(</a>
-<a name="810"><span class="lineNum">     810 </span>            :             {key_padding_mask_,</a>
-<a name="811"><span class="lineNum">     811 </span>            :              torch::zeros(</a>
-<a name="812"><span class="lineNum">     812 </span>            :                  {key_padding_mask_.size(0), 1},</a>
-<a name="813"><span class="lineNum">     813 </span>            :                  at::TensorOptions(key_padding_mask_.dtype())</a>
-<a name="814"><span class="lineNum">     814 </span>            :                      .device(key_padding_mask_.device()))},</a>
-<a name="815"><span class="lineNum">     815 </span>            :             /*dim=*/1);</a>
-<a name="816"><span class="lineNum">     816 </span>            :       }</a>
-<a name="817"><span class="lineNum">     817 </span>            :     } else {</a>
-<a name="818"><span class="lineNum">     818 </span>            :       TORCH_CHECK(!static_k.defined(), &quot;bias cannot be added to static key.&quot;);</a>
-<a name="819"><span class="lineNum">     819 </span>            :       TORCH_CHECK(!static_v.defined(), &quot;bias cannot be added to static value.&quot;);</a>
-<a name="820"><span class="lineNum">     820 </span>            :     }</a>
-<a name="821"><span class="lineNum">     821 </span>            :   } else {</a>
-<a name="822"><span class="lineNum">     822 </span>            :     TORCH_CHECK(!bias_k.defined());</a>
-<a name="823"><span class="lineNum">     823 </span>            :     TORCH_CHECK(!bias_v.defined());</a>
-<a name="824"><span class="lineNum">     824 </span>            :   }</a>
-<a name="825"><span class="lineNum">     825 </span>            :   q = q.contiguous().view({tgt_len, bsz * num_heads, head_dim}).transpose(0, 1);</a>
-<a name="826"><span class="lineNum">     826 </span>            :   if (k.defined()) {</a>
-<a name="827"><span class="lineNum">     827 </span>            :     k = k.contiguous().view({-1, bsz * num_heads, head_dim}).transpose(0, 1);</a>
-<a name="828"><span class="lineNum">     828 </span>            :   }</a>
-<a name="829"><span class="lineNum">     829 </span>            :   if (v.defined()) {</a>
-<a name="830"><span class="lineNum">     830 </span>            :     v = v.contiguous().view({-1, bsz * num_heads, head_dim}).transpose(0, 1);</a>
-<a name="831"><span class="lineNum">     831 </span>            :   }</a>
-<a name="832"><span class="lineNum">     832 </span>            :   if (static_k.defined()) {</a>
-<a name="833"><span class="lineNum">     833 </span>            :     TORCH_CHECK(static_k.size(0) == bsz * num_heads);</a>
-<a name="834"><span class="lineNum">     834 </span>            :     TORCH_CHECK(static_k.size(2) == head_dim);</a>
-<a name="835"><span class="lineNum">     835 </span>            :     k = static_k;</a>
-<a name="836"><span class="lineNum">     836 </span>            :   }</a>
-<a name="837"><span class="lineNum">     837 </span>            :   if (static_v.defined()) {</a>
-<a name="838"><span class="lineNum">     838 </span>            :     TORCH_CHECK(static_v.size(0) == bsz * num_heads);</a>
-<a name="839"><span class="lineNum">     839 </span>            :     TORCH_CHECK(static_v.size(2) == head_dim);</a>
-<a name="840"><span class="lineNum">     840 </span>            :     v = static_v;</a>
-<a name="841"><span class="lineNum">     841 </span>            :   }</a>
-<a name="842"><span class="lineNum">     842 </span>            :   auto src_len = k.size(1);</a>
-<a name="843"><span class="lineNum">     843 </span>            :   if (key_padding_mask_.defined()) {</a>
-<a name="844"><span class="lineNum">     844 </span>            :     TORCH_CHECK(key_padding_mask_.size(0) == bsz);</a>
-<a name="845"><span class="lineNum">     845 </span>            :     TORCH_CHECK(key_padding_mask_.size(1) == src_len);</a>
-<a name="846"><span class="lineNum">     846 </span>            :   }</a>
-<a name="847"><span class="lineNum">     847 </span>            :   if (add_zero_attn) {</a>
-<a name="848"><span class="lineNum">     848 </span>            :     src_len += 1;</a>
-<a name="849"><span class="lineNum">     849 </span>            :     auto k_sizes = k.sizes().vec();</a>
-<a name="850"><span class="lineNum">     850 </span>            :     k_sizes[1] = 1;</a>
-<a name="851"><span class="lineNum">     851 </span>            :     k = torch::cat(</a>
-<a name="852"><span class="lineNum">     852 </span>            :         {k,</a>
-<a name="853"><span class="lineNum">     853 </span>            :          torch::zeros(</a>
-<a name="854"><span class="lineNum">     854 </span>            :              k_sizes, at::TensorOptions(k.dtype()).device(k.device()))},</a>
-<a name="855"><span class="lineNum">     855 </span>            :         /*dim=*/1);</a>
-<a name="856"><span class="lineNum">     856 </span>            :     auto v_sizes = v.sizes().vec();</a>
-<a name="857"><span class="lineNum">     857 </span>            :     v_sizes[1] = 1;</a>
-<a name="858"><span class="lineNum">     858 </span>            :     v = torch::cat(</a>
-<a name="859"><span class="lineNum">     859 </span>            :         {v,</a>
-<a name="860"><span class="lineNum">     860 </span>            :          torch::zeros(</a>
-<a name="861"><span class="lineNum">     861 </span>            :              v_sizes, at::TensorOptions(v.dtype()).device(v.device()))},</a>
-<a name="862"><span class="lineNum">     862 </span>            :         /*dim=*/1);</a>
-<a name="863"><span class="lineNum">     863 </span>            :     if (attn_mask_.defined()) {</a>
-<a name="864"><span class="lineNum">     864 </span>            :       attn_mask_ = torch::cat(</a>
-<a name="865"><span class="lineNum">     865 </span>            :           {attn_mask_,</a>
-<a name="866"><span class="lineNum">     866 </span>            :            torch::zeros(</a>
-<a name="867"><span class="lineNum">     867 </span>            :                {attn_mask_.size(0), 1},</a>
-<a name="868"><span class="lineNum">     868 </span>            :                at::TensorOptions(attn_mask_.dtype())</a>
-<a name="869"><span class="lineNum">     869 </span>            :                    .device(attn_mask_.device()))},</a>
-<a name="870"><span class="lineNum">     870 </span>            :           /*dim=*/1);</a>
-<a name="871"><span class="lineNum">     871 </span>            :     }</a>
-<a name="872"><span class="lineNum">     872 </span>            :     if (key_padding_mask_.defined()) {</a>
-<a name="873"><span class="lineNum">     873 </span>            :       key_padding_mask_ = torch::cat(</a>
-<a name="874"><span class="lineNum">     874 </span>            :           {key_padding_mask_,</a>
-<a name="875"><span class="lineNum">     875 </span>            :            torch::zeros(</a>
-<a name="876"><span class="lineNum">     876 </span>            :                {key_padding_mask_.size(0), 1},</a>
-<a name="877"><span class="lineNum">     877 </span>            :                at::TensorOptions(key_padding_mask_.dtype())</a>
-<a name="878"><span class="lineNum">     878 </span>            :                    .device(key_padding_mask_.device()))},</a>
-<a name="879"><span class="lineNum">     879 </span>            :           /*dim=*/1);</a>
-<a name="880"><span class="lineNum">     880 </span>            :     }</a>
-<a name="881"><span class="lineNum">     881 </span>            :   }</a>
-<a name="882"><span class="lineNum">     882 </span>            :   auto attn_output_weights = torch::bmm(q, k.transpose(1, 2));</a>
-<a name="883"><span class="lineNum">     883 </span>            :   TORCH_CHECK(</a>
-<a name="884"><span class="lineNum">     884 </span>            :       attn_output_weights.sizes() ==</a>
-<a name="885"><span class="lineNum">     885 </span>            :       IntArrayRef({bsz * num_heads, tgt_len, src_len}));</a>
-<a name="886"><span class="lineNum">     886 </span>            :   if (attn_mask_.defined()) {</a>
-<a name="887"><span class="lineNum">     887 </span>            :     attn_mask_ = attn_mask_.unsqueeze(0);</a>
-<a name="888"><span class="lineNum">     888 </span>            :     attn_output_weights += attn_mask_;</a>
-<a name="889"><span class="lineNum">     889 </span>            :   }</a>
-<a name="890"><span class="lineNum">     890 </span>            :   if (key_padding_mask_.defined()) {</a>
-<a name="891"><span class="lineNum">     891 </span>            :     attn_output_weights =</a>
-<a name="892"><span class="lineNum">     892 </span>            :         attn_output_weights.view({bsz, num_heads, tgt_len, src_len});</a>
-<a name="893"><span class="lineNum">     893 </span>            :     attn_output_weights = AT_DISPATCH_FLOATING_TYPES(</a>
-<a name="894"><span class="lineNum">     894 </span>            :         attn_output_weights.scalar_type(),</a>
-<a name="895"><span class="lineNum">     895 </span>            :         &quot;attn_output_weights.masked_fill&quot;,</a>
-<a name="896"><span class="lineNum">     896 </span>            :         [&amp;]() {</a>
-<a name="897"><span class="lineNum">     897 </span>            :           return attn_output_weights.masked_fill(</a>
-<a name="898"><span class="lineNum">     898 </span>            :               key_padding_mask_.unsqueeze(1).unsqueeze(2),</a>
-<a name="899"><span class="lineNum">     899 </span>            :               -std::numeric_limits&lt;scalar_t&gt;::infinity());</a>
-<a name="900"><span class="lineNum">     900 </span>            :         });</a>
-<a name="901"><span class="lineNum">     901 </span>            :     attn_output_weights =</a>
-<a name="902"><span class="lineNum">     902 </span>            :         attn_output_weights.view({bsz * num_heads, tgt_len, src_len});</a>
-<a name="903"><span class="lineNum">     903 </span>            :   }</a>
-<a name="904"><span class="lineNum">     904 </span>            :   attn_output_weights = F::softmax(attn_output_weights, /*options=*/-1);</a>
-<a name="905"><span class="lineNum">     905 </span>            :   attn_output_weights = F::dropout(</a>
-<a name="906"><span class="lineNum">     906 </span>            :       attn_output_weights,</a>
-<a name="907"><span class="lineNum">     907 </span>            :       F::DropoutFuncOptions().p(dropout_p).training(training));</a>
-<a name="908"><span class="lineNum">     908 </span>            :   auto attn_output = torch::bmm(attn_output_weights, v);</a>
-<a name="909"><span class="lineNum">     909 </span>            :   TORCH_CHECK(</a>
-<a name="910"><span class="lineNum">     910 </span>            :       attn_output.sizes() == IntArrayRef({bsz * num_heads, tgt_len, head_dim}));</a>
-<a name="911"><span class="lineNum">     911 </span>            :   attn_output =</a>
-<a name="912"><span class="lineNum">     912 </span>            :       attn_output.transpose(0, 1).contiguous().view({tgt_len, bsz, embed_dim});</a>
-<a name="913"><span class="lineNum">     913 </span>            :   attn_output = F::linear(attn_output, out_proj_weight, out_proj_bias);</a>
-<a name="914"><span class="lineNum">     914 </span>            :   if (need_weights) {</a>
-<a name="915"><span class="lineNum">     915 </span>            :     attn_output_weights =</a>
-<a name="916"><span class="lineNum">     916 </span>            :         attn_output_weights.view({bsz, num_heads, tgt_len, src_len});</a>
-<a name="917"><span class="lineNum">     917 </span>            :     if (average_attn_weights) {</a>
-<a name="918"><span class="lineNum">     918 </span>            :       // average attention weights over heads</a>
-<a name="919"><span class="lineNum">     919 </span>            :       attn_output_weights = attn_output_weights.sum(/*dim=*/1) / num_heads;</a>
-<a name="920"><span class="lineNum">     920 </span>            :     }</a>
-<a name="921"><span class="lineNum">     921 </span>            :     return std::make_tuple(</a>
-<a name="922"><span class="lineNum">     922 </span>            :         std::move(attn_output), std::move(attn_output_weights));</a>
-<a name="923"><span class="lineNum">     923 </span>            :   } else {</a>
-<a name="924"><span class="lineNum">     924 </span>            :     return std::make_tuple(std::move(attn_output), Tensor());</a>
-<a name="925"><span class="lineNum">     925 </span>            :   }</a>
-<a name="926"><span class="lineNum">     926 </span>            : }</a>
-<a name="927"><span class="lineNum">     927 </span>            : } // namespace detail</a>
-<a name="928"><span class="lineNum">     928 </span>            : #endif /* DOXYGEN_SHOULD_SKIP_THIS */</a>
-<a name="929"><span class="lineNum">     929 </span>            : </a>
-<a name="930"><span class="lineNum">     930 </span><span class="lineNoCov">          0 : inline std::tuple&lt;Tensor, Tensor&gt; multi_head_attention_forward(</span></a>
-<a name="931"><span class="lineNum">     931 </span>            :     const Tensor&amp; query,</a>
-<a name="932"><span class="lineNum">     932 </span>            :     const Tensor&amp; key,</a>
-<a name="933"><span class="lineNum">     933 </span>            :     const Tensor&amp; value,</a>
-<a name="934"><span class="lineNum">     934 </span>            :     const MultiheadAttentionForwardFuncOptions&amp; options) {</a>
-<a name="935"><span class="lineNum">     935 </span>            :   return detail::multi_head_attention_forward(</a>
-<a name="936"><span class="lineNum">     936 </span>            :       query,</a>
-<a name="937"><span class="lineNum">     937 </span>            :       key,</a>
-<a name="938"><span class="lineNum">     938 </span>            :       value,</a>
-<a name="939"><span class="lineNum">     939 </span>            :       options.embed_dim_to_check(),</a>
-<a name="940"><span class="lineNum">     940 </span>            :       options.num_heads(),</a>
-<a name="941"><span class="lineNum">     941 </span>            :       options.in_proj_weight(),</a>
-<a name="942"><span class="lineNum">     942 </span>            :       options.in_proj_bias(),</a>
-<a name="943"><span class="lineNum">     943 </span>            :       options.bias_k(),</a>
-<a name="944"><span class="lineNum">     944 </span>            :       options.bias_v(),</a>
-<a name="945"><span class="lineNum">     945 </span>            :       options.add_zero_attn(),</a>
-<a name="946"><span class="lineNum">     946 </span>            :       options.dropout_p(),</a>
-<a name="947"><span class="lineNum">     947 </span>            :       options.out_proj_weight(),</a>
-<a name="948"><span class="lineNum">     948 </span>            :       options.out_proj_bias(),</a>
-<a name="949"><span class="lineNum">     949 </span>            :       options.training(),</a>
-<a name="950"><span class="lineNum">     950 </span>            :       options.key_padding_mask(),</a>
-<a name="951"><span class="lineNum">     951 </span>            :       options.need_weights(),</a>
-<a name="952"><span class="lineNum">     952 </span>            :       options.attn_mask(),</a>
-<a name="953"><span class="lineNum">     953 </span>            :       options.use_separate_proj_weight(),</a>
-<a name="954"><span class="lineNum">     954 </span>            :       options.q_proj_weight(),</a>
-<a name="955"><span class="lineNum">     955 </span>            :       options.k_proj_weight(),</a>
-<a name="956"><span class="lineNum">     956 </span>            :       options.v_proj_weight(),</a>
-<a name="957"><span class="lineNum">     957 </span>            :       options.static_k(),</a>
-<a name="958"><span class="lineNum">     958 </span>            :       options.static_v(),</a>
-<a name="959"><span class="lineNum">     959 </span>            :       options.average_attn_weights());</a>
-<a name="960"><span class="lineNum">     960 </span>            : }</a>
-<a name="961"><span class="lineNum">     961 </span>            : </a>
-<a name="962"><span class="lineNum">     962 </span>            : } // namespace torch::nn::functional</a>
+<a name="675"><span class="lineNum">     675 </span>            :   TORCH_CHECK(num_heads &gt; 0, &quot;num_heads must be greater than 0&quot;);</a>
+<a name="676"><span class="lineNum">     676 </span>            :   const auto head_dim = embed_dim / num_heads;</a>
+<a name="677"><span class="lineNum">     677 </span>            :   TORCH_CHECK(</a>
+<a name="678"><span class="lineNum">     678 </span>            :       head_dim * num_heads == embed_dim,</a>
+<a name="679"><span class="lineNum">     679 </span>            :       &quot;embed_dim must be divisible by num_heads&quot;);</a>
+<a name="680"><span class="lineNum">     680 </span>            :   const auto scaling = 1 / std::sqrt(head_dim);</a>
+<a name="681"><span class="lineNum">     681 </span>            : </a>
+<a name="682"><span class="lineNum">     682 </span>            :   Tensor q, k, v;</a>
+<a name="683"><span class="lineNum">     683 </span>            :   if (!use_separate_proj_weight) {</a>
+<a name="684"><span class="lineNum">     684 </span>            :     if (torch::equal(query, key) &amp;&amp; torch::equal(key, value)) {</a>
+<a name="685"><span class="lineNum">     685 </span>            :       // self-attention</a>
+<a name="686"><span class="lineNum">     686 </span>            :       const auto chunks =</a>
+<a name="687"><span class="lineNum">     687 </span>            :           F::linear(query, in_proj_weight, in_proj_bias).chunk(3, /*dim=*/-1);</a>
+<a name="688"><span class="lineNum">     688 </span>            :       q = chunks[0];</a>
+<a name="689"><span class="lineNum">     689 </span>            :       k = chunks[1];</a>
+<a name="690"><span class="lineNum">     690 </span>            :       v = chunks[2];</a>
+<a name="691"><span class="lineNum">     691 </span>            :     } else if (torch::equal(key, value)) {</a>
+<a name="692"><span class="lineNum">     692 </span>            :       // encoder-decoder attention</a>
+<a name="693"><span class="lineNum">     693 </span>            :       // This is inline in_proj function with in_proj_weight and in_proj_bias</a>
+<a name="694"><span class="lineNum">     694 </span>            :       auto _b = in_proj_bias;</a>
+<a name="695"><span class="lineNum">     695 </span>            :       int64_t _start = 0;</a>
+<a name="696"><span class="lineNum">     696 </span>            :       auto _end = embed_dim;</a>
+<a name="697"><span class="lineNum">     697 </span>            :       auto _w = in_proj_weight.slice(/*dim=*/0, _start, _end);</a>
+<a name="698"><span class="lineNum">     698 </span>            :       if (_b.defined()) {</a>
+<a name="699"><span class="lineNum">     699 </span>            :         _b = _b.slice(/*dim=*/0, _start, _end);</a>
+<a name="700"><span class="lineNum">     700 </span>            :       }</a>
+<a name="701"><span class="lineNum">     701 </span>            :       q = F::linear(query, _w, _b);</a>
+<a name="702"><span class="lineNum">     702 </span>            : </a>
+<a name="703"><span class="lineNum">     703 </span>            :       if (!key.defined()) {</a>
+<a name="704"><span class="lineNum">     704 </span>            :         TORCH_INTERNAL_ASSERT(!value.defined());</a>
+<a name="705"><span class="lineNum">     705 </span>            :         k.reset();</a>
+<a name="706"><span class="lineNum">     706 </span>            :         v.reset();</a>
+<a name="707"><span class="lineNum">     707 </span>            :       } else {</a>
+<a name="708"><span class="lineNum">     708 </span>            :         // This is inline in_proj function with in_proj_weight and in_proj_bias</a>
+<a name="709"><span class="lineNum">     709 </span>            :         _b = in_proj_bias;</a>
+<a name="710"><span class="lineNum">     710 </span>            :         _start = embed_dim;</a>
+<a name="711"><span class="lineNum">     711 </span>            :         _w = in_proj_weight.slice(/*dim=*/0, _start);</a>
+<a name="712"><span class="lineNum">     712 </span>            :         if (_b.defined()) {</a>
+<a name="713"><span class="lineNum">     713 </span>            :           _b = _b.slice(/*dim=*/0, _start);</a>
+<a name="714"><span class="lineNum">     714 </span>            :         }</a>
+<a name="715"><span class="lineNum">     715 </span>            :         const auto chunks = F::linear(key, _w, _b).chunk(2, /*dim=*/-1);</a>
+<a name="716"><span class="lineNum">     716 </span>            :         k = chunks[0];</a>
+<a name="717"><span class="lineNum">     717 </span>            :         v = chunks[1];</a>
+<a name="718"><span class="lineNum">     718 </span>            :       }</a>
+<a name="719"><span class="lineNum">     719 </span>            :     } else {</a>
+<a name="720"><span class="lineNum">     720 </span>            :       // This is inline in_proj function with in_proj_weight and in_proj_bias</a>
+<a name="721"><span class="lineNum">     721 </span>            :       auto _b = in_proj_bias;</a>
+<a name="722"><span class="lineNum">     722 </span>            :       int64_t _start = 0;</a>
+<a name="723"><span class="lineNum">     723 </span>            :       auto _end = embed_dim;</a>
+<a name="724"><span class="lineNum">     724 </span>            :       auto _w = in_proj_weight.slice(/*dim=*/0, _start, _end);</a>
+<a name="725"><span class="lineNum">     725 </span>            :       if (_b.defined()) {</a>
+<a name="726"><span class="lineNum">     726 </span>            :         _b = _b.slice(/*dim=*/0, _start, _end);</a>
+<a name="727"><span class="lineNum">     727 </span>            :       }</a>
+<a name="728"><span class="lineNum">     728 </span>            :       q = F::linear(query, _w, _b);</a>
+<a name="729"><span class="lineNum">     729 </span>            : </a>
+<a name="730"><span class="lineNum">     730 </span>            :       // This is inline in_proj function with in_proj_weight and in_proj_bias</a>
+<a name="731"><span class="lineNum">     731 </span>            :       _b = in_proj_bias;</a>
+<a name="732"><span class="lineNum">     732 </span>            :       _start = embed_dim;</a>
+<a name="733"><span class="lineNum">     733 </span>            :       _end = embed_dim * 2;</a>
+<a name="734"><span class="lineNum">     734 </span>            :       _w = in_proj_weight.slice(/*dim=*/0, _start, _end);</a>
+<a name="735"><span class="lineNum">     735 </span>            :       if (_b.defined()) {</a>
+<a name="736"><span class="lineNum">     736 </span>            :         _b = _b.slice(/*dim=*/0, _start, _end);</a>
+<a name="737"><span class="lineNum">     737 </span>            :       }</a>
+<a name="738"><span class="lineNum">     738 </span>            :       k = F::linear(key, _w, _b);</a>
+<a name="739"><span class="lineNum">     739 </span>            : </a>
+<a name="740"><span class="lineNum">     740 </span>            :       // This is inline in_proj function with in_proj_weight and in_proj_bias</a>
+<a name="741"><span class="lineNum">     741 </span>            :       _b = in_proj_bias;</a>
+<a name="742"><span class="lineNum">     742 </span>            :       _start = embed_dim * 2;</a>
+<a name="743"><span class="lineNum">     743 </span>            :       _w = in_proj_weight.slice(/*dim=*/0, _start);</a>
+<a name="744"><span class="lineNum">     744 </span>            :       if (_b.defined()) {</a>
+<a name="745"><span class="lineNum">     745 </span>            :         _b = _b.slice(0, _start);</a>
+<a name="746"><span class="lineNum">     746 </span>            :       }</a>
+<a name="747"><span class="lineNum">     747 </span>            :       v = F::linear(value, _w, _b);</a>
+<a name="748"><span class="lineNum">     748 </span>            :     }</a>
+<a name="749"><span class="lineNum">     749 </span>            :   } else {</a>
+<a name="750"><span class="lineNum">     750 </span>            :     const auto&amp; q_proj_weight_non_opt = q_proj_weight;</a>
+<a name="751"><span class="lineNum">     751 </span>            :     {</a>
+<a name="752"><span class="lineNum">     752 </span>            :       const auto sizes = q_proj_weight_non_opt.sizes();</a>
+<a name="753"><span class="lineNum">     753 </span>            :       const auto len1 = sizes[0];</a>
+<a name="754"><span class="lineNum">     754 </span>            :       const auto len2 = sizes[1];</a>
+<a name="755"><span class="lineNum">     755 </span>            :       TORCH_CHECK(len1 == embed_dim &amp;&amp; len2 == query.size(-1));</a>
+<a name="756"><span class="lineNum">     756 </span>            :     }</a>
+<a name="757"><span class="lineNum">     757 </span>            : </a>
+<a name="758"><span class="lineNum">     758 </span>            :     const auto&amp; k_proj_weight_non_opt = k_proj_weight;</a>
+<a name="759"><span class="lineNum">     759 </span>            :     {</a>
+<a name="760"><span class="lineNum">     760 </span>            :       const auto sizes = k_proj_weight_non_opt.sizes();</a>
+<a name="761"><span class="lineNum">     761 </span>            :       const auto len1 = sizes[0];</a>
+<a name="762"><span class="lineNum">     762 </span>            :       const auto len2 = sizes[1];</a>
+<a name="763"><span class="lineNum">     763 </span>            :       TORCH_CHECK(len1 == embed_dim &amp;&amp; len2 == key.size(-1));</a>
+<a name="764"><span class="lineNum">     764 </span>            :     }</a>
+<a name="765"><span class="lineNum">     765 </span>            : </a>
+<a name="766"><span class="lineNum">     766 </span>            :     const auto&amp; v_proj_weight_non_opt = v_proj_weight;</a>
+<a name="767"><span class="lineNum">     767 </span>            :     {</a>
+<a name="768"><span class="lineNum">     768 </span>            :       const auto sizes = v_proj_weight_non_opt.sizes();</a>
+<a name="769"><span class="lineNum">     769 </span>            :       const auto len1 = sizes[0];</a>
+<a name="770"><span class="lineNum">     770 </span>            :       const auto len2 = sizes[1];</a>
+<a name="771"><span class="lineNum">     771 </span>            :       TORCH_CHECK(len1 == embed_dim &amp;&amp; len2 == value.size(-1));</a>
+<a name="772"><span class="lineNum">     772 </span>            :     }</a>
+<a name="773"><span class="lineNum">     773 </span>            : </a>
+<a name="774"><span class="lineNum">     774 </span>            :     if (in_proj_bias.defined()) {</a>
+<a name="775"><span class="lineNum">     775 </span>            :       q = F::linear(</a>
+<a name="776"><span class="lineNum">     776 </span>            :           query,</a>
+<a name="777"><span class="lineNum">     777 </span>            :           q_proj_weight_non_opt,</a>
+<a name="778"><span class="lineNum">     778 </span>            :           in_proj_bias.slice(/*dim=*/0, 0, embed_dim));</a>
+<a name="779"><span class="lineNum">     779 </span>            :       k = F::linear(</a>
+<a name="780"><span class="lineNum">     780 </span>            :           key,</a>
+<a name="781"><span class="lineNum">     781 </span>            :           k_proj_weight_non_opt,</a>
+<a name="782"><span class="lineNum">     782 </span>            :           in_proj_bias.slice(/*dim=*/0, embed_dim, (embed_dim * 2)));</a>
+<a name="783"><span class="lineNum">     783 </span>            :       v = F::linear(</a>
+<a name="784"><span class="lineNum">     784 </span>            :           value,</a>
+<a name="785"><span class="lineNum">     785 </span>            :           v_proj_weight_non_opt,</a>
+<a name="786"><span class="lineNum">     786 </span>            :           in_proj_bias.slice(/*dim=*/0, (embed_dim * 2)));</a>
+<a name="787"><span class="lineNum">     787 </span>            :     } else {</a>
+<a name="788"><span class="lineNum">     788 </span>            :       q = F::linear(query, q_proj_weight_non_opt, in_proj_bias);</a>
+<a name="789"><span class="lineNum">     789 </span>            :       k = F::linear(key, k_proj_weight_non_opt, in_proj_bias);</a>
+<a name="790"><span class="lineNum">     790 </span>            :       v = F::linear(value, v_proj_weight_non_opt, in_proj_bias);</a>
+<a name="791"><span class="lineNum">     791 </span>            :     }</a>
+<a name="792"><span class="lineNum">     792 </span>            :   }</a>
+<a name="793"><span class="lineNum">     793 </span>            :   q = q * scaling;</a>
+<a name="794"><span class="lineNum">     794 </span>            :   Tensor attn_mask_ = attn_mask;</a>
+<a name="795"><span class="lineNum">     795 </span>            :   Tensor key_padding_mask_ = key_padding_mask;</a>
+<a name="796"><span class="lineNum">     796 </span>            :   if (bias_k.defined() &amp;&amp; bias_v.defined()) {</a>
+<a name="797"><span class="lineNum">     797 </span>            :     if (!static_k.defined() &amp;&amp; !static_v.defined()) {</a>
+<a name="798"><span class="lineNum">     798 </span>            :       k = torch::cat({k, bias_k.repeat({1, bsz, 1})});</a>
+<a name="799"><span class="lineNum">     799 </span>            :       v = torch::cat({v, bias_v.repeat({1, bsz, 1})});</a>
+<a name="800"><span class="lineNum">     800 </span>            :       if (attn_mask_.defined()) {</a>
+<a name="801"><span class="lineNum">     801 </span>            :         attn_mask_ = torch::cat(</a>
+<a name="802"><span class="lineNum">     802 </span>            :             {attn_mask_,</a>
+<a name="803"><span class="lineNum">     803 </span>            :              torch::zeros(</a>
+<a name="804"><span class="lineNum">     804 </span>            :                  {attn_mask_.size(0), 1},</a>
+<a name="805"><span class="lineNum">     805 </span>            :                  at::TensorOptions(attn_mask_.dtype())</a>
+<a name="806"><span class="lineNum">     806 </span>            :                      .device(attn_mask_.device()))},</a>
+<a name="807"><span class="lineNum">     807 </span>            :             /*dim=*/1);</a>
+<a name="808"><span class="lineNum">     808 </span>            :       }</a>
+<a name="809"><span class="lineNum">     809 </span>            :       if (key_padding_mask_.defined()) {</a>
+<a name="810"><span class="lineNum">     810 </span>            :         key_padding_mask_ = torch::cat(</a>
+<a name="811"><span class="lineNum">     811 </span>            :             {key_padding_mask_,</a>
+<a name="812"><span class="lineNum">     812 </span>            :              torch::zeros(</a>
+<a name="813"><span class="lineNum">     813 </span>            :                  {key_padding_mask_.size(0), 1},</a>
+<a name="814"><span class="lineNum">     814 </span>            :                  at::TensorOptions(key_padding_mask_.dtype())</a>
+<a name="815"><span class="lineNum">     815 </span>            :                      .device(key_padding_mask_.device()))},</a>
+<a name="816"><span class="lineNum">     816 </span>            :             /*dim=*/1);</a>
+<a name="817"><span class="lineNum">     817 </span>            :       }</a>
+<a name="818"><span class="lineNum">     818 </span>            :     } else {</a>
+<a name="819"><span class="lineNum">     819 </span>            :       TORCH_CHECK(!static_k.defined(), &quot;bias cannot be added to static key.&quot;);</a>
+<a name="820"><span class="lineNum">     820 </span>            :       TORCH_CHECK(!static_v.defined(), &quot;bias cannot be added to static value.&quot;);</a>
+<a name="821"><span class="lineNum">     821 </span>            :     }</a>
+<a name="822"><span class="lineNum">     822 </span>            :   } else {</a>
+<a name="823"><span class="lineNum">     823 </span>            :     TORCH_CHECK(!bias_k.defined());</a>
+<a name="824"><span class="lineNum">     824 </span>            :     TORCH_CHECK(!bias_v.defined());</a>
+<a name="825"><span class="lineNum">     825 </span>            :   }</a>
+<a name="826"><span class="lineNum">     826 </span>            :   q = q.contiguous().view({tgt_len, bsz * num_heads, head_dim}).transpose(0, 1);</a>
+<a name="827"><span class="lineNum">     827 </span>            :   if (k.defined()) {</a>
+<a name="828"><span class="lineNum">     828 </span>            :     k = k.contiguous().view({-1, bsz * num_heads, head_dim}).transpose(0, 1);</a>
+<a name="829"><span class="lineNum">     829 </span>            :   }</a>
+<a name="830"><span class="lineNum">     830 </span>            :   if (v.defined()) {</a>
+<a name="831"><span class="lineNum">     831 </span>            :     v = v.contiguous().view({-1, bsz * num_heads, head_dim}).transpose(0, 1);</a>
+<a name="832"><span class="lineNum">     832 </span>            :   }</a>
+<a name="833"><span class="lineNum">     833 </span>            :   if (static_k.defined()) {</a>
+<a name="834"><span class="lineNum">     834 </span>            :     TORCH_CHECK(static_k.size(0) == bsz * num_heads);</a>
+<a name="835"><span class="lineNum">     835 </span>            :     TORCH_CHECK(static_k.size(2) == head_dim);</a>
+<a name="836"><span class="lineNum">     836 </span>            :     k = static_k;</a>
+<a name="837"><span class="lineNum">     837 </span>            :   }</a>
+<a name="838"><span class="lineNum">     838 </span>            :   if (static_v.defined()) {</a>
+<a name="839"><span class="lineNum">     839 </span>            :     TORCH_CHECK(static_v.size(0) == bsz * num_heads);</a>
+<a name="840"><span class="lineNum">     840 </span>            :     TORCH_CHECK(static_v.size(2) == head_dim);</a>
+<a name="841"><span class="lineNum">     841 </span>            :     v = static_v;</a>
+<a name="842"><span class="lineNum">     842 </span>            :   }</a>
+<a name="843"><span class="lineNum">     843 </span>            :   auto src_len = k.size(1);</a>
+<a name="844"><span class="lineNum">     844 </span>            :   if (key_padding_mask_.defined()) {</a>
+<a name="845"><span class="lineNum">     845 </span>            :     TORCH_CHECK(key_padding_mask_.size(0) == bsz);</a>
+<a name="846"><span class="lineNum">     846 </span>            :     TORCH_CHECK(key_padding_mask_.size(1) == src_len);</a>
+<a name="847"><span class="lineNum">     847 </span>            :   }</a>
+<a name="848"><span class="lineNum">     848 </span>            :   if (add_zero_attn) {</a>
+<a name="849"><span class="lineNum">     849 </span>            :     src_len += 1;</a>
+<a name="850"><span class="lineNum">     850 </span>            :     auto k_sizes = k.sizes().vec();</a>
+<a name="851"><span class="lineNum">     851 </span>            :     k_sizes[1] = 1;</a>
+<a name="852"><span class="lineNum">     852 </span>            :     k = torch::cat(</a>
+<a name="853"><span class="lineNum">     853 </span>            :         {k,</a>
+<a name="854"><span class="lineNum">     854 </span>            :          torch::zeros(</a>
+<a name="855"><span class="lineNum">     855 </span>            :              k_sizes, at::TensorOptions(k.dtype()).device(k.device()))},</a>
+<a name="856"><span class="lineNum">     856 </span>            :         /*dim=*/1);</a>
+<a name="857"><span class="lineNum">     857 </span>            :     auto v_sizes = v.sizes().vec();</a>
+<a name="858"><span class="lineNum">     858 </span>            :     v_sizes[1] = 1;</a>
+<a name="859"><span class="lineNum">     859 </span>            :     v = torch::cat(</a>
+<a name="860"><span class="lineNum">     860 </span>            :         {v,</a>
+<a name="861"><span class="lineNum">     861 </span>            :          torch::zeros(</a>
+<a name="862"><span class="lineNum">     862 </span>            :              v_sizes, at::TensorOptions(v.dtype()).device(v.device()))},</a>
+<a name="863"><span class="lineNum">     863 </span>            :         /*dim=*/1);</a>
+<a name="864"><span class="lineNum">     864 </span>            :     if (attn_mask_.defined()) {</a>
+<a name="865"><span class="lineNum">     865 </span>            :       attn_mask_ = torch::cat(</a>
+<a name="866"><span class="lineNum">     866 </span>            :           {attn_mask_,</a>
+<a name="867"><span class="lineNum">     867 </span>            :            torch::zeros(</a>
+<a name="868"><span class="lineNum">     868 </span>            :                {attn_mask_.size(0), 1},</a>
+<a name="869"><span class="lineNum">     869 </span>            :                at::TensorOptions(attn_mask_.dtype())</a>
+<a name="870"><span class="lineNum">     870 </span>            :                    .device(attn_mask_.device()))},</a>
+<a name="871"><span class="lineNum">     871 </span>            :           /*dim=*/1);</a>
+<a name="872"><span class="lineNum">     872 </span>            :     }</a>
+<a name="873"><span class="lineNum">     873 </span>            :     if (key_padding_mask_.defined()) {</a>
+<a name="874"><span class="lineNum">     874 </span>            :       key_padding_mask_ = torch::cat(</a>
+<a name="875"><span class="lineNum">     875 </span>            :           {key_padding_mask_,</a>
+<a name="876"><span class="lineNum">     876 </span>            :            torch::zeros(</a>
+<a name="877"><span class="lineNum">     877 </span>            :                {key_padding_mask_.size(0), 1},</a>
+<a name="878"><span class="lineNum">     878 </span>            :                at::TensorOptions(key_padding_mask_.dtype())</a>
+<a name="879"><span class="lineNum">     879 </span>            :                    .device(key_padding_mask_.device()))},</a>
+<a name="880"><span class="lineNum">     880 </span>            :           /*dim=*/1);</a>
+<a name="881"><span class="lineNum">     881 </span>            :     }</a>
+<a name="882"><span class="lineNum">     882 </span>            :   }</a>
+<a name="883"><span class="lineNum">     883 </span>            :   auto attn_output_weights = torch::bmm(q, k.transpose(1, 2));</a>
+<a name="884"><span class="lineNum">     884 </span>            :   TORCH_CHECK(</a>
+<a name="885"><span class="lineNum">     885 </span>            :       attn_output_weights.sizes() ==</a>
+<a name="886"><span class="lineNum">     886 </span>            :       IntArrayRef({bsz * num_heads, tgt_len, src_len}));</a>
+<a name="887"><span class="lineNum">     887 </span>            :   if (attn_mask_.defined()) {</a>
+<a name="888"><span class="lineNum">     888 </span>            :     attn_mask_ = attn_mask_.unsqueeze(0);</a>
+<a name="889"><span class="lineNum">     889 </span>            :     attn_output_weights += attn_mask_;</a>
+<a name="890"><span class="lineNum">     890 </span>            :   }</a>
+<a name="891"><span class="lineNum">     891 </span>            :   if (key_padding_mask_.defined()) {</a>
+<a name="892"><span class="lineNum">     892 </span>            :     attn_output_weights =</a>
+<a name="893"><span class="lineNum">     893 </span>            :         attn_output_weights.view({bsz, num_heads, tgt_len, src_len});</a>
+<a name="894"><span class="lineNum">     894 </span>            :     attn_output_weights = AT_DISPATCH_FLOATING_TYPES(</a>
+<a name="895"><span class="lineNum">     895 </span>            :         attn_output_weights.scalar_type(),</a>
+<a name="896"><span class="lineNum">     896 </span>            :         &quot;attn_output_weights.masked_fill&quot;,</a>
+<a name="897"><span class="lineNum">     897 </span>            :         [&amp;]() {</a>
+<a name="898"><span class="lineNum">     898 </span>            :           return attn_output_weights.masked_fill(</a>
+<a name="899"><span class="lineNum">     899 </span>            :               key_padding_mask_.unsqueeze(1).unsqueeze(2),</a>
+<a name="900"><span class="lineNum">     900 </span>            :               -std::numeric_limits&lt;scalar_t&gt;::infinity());</a>
+<a name="901"><span class="lineNum">     901 </span>            :         });</a>
+<a name="902"><span class="lineNum">     902 </span>            :     attn_output_weights =</a>
+<a name="903"><span class="lineNum">     903 </span>            :         attn_output_weights.view({bsz * num_heads, tgt_len, src_len});</a>
+<a name="904"><span class="lineNum">     904 </span>            :   }</a>
+<a name="905"><span class="lineNum">     905 </span>            :   attn_output_weights = F::softmax(attn_output_weights, /*options=*/-1);</a>
+<a name="906"><span class="lineNum">     906 </span>            :   attn_output_weights = F::dropout(</a>
+<a name="907"><span class="lineNum">     907 </span>            :       attn_output_weights,</a>
+<a name="908"><span class="lineNum">     908 </span>            :       F::DropoutFuncOptions().p(dropout_p).training(training));</a>
+<a name="909"><span class="lineNum">     909 </span>            :   auto attn_output = torch::bmm(attn_output_weights, v);</a>
+<a name="910"><span class="lineNum">     910 </span>            :   TORCH_CHECK(</a>
+<a name="911"><span class="lineNum">     911 </span>            :       attn_output.sizes() == IntArrayRef({bsz * num_heads, tgt_len, head_dim}));</a>
+<a name="912"><span class="lineNum">     912 </span>            :   attn_output =</a>
+<a name="913"><span class="lineNum">     913 </span>            :       attn_output.transpose(0, 1).contiguous().view({tgt_len, bsz, embed_dim});</a>
+<a name="914"><span class="lineNum">     914 </span>            :   attn_output = F::linear(attn_output, out_proj_weight, out_proj_bias);</a>
+<a name="915"><span class="lineNum">     915 </span>            :   if (need_weights) {</a>
+<a name="916"><span class="lineNum">     916 </span>            :     attn_output_weights =</a>
+<a name="917"><span class="lineNum">     917 </span>            :         attn_output_weights.view({bsz, num_heads, tgt_len, src_len});</a>
+<a name="918"><span class="lineNum">     918 </span>            :     if (average_attn_weights) {</a>
+<a name="919"><span class="lineNum">     919 </span>            :       // average attention weights over heads</a>
+<a name="920"><span class="lineNum">     920 </span>            :       attn_output_weights = attn_output_weights.sum(/*dim=*/1) / num_heads;</a>
+<a name="921"><span class="lineNum">     921 </span>            :     }</a>
+<a name="922"><span class="lineNum">     922 </span>            :     return std::make_tuple(</a>
+<a name="923"><span class="lineNum">     923 </span>            :         std::move(attn_output), std::move(attn_output_weights));</a>
+<a name="924"><span class="lineNum">     924 </span>            :   } else {</a>
+<a name="925"><span class="lineNum">     925 </span>            :     return std::make_tuple(std::move(attn_output), Tensor());</a>
+<a name="926"><span class="lineNum">     926 </span>            :   }</a>
+<a name="927"><span class="lineNum">     927 </span>            : }</a>
+<a name="928"><span class="lineNum">     928 </span>            : } // namespace detail</a>
+<a name="929"><span class="lineNum">     929 </span>            : #endif /* DOXYGEN_SHOULD_SKIP_THIS */</a>
+<a name="930"><span class="lineNum">     930 </span>            : </a>
+<a name="931"><span class="lineNum">     931 </span><span class="lineNoCov">          0 : inline std::tuple&lt;Tensor, Tensor&gt; multi_head_attention_forward(</span></a>
+<a name="932"><span class="lineNum">     932 </span>            :     const Tensor&amp; query,</a>
+<a name="933"><span class="lineNum">     933 </span>            :     const Tensor&amp; key,</a>
+<a name="934"><span class="lineNum">     934 </span>            :     const Tensor&amp; value,</a>
+<a name="935"><span class="lineNum">     935 </span>            :     const MultiheadAttentionForwardFuncOptions&amp; options) {</a>
+<a name="936"><span class="lineNum">     936 </span>            :   return detail::multi_head_attention_forward(</a>
+<a name="937"><span class="lineNum">     937 </span>            :       query,</a>
+<a name="938"><span class="lineNum">     938 </span>            :       key,</a>
+<a name="939"><span class="lineNum">     939 </span>            :       value,</a>
+<a name="940"><span class="lineNum">     940 </span>            :       options.embed_dim_to_check(),</a>
+<a name="941"><span class="lineNum">     941 </span>            :       options.num_heads(),</a>
+<a name="942"><span class="lineNum">     942 </span>            :       options.in_proj_weight(),</a>
+<a name="943"><span class="lineNum">     943 </span>            :       options.in_proj_bias(),</a>
+<a name="944"><span class="lineNum">     944 </span>            :       options.bias_k(),</a>
+<a name="945"><span class="lineNum">     945 </span>            :       options.bias_v(),</a>
+<a name="946"><span class="lineNum">     946 </span>            :       options.add_zero_attn(),</a>
+<a name="947"><span class="lineNum">     947 </span>            :       options.dropout_p(),</a>
+<a name="948"><span class="lineNum">     948 </span>            :       options.out_proj_weight(),</a>
+<a name="949"><span class="lineNum">     949 </span>            :       options.out_proj_bias(),</a>
+<a name="950"><span class="lineNum">     950 </span>            :       options.training(),</a>
+<a name="951"><span class="lineNum">     951 </span>            :       options.key_padding_mask(),</a>
+<a name="952"><span class="lineNum">     952 </span>            :       options.need_weights(),</a>
+<a name="953"><span class="lineNum">     953 </span>            :       options.attn_mask(),</a>
+<a name="954"><span class="lineNum">     954 </span>            :       options.use_separate_proj_weight(),</a>
+<a name="955"><span class="lineNum">     955 </span>            :       options.q_proj_weight(),</a>
+<a name="956"><span class="lineNum">     956 </span>            :       options.k_proj_weight(),</a>
+<a name="957"><span class="lineNum">     957 </span>            :       options.v_proj_weight(),</a>
+<a name="958"><span class="lineNum">     958 </span>            :       options.static_k(),</a>
+<a name="959"><span class="lineNum">     959 </span>            :       options.static_v(),</a>
+<a name="960"><span class="lineNum">     960 </span>            :       options.average_attn_weights());</a>
+<a name="961"><span class="lineNum">     961 </span>            : }</a>
+<a name="962"><span class="lineNum">     962 </span>            : </a>
+<a name="963"><span class="lineNum">     963 </span>            : } // namespace torch::nn::functional</a>
 </pre>
       </td>
     </tr>

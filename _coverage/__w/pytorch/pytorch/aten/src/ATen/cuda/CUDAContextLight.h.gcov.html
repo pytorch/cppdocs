@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Date:</td>
-            <td class="headerValue">2026-09-09 00:53:32</td>
+            <td class="headerValue">2026-09-10 00:52:31</td>
             <td></td>
           </tr>
           <tr>
@@ -188,36 +188,42 @@
 <a name="122"><span class="lineNum">     122 </span>            : TORCH_CUDA_CPP_API CUDABlasHandleWithWorkspace</a>
 <a name="123"><span class="lineNum">     123 </span><span class="lineNoCov">          0 : getCurrentCUDABlasHandleWithWorkspace();</span></a>
 <a name="124"><span class="lineNum">     124 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API cublasLtHandle_t getCurrentCUDABlasLtHandle();</span></a>
-<a name="125"><span class="lineNum">     125 </span>            : </a>
-<a name="126"><span class="lineNum">     126 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void clearCublasWorkspaces();</span></a>
-<a name="127"><span class="lineNum">     127 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void clearCublasWorkspacesForStream(cudaStream_t stream);</span></a>
-<a name="128"><span class="lineNum">     128 </span><span class="lineNoCov">          0 : struct WorkspaceMapWithMutex {</span></a>
-<a name="129"><span class="lineNum">     129 </span>            :   std::map&lt;std::tuple&lt;void*, void*&gt;, std::pair&lt;at::DataPtr, size_t&gt;&gt; map;</a>
-<a name="130"><span class="lineNum">     130 </span>            :   std::shared_mutex mutex;</a>
-<a name="131"><span class="lineNum">     131 </span>            : };</a>
-<a name="132"><span class="lineNum">     132 </span>            : </a>
-<a name="133"><span class="lineNum">     133 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API WorkspaceMapWithMutex&amp; cublas_handle_stream_to_workspace();</span></a>
-<a name="134"><span class="lineNum">     134 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API WorkspaceMapWithMutex&amp; cublaslt_handle_stream_to_workspace();</span></a>
-<a name="135"><span class="lineNum">     135 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API size_t getChosenWorkspaceSize();</span></a>
-<a name="136"><span class="lineNum">     136 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API size_t getCUDABlasLtWorkspaceSize();</span></a>
-<a name="137"><span class="lineNum">     137 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API bool isCUDABlasWorkspaceCachingEnabled();</span></a>
-<a name="138"><span class="lineNum">     138 </span>            : // These return cache-owned allocations even when ATen workspace caching is</a>
-<a name="139"><span class="lineNum">     139 </span>            : // disabled. Use allocateCUDABlasWorkspace for operation-scoped storage.</a>
-<a name="140"><span class="lineNum">     140 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void* getCUDABlasLtWorkspace();</span></a>
-<a name="141"><span class="lineNum">     141 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void* getCUDABlasLtWorkspace(size_t workspace_size);</span></a>
-<a name="142"><span class="lineNum">     142 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API at::DataPtr allocateCUDABlasWorkspace(size_t size);</span></a>
-<a name="143"><span class="lineNum">     143 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void setChosenWorkspaceSize(size_t size);</span></a>
-<a name="144"><span class="lineNum">     144 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void setCUDABlasLtWorkspaceSize(size_t size);</span></a>
-<a name="145"><span class="lineNum">     145 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void resetChosenWorkspaceSize();</span></a>
-<a name="146"><span class="lineNum">     146 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void resetCUDABlasLtWorkspaceSize();</span></a>
-<a name="147"><span class="lineNum">     147 </span>            : </a>
-<a name="148"><span class="lineNum">     148 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API cusolverDnHandle_t getCurrentCUDASolverDnHandle();</span></a>
-<a name="149"><span class="lineNum">     149 </span>            : </a>
-<a name="150"><span class="lineNum">     150 </span>            : #if defined(USE_CUDSS)</a>
-<a name="151"><span class="lineNum">     151 </span>            : TORCH_CUDA_CPP_API cudssHandle_t getCurrentCudssHandle();</a>
-<a name="152"><span class="lineNum">     152 </span>            : #endif</a>
+<a name="125"><span class="lineNum">     125 </span>            : #ifdef USE_ROCM</a>
+<a name="126"><span class="lineNum">     126 </span>            : // hipblaslt handles are pooled per (device, stream) and cannot be created</a>
+<a name="127"><span class="lineNum">     127 </span>            : // while stream capture is active. Pre-stock the shared free list so other</a>
+<a name="128"><span class="lineNum">     128 </span>            : // threads (e.g. autograd workers) can reserve one mid-capture.</a>
+<a name="129"><span class="lineNum">     129 </span>            : TORCH_CUDA_CPP_API void ensureCublasLtHandlesAvailable(size_t n);</a>
+<a name="130"><span class="lineNum">     130 </span>            : #endif</a>
+<a name="131"><span class="lineNum">     131 </span>            : </a>
+<a name="132"><span class="lineNum">     132 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void clearCublasWorkspaces();</span></a>
+<a name="133"><span class="lineNum">     133 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void clearCublasWorkspacesForStream(cudaStream_t stream);</span></a>
+<a name="134"><span class="lineNum">     134 </span><span class="lineNoCov">          0 : struct WorkspaceMapWithMutex {</span></a>
+<a name="135"><span class="lineNum">     135 </span>            :   std::map&lt;std::tuple&lt;void*, void*&gt;, std::pair&lt;at::DataPtr, size_t&gt;&gt; map;</a>
+<a name="136"><span class="lineNum">     136 </span>            :   std::shared_mutex mutex;</a>
+<a name="137"><span class="lineNum">     137 </span>            : };</a>
+<a name="138"><span class="lineNum">     138 </span>            : </a>
+<a name="139"><span class="lineNum">     139 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API WorkspaceMapWithMutex&amp; cublas_handle_stream_to_workspace();</span></a>
+<a name="140"><span class="lineNum">     140 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API WorkspaceMapWithMutex&amp; cublaslt_handle_stream_to_workspace();</span></a>
+<a name="141"><span class="lineNum">     141 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API size_t getChosenWorkspaceSize();</span></a>
+<a name="142"><span class="lineNum">     142 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API size_t getCUDABlasLtWorkspaceSize();</span></a>
+<a name="143"><span class="lineNum">     143 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API bool isCUDABlasWorkspaceCachingEnabled();</span></a>
+<a name="144"><span class="lineNum">     144 </span>            : // These return cache-owned allocations even when ATen workspace caching is</a>
+<a name="145"><span class="lineNum">     145 </span>            : // disabled. Use allocateCUDABlasWorkspace for operation-scoped storage.</a>
+<a name="146"><span class="lineNum">     146 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void* getCUDABlasLtWorkspace();</span></a>
+<a name="147"><span class="lineNum">     147 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void* getCUDABlasLtWorkspace(size_t workspace_size);</span></a>
+<a name="148"><span class="lineNum">     148 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API at::DataPtr allocateCUDABlasWorkspace(size_t size);</span></a>
+<a name="149"><span class="lineNum">     149 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void setChosenWorkspaceSize(size_t size);</span></a>
+<a name="150"><span class="lineNum">     150 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void setCUDABlasLtWorkspaceSize(size_t size);</span></a>
+<a name="151"><span class="lineNum">     151 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void resetChosenWorkspaceSize();</span></a>
+<a name="152"><span class="lineNum">     152 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void resetCUDABlasLtWorkspaceSize();</span></a>
 <a name="153"><span class="lineNum">     153 </span>            : </a>
-<a name="154"><span class="lineNum">     154 </span>            : } // namespace at::cuda</a>
+<a name="154"><span class="lineNum">     154 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API cusolverDnHandle_t getCurrentCUDASolverDnHandle();</span></a>
+<a name="155"><span class="lineNum">     155 </span>            : </a>
+<a name="156"><span class="lineNum">     156 </span>            : #if defined(USE_CUDSS)</a>
+<a name="157"><span class="lineNum">     157 </span>            : TORCH_CUDA_CPP_API cudssHandle_t getCurrentCudssHandle();</a>
+<a name="158"><span class="lineNum">     158 </span>            : #endif</a>
+<a name="159"><span class="lineNum">     159 </span>            : </a>
+<a name="160"><span class="lineNum">     160 </span>            : } // namespace at::cuda</a>
 </pre>
       </td>
     </tr>
