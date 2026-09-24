@@ -217,23 +217,23 @@ inline explicit DeviceGuard([Device](../c10/device.html#_CPPv4N3c106DeviceE) dev
 
 Set the current device to the passed [Device](../c10/device.html#PyTorchstructc10_1_1_device).
 
-inline explicit DeviceGuard([Device](../c10/device.html#_CPPv4N3c106DeviceE) device, const [impl](../c10/guards.html#_CPPv4N3c1011DeviceGuard11DeviceGuardE6DevicePKN4impl24DeviceGuardImplInterfaceE)::DeviceGuardImplInterface *impl)
+inline explicit DeviceGuard([Device](../c10/device.html#_CPPv4N3c106DeviceE) device, const impl::DeviceGuardImplInterface *impl)
 
 This constructor is for testing only.
 
 ~DeviceGuard() = default
 
-DeviceGuard(const [DeviceGuard](../c10/guards.html#_CPPv4N3c1011DeviceGuard11DeviceGuardERK11DeviceGuard)&) = delete
+DeviceGuard(const DeviceGuard&) = delete
 
 Copy is disallowed.
 
-[DeviceGuard](../c10/guards.html#_CPPv4N3c1011DeviceGuardE) &operator=(const [DeviceGuard](../c10/guards.html#_CPPv4N3c1011DeviceGuardE)&) = delete
+DeviceGuard &operator=(const DeviceGuard&) = delete
 
-DeviceGuard([DeviceGuard](../c10/guards.html#_CPPv4N3c1011DeviceGuard11DeviceGuardERR11DeviceGuard) &&other) = delete
+DeviceGuard(DeviceGuard &&other) = delete
 
-Move is disallowed, as DeviceGuard does not have an uninitialized state, which is required for moves on types with nontrivial destructors.
+Move is disallowed, as [DeviceGuard](../c10/guards.html#PyTorchclassc10_1_1_device_guard) does not have an uninitialized state, which is required for moves on types with nontrivial destructors.
 
-[DeviceGuard](../c10/guards.html#_CPPv4N3c1011DeviceGuardE) &operator=([DeviceGuard](../c10/guards.html#_CPPv4N3c1011DeviceGuardE) &&other) = delete
+DeviceGuard &operator=(DeviceGuard &&other) = delete
 
 inline void reset_device(at::Device device)
 
@@ -243,7 +243,7 @@ The specified device must be consistent with the device type originally specifie
 
 TODO: The consistency check here is inconsistent with StreamGuard's behavior with set_stream, where a stream on a different device than the original one isn't an error; we just reset the stream and then switch devices.
 
-inline void reset_device(at::Device device, const [impl](../c10/guards.html#_CPPv4N3c1011DeviceGuard12reset_deviceEN2at6DeviceEPKN4impl24DeviceGuardImplInterfaceE)::DeviceGuardImplInterface *impl)
+inline void reset_device(at::Device device, const impl::DeviceGuardImplInterface *impl)
 
 This method is for testing only.
 

@@ -1169,3 +1169,40 @@ Parameters:
 Returns:
 
 The result of floor division.
+
+inline std::tuple<torch::stable::Tensor, torch::stable::Tensor> torch::stable::sort(const torch::stable::Tensor &self, int64_t dim = -1, bool descending = false)
+
+Stable version of the sort op.
+
+Sorts the input tensor along dim, returning the values and their indices.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.15.
+
+Parameters:
+
+- **self** - The input tensor.
+- **dim** - The dimension to sort along.
+- **descending** - Whether to sort in descending order.
+
+Returns:
+
+A tuple of the sorted values and their indices.
+
+inline std::tuple<torch::stable::Tensor, torch::stable::Tensor> torch::stable::sort(const torch::stable::Tensor &self, std::optional<bool> stable, int64_t dim = -1, bool descending = false)
+
+Stable version of the sort.stable op.
+
+Sorts the input tensor along dim, returning the values and their indices. This is a different overload than the sort op without the stable argument.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.15.
+
+Parameters:
+
+- **self** - The input tensor.
+- **stable** - Whether equal elements keep their original order.
+- **dim** - The dimension to sort along.
+- **descending** - Whether to sort in descending order.
+
+Returns:
+
+A tuple of the sorted values and their indices.
