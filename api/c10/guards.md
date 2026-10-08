@@ -26,23 +26,23 @@ inline explicit DeviceGuard([Device](device.html#_CPPv4N3c106DeviceE) device)
 
 Set the current device to the passed [Device](device.html#PyTorchstructc10_1_1_device).
 
-inline explicit DeviceGuard([Device](device.html#_CPPv4N3c106DeviceE) device, const impl::DeviceGuardImplInterface *impl)
+inline explicit DeviceGuard([Device](device.html#_CPPv4N3c106DeviceE) device, const [impl](../aten/tensor.html#_CPPv4N3c1011DeviceGuard11DeviceGuardE6DevicePKN4impl24DeviceGuardImplInterfaceE)::DeviceGuardImplInterface *impl)
 
 This constructor is for testing only.
 
 ~DeviceGuard() = default
 
-DeviceGuard(const DeviceGuard&) = delete
+DeviceGuard(const [DeviceGuard](../aten/tensor.html#_CPPv4N3c1011DeviceGuard11DeviceGuardERK11DeviceGuard)&) = delete
 
 Copy is disallowed.
 
-DeviceGuard &operator=(const DeviceGuard&) = delete
+[DeviceGuard](../aten/tensor.html#_CPPv4N3c1011DeviceGuardE) &operator=(const [DeviceGuard](../aten/tensor.html#_CPPv4N3c1011DeviceGuardE)&) = delete
 
-DeviceGuard(DeviceGuard &&other) = delete
+DeviceGuard([DeviceGuard](../aten/tensor.html#_CPPv4N3c1011DeviceGuard11DeviceGuardERR11DeviceGuard) &&other) = delete
 
-Move is disallowed, as [DeviceGuard](../aten/tensor.html#PyTorchclassc10_1_1_device_guard) does not have an uninitialized state, which is required for moves on types with nontrivial destructors.
+Move is disallowed, as DeviceGuard does not have an uninitialized state, which is required for moves on types with nontrivial destructors.
 
-DeviceGuard &operator=(DeviceGuard &&other) = delete
+[DeviceGuard](../aten/tensor.html#_CPPv4N3c1011DeviceGuardE) &operator=([DeviceGuard](../aten/tensor.html#_CPPv4N3c1011DeviceGuardE) &&other) = delete
 
 inline void reset_device(at::Device device)
 
@@ -52,7 +52,7 @@ The specified device must be consistent with the device type originally specifie
 
 TODO: The consistency check here is inconsistent with StreamGuard's behavior with set_stream, where a stream on a different device than the original one isn't an error; we just reset the stream and then switch devices.
 
-inline void reset_device(at::Device device, const impl::DeviceGuardImplInterface *impl)
+inline void reset_device(at::Device device, const [impl](../aten/tensor.html#_CPPv4N3c1011DeviceGuard12reset_deviceEN2at6DeviceEPKN4impl24DeviceGuardImplInterfaceE)::DeviceGuardImplInterface *impl)
 
 This method is for testing only.
 
@@ -90,13 +90,13 @@ A OptionalDeviceGuard is an RAII class that sets a device to some value on initi
 
 Morally, a OptionalDeviceGuard is equivalent to std::optional<DeviceGuard>, but with extra constructors and methods as appropriate.
 
-Besides its obvious use (optionally applying a [DeviceGuard](../aten/tensor.html#PyTorchclassc10_1_1_device_guard)), OptionalDeviceGuard is often also used for the following idiom:
+Besides its obvious use (optionally applying a DeviceGuard), OptionalDeviceGuard is often also used for the following idiom:
 
 OptionalDeviceGuard g; for (const auto& t : tensors) { g.set_device(t.device()); do_something_with(t); }
 
-This usage is marginally more efficient than constructing a [DeviceGuard](../aten/tensor.html#PyTorchclassc10_1_1_device_guard) every iteration of the for loop, as it avoids an unnecessary device reset.
+This usage is marginally more efficient than constructing a DeviceGuard every iteration of the for loop, as it avoids an unnecessary device reset.
 
-Unlike [DeviceGuard](../aten/tensor.html#PyTorchclassc10_1_1_device_guard), a OptionalDeviceGuard may be uninitialized. This occurs when you use the nullary constructor, or pass a nullopt to the constructor. Uninitialized OptionalDeviceGuards do *nothing*; they do not know what the original device was and they do not reset on destruction. This is why original_device() and current_device() return std::optional<Device> rather than [Device](device.html#PyTorchstructc10_1_1_device) (as they do in [DeviceGuard](../aten/tensor.html#PyTorchclassc10_1_1_device_guard)), and also is why we didn't just provide OptionalDeviceGuard by default and hide [DeviceGuard](../aten/tensor.html#PyTorchclassc10_1_1_device_guard) from users.
+Unlike DeviceGuard, a OptionalDeviceGuard may be uninitialized. This occurs when you use the nullary constructor, or pass a nullopt to the constructor. Uninitialized OptionalDeviceGuards do *nothing*; they do not know what the original device was and they do not reset on destruction. This is why original_device() and current_device() return std::optional<Device> rather than [Device](device.html#PyTorchstructc10_1_1_device) (as they do in DeviceGuard), and also is why we didn't just provide OptionalDeviceGuard by default and hide DeviceGuard from users.
 
 The semantics of an OptionalDeviceGuard are exactly explained by thinking of it as an std::optional<DeviceGuard>. In particular, an initialized OptionalDeviceGuard doesn't restore device to its value at construction; it restores device to its value *at initialization*. So if you have the program:
 
@@ -109,7 +109,7 @@ g.reset_device(Device(DeviceType::CUDA, 3)); // initializes!
 
  On destruction, g will reset device to 2, rather than 1.
 
-An uninitialized OptionalDeviceGuard is distinct from a (initialized) [DeviceGuard](../aten/tensor.html#PyTorchclassc10_1_1_device_guard) whose original_device_ and current_device_ match, since the [DeviceGuard](../aten/tensor.html#PyTorchclassc10_1_1_device_guard) will still reset the device to original_device_.
+An uninitialized OptionalDeviceGuard is distinct from a (initialized) DeviceGuard whose original_device_ and current_device_ match, since the DeviceGuard will still reset the device to original_device_.
 
 Public Functions
 
