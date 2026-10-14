@@ -1206,3 +1206,20 @@ Parameters:
 Returns:
 
 A tuple of the sorted values and their indices.
+
+inline torch::stable::Tensor torch::stable::masked_select(const torch::stable::Tensor &self, const torch::stable::Tensor &mask)
+
+Stable version of the masked_select op.
+
+Returns a 1-D tensor of the elements of self where mask is true.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.15.
+
+Parameters:
+
+- **self** - The input tensor.
+- **mask** - A boolean tensor broadcastable with self.
+
+Returns:
+
+A 1-D tensor of the selected elements.

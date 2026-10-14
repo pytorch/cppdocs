@@ -8,9 +8,9 @@ out of scope.
 
 struct CUDAGuard
 
-A variant of [DeviceGuard](../aten/tensor.html#PyTorchclassc10_1_1_device_guard) that is specialized for CUDA.
+A variant of [DeviceGuard](../c10/guards.html#PyTorchclassc10_1_1_device_guard) that is specialized for CUDA.
 
-It accepts integer indices (interpreting them as CUDA devices) and is a little more efficient than [DeviceGuard](../aten/tensor.html#PyTorchclassc10_1_1_device_guard) (it compiles to straight line cudaSetDevice/cudaGetDevice calls); however, it can only be used from code that links against CUDA directly.
+It accepts integer indices (interpreting them as CUDA devices) and is a little more efficient than [DeviceGuard](../c10/guards.html#PyTorchclassc10_1_1_device_guard) (it compiles to straight line cudaSetDevice/cudaGetDevice calls); however, it can only be used from code that links against CUDA directly.
 
 Public Functions
 
@@ -48,7 +48,7 @@ inline void reset_device([Device](../c10/device.html#_CPPv4N3c106DeviceE) device
 
 Sets the CUDA device to the given device.
 
-Errors if the given device is not a CUDA device. (This method is provided for uniformity with [DeviceGuard](../aten/tensor.html#PyTorchclassc10_1_1_device_guard)).
+Errors if the given device is not a CUDA device. (This method is provided for uniformity with [DeviceGuard](../c10/guards.html#PyTorchclassc10_1_1_device_guard)).
 
 inline void set_index(DeviceIndex device_index)
 

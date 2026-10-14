@@ -7,7 +7,7 @@ tensors and CUDA operations.
 
 class DeviceGuard
 
-A stable ABI version of [c10::DeviceGuard](../aten/tensor.html#PyTorchclassc10_1_1_device_guard).
+A stable ABI version of [c10::DeviceGuard](../c10/guards.html#PyTorchclassc10_1_1_device_guard).
 
 RAII class that sets the current device to the specified device index on construction and restores the previous device on destruction.
 
@@ -192,6 +192,17 @@ auto dtype = torch::headeronly::ScalarType::Float;
 auto device_type = torch::headeronly::DeviceType::CUDA;
 auto memory_format = torch::headeronly::MemoryFormat::Contiguous;
 auto layout = torch::headeronly::Layout::Strided;
+```
+
+### Accumulate Types
+
+`acc_type<T, is_cuda>` and `acc_type_device<T, DeviceType>` give the dtype a
+reduction over `T` should accumulate into, using the same tables as `at::acc_type`:
+
+```
+#include <torch/headeronly/core/AccumulateType.h>
+
+using acc_t = torch::headeronly::acc_type<torch::headeronly::Half, /*is_cuda*/true>;
 ```
 
 ### TensorAccessor
