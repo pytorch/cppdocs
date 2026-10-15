@@ -692,6 +692,23 @@ Returns:
 
 A permuted view of the input tensor.
 
+inline torch::stable::Tensor torch::stable::flip(const torch::stable::Tensor &self, torch::headeronly::IntHeaderOnlyArrayRef dims)
+
+Stable version of the flip op.
+
+Reverses the order of elements along the given dimensions and returns the result as a new tensor. Negative dimensions are wrapped.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.15.
+
+Parameters:
+
+- **self** - The input tensor.
+- **dims** - The dimensions to flip.
+
+Returns:
+
+A new tensor with the given dimensions reversed.
+
 inline torch::stable::Tensor torch::stable::flatten(const torch::stable::Tensor &self, int64_t start_dim = 0, int64_t end_dim = -1)
 
 Stable version of the flatten.using_ints op.
@@ -983,6 +1000,80 @@ Parameters:
 Returns:
 
 The result of matrix multiplication.
+
+inline torch::stable::Tensor &torch::stable::mm_out(torch::stable::Tensor &out, const torch::stable::Tensor &self, const torch::stable::Tensor &mat2)
+
+Stable version of the mm.out op.
+
+Computes the matrix product of the 2-D tensors self and mat2, storing the result in out.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.15.
+
+Parameters:
+
+- **out** - The output tensor (modified in-place).
+- **self** - The first 2-D input tensor.
+- **mat2** - The second 2-D input tensor.
+
+Returns:
+
+Reference to the output tensor.
+
+inline torch::stable::Tensor &torch::stable::mm_out(torch::stable::Tensor &out, const torch::stable::Tensor &self, const torch::stable::Tensor &mat2, torch::headeronly::ScalarType out_dtype)
+
+Stable version of the mm.dtype_out op.
+
+Computes the matrix product of self and mat2 in out_dtype. This is a different overload than mm_out without the out_dtype argument.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.15.
+
+Parameters:
+
+- **out** - The output tensor (modified in-place).
+- **self** - The first 2-D input tensor.
+- **mat2** - The second 2-D input tensor.
+- **out_dtype** - The dtype of the result.
+
+Returns:
+
+Reference to the output tensor.
+
+inline torch::stable::Tensor &torch::stable::bmm_out(torch::stable::Tensor &out, const torch::stable::Tensor &self, const torch::stable::Tensor &mat2)
+
+Stable version of the bmm.out op.
+
+Computes the batch matrix product of the 3-D tensors self and mat2, storing the result in out.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.15.
+
+Parameters:
+
+- **out** - The output tensor (modified in-place).
+- **self** - The first 3-D input tensor of shape (b, n, m).
+- **mat2** - The second 3-D input tensor of shape (b, m, p).
+
+Returns:
+
+Reference to the output tensor.
+
+inline torch::stable::Tensor &torch::stable::bmm_out(torch::stable::Tensor &out, const torch::stable::Tensor &self, const torch::stable::Tensor &mat2, torch::headeronly::ScalarType out_dtype)
+
+Stable version of the bmm.dtype_out op.
+
+Computes the batch matrix product of self and mat2 in out_dtype. This is a different overload than bmm_out without the out_dtype argument.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.15.
+
+Parameters:
+
+- **out** - The output tensor (modified in-place).
+- **self** - The first 3-D input tensor of shape (b, n, m).
+- **mat2** - The second 3-D input tensor of shape (b, m, p).
+- **out_dtype** - The dtype of the result.
+
+Returns:
+
+Reference to the output tensor.
 
 inline torch::stable::Tensor torch::stable::amax(const torch::stable::Tensor &self, int64_t dim, bool keepdim = false)
 

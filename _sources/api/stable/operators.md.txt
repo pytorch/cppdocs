@@ -91,6 +91,9 @@ auto tensor = torch::stable::empty(
 ```{doxygenfunction} torch::stable::permute
 ```
 
+```{doxygenfunction} torch::stable::flip
+```
+
 ```{doxygenfunction} torch::stable::flatten
 ```
 
@@ -140,6 +143,18 @@ auto tensor = torch::stable::empty(
 ## Mathematical Operations
 
 ```{doxygenfunction} torch::stable::matmul
+```
+
+```{doxygenfunction} torch::stable::mm_out(torch::stable::Tensor &out, const torch::stable::Tensor &self, const torch::stable::Tensor &mat2)
+```
+
+```{doxygenfunction} torch::stable::mm_out(torch::stable::Tensor &out, const torch::stable::Tensor &self, const torch::stable::Tensor &mat2, torch::headeronly::ScalarType out_dtype)
+```
+
+```{doxygenfunction} torch::stable::bmm_out(torch::stable::Tensor &out, const torch::stable::Tensor &self, const torch::stable::Tensor &mat2)
+```
+
+```{doxygenfunction} torch::stable::bmm_out(torch::stable::Tensor &out, const torch::stable::Tensor &self, const torch::stable::Tensor &mat2, torch::headeronly::ScalarType out_dtype)
 ```
 
 ```{doxygenfunction} torch::stable::amax(const torch::stable::Tensor &self, int64_t dim, bool keepdim)

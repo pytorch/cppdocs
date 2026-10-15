@@ -31,13 +31,13 @@
             <td class="headerValue">PyTorch C++ API Doc Coverage</td>
             <td></td>
             <td class="headerItem">Lines:</td>
-            <td class="headerCovTableEntry">45</td>
-            <td class="headerCovTableEntry">45</td>
+            <td class="headerCovTableEntry">50</td>
+            <td class="headerCovTableEntry">50</td>
             <td class="headerCovTableEntryHi">100.0 %</td>
           </tr>
           <tr>
             <td class="headerItem">Date:</td>
-            <td class="headerValue">2026-10-14 00:49:42</td>
+            <td class="headerValue">2026-10-15 00:47:11</td>
             <td></td>
           </tr>
           <tr>
@@ -1476,9 +1476,149 @@
 <a name="1410"><span class="lineNum">    1410 </span>            :   return torch::stable::detail::to&lt;torch::stable::Tensor&gt;(stack[0]);</a>
 <a name="1411"><span class="lineNum">    1411 </span>            : }</a>
 <a name="1412"><span class="lineNum">    1412 </span>            : </a>
-<a name="1413"><span class="lineNum">    1413 </span>            : #endif // TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_10_0</a>
-<a name="1414"><span class="lineNum">    1414 </span>            : </a>
-<a name="1415"><span class="lineNum">    1415 </span>            : HIDDEN_NAMESPACE_END(torch, stable)</a>
+<a name="1413"><span class="lineNum">    1413 </span>            : /// Stable version of the mm.out op.</a>
+<a name="1414"><span class="lineNum">    1414 </span>            : ///</a>
+<a name="1415"><span class="lineNum">    1415 </span>            : /// Computes the matrix product of the 2-D tensors self and mat2, storing the</a>
+<a name="1416"><span class="lineNum">    1416 </span>            : /// result in out.</a>
+<a name="1417"><span class="lineNum">    1417 </span>            : ///</a>
+<a name="1418"><span class="lineNum">    1418 </span>            : /// Minimum compatible version: PyTorch 2.10.</a>
+<a name="1419"><span class="lineNum">    1419 </span>            : /// Build time minimum version: PyTorch 2.15.</a>
+<a name="1420"><span class="lineNum">    1420 </span>            : ///</a>
+<a name="1421"><span class="lineNum">    1421 </span>            : /// @param out The output tensor (modified in-place).</a>
+<a name="1422"><span class="lineNum">    1422 </span>            : /// @param self The first 2-D input tensor.</a>
+<a name="1423"><span class="lineNum">    1423 </span>            : /// @param mat2 The second 2-D input tensor.</a>
+<a name="1424"><span class="lineNum">    1424 </span>            : /// @return Reference to the output tensor.</a>
+<a name="1425"><span class="lineNum">    1425 </span><span class="lineCov">          1 : inline torch::stable::Tensor&amp; mm_out(</span></a>
+<a name="1426"><span class="lineNum">    1426 </span>            :     torch::stable::Tensor&amp; out,</a>
+<a name="1427"><span class="lineNum">    1427 </span>            :     const torch::stable::Tensor&amp; self,</a>
+<a name="1428"><span class="lineNum">    1428 </span>            :     const torch::stable::Tensor&amp; mat2) {</a>
+<a name="1429"><span class="lineNum">    1429 </span>            :   const auto num_args = 3;</a>
+<a name="1430"><span class="lineNum">    1430 </span>            :   std::array&lt;StableIValue, num_args&gt; stack{</a>
+<a name="1431"><span class="lineNum">    1431 </span>            :       torch::stable::detail::from(self),</a>
+<a name="1432"><span class="lineNum">    1432 </span>            :       torch::stable::detail::from(mat2),</a>
+<a name="1433"><span class="lineNum">    1433 </span>            :       torch::stable::detail::from(out)};</a>
+<a name="1434"><span class="lineNum">    1434 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(torch_call_dispatcher(</a>
+<a name="1435"><span class="lineNum">    1435 </span>            :       &quot;aten::mm&quot;, &quot;out&quot;, stack.data(), TORCH_ABI_VERSION));</a>
+<a name="1436"><span class="lineNum">    1436 </span>            :   // Clean up the handle in stack[0], discard the temporary</a>
+<a name="1437"><span class="lineNum">    1437 </span>            :   (void)torch::stable::detail::to&lt;torch::stable::Tensor&gt;(stack[0]);</a>
+<a name="1438"><span class="lineNum">    1438 </span>            :   return out;</a>
+<a name="1439"><span class="lineNum">    1439 </span>            : }</a>
+<a name="1440"><span class="lineNum">    1440 </span>            : </a>
+<a name="1441"><span class="lineNum">    1441 </span>            : /// Stable version of the mm.dtype_out op.</a>
+<a name="1442"><span class="lineNum">    1442 </span>            : ///</a>
+<a name="1443"><span class="lineNum">    1443 </span>            : /// Computes the matrix product of self and mat2 in out_dtype. This is a</a>
+<a name="1444"><span class="lineNum">    1444 </span>            : /// different overload than mm_out without the out_dtype argument.</a>
+<a name="1445"><span class="lineNum">    1445 </span>            : ///</a>
+<a name="1446"><span class="lineNum">    1446 </span>            : /// Minimum compatible version: PyTorch 2.10.</a>
+<a name="1447"><span class="lineNum">    1447 </span>            : /// Build time minimum version: PyTorch 2.15.</a>
+<a name="1448"><span class="lineNum">    1448 </span>            : ///</a>
+<a name="1449"><span class="lineNum">    1449 </span>            : /// @param out The output tensor (modified in-place).</a>
+<a name="1450"><span class="lineNum">    1450 </span>            : /// @param self The first 2-D input tensor.</a>
+<a name="1451"><span class="lineNum">    1451 </span>            : /// @param mat2 The second 2-D input tensor.</a>
+<a name="1452"><span class="lineNum">    1452 </span>            : /// @param out_dtype The dtype of the result.</a>
+<a name="1453"><span class="lineNum">    1453 </span>            : /// @return Reference to the output tensor.</a>
+<a name="1454"><span class="lineNum">    1454 </span><span class="lineCov">          1 : inline torch::stable::Tensor&amp; mm_out(</span></a>
+<a name="1455"><span class="lineNum">    1455 </span>            :     torch::stable::Tensor&amp; out,</a>
+<a name="1456"><span class="lineNum">    1456 </span>            :     const torch::stable::Tensor&amp; self,</a>
+<a name="1457"><span class="lineNum">    1457 </span>            :     const torch::stable::Tensor&amp; mat2,</a>
+<a name="1458"><span class="lineNum">    1458 </span>            :     torch::headeronly::ScalarType out_dtype) {</a>
+<a name="1459"><span class="lineNum">    1459 </span>            :   const auto num_args = 4;</a>
+<a name="1460"><span class="lineNum">    1460 </span>            :   std::array&lt;StableIValue, num_args&gt; stack{</a>
+<a name="1461"><span class="lineNum">    1461 </span>            :       torch::stable::detail::from(self),</a>
+<a name="1462"><span class="lineNum">    1462 </span>            :       torch::stable::detail::from(mat2),</a>
+<a name="1463"><span class="lineNum">    1463 </span>            :       torch::stable::detail::from(out_dtype),</a>
+<a name="1464"><span class="lineNum">    1464 </span>            :       torch::stable::detail::from(out)};</a>
+<a name="1465"><span class="lineNum">    1465 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(torch_call_dispatcher(</a>
+<a name="1466"><span class="lineNum">    1466 </span>            :       &quot;aten::mm&quot;, &quot;dtype_out&quot;, stack.data(), TORCH_ABI_VERSION));</a>
+<a name="1467"><span class="lineNum">    1467 </span>            :   // Clean up the handle in stack[0], discard the temporary</a>
+<a name="1468"><span class="lineNum">    1468 </span>            :   (void)torch::stable::detail::to&lt;torch::stable::Tensor&gt;(stack[0]);</a>
+<a name="1469"><span class="lineNum">    1469 </span>            :   return out;</a>
+<a name="1470"><span class="lineNum">    1470 </span>            : }</a>
+<a name="1471"><span class="lineNum">    1471 </span>            : </a>
+<a name="1472"><span class="lineNum">    1472 </span>            : /// Stable version of the bmm.out op.</a>
+<a name="1473"><span class="lineNum">    1473 </span>            : ///</a>
+<a name="1474"><span class="lineNum">    1474 </span>            : /// Computes the batch matrix product of the 3-D tensors self and mat2,</a>
+<a name="1475"><span class="lineNum">    1475 </span>            : /// storing the result in out.</a>
+<a name="1476"><span class="lineNum">    1476 </span>            : ///</a>
+<a name="1477"><span class="lineNum">    1477 </span>            : /// Minimum compatible version: PyTorch 2.10.</a>
+<a name="1478"><span class="lineNum">    1478 </span>            : /// Build time minimum version: PyTorch 2.15.</a>
+<a name="1479"><span class="lineNum">    1479 </span>            : ///</a>
+<a name="1480"><span class="lineNum">    1480 </span>            : /// @param out The output tensor (modified in-place).</a>
+<a name="1481"><span class="lineNum">    1481 </span>            : /// @param self The first 3-D input tensor of shape (b, n, m).</a>
+<a name="1482"><span class="lineNum">    1482 </span>            : /// @param mat2 The second 3-D input tensor of shape (b, m, p).</a>
+<a name="1483"><span class="lineNum">    1483 </span>            : /// @return Reference to the output tensor.</a>
+<a name="1484"><span class="lineNum">    1484 </span><span class="lineCov">          1 : inline torch::stable::Tensor&amp; bmm_out(</span></a>
+<a name="1485"><span class="lineNum">    1485 </span>            :     torch::stable::Tensor&amp; out,</a>
+<a name="1486"><span class="lineNum">    1486 </span>            :     const torch::stable::Tensor&amp; self,</a>
+<a name="1487"><span class="lineNum">    1487 </span>            :     const torch::stable::Tensor&amp; mat2) {</a>
+<a name="1488"><span class="lineNum">    1488 </span>            :   const auto num_args = 3;</a>
+<a name="1489"><span class="lineNum">    1489 </span>            :   std::array&lt;StableIValue, num_args&gt; stack{</a>
+<a name="1490"><span class="lineNum">    1490 </span>            :       torch::stable::detail::from(self),</a>
+<a name="1491"><span class="lineNum">    1491 </span>            :       torch::stable::detail::from(mat2),</a>
+<a name="1492"><span class="lineNum">    1492 </span>            :       torch::stable::detail::from(out)};</a>
+<a name="1493"><span class="lineNum">    1493 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(torch_call_dispatcher(</a>
+<a name="1494"><span class="lineNum">    1494 </span>            :       &quot;aten::bmm&quot;, &quot;out&quot;, stack.data(), TORCH_ABI_VERSION));</a>
+<a name="1495"><span class="lineNum">    1495 </span>            :   // Clean up the handle in stack[0], discard the temporary</a>
+<a name="1496"><span class="lineNum">    1496 </span>            :   (void)torch::stable::detail::to&lt;torch::stable::Tensor&gt;(stack[0]);</a>
+<a name="1497"><span class="lineNum">    1497 </span>            :   return out;</a>
+<a name="1498"><span class="lineNum">    1498 </span>            : }</a>
+<a name="1499"><span class="lineNum">    1499 </span>            : </a>
+<a name="1500"><span class="lineNum">    1500 </span>            : /// Stable version of the bmm.dtype_out op.</a>
+<a name="1501"><span class="lineNum">    1501 </span>            : ///</a>
+<a name="1502"><span class="lineNum">    1502 </span>            : /// Computes the batch matrix product of self and mat2 in out_dtype. This is a</a>
+<a name="1503"><span class="lineNum">    1503 </span>            : /// different overload than bmm_out without the out_dtype argument.</a>
+<a name="1504"><span class="lineNum">    1504 </span>            : ///</a>
+<a name="1505"><span class="lineNum">    1505 </span>            : /// Minimum compatible version: PyTorch 2.10.</a>
+<a name="1506"><span class="lineNum">    1506 </span>            : /// Build time minimum version: PyTorch 2.15.</a>
+<a name="1507"><span class="lineNum">    1507 </span>            : ///</a>
+<a name="1508"><span class="lineNum">    1508 </span>            : /// @param out The output tensor (modified in-place).</a>
+<a name="1509"><span class="lineNum">    1509 </span>            : /// @param self The first 3-D input tensor of shape (b, n, m).</a>
+<a name="1510"><span class="lineNum">    1510 </span>            : /// @param mat2 The second 3-D input tensor of shape (b, m, p).</a>
+<a name="1511"><span class="lineNum">    1511 </span>            : /// @param out_dtype The dtype of the result.</a>
+<a name="1512"><span class="lineNum">    1512 </span>            : /// @return Reference to the output tensor.</a>
+<a name="1513"><span class="lineNum">    1513 </span><span class="lineCov">          1 : inline torch::stable::Tensor&amp; bmm_out(</span></a>
+<a name="1514"><span class="lineNum">    1514 </span>            :     torch::stable::Tensor&amp; out,</a>
+<a name="1515"><span class="lineNum">    1515 </span>            :     const torch::stable::Tensor&amp; self,</a>
+<a name="1516"><span class="lineNum">    1516 </span>            :     const torch::stable::Tensor&amp; mat2,</a>
+<a name="1517"><span class="lineNum">    1517 </span>            :     torch::headeronly::ScalarType out_dtype) {</a>
+<a name="1518"><span class="lineNum">    1518 </span>            :   const auto num_args = 4;</a>
+<a name="1519"><span class="lineNum">    1519 </span>            :   std::array&lt;StableIValue, num_args&gt; stack{</a>
+<a name="1520"><span class="lineNum">    1520 </span>            :       torch::stable::detail::from(self),</a>
+<a name="1521"><span class="lineNum">    1521 </span>            :       torch::stable::detail::from(mat2),</a>
+<a name="1522"><span class="lineNum">    1522 </span>            :       torch::stable::detail::from(out_dtype),</a>
+<a name="1523"><span class="lineNum">    1523 </span>            :       torch::stable::detail::from(out)};</a>
+<a name="1524"><span class="lineNum">    1524 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(torch_call_dispatcher(</a>
+<a name="1525"><span class="lineNum">    1525 </span>            :       &quot;aten::bmm&quot;, &quot;dtype_out&quot;, stack.data(), TORCH_ABI_VERSION));</a>
+<a name="1526"><span class="lineNum">    1526 </span>            :   // Clean up the handle in stack[0], discard the temporary</a>
+<a name="1527"><span class="lineNum">    1527 </span>            :   (void)torch::stable::detail::to&lt;torch::stable::Tensor&gt;(stack[0]);</a>
+<a name="1528"><span class="lineNum">    1528 </span>            :   return out;</a>
+<a name="1529"><span class="lineNum">    1529 </span>            : }</a>
+<a name="1530"><span class="lineNum">    1530 </span>            : </a>
+<a name="1531"><span class="lineNum">    1531 </span>            : /// Stable version of the flip op.</a>
+<a name="1532"><span class="lineNum">    1532 </span>            : ///</a>
+<a name="1533"><span class="lineNum">    1533 </span>            : /// Reverses the order of elements along the given dimensions and returns</a>
+<a name="1534"><span class="lineNum">    1534 </span>            : /// the result as a new tensor. Negative dimensions are wrapped.</a>
+<a name="1535"><span class="lineNum">    1535 </span>            : ///</a>
+<a name="1536"><span class="lineNum">    1536 </span>            : /// Minimum compatible version: PyTorch 2.10.</a>
+<a name="1537"><span class="lineNum">    1537 </span>            : /// Build time minimum version: PyTorch 2.15.</a>
+<a name="1538"><span class="lineNum">    1538 </span>            : ///</a>
+<a name="1539"><span class="lineNum">    1539 </span>            : /// @param self The input tensor.</a>
+<a name="1540"><span class="lineNum">    1540 </span>            : /// @param dims The dimensions to flip.</a>
+<a name="1541"><span class="lineNum">    1541 </span>            : /// @return A new tensor with the given dimensions reversed.</a>
+<a name="1542"><span class="lineNum">    1542 </span><span class="lineCov">          1 : inline torch::stable::Tensor flip(</span></a>
+<a name="1543"><span class="lineNum">    1543 </span>            :     const torch::stable::Tensor&amp; self,</a>
+<a name="1544"><span class="lineNum">    1544 </span>            :     torch::headeronly::IntHeaderOnlyArrayRef dims) {</a>
+<a name="1545"><span class="lineNum">    1545 </span>            :   const auto num_args = 2;</a>
+<a name="1546"><span class="lineNum">    1546 </span>            :   std::array&lt;StableIValue, num_args&gt; stack{</a>
+<a name="1547"><span class="lineNum">    1547 </span>            :       torch::stable::detail::from(self), torch::stable::detail::from(dims)};</a>
+<a name="1548"><span class="lineNum">    1548 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(</a>
+<a name="1549"><span class="lineNum">    1549 </span>            :       torch_call_dispatcher(&quot;aten::flip&quot;, &quot;&quot;, stack.data(), TORCH_ABI_VERSION));</a>
+<a name="1550"><span class="lineNum">    1550 </span>            :   return torch::stable::detail::to&lt;torch::stable::Tensor&gt;(stack[0]);</a>
+<a name="1551"><span class="lineNum">    1551 </span>            : }</a>
+<a name="1552"><span class="lineNum">    1552 </span>            : </a>
+<a name="1553"><span class="lineNum">    1553 </span>            : #endif // TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_10_0</a>
+<a name="1554"><span class="lineNum">    1554 </span>            : </a>
+<a name="1555"><span class="lineNum">    1555 </span>            : HIDDEN_NAMESPACE_END(torch, stable)</a>
 </pre>
       </td>
     </tr>
