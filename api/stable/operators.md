@@ -573,6 +573,28 @@ Returns:
 
 A tensor backed by the provided data.
 
+inline torch::stable::Tensor torch::stable::from_file(const std::string &filename, std::optional<bool> shared = std::nullopt, std::optional<int64_t> size = 0, std::optional<torch::headeronly::ScalarType> dtype = std::nullopt, std::optional<torch::headeronly::Layout> layout = std::nullopt, std::optional<torch::stable::Device> device = std::nullopt, std::optional<bool> pin_memory = std::nullopt)
+
+Stable version of the from_file op.
+
+Creates a CPU tensor backed by a memory-map of the file at filename. Unlike at::from_file, filename is a const std::string& rather than a std::string_view.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.15.
+
+Parameters:
+
+- **filename** - Path of the file to read.
+- **shared** - Optional flag to write tensor changes back to the file.
+- **size** - Optional number of elements to read from the file.
+- **dtype** - Optional scalar type for the tensor elements.
+- **layout** - Optional memory layout, which must be strided for this op.
+- **device** - Optional device, which must be CPU for this op.
+- **pin_memory** - Optional pinning flag, which must be false for this op.
+
+Returns:
+
+A new tensor holding the file contents.
+
 **Example:**
 
 ```
