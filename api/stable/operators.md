@@ -1176,6 +1176,24 @@ Returns:
 
 Reference to the output tensor.
 
+inline torch::stable::Tensor torch::stable::add(const torch::stable::Tensor &self, const torch::stable::Tensor &other, double alpha = 1.0)
+
+Stable version of the add.Tensor op.
+
+Adds the other tensor to self, scaled by alpha: self + alpha * other. Unlike at::add, alpha is a double rather than a Scalar. Adding two integral or boolean tensors is not supported.
+
+Minimum compatible version: PyTorch 2.16. Build time minimum version: PyTorch 2.16.
+
+Parameters:
+
+- **self** - The input tensor.
+- **other** - The tensor to add.
+- **alpha** - The scaling factor for other. Defaults to 1.0.
+
+Returns:
+
+The result of self + alpha * other.
+
 inline torch::stable::Tensor torch::stable::subtract(const torch::stable::Tensor &self, const torch::stable::Tensor &other, double alpha = 1.0)
 
 Stable version of the subtract.Tensor op.
