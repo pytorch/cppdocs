@@ -194,17 +194,6 @@ auto memory_format = torch::headeronly::MemoryFormat::Contiguous;
 auto layout = torch::headeronly::Layout::Strided;
 ```
 
-### Accumulate Types
-
-`acc_type<T, is_cuda>` and `acc_type_device<T, DeviceType>` give the dtype a
-reduction over `T` should accumulate into, using the same tables as `at::acc_type`:
-
-```
-#include <torch/headeronly/core/AccumulateType.h>
-
-using acc_t = torch::headeronly::acc_type<torch::headeronly::Half, /*is_cuda*/true>;
-```
-
 ### TensorAccessor
 
 `TensorAccessor` provides efficient, bounds-checked access to tensor data.
