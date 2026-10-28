@@ -37,7 +37,7 @@
           </tr>
           <tr>
             <td class="headerItem">Date:</td>
-            <td class="headerValue">2026-10-27 20:05:39</td>
+            <td class="headerValue">2026-10-28 00:58:10</td>
             <td></td>
           </tr>
           <tr>
@@ -193,58 +193,62 @@
 <a name="127"><span class="lineNum">     127 </span><span class="lineNoCov">          0 : getCurrentCUDABlasHandleWithWorkspace();</span></a>
 <a name="128"><span class="lineNum">     128 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API cublasLtHandle_t getCurrentCUDABlasLtHandle();</span></a>
 <a name="129"><span class="lineNum">     129 </span>            : #ifdef USE_ROCM</a>
-<a name="130"><span class="lineNum">     130 </span>            : // hipblaslt handles are pooled per (device, stream) and cannot be created</a>
-<a name="131"><span class="lineNum">     131 </span>            : // while stream capture is active. Pre-stock the shared free list so other</a>
-<a name="132"><span class="lineNum">     132 </span>            : // threads (e.g. autograd workers) can reserve one mid-capture.</a>
-<a name="133"><span class="lineNum">     133 </span>            : TORCH_CUDA_CPP_API void ensureCublasLtHandlesAvailable(size_t n);</a>
-<a name="134"><span class="lineNum">     134 </span>            : // Under capture, getCurrentCUDABlasHandle() returns a capture handle: one per</a>
-<a name="135"><span class="lineNum">     135 </span>            : // (thread, device), with no rocBLAS arena, shared by every stream the thread</a>
-<a name="136"><span class="lineNum">     136 </span>            : // uses in the capture. Each request points it at the current stream and binds</a>
-<a name="137"><span class="lineNum">     137 </span>            : // that stream's workspace from the capture's memory pool. Once the public</a>
-<a name="138"><span class="lineNum">     138 </span>            : // handle has been requested on the current device, reserve this thread's</a>
-<a name="139"><span class="lineNum">     139 </span>            : // capture handle and pre-stock one spare for another thread, because creating</a>
-<a name="140"><span class="lineNum">     140 </span>            : // a handle is illegal under capture.</a>
-<a name="141"><span class="lineNum">     141 </span>            : TORCH_CUDA_CPP_API void prepareCaptureCublasHandles();</a>
-<a name="142"><span class="lineNum">     142 </span>            : // Unbinds the capture handles used by this capture and frees their workspaces,</a>
-<a name="143"><span class="lineNum">     143 </span>            : // and the hipBLASLt workspaces getCUDABlasLtWorkspace handed out during it,</a>
-<a name="144"><span class="lineNum">     144 </span>            : // back to the capture's memory pool.</a>
-<a name="145"><span class="lineNum">     145 </span>            : TORCH_CUDA_CPP_API void releaseCaptureCublasWorkspaces(</a>
-<a name="146"><span class="lineNum">     146 </span>            :     c10::CaptureId_t capture_id);</a>
-<a name="147"><span class="lineNum">     147 </span>            : #endif</a>
-<a name="148"><span class="lineNum">     148 </span>            : </a>
-<a name="149"><span class="lineNum">     149 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void clearCublasWorkspaces();</span></a>
-<a name="150"><span class="lineNum">     150 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void clearCublasWorkspacesForStream(cudaStream_t stream);</span></a>
-<a name="151"><span class="lineNum">     151 </span><span class="lineNoCov">          0 : struct WorkspaceMapWithMutex {</span></a>
-<a name="152"><span class="lineNum">     152 </span>            :   std::map&lt;std::tuple&lt;void*, void*&gt;, std::pair&lt;at::DataPtr, size_t&gt;&gt; map;</a>
-<a name="153"><span class="lineNum">     153 </span>            :   std::shared_mutex mutex;</a>
-<a name="154"><span class="lineNum">     154 </span>            : };</a>
-<a name="155"><span class="lineNum">     155 </span>            : </a>
-<a name="156"><span class="lineNum">     156 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API WorkspaceMapWithMutex&amp; cublas_handle_stream_to_workspace();</span></a>
-<a name="157"><span class="lineNum">     157 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API WorkspaceMapWithMutex&amp; cublaslt_handle_stream_to_workspace();</span></a>
-<a name="158"><span class="lineNum">     158 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API size_t getChosenWorkspaceSize();</span></a>
-<a name="159"><span class="lineNum">     159 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API size_t getCUDABlasLtWorkspaceSize();</span></a>
-<a name="160"><span class="lineNum">     160 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API bool isCUDABlasWorkspaceCachingEnabled();</span></a>
-<a name="161"><span class="lineNum">     161 </span>            : // These return cache-owned allocations even when ATen workspace caching is</a>
-<a name="162"><span class="lineNum">     162 </span>            : // disabled. Use allocateCUDABlasWorkspace for operation-scoped storage.</a>
-<a name="163"><span class="lineNum">     163 </span>            : // On ROCm without workspace caching, under stream capture they return a buffer</a>
-<a name="164"><span class="lineNum">     164 </span>            : // from the capture's memory pool instead, one per (capture, stream), which the</a>
-<a name="165"><span class="lineNum">     165 </span>            : // graph owns once the capture ends. A pointer fetched before the capture must</a>
-<a name="166"><span class="lineNum">     166 </span>            : // not be used in it.</a>
-<a name="167"><span class="lineNum">     167 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void* getCUDABlasLtWorkspace();</span></a>
-<a name="168"><span class="lineNum">     168 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void* getCUDABlasLtWorkspace(size_t workspace_size);</span></a>
-<a name="169"><span class="lineNum">     169 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API at::DataPtr allocateCUDABlasWorkspace(size_t size);</span></a>
-<a name="170"><span class="lineNum">     170 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void setChosenWorkspaceSize(size_t size);</span></a>
-<a name="171"><span class="lineNum">     171 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void setCUDABlasLtWorkspaceSize(size_t size);</span></a>
-<a name="172"><span class="lineNum">     172 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void resetChosenWorkspaceSize();</span></a>
-<a name="173"><span class="lineNum">     173 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void resetCUDABlasLtWorkspaceSize();</span></a>
-<a name="174"><span class="lineNum">     174 </span>            : </a>
-<a name="175"><span class="lineNum">     175 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API cusolverDnHandle_t getCurrentCUDASolverDnHandle();</span></a>
-<a name="176"><span class="lineNum">     176 </span>            : </a>
-<a name="177"><span class="lineNum">     177 </span>            : #if defined(USE_CUDSS)</a>
-<a name="178"><span class="lineNum">     178 </span>            : TORCH_CUDA_CPP_API cudssHandle_t getCurrentCudssHandle();</a>
-<a name="179"><span class="lineNum">     179 </span>            : #endif</a>
+<a name="130"><span class="lineNum">     130 </span>            : // Like getCurrentCUDABlasLtHandle(), but returns nullptr instead of creating a</a>
+<a name="131"><span class="lineNum">     131 </span>            : // handle when the current thread has none for the current (device, stream) and</a>
+<a name="132"><span class="lineNum">     132 </span>            : // the pool has no spare. Safe to call under stream capture.</a>
+<a name="133"><span class="lineNum">     133 </span>            : TORCH_CUDA_CPP_API cublasLtHandle_t getCurrentCUDABlasLtHandleIfAvailable();</a>
+<a name="134"><span class="lineNum">     134 </span>            : // hipblaslt handles are pooled per (device, stream) and cannot be created</a>
+<a name="135"><span class="lineNum">     135 </span>            : // while stream capture is active. Pre-stock the shared free list so other</a>
+<a name="136"><span class="lineNum">     136 </span>            : // threads (e.g. autograd workers) can reserve one mid-capture.</a>
+<a name="137"><span class="lineNum">     137 </span>            : TORCH_CUDA_CPP_API void ensureCublasLtHandlesAvailable(size_t n);</a>
+<a name="138"><span class="lineNum">     138 </span>            : // Under capture, getCurrentCUDABlasHandle() returns a capture handle: one per</a>
+<a name="139"><span class="lineNum">     139 </span>            : // (thread, device), with no rocBLAS arena, shared by every stream the thread</a>
+<a name="140"><span class="lineNum">     140 </span>            : // uses in the capture. Each request points it at the current stream and binds</a>
+<a name="141"><span class="lineNum">     141 </span>            : // that stream's workspace from the capture's memory pool. Once the public</a>
+<a name="142"><span class="lineNum">     142 </span>            : // handle has been requested on the current device, reserve this thread's</a>
+<a name="143"><span class="lineNum">     143 </span>            : // capture handle and pre-stock one spare for another thread, because creating</a>
+<a name="144"><span class="lineNum">     144 </span>            : // a handle is illegal under capture.</a>
+<a name="145"><span class="lineNum">     145 </span>            : TORCH_CUDA_CPP_API void prepareCaptureCublasHandles();</a>
+<a name="146"><span class="lineNum">     146 </span>            : // Unbinds the capture handles used by this capture and frees their workspaces,</a>
+<a name="147"><span class="lineNum">     147 </span>            : // and the hipBLASLt workspaces getCUDABlasLtWorkspace handed out during it,</a>
+<a name="148"><span class="lineNum">     148 </span>            : // back to the capture's memory pool.</a>
+<a name="149"><span class="lineNum">     149 </span>            : TORCH_CUDA_CPP_API void releaseCaptureCublasWorkspaces(</a>
+<a name="150"><span class="lineNum">     150 </span>            :     c10::CaptureId_t capture_id);</a>
+<a name="151"><span class="lineNum">     151 </span>            : #endif</a>
+<a name="152"><span class="lineNum">     152 </span>            : </a>
+<a name="153"><span class="lineNum">     153 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void clearCublasWorkspaces();</span></a>
+<a name="154"><span class="lineNum">     154 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void clearCublasWorkspacesForStream(cudaStream_t stream);</span></a>
+<a name="155"><span class="lineNum">     155 </span><span class="lineNoCov">          0 : struct WorkspaceMapWithMutex {</span></a>
+<a name="156"><span class="lineNum">     156 </span>            :   std::map&lt;std::tuple&lt;void*, void*&gt;, std::pair&lt;at::DataPtr, size_t&gt;&gt; map;</a>
+<a name="157"><span class="lineNum">     157 </span>            :   std::shared_mutex mutex;</a>
+<a name="158"><span class="lineNum">     158 </span>            : };</a>
+<a name="159"><span class="lineNum">     159 </span>            : </a>
+<a name="160"><span class="lineNum">     160 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API WorkspaceMapWithMutex&amp; cublas_handle_stream_to_workspace();</span></a>
+<a name="161"><span class="lineNum">     161 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API WorkspaceMapWithMutex&amp; cublaslt_handle_stream_to_workspace();</span></a>
+<a name="162"><span class="lineNum">     162 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API size_t getChosenWorkspaceSize();</span></a>
+<a name="163"><span class="lineNum">     163 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API size_t getCUDABlasLtWorkspaceSize();</span></a>
+<a name="164"><span class="lineNum">     164 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API bool isCUDABlasWorkspaceCachingEnabled();</span></a>
+<a name="165"><span class="lineNum">     165 </span>            : // These return cache-owned allocations even when ATen workspace caching is</a>
+<a name="166"><span class="lineNum">     166 </span>            : // disabled. Use allocateCUDABlasWorkspace for operation-scoped storage.</a>
+<a name="167"><span class="lineNum">     167 </span>            : // On ROCm without workspace caching, under stream capture they return a buffer</a>
+<a name="168"><span class="lineNum">     168 </span>            : // from the capture's memory pool instead, one per (capture, stream), which the</a>
+<a name="169"><span class="lineNum">     169 </span>            : // graph owns once the capture ends. A pointer fetched before the capture must</a>
+<a name="170"><span class="lineNum">     170 </span>            : // not be used in it.</a>
+<a name="171"><span class="lineNum">     171 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void* getCUDABlasLtWorkspace();</span></a>
+<a name="172"><span class="lineNum">     172 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void* getCUDABlasLtWorkspace(size_t workspace_size);</span></a>
+<a name="173"><span class="lineNum">     173 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API at::DataPtr allocateCUDABlasWorkspace(size_t size);</span></a>
+<a name="174"><span class="lineNum">     174 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void setChosenWorkspaceSize(size_t size);</span></a>
+<a name="175"><span class="lineNum">     175 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void setCUDABlasLtWorkspaceSize(size_t size);</span></a>
+<a name="176"><span class="lineNum">     176 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void resetChosenWorkspaceSize();</span></a>
+<a name="177"><span class="lineNum">     177 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API void resetCUDABlasLtWorkspaceSize();</span></a>
+<a name="178"><span class="lineNum">     178 </span>            : </a>
+<a name="179"><span class="lineNum">     179 </span><span class="lineNoCov">          0 : TORCH_CUDA_CPP_API cusolverDnHandle_t getCurrentCUDASolverDnHandle();</span></a>
 <a name="180"><span class="lineNum">     180 </span>            : </a>
-<a name="181"><span class="lineNum">     181 </span>            : } // namespace at::cuda</a>
+<a name="181"><span class="lineNum">     181 </span>            : #if defined(USE_CUDSS)</a>
+<a name="182"><span class="lineNum">     182 </span>            : TORCH_CUDA_CPP_API cudssHandle_t getCurrentCudssHandle();</a>
+<a name="183"><span class="lineNum">     183 </span>            : #endif</a>
+<a name="184"><span class="lineNum">     184 </span>            : </a>
+<a name="185"><span class="lineNum">     185 </span>            : } // namespace at::cuda</a>
 </pre>
       </td>
     </tr>
