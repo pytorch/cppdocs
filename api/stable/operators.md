@@ -309,6 +309,36 @@ Returns:
 
 The Layout of the tensor (e.g., Strided, Sparse).
 
+inline bool is_conj() const
+
+Checks whether the tensor's conjugate bit is set.
+
+Minimum compatible version: PyTorch 2.16. Build time minimum version: PyTorch 2.16.
+
+Returns:
+
+true if the conjugate bit is set, false otherwise.
+
+inline bool is_neg() const
+
+Checks whether the tensor's negative bit is set.
+
+Minimum compatible version: PyTorch 2.16. Build time minimum version: PyTorch 2.16.
+
+Returns:
+
+true if the negative bit is set, false otherwise.
+
+inline bool is_inference() const
+
+Checks whether the tensor is an inference tensor.
+
+Minimum compatible version: PyTorch 2.16. Build time minimum version: PyTorch 2.16.
+
+Returns:
+
+true if the tensor is an inference tensor, false otherwise.
+
 **Example:**
 
 ```

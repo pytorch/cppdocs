@@ -356,6 +356,23 @@ This overload accepts lambdas, e.g., `CppFunction([](const Tensor& self) { ...`
 
 })
 
+template<typename Func>
+inline explicit CppFunction(Func *f, NoInferSchemaTag, std::enable_if_t<c10::guts::is_function_type<Func>::value, std::nullptr_t> = nullptr)
+
+This overload accepts function pointers, e.g., `CppFunction(&add_impl, NoInferSchemaTag())`
+
+template<typename FuncPtr>
+inline explicit CppFunction(FuncPtr f, NoInferSchemaTag, std::enable_if_t<c10::is_compile_time_function_pointer<FuncPtr>::value, std::nullptr_t> = nullptr)
+
+This overload accepts compile time function pointers, e.g., `CppFunction(TORCH_FN(add_impl), NoInferSchemaTag())`
+
+template<typename Lambda>
+inline explicit CppFunction(Lambda &&f, NoInferSchemaTag, std::enable_if_t<c10::guts::is_functor<std::decay_t<Lambda>>::value, std::nullptr_t> = nullptr)
+
+This overload accepts lambdas, e.g., `CppFunction([](const Tensor& self) { ...`
+
+}. NoInferSchemaTag())
+
 ~CppFunction()
 
 CppFunction(const CppFunction&) = delete
