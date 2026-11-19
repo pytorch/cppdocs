@@ -520,7 +520,7 @@ Stable version of the new_empty op (2.10 version with full kwargs).
 
 Creates a new uninitialized tensor with the specified size and options. This version supports all tensor creation kwargs. For versions < 2.10, a simpler overload that only takes dtype is available.
 
-Minimum compatible version: PyTorch 2.10.
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.10.
 
 Parameters:
 
@@ -541,7 +541,7 @@ Stable version of the new_zeros op (2.10 version with full kwargs).
 
 Creates a new zero-filled tensor with the specified size and options. This version supports all tensor creation kwargs. For versions < 2.10, a simpler overload that only takes dtype is available.
 
-Minimum compatible version: PyTorch 2.10.
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.10.
 
 Parameters:
 
@@ -645,7 +645,7 @@ Stable version of the clone op.
 
 Returns a copy of the input tensor. The returned tensor has the same data and type as the input, but is stored in a new memory location.
 
-Minimum compatible version: PyTorch 2.9.
+Minimum compatible version: PyTorch 2.9. Build time minimum version: PyTorch 2.10.
 
 Note
 
@@ -1006,7 +1006,7 @@ Stable version of the zero_ op.
 
 Fills the input tensor with zeros in-place and returns it. Unlike the tensor method version (t.zero_()), this is called as a function: zero_(t).
 
-Minimum compatible version: PyTorch 2.9.
+Minimum compatible version: PyTorch 2.9. Build time minimum version: PyTorch 2.9.
 
 Parameters:
 
@@ -1022,7 +1022,7 @@ Stable version of the copy_ op.
 
 Copies the elements from the source tensor into the destination tensor in-place and returns the destination tensor. The tensors must be broadcastable.
 
-Minimum compatible version: PyTorch 2.9.
+Minimum compatible version: PyTorch 2.9. Build time minimum version: PyTorch 2.10.
 
 Parameters:
 
