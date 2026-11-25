@@ -57,6 +57,42 @@ The current device index.
 // Previous device is restored
 ```
 
+## InferenceMode Class
+
+class InferenceMode
+
+ABI-stable counterpart to c10::InferenceMode in c10/core/InferenceMode.h.
+
+Preserves the thread-local RAII behavior of c10::InferenceMode. Destroy guards on their creating thread, in reverse construction order.
+
+The stable wrapper owns a heap-allocated guard through an opaque handle. Construction can throw if allocation fails.
+
+Minimum compatible version: PyTorch 2.16. Build time minimum version: PyTorch 2.16.
+
+Public Functions
+
+inline InferenceMode(bool enabled = true)
+
+Sets inference mode on the current thread.
+
+InferenceMode(const InferenceMode&) = delete
+
+InferenceMode(InferenceMode&&) = delete
+
+InferenceMode &operator=(const InferenceMode&) = delete
+
+InferenceMode &operator=(InferenceMode&&) = delete
+
+inline ~InferenceMode()
+
+Restores the previous thread-local state.
+
+Public Static Functions
+
+static inline bool is_enabled()
+
+Returns whether inference mode is enabled on the current thread.
+
 ## Stream
 
 class Stream
@@ -394,3 +430,16 @@ Minimum compatible version: PyTorch 2.10.
 Returns:
 
 The number of threads
+
+## CPU Capability Queries
+
+template<typename T>
+inline std::optional<T> torch::stable::cpu::get_cpu_capability(const char *key)
+
+Looks up a key in the CPU capabilities reported by at::cpu::get_cpu_capabilities().
+
+The runtime snapshots the ATen map on first lookup and exposes individual values by NUL-terminated key, keeping the map and IValue types behind the ABI.
+
+T must be int64_t, bool, or std::string. A missing key returns std::nullopt. A key with a different value type raises an error.
+
+Minimum compatible version: PyTorch 2.16. Build time minimum version: PyTorch 2.16.
