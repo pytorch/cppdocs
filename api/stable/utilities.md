@@ -57,6 +57,50 @@ The current device index.
 // Previous device is restored
 ```
 
+## Generator Class
+
+class Generator
+
+An ABI stable wrapper around a PyTorch Generator.
+
+Modeled after at::Generator. Copies share the same underlying RNG state.
+
+Minimum compatible version: PyTorch 2.13.
+
+Public Functions
+
+inline explicit Generator(AtenGeneratorHandle gen)
+
+Constructs a Generator from an existing AtenGeneratorHandle.
+
+Steals ownership of the provided AtenGeneratorHandle.
+
+Minimum compatible version: PyTorch 2.13.
+
+Parameters:
+
+**gen** - The AtenGeneratorHandle to wrap. Ownership is transferred to this Generator.
+
+inline AtenGeneratorHandle get() const
+
+Returns a borrowed reference to the underlying AtenGeneratorHandle.
+
+Minimum compatible version: PyTorch 2.13.
+
+Returns:
+
+The underlying AtenGeneratorHandle.
+
+[Device](operators.html#_CPPv4N5torch6stable6DeviceE) device() const
+
+Returns the device of the generator.
+
+Minimum compatible version: PyTorch 2.13.
+
+Returns:
+
+The [Device](operators.html#PyTorchclasstorch_1_1stable_1_1_device) on which the generator resides.
+
 ## InferenceMode Class
 
 class InferenceMode

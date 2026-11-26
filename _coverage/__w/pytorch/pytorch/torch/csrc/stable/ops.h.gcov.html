@@ -31,13 +31,13 @@
             <td class="headerValue">PyTorch C++ API Doc Coverage</td>
             <td></td>
             <td class="headerItem">Lines:</td>
-            <td class="headerCovTableEntry">54</td>
-            <td class="headerCovTableEntry">54</td>
+            <td class="headerCovTableEntry">68</td>
+            <td class="headerCovTableEntry">68</td>
             <td class="headerCovTableEntryHi">100.0 %</td>
           </tr>
           <tr>
             <td class="headerItem">Date:</td>
-            <td class="headerValue">2026-11-25 00:44:46</td>
+            <td class="headerValue">2026-11-26 00:38:26</td>
             <td></td>
           </tr>
           <tr>
@@ -1768,36 +1768,530 @@
 <a name="1702"><span class="lineNum">    1702 </span>            :   return torch::stable::detail::to&lt;torch::stable::Tensor&gt;(stack[0]);</a>
 <a name="1703"><span class="lineNum">    1703 </span>            : }</a>
 <a name="1704"><span class="lineNum">    1704 </span>            : </a>
-<a name="1705"><span class="lineNum">    1705 </span>            : #endif // TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_10_0</a>
-<a name="1706"><span class="lineNum">    1706 </span>            : </a>
-<a name="1707"><span class="lineNum">    1707 </span>            : #if TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_16_0</a>
-<a name="1708"><span class="lineNum">    1708 </span>            : </a>
-<a name="1709"><span class="lineNum">    1709 </span>            : /// Stable version of the add.Tensor op.</a>
-<a name="1710"><span class="lineNum">    1710 </span>            : ///</a>
-<a name="1711"><span class="lineNum">    1711 </span>            : /// Adds the other tensor to self, scaled by alpha: self + alpha * other.</a>
-<a name="1712"><span class="lineNum">    1712 </span>            : /// Unlike at::add, alpha is a double rather than a Scalar. Adding two</a>
-<a name="1713"><span class="lineNum">    1713 </span>            : /// integral or boolean tensors is not supported.</a>
-<a name="1714"><span class="lineNum">    1714 </span>            : ///</a>
-<a name="1715"><span class="lineNum">    1715 </span>            : /// Minimum compatible version: PyTorch 2.16.</a>
-<a name="1716"><span class="lineNum">    1716 </span>            : /// Build time minimum version: PyTorch 2.16.</a>
-<a name="1717"><span class="lineNum">    1717 </span>            : ///</a>
-<a name="1718"><span class="lineNum">    1718 </span>            : /// @param self The input tensor.</a>
-<a name="1719"><span class="lineNum">    1719 </span>            : /// @param other The tensor to add.</a>
-<a name="1720"><span class="lineNum">    1720 </span>            : /// @param alpha The scaling factor for other. Defaults to 1.0.</a>
-<a name="1721"><span class="lineNum">    1721 </span>            : /// @return The result of self + alpha * other.</a>
-<a name="1722"><span class="lineNum">    1722 </span><span class="lineCov">          1 : inline torch::stable::Tensor add(</span></a>
-<a name="1723"><span class="lineNum">    1723 </span>            :     const torch::stable::Tensor&amp; self,</a>
-<a name="1724"><span class="lineNum">    1724 </span>            :     const torch::stable::Tensor&amp; other,</a>
-<a name="1725"><span class="lineNum">    1725 </span>            :     double alpha = 1.0) {</a>
-<a name="1726"><span class="lineNum">    1726 </span>            :   AtenTensorHandle ret0;</a>
-<a name="1727"><span class="lineNum">    1727 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(</a>
-<a name="1728"><span class="lineNum">    1728 </span>            :       aoti_torch_aten_add_Tensor(self.get(), other.get(), alpha, &amp;ret0));</a>
-<a name="1729"><span class="lineNum">    1729 </span>            :   return torch::stable::Tensor(ret0);</a>
-<a name="1730"><span class="lineNum">    1730 </span>            : }</a>
-<a name="1731"><span class="lineNum">    1731 </span>            : </a>
-<a name="1732"><span class="lineNum">    1732 </span>            : #endif // TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_16_0</a>
-<a name="1733"><span class="lineNum">    1733 </span>            : </a>
-<a name="1734"><span class="lineNum">    1734 </span>            : HIDDEN_NAMESPACE_END(torch, stable)</a>
+<a name="1705"><span class="lineNum">    1705 </span>            : /// Stable version of the roll op.</a>
+<a name="1706"><span class="lineNum">    1706 </span>            : ///</a>
+<a name="1707"><span class="lineNum">    1707 </span>            : /// Shifts elements along the specified dimensions.</a>
+<a name="1708"><span class="lineNum">    1708 </span>            : ///</a>
+<a name="1709"><span class="lineNum">    1709 </span>            : /// Minimum compatible version: PyTorch 2.10.</a>
+<a name="1710"><span class="lineNum">    1710 </span>            : /// Build time minimum version: PyTorch 2.16.</a>
+<a name="1711"><span class="lineNum">    1711 </span>            : ///</a>
+<a name="1712"><span class="lineNum">    1712 </span>            : /// @note Targeting PyTorch 2.16 or later via TORCH_TARGET_VERSION reduces</a>
+<a name="1713"><span class="lineNum">    1713 </span>            : ///       host-side call overhead by using a typed C shim. Targets from 2.10</a>
+<a name="1714"><span class="lineNum">    1714 </span>            : ///       through 2.15 use boxed dispatch.</a>
+<a name="1715"><span class="lineNum">    1715 </span>            : ///</a>
+<a name="1716"><span class="lineNum">    1716 </span>            : /// @param self The input tensor.</a>
+<a name="1717"><span class="lineNum">    1717 </span>            : /// @param shifts The shifts to apply.</a>
+<a name="1718"><span class="lineNum">    1718 </span>            : /// @param dims The dimensions to roll. An empty list rolls the flattened</a>
+<a name="1719"><span class="lineNum">    1719 </span>            : /// tensor.</a>
+<a name="1720"><span class="lineNum">    1720 </span>            : /// @return The rolled tensor.</a>
+<a name="1721"><span class="lineNum">    1721 </span><span class="lineCov">          1 : inline torch::stable::Tensor roll(</span></a>
+<a name="1722"><span class="lineNum">    1722 </span>            :     const torch::stable::Tensor&amp; self,</a>
+<a name="1723"><span class="lineNum">    1723 </span>            :     torch::headeronly::IntHeaderOnlyArrayRef shifts,</a>
+<a name="1724"><span class="lineNum">    1724 </span>            :     torch::headeronly::IntHeaderOnlyArrayRef dims = {}) {</a>
+<a name="1725"><span class="lineNum">    1725 </span>            : #if TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_16_0</a>
+<a name="1726"><span class="lineNum">    1726 </span>            :   AtenTensorHandle ret0 = nullptr;</a>
+<a name="1727"><span class="lineNum">    1727 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(aoti_torch_aten_roll(</a>
+<a name="1728"><span class="lineNum">    1728 </span>            :       self.get(),</a>
+<a name="1729"><span class="lineNum">    1729 </span>            :       shifts.data(),</a>
+<a name="1730"><span class="lineNum">    1730 </span>            :       static_cast&lt;int64_t&gt;(shifts.size()),</a>
+<a name="1731"><span class="lineNum">    1731 </span>            :       dims.data(),</a>
+<a name="1732"><span class="lineNum">    1732 </span>            :       static_cast&lt;int64_t&gt;(dims.size()),</a>
+<a name="1733"><span class="lineNum">    1733 </span>            :       &amp;ret0));</a>
+<a name="1734"><span class="lineNum">    1734 </span>            :   return torch::stable::Tensor(ret0);</a>
+<a name="1735"><span class="lineNum">    1735 </span>            : #elif TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_10_0</a>
+<a name="1736"><span class="lineNum">    1736 </span>            :   std::array&lt;StableIValue, 3&gt; stack{</a>
+<a name="1737"><span class="lineNum">    1737 </span>            :       torch::stable::detail::from(self),</a>
+<a name="1738"><span class="lineNum">    1738 </span>            :       torch::stable::detail::from(shifts),</a>
+<a name="1739"><span class="lineNum">    1739 </span>            :       torch::stable::detail::from(dims)};</a>
+<a name="1740"><span class="lineNum">    1740 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(</a>
+<a name="1741"><span class="lineNum">    1741 </span>            :       torch_call_dispatcher(&quot;aten::roll&quot;, &quot;&quot;, stack.data(), TORCH_ABI_VERSION));</a>
+<a name="1742"><span class="lineNum">    1742 </span>            :   return torch::stable::detail::to&lt;torch::stable::Tensor&gt;(stack[0]);</a>
+<a name="1743"><span class="lineNum">    1743 </span>            : #endif</a>
+<a name="1744"><span class="lineNum">    1744 </span>            : }</a>
+<a name="1745"><span class="lineNum">    1745 </span>            : </a>
+<a name="1746"><span class="lineNum">    1746 </span>            : /// Stable version of the repeat_interleave.Tensor op.</a>
+<a name="1747"><span class="lineNum">    1747 </span>            : ///</a>
+<a name="1748"><span class="lineNum">    1748 </span>            : /// Returns indices repeated according to the counts.</a>
+<a name="1749"><span class="lineNum">    1749 </span>            : ///</a>
+<a name="1750"><span class="lineNum">    1750 </span>            : /// Minimum compatible version: PyTorch 2.10.</a>
+<a name="1751"><span class="lineNum">    1751 </span>            : /// Build time minimum version: PyTorch 2.16.</a>
+<a name="1752"><span class="lineNum">    1752 </span>            : ///</a>
+<a name="1753"><span class="lineNum">    1753 </span>            : /// @note Targeting PyTorch 2.16 or later via TORCH_TARGET_VERSION reduces</a>
+<a name="1754"><span class="lineNum">    1754 </span>            : ///       host-side call overhead by using a typed C shim. Targets from 2.10</a>
+<a name="1755"><span class="lineNum">    1755 </span>            : ///       through 2.15 use boxed dispatch.</a>
+<a name="1756"><span class="lineNum">    1756 </span>            : ///</a>
+<a name="1757"><span class="lineNum">    1757 </span>            : /// @param repeats The repeat counts.</a>
+<a name="1758"><span class="lineNum">    1758 </span>            : /// @param output_size The optional total output size.</a>
+<a name="1759"><span class="lineNum">    1759 </span>            : /// @return The result tensor.</a>
+<a name="1760"><span class="lineNum">    1760 </span><span class="lineCov">          1 : inline torch::stable::Tensor repeat_interleave(</span></a>
+<a name="1761"><span class="lineNum">    1761 </span>            :     const torch::stable::Tensor&amp; repeats,</a>
+<a name="1762"><span class="lineNum">    1762 </span>            :     std::optional&lt;int64_t&gt; output_size = std::nullopt) {</a>
+<a name="1763"><span class="lineNum">    1763 </span>            : #if TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_16_0</a>
+<a name="1764"><span class="lineNum">    1764 </span>            :   AtenTensorHandle ret0 = nullptr;</a>
+<a name="1765"><span class="lineNum">    1765 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(aoti_torch_aten_repeat_interleave_Tensor(</a>
+<a name="1766"><span class="lineNum">    1766 </span>            :       repeats.get(), output_size ? &amp;*output_size : nullptr, &amp;ret0));</a>
+<a name="1767"><span class="lineNum">    1767 </span>            :   return torch::stable::Tensor(ret0);</a>
+<a name="1768"><span class="lineNum">    1768 </span>            : #elif TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_10_0</a>
+<a name="1769"><span class="lineNum">    1769 </span>            :   std::array&lt;StableIValue, 2&gt; stack{</a>
+<a name="1770"><span class="lineNum">    1770 </span>            :       torch::stable::detail::from(repeats),</a>
+<a name="1771"><span class="lineNum">    1771 </span>            :       torch::stable::detail::from(output_size)};</a>
+<a name="1772"><span class="lineNum">    1772 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(torch_call_dispatcher(</a>
+<a name="1773"><span class="lineNum">    1773 </span>            :       &quot;aten::repeat_interleave&quot;, &quot;Tensor&quot;, stack.data(), TORCH_ABI_VERSION));</a>
+<a name="1774"><span class="lineNum">    1774 </span>            :   return torch::stable::detail::to&lt;torch::stable::Tensor&gt;(stack[0]);</a>
+<a name="1775"><span class="lineNum">    1775 </span>            : #endif</a>
+<a name="1776"><span class="lineNum">    1776 </span>            : }</a>
+<a name="1777"><span class="lineNum">    1777 </span>            : </a>
+<a name="1778"><span class="lineNum">    1778 </span>            : /// Stable version of the repeat_interleave.self_Tensor op.</a>
+<a name="1779"><span class="lineNum">    1779 </span>            : ///</a>
+<a name="1780"><span class="lineNum">    1780 </span>            : /// Repeats elements according to the supplied counts.</a>
+<a name="1781"><span class="lineNum">    1781 </span>            : ///</a>
+<a name="1782"><span class="lineNum">    1782 </span>            : /// Minimum compatible version: PyTorch 2.10.</a>
+<a name="1783"><span class="lineNum">    1783 </span>            : /// Build time minimum version: PyTorch 2.16.</a>
+<a name="1784"><span class="lineNum">    1784 </span>            : ///</a>
+<a name="1785"><span class="lineNum">    1785 </span>            : /// @note Targeting PyTorch 2.16 or later via TORCH_TARGET_VERSION reduces</a>
+<a name="1786"><span class="lineNum">    1786 </span>            : ///       host-side call overhead by using a typed C shim. Targets from 2.10</a>
+<a name="1787"><span class="lineNum">    1787 </span>            : ///       through 2.15 use boxed dispatch.</a>
+<a name="1788"><span class="lineNum">    1788 </span>            : ///</a>
+<a name="1789"><span class="lineNum">    1789 </span>            : /// @param self The input tensor.</a>
+<a name="1790"><span class="lineNum">    1790 </span>            : /// @param repeats The repeat counts.</a>
+<a name="1791"><span class="lineNum">    1791 </span>            : /// @param dim The optional dimension to repeat.</a>
+<a name="1792"><span class="lineNum">    1792 </span>            : /// @param output_size The optional output size along the repeated dimension.</a>
+<a name="1793"><span class="lineNum">    1793 </span>            : /// @return The result tensor.</a>
+<a name="1794"><span class="lineNum">    1794 </span><span class="lineCov">          1 : inline torch::stable::Tensor repeat_interleave(</span></a>
+<a name="1795"><span class="lineNum">    1795 </span>            :     const torch::stable::Tensor&amp; self,</a>
+<a name="1796"><span class="lineNum">    1796 </span>            :     const torch::stable::Tensor&amp; repeats,</a>
+<a name="1797"><span class="lineNum">    1797 </span>            :     std::optional&lt;int64_t&gt; dim = std::nullopt,</a>
+<a name="1798"><span class="lineNum">    1798 </span>            :     std::optional&lt;int64_t&gt; output_size = std::nullopt) {</a>
+<a name="1799"><span class="lineNum">    1799 </span>            : #if TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_16_0</a>
+<a name="1800"><span class="lineNum">    1800 </span>            :   AtenTensorHandle ret0 = nullptr;</a>
+<a name="1801"><span class="lineNum">    1801 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(aoti_torch_aten_repeat_interleave_self_Tensor(</a>
+<a name="1802"><span class="lineNum">    1802 </span>            :       self.get(),</a>
+<a name="1803"><span class="lineNum">    1803 </span>            :       repeats.get(),</a>
+<a name="1804"><span class="lineNum">    1804 </span>            :       dim ? &amp;*dim : nullptr,</a>
+<a name="1805"><span class="lineNum">    1805 </span>            :       output_size ? &amp;*output_size : nullptr,</a>
+<a name="1806"><span class="lineNum">    1806 </span>            :       &amp;ret0));</a>
+<a name="1807"><span class="lineNum">    1807 </span>            :   return torch::stable::Tensor(ret0);</a>
+<a name="1808"><span class="lineNum">    1808 </span>            : #elif TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_10_0</a>
+<a name="1809"><span class="lineNum">    1809 </span>            :   std::array&lt;StableIValue, 4&gt; stack{</a>
+<a name="1810"><span class="lineNum">    1810 </span>            :       torch::stable::detail::from(self),</a>
+<a name="1811"><span class="lineNum">    1811 </span>            :       torch::stable::detail::from(repeats),</a>
+<a name="1812"><span class="lineNum">    1812 </span>            :       torch::stable::detail::from(dim),</a>
+<a name="1813"><span class="lineNum">    1813 </span>            :       torch::stable::detail::from(output_size)};</a>
+<a name="1814"><span class="lineNum">    1814 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(torch_call_dispatcher(</a>
+<a name="1815"><span class="lineNum">    1815 </span>            :       &quot;aten::repeat_interleave&quot;,</a>
+<a name="1816"><span class="lineNum">    1816 </span>            :       &quot;self_Tensor&quot;,</a>
+<a name="1817"><span class="lineNum">    1817 </span>            :       stack.data(),</a>
+<a name="1818"><span class="lineNum">    1818 </span>            :       TORCH_ABI_VERSION));</a>
+<a name="1819"><span class="lineNum">    1819 </span>            :   return torch::stable::detail::to&lt;torch::stable::Tensor&gt;(stack[0]);</a>
+<a name="1820"><span class="lineNum">    1820 </span>            : #endif</a>
+<a name="1821"><span class="lineNum">    1821 </span>            : }</a>
+<a name="1822"><span class="lineNum">    1822 </span>            : </a>
+<a name="1823"><span class="lineNum">    1823 </span>            : /// Stable version of the repeat_interleave.self_int op.</a>
+<a name="1824"><span class="lineNum">    1824 </span>            : ///</a>
+<a name="1825"><span class="lineNum">    1825 </span>            : /// Repeats each element along a dimension.</a>
+<a name="1826"><span class="lineNum">    1826 </span>            : ///</a>
+<a name="1827"><span class="lineNum">    1827 </span>            : /// Minimum compatible version: PyTorch 2.10.</a>
+<a name="1828"><span class="lineNum">    1828 </span>            : /// Build time minimum version: PyTorch 2.16.</a>
+<a name="1829"><span class="lineNum">    1829 </span>            : ///</a>
+<a name="1830"><span class="lineNum">    1830 </span>            : /// @note Targeting PyTorch 2.16 or later via TORCH_TARGET_VERSION reduces</a>
+<a name="1831"><span class="lineNum">    1831 </span>            : ///       host-side call overhead by using a typed C shim. Targets from 2.10</a>
+<a name="1832"><span class="lineNum">    1832 </span>            : ///       through 2.15 use boxed dispatch.</a>
+<a name="1833"><span class="lineNum">    1833 </span>            : ///</a>
+<a name="1834"><span class="lineNum">    1834 </span>            : /// @param self The input tensor.</a>
+<a name="1835"><span class="lineNum">    1835 </span>            : /// @param repeats The number of repeats per element.</a>
+<a name="1836"><span class="lineNum">    1836 </span>            : /// @param dim The dimension to repeat. Defaults to the flattened input.</a>
+<a name="1837"><span class="lineNum">    1837 </span>            : /// @param output_size The optional output size along the repeated dimension.</a>
+<a name="1838"><span class="lineNum">    1838 </span>            : /// @return The tensor with repeated elements.</a>
+<a name="1839"><span class="lineNum">    1839 </span><span class="lineCov">          1 : inline torch::stable::Tensor repeat_interleave(</span></a>
+<a name="1840"><span class="lineNum">    1840 </span>            :     const torch::stable::Tensor&amp; self,</a>
+<a name="1841"><span class="lineNum">    1841 </span>            :     int64_t repeats,</a>
+<a name="1842"><span class="lineNum">    1842 </span>            :     std::optional&lt;int64_t&gt; dim = std::nullopt,</a>
+<a name="1843"><span class="lineNum">    1843 </span>            :     std::optional&lt;int64_t&gt; output_size = std::nullopt) {</a>
+<a name="1844"><span class="lineNum">    1844 </span>            : #if TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_16_0</a>
+<a name="1845"><span class="lineNum">    1845 </span>            :   AtenTensorHandle ret0 = nullptr;</a>
+<a name="1846"><span class="lineNum">    1846 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(aoti_torch_aten_repeat_interleave_self_int(</a>
+<a name="1847"><span class="lineNum">    1847 </span>            :       self.get(),</a>
+<a name="1848"><span class="lineNum">    1848 </span>            :       repeats,</a>
+<a name="1849"><span class="lineNum">    1849 </span>            :       dim ? &amp;*dim : nullptr,</a>
+<a name="1850"><span class="lineNum">    1850 </span>            :       output_size ? &amp;*output_size : nullptr,</a>
+<a name="1851"><span class="lineNum">    1851 </span>            :       &amp;ret0));</a>
+<a name="1852"><span class="lineNum">    1852 </span>            :   return torch::stable::Tensor(ret0);</a>
+<a name="1853"><span class="lineNum">    1853 </span>            : #elif TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_10_0</a>
+<a name="1854"><span class="lineNum">    1854 </span>            :   std::array&lt;StableIValue, 4&gt; stack{</a>
+<a name="1855"><span class="lineNum">    1855 </span>            :       torch::stable::detail::from(self),</a>
+<a name="1856"><span class="lineNum">    1856 </span>            :       torch::stable::detail::from(repeats),</a>
+<a name="1857"><span class="lineNum">    1857 </span>            :       torch::stable::detail::from(dim),</a>
+<a name="1858"><span class="lineNum">    1858 </span>            :       torch::stable::detail::from(output_size)};</a>
+<a name="1859"><span class="lineNum">    1859 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(torch_call_dispatcher(</a>
+<a name="1860"><span class="lineNum">    1860 </span>            :       &quot;aten::repeat_interleave&quot;, &quot;self_int&quot;, stack.data(), TORCH_ABI_VERSION));</a>
+<a name="1861"><span class="lineNum">    1861 </span>            :   return torch::stable::detail::to&lt;torch::stable::Tensor&gt;(stack[0]);</a>
+<a name="1862"><span class="lineNum">    1862 </span>            : #endif</a>
+<a name="1863"><span class="lineNum">    1863 </span>            : }</a>
+<a name="1864"><span class="lineNum">    1864 </span>            : </a>
+<a name="1865"><span class="lineNum">    1865 </span>            : /// Stable version of the equal op.</a>
+<a name="1866"><span class="lineNum">    1866 </span>            : ///</a>
+<a name="1867"><span class="lineNum">    1867 </span>            : /// Checks whether two tensors have the same shape and elements.</a>
+<a name="1868"><span class="lineNum">    1868 </span>            : ///</a>
+<a name="1869"><span class="lineNum">    1869 </span>            : /// Minimum compatible version: PyTorch 2.10.</a>
+<a name="1870"><span class="lineNum">    1870 </span>            : /// Build time minimum version: PyTorch 2.16.</a>
+<a name="1871"><span class="lineNum">    1871 </span>            : ///</a>
+<a name="1872"><span class="lineNum">    1872 </span>            : /// @note Targeting PyTorch 2.16 or later via TORCH_TARGET_VERSION reduces</a>
+<a name="1873"><span class="lineNum">    1873 </span>            : ///       host-side call overhead by using a typed C shim. Targets from 2.10</a>
+<a name="1874"><span class="lineNum">    1874 </span>            : ///       through 2.15 use boxed dispatch.</a>
+<a name="1875"><span class="lineNum">    1875 </span>            : ///</a>
+<a name="1876"><span class="lineNum">    1876 </span>            : /// @param self The input tensor.</a>
+<a name="1877"><span class="lineNum">    1877 </span>            : /// @param other The tensor to compare with self.</a>
+<a name="1878"><span class="lineNum">    1878 </span>            : /// @return Whether the tensors are equal.</a>
+<a name="1879"><span class="lineNum">    1879 </span><span class="lineCov">          1 : inline bool equal(</span></a>
+<a name="1880"><span class="lineNum">    1880 </span>            :     const torch::stable::Tensor&amp; self,</a>
+<a name="1881"><span class="lineNum">    1881 </span>            :     const torch::stable::Tensor&amp; other) {</a>
+<a name="1882"><span class="lineNum">    1882 </span>            : #if TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_16_0</a>
+<a name="1883"><span class="lineNum">    1883 </span>            :   int32_t ret0 = 0;</a>
+<a name="1884"><span class="lineNum">    1884 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(</a>
+<a name="1885"><span class="lineNum">    1885 </span>            :       aoti_torch_aten_equal(self.get(), other.get(), &amp;ret0));</a>
+<a name="1886"><span class="lineNum">    1886 </span>            :   return ret0 != 0;</a>
+<a name="1887"><span class="lineNum">    1887 </span>            : #elif TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_10_0</a>
+<a name="1888"><span class="lineNum">    1888 </span>            :   std::array&lt;StableIValue, 2&gt; stack{</a>
+<a name="1889"><span class="lineNum">    1889 </span>            :       torch::stable::detail::from(self), torch::stable::detail::from(other)};</a>
+<a name="1890"><span class="lineNum">    1890 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(torch_call_dispatcher(</a>
+<a name="1891"><span class="lineNum">    1891 </span>            :       &quot;aten::equal&quot;, &quot;&quot;, stack.data(), TORCH_ABI_VERSION));</a>
+<a name="1892"><span class="lineNum">    1892 </span>            :   return torch::stable::detail::to&lt;bool&gt;(stack[0]);</a>
+<a name="1893"><span class="lineNum">    1893 </span>            : #endif</a>
+<a name="1894"><span class="lineNum">    1894 </span>            : }</a>
+<a name="1895"><span class="lineNum">    1895 </span>            : </a>
+<a name="1896"><span class="lineNum">    1896 </span>            : /// Stable version of the nonzero op.</a>
+<a name="1897"><span class="lineNum">    1897 </span>            : ///</a>
+<a name="1898"><span class="lineNum">    1898 </span>            : /// Finds the indices of nonzero elements.</a>
+<a name="1899"><span class="lineNum">    1899 </span>            : ///</a>
+<a name="1900"><span class="lineNum">    1900 </span>            : /// Minimum compatible version: PyTorch 2.10.</a>
+<a name="1901"><span class="lineNum">    1901 </span>            : /// Build time minimum version: PyTorch 2.16.</a>
+<a name="1902"><span class="lineNum">    1902 </span>            : ///</a>
+<a name="1903"><span class="lineNum">    1903 </span>            : /// @note Targeting PyTorch 2.16 or later via TORCH_TARGET_VERSION reduces</a>
+<a name="1904"><span class="lineNum">    1904 </span>            : ///       host-side call overhead by using a typed C shim. Targets from 2.10</a>
+<a name="1905"><span class="lineNum">    1905 </span>            : ///       through 2.15 use boxed dispatch.</a>
+<a name="1906"><span class="lineNum">    1906 </span>            : ///</a>
+<a name="1907"><span class="lineNum">    1907 </span>            : /// @param self The input tensor.</a>
+<a name="1908"><span class="lineNum">    1908 </span>            : /// @return A tensor of nonzero indices.</a>
+<a name="1909"><span class="lineNum">    1909 </span><span class="lineCov">          1 : inline torch::stable::Tensor nonzero(const torch::stable::Tensor&amp; self) {</span></a>
+<a name="1910"><span class="lineNum">    1910 </span>            : #if TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_16_0</a>
+<a name="1911"><span class="lineNum">    1911 </span>            :   AtenTensorHandle ret0 = nullptr;</a>
+<a name="1912"><span class="lineNum">    1912 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(aoti_torch_aten_nonzero(self.get(), &amp;ret0));</a>
+<a name="1913"><span class="lineNum">    1913 </span>            :   return torch::stable::Tensor(ret0);</a>
+<a name="1914"><span class="lineNum">    1914 </span>            : #elif TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_10_0</a>
+<a name="1915"><span class="lineNum">    1915 </span>            :   std::array&lt;StableIValue, 1&gt; stack{torch::stable::detail::from(self)};</a>
+<a name="1916"><span class="lineNum">    1916 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(torch_call_dispatcher(</a>
+<a name="1917"><span class="lineNum">    1917 </span>            :       &quot;aten::nonzero&quot;, &quot;&quot;, stack.data(), TORCH_ABI_VERSION));</a>
+<a name="1918"><span class="lineNum">    1918 </span>            :   return torch::stable::detail::to&lt;torch::stable::Tensor&gt;(stack[0]);</a>
+<a name="1919"><span class="lineNum">    1919 </span>            : #endif</a>
+<a name="1920"><span class="lineNum">    1920 </span>            : }</a>
+<a name="1921"><span class="lineNum">    1921 </span>            : </a>
+<a name="1922"><span class="lineNum">    1922 </span>            : /// Stable version of the expand op.</a>
+<a name="1923"><span class="lineNum">    1923 </span>            : ///</a>
+<a name="1924"><span class="lineNum">    1924 </span>            : /// Returns a broadcasted view of the input tensor. Exposed as a free</a>
+<a name="1925"><span class="lineNum">    1925 </span>            : /// function, consistent with other stable tensor operations.</a>
+<a name="1926"><span class="lineNum">    1926 </span>            : ///</a>
+<a name="1927"><span class="lineNum">    1927 </span>            : /// Minimum compatible version: PyTorch 2.10.</a>
+<a name="1928"><span class="lineNum">    1928 </span>            : /// Build time minimum version: PyTorch 2.16.</a>
+<a name="1929"><span class="lineNum">    1929 </span>            : ///</a>
+<a name="1930"><span class="lineNum">    1930 </span>            : /// @note Targeting PyTorch 2.16 or later via TORCH_TARGET_VERSION reduces</a>
+<a name="1931"><span class="lineNum">    1931 </span>            : ///       host-side call overhead by using a typed C shim. Targets from 2.10</a>
+<a name="1932"><span class="lineNum">    1932 </span>            : ///       through 2.15 use boxed dispatch.</a>
+<a name="1933"><span class="lineNum">    1933 </span>            : ///</a>
+<a name="1934"><span class="lineNum">    1934 </span>            : /// @param self The input tensor.</a>
+<a name="1935"><span class="lineNum">    1935 </span>            : /// @param size The target sizes.</a>
+<a name="1936"><span class="lineNum">    1936 </span>            : /// @param implicit Whether the expansion is implicit. Defaults to false.</a>
+<a name="1937"><span class="lineNum">    1937 </span>            : /// @return The expanded view.</a>
+<a name="1938"><span class="lineNum">    1938 </span><span class="lineCov">          1 : inline torch::stable::Tensor expand(</span></a>
+<a name="1939"><span class="lineNum">    1939 </span>            :     const torch::stable::Tensor&amp; self,</a>
+<a name="1940"><span class="lineNum">    1940 </span>            :     torch::headeronly::IntHeaderOnlyArrayRef size,</a>
+<a name="1941"><span class="lineNum">    1941 </span>            :     bool implicit = false) {</a>
+<a name="1942"><span class="lineNum">    1942 </span>            : #if TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_16_0</a>
+<a name="1943"><span class="lineNum">    1943 </span>            :   AtenTensorHandle ret0 = nullptr;</a>
+<a name="1944"><span class="lineNum">    1944 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(aoti_torch_aten_expand(</a>
+<a name="1945"><span class="lineNum">    1945 </span>            :       self.get(),</a>
+<a name="1946"><span class="lineNum">    1946 </span>            :       size.data(),</a>
+<a name="1947"><span class="lineNum">    1947 </span>            :       static_cast&lt;int64_t&gt;(size.size()),</a>
+<a name="1948"><span class="lineNum">    1948 </span>            :       implicit,</a>
+<a name="1949"><span class="lineNum">    1949 </span>            :       &amp;ret0));</a>
+<a name="1950"><span class="lineNum">    1950 </span>            :   return torch::stable::Tensor(ret0);</a>
+<a name="1951"><span class="lineNum">    1951 </span>            : #elif TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_10_0</a>
+<a name="1952"><span class="lineNum">    1952 </span>            :   std::array&lt;StableIValue, 3&gt; stack{</a>
+<a name="1953"><span class="lineNum">    1953 </span>            :       torch::stable::detail::from(self),</a>
+<a name="1954"><span class="lineNum">    1954 </span>            :       torch::stable::detail::from(size),</a>
+<a name="1955"><span class="lineNum">    1955 </span>            :       torch::stable::detail::from(implicit)};</a>
+<a name="1956"><span class="lineNum">    1956 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(torch_call_dispatcher(</a>
+<a name="1957"><span class="lineNum">    1957 </span>            :       &quot;aten::expand&quot;, &quot;&quot;, stack.data(), TORCH_ABI_VERSION));</a>
+<a name="1958"><span class="lineNum">    1958 </span>            :   return torch::stable::detail::to&lt;torch::stable::Tensor&gt;(stack[0]);</a>
+<a name="1959"><span class="lineNum">    1959 </span>            : #endif</a>
+<a name="1960"><span class="lineNum">    1960 </span>            : }</a>
+<a name="1961"><span class="lineNum">    1961 </span>            : </a>
+<a name="1962"><span class="lineNum">    1962 </span>            : /// Stable version of the all.dim op.</a>
+<a name="1963"><span class="lineNum">    1963 </span>            : ///</a>
+<a name="1964"><span class="lineNum">    1964 </span>            : /// Tests whether all elements along a dimension evaluate to true.</a>
+<a name="1965"><span class="lineNum">    1965 </span>            : ///</a>
+<a name="1966"><span class="lineNum">    1966 </span>            : /// Minimum compatible version: PyTorch 2.10.</a>
+<a name="1967"><span class="lineNum">    1967 </span>            : /// Build time minimum version: PyTorch 2.16.</a>
+<a name="1968"><span class="lineNum">    1968 </span>            : ///</a>
+<a name="1969"><span class="lineNum">    1969 </span>            : /// @note Targeting PyTorch 2.16 or later via TORCH_TARGET_VERSION reduces</a>
+<a name="1970"><span class="lineNum">    1970 </span>            : ///       host-side call overhead by using a typed C shim. Targets from 2.10</a>
+<a name="1971"><span class="lineNum">    1971 </span>            : ///       through 2.15 use boxed dispatch.</a>
+<a name="1972"><span class="lineNum">    1972 </span>            : ///</a>
+<a name="1973"><span class="lineNum">    1973 </span>            : /// @param self The input tensor.</a>
+<a name="1974"><span class="lineNum">    1974 </span>            : /// @param dim The dimension to reduce.</a>
+<a name="1975"><span class="lineNum">    1975 </span>            : /// @param keepdim Whether to retain the reduced dimension.</a>
+<a name="1976"><span class="lineNum">    1976 </span>            : /// @return The result tensor.</a>
+<a name="1977"><span class="lineNum">    1977 </span><span class="lineCov">          1 : inline torch::stable::Tensor all(</span></a>
+<a name="1978"><span class="lineNum">    1978 </span>            :     const torch::stable::Tensor&amp; self,</a>
+<a name="1979"><span class="lineNum">    1979 </span>            :     int64_t dim,</a>
+<a name="1980"><span class="lineNum">    1980 </span>            :     bool keepdim = false) {</a>
+<a name="1981"><span class="lineNum">    1981 </span>            : #if TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_16_0</a>
+<a name="1982"><span class="lineNum">    1982 </span>            :   AtenTensorHandle ret0 = nullptr;</a>
+<a name="1983"><span class="lineNum">    1983 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(</a>
+<a name="1984"><span class="lineNum">    1984 </span>            :       aoti_torch_aten_all_dim(self.get(), dim, keepdim, &amp;ret0));</a>
+<a name="1985"><span class="lineNum">    1985 </span>            :   return torch::stable::Tensor(ret0);</a>
+<a name="1986"><span class="lineNum">    1986 </span>            : #elif TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_10_0</a>
+<a name="1987"><span class="lineNum">    1987 </span>            :   std::array&lt;StableIValue, 3&gt; stack{</a>
+<a name="1988"><span class="lineNum">    1988 </span>            :       torch::stable::detail::from(self),</a>
+<a name="1989"><span class="lineNum">    1989 </span>            :       torch::stable::detail::from(dim),</a>
+<a name="1990"><span class="lineNum">    1990 </span>            :       torch::stable::detail::from(keepdim)};</a>
+<a name="1991"><span class="lineNum">    1991 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(torch_call_dispatcher(</a>
+<a name="1992"><span class="lineNum">    1992 </span>            :       &quot;aten::all&quot;, &quot;dim&quot;, stack.data(), TORCH_ABI_VERSION));</a>
+<a name="1993"><span class="lineNum">    1993 </span>            :   return torch::stable::detail::to&lt;torch::stable::Tensor&gt;(stack[0]);</a>
+<a name="1994"><span class="lineNum">    1994 </span>            : #endif</a>
+<a name="1995"><span class="lineNum">    1995 </span>            : }</a>
+<a name="1996"><span class="lineNum">    1996 </span>            : </a>
+<a name="1997"><span class="lineNum">    1997 </span>            : /// Stable version of the all.dims op.</a>
+<a name="1998"><span class="lineNum">    1998 </span>            : ///</a>
+<a name="1999"><span class="lineNum">    1999 </span>            : /// Tests whether all elements along the given dimensions evaluate to true.</a>
+<a name="2000"><span class="lineNum">    2000 </span>            : ///</a>
+<a name="2001"><span class="lineNum">    2001 </span>            : /// Minimum compatible version: PyTorch 2.10.</a>
+<a name="2002"><span class="lineNum">    2002 </span>            : /// Build time minimum version: PyTorch 2.16.</a>
+<a name="2003"><span class="lineNum">    2003 </span>            : ///</a>
+<a name="2004"><span class="lineNum">    2004 </span>            : /// @note Targeting PyTorch 2.16 or later via TORCH_TARGET_VERSION reduces</a>
+<a name="2005"><span class="lineNum">    2005 </span>            : ///       host-side call overhead by using a typed C shim. Targets from 2.10</a>
+<a name="2006"><span class="lineNum">    2006 </span>            : ///       through 2.15 use boxed dispatch.</a>
+<a name="2007"><span class="lineNum">    2007 </span>            : ///</a>
+<a name="2008"><span class="lineNum">    2008 </span>            : /// @param self The input tensor.</a>
+<a name="2009"><span class="lineNum">    2009 </span>            : /// @param dim The dimensions to reduce. Nullopt reduces every dimension.</a>
+<a name="2010"><span class="lineNum">    2010 </span>            : /// @param keepdim Whether to retain the reduced dimensions.</a>
+<a name="2011"><span class="lineNum">    2011 </span>            : /// @return The result tensor.</a>
+<a name="2012"><span class="lineNum">    2012 </span><span class="lineCov">          1 : inline torch::stable::Tensor all(</span></a>
+<a name="2013"><span class="lineNum">    2013 </span>            :     const torch::stable::Tensor&amp; self,</a>
+<a name="2014"><span class="lineNum">    2014 </span>            :     std::optional&lt;torch::headeronly::IntHeaderOnlyArrayRef&gt; dim,</a>
+<a name="2015"><span class="lineNum">    2015 </span>            :     bool keepdim = false) {</a>
+<a name="2016"><span class="lineNum">    2016 </span>            : #if TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_16_0</a>
+<a name="2017"><span class="lineNum">    2017 </span>            :   const int64_t* dim_data = dim ? dim-&gt;data() : nullptr;</a>
+<a name="2018"><span class="lineNum">    2018 </span>            :   AtenTensorHandle ret0 = nullptr;</a>
+<a name="2019"><span class="lineNum">    2019 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(aoti_torch_aten_all_dims(</a>
+<a name="2020"><span class="lineNum">    2020 </span>            :       self.get(),</a>
+<a name="2021"><span class="lineNum">    2021 </span>            :       dim ? &amp;dim_data : nullptr,</a>
+<a name="2022"><span class="lineNum">    2022 </span>            :       dim ? static_cast&lt;int64_t&gt;(dim-&gt;size()) : 0,</a>
+<a name="2023"><span class="lineNum">    2023 </span>            :       keepdim,</a>
+<a name="2024"><span class="lineNum">    2024 </span>            :       &amp;ret0));</a>
+<a name="2025"><span class="lineNum">    2025 </span>            :   return torch::stable::Tensor(ret0);</a>
+<a name="2026"><span class="lineNum">    2026 </span>            : #elif TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_10_0</a>
+<a name="2027"><span class="lineNum">    2027 </span>            :   std::array&lt;StableIValue, 3&gt; stack{</a>
+<a name="2028"><span class="lineNum">    2028 </span>            :       torch::stable::detail::from(self),</a>
+<a name="2029"><span class="lineNum">    2029 </span>            :       torch::stable::detail::from(dim),</a>
+<a name="2030"><span class="lineNum">    2030 </span>            :       torch::stable::detail::from(keepdim)};</a>
+<a name="2031"><span class="lineNum">    2031 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(torch_call_dispatcher(</a>
+<a name="2032"><span class="lineNum">    2032 </span>            :       &quot;aten::all&quot;, &quot;dims&quot;, stack.data(), TORCH_ABI_VERSION));</a>
+<a name="2033"><span class="lineNum">    2033 </span>            :   return torch::stable::detail::to&lt;torch::stable::Tensor&gt;(stack[0]);</a>
+<a name="2034"><span class="lineNum">    2034 </span>            : #endif</a>
+<a name="2035"><span class="lineNum">    2035 </span>            : }</a>
+<a name="2036"><span class="lineNum">    2036 </span>            : </a>
+<a name="2037"><span class="lineNum">    2037 </span>            : /// Stable version of the all op.</a>
+<a name="2038"><span class="lineNum">    2038 </span>            : ///</a>
+<a name="2039"><span class="lineNum">    2039 </span>            : /// Tests whether all elements evaluate to true.</a>
+<a name="2040"><span class="lineNum">    2040 </span>            : ///</a>
+<a name="2041"><span class="lineNum">    2041 </span>            : /// Minimum compatible version: PyTorch 2.10.</a>
+<a name="2042"><span class="lineNum">    2042 </span>            : /// Build time minimum version: PyTorch 2.16.</a>
+<a name="2043"><span class="lineNum">    2043 </span>            : ///</a>
+<a name="2044"><span class="lineNum">    2044 </span>            : /// @note Targeting PyTorch 2.16 or later via TORCH_TARGET_VERSION reduces</a>
+<a name="2045"><span class="lineNum">    2045 </span>            : ///       host-side call overhead by using a typed C shim. Targets from 2.10</a>
+<a name="2046"><span class="lineNum">    2046 </span>            : ///       through 2.15 use boxed dispatch.</a>
+<a name="2047"><span class="lineNum">    2047 </span>            : ///</a>
+<a name="2048"><span class="lineNum">    2048 </span>            : /// @param self The input tensor.</a>
+<a name="2049"><span class="lineNum">    2049 </span>            : /// @return The scalar result tensor.</a>
+<a name="2050"><span class="lineNum">    2050 </span><span class="lineCov">          1 : inline torch::stable::Tensor all(const torch::stable::Tensor&amp; self) {</span></a>
+<a name="2051"><span class="lineNum">    2051 </span>            : #if TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_16_0</a>
+<a name="2052"><span class="lineNum">    2052 </span>            :   AtenTensorHandle ret0 = nullptr;</a>
+<a name="2053"><span class="lineNum">    2053 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(aoti_torch_aten_all(self.get(), &amp;ret0));</a>
+<a name="2054"><span class="lineNum">    2054 </span>            :   return torch::stable::Tensor(ret0);</a>
+<a name="2055"><span class="lineNum">    2055 </span>            : #elif TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_10_0</a>
+<a name="2056"><span class="lineNum">    2056 </span>            :   std::array&lt;StableIValue, 1&gt; stack{torch::stable::detail::from(self)};</a>
+<a name="2057"><span class="lineNum">    2057 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(</a>
+<a name="2058"><span class="lineNum">    2058 </span>            :       torch_call_dispatcher(&quot;aten::all&quot;, &quot;&quot;, stack.data(), TORCH_ABI_VERSION));</a>
+<a name="2059"><span class="lineNum">    2059 </span>            :   return torch::stable::detail::to&lt;torch::stable::Tensor&gt;(stack[0]);</a>
+<a name="2060"><span class="lineNum">    2060 </span>            : #endif</a>
+<a name="2061"><span class="lineNum">    2061 </span>            : }</a>
+<a name="2062"><span class="lineNum">    2062 </span>            : </a>
+<a name="2063"><span class="lineNum">    2063 </span>            : /// Stable version of the median op.</a>
+<a name="2064"><span class="lineNum">    2064 </span>            : ///</a>
+<a name="2065"><span class="lineNum">    2065 </span>            : /// Computes the median of all elements.</a>
+<a name="2066"><span class="lineNum">    2066 </span>            : ///</a>
+<a name="2067"><span class="lineNum">    2067 </span>            : /// Minimum compatible version: PyTorch 2.10.</a>
+<a name="2068"><span class="lineNum">    2068 </span>            : /// Build time minimum version: PyTorch 2.16.</a>
+<a name="2069"><span class="lineNum">    2069 </span>            : ///</a>
+<a name="2070"><span class="lineNum">    2070 </span>            : /// @note Targeting PyTorch 2.16 or later via TORCH_TARGET_VERSION reduces</a>
+<a name="2071"><span class="lineNum">    2071 </span>            : ///       host-side call overhead by using a typed C shim. Targets from 2.10</a>
+<a name="2072"><span class="lineNum">    2072 </span>            : ///       through 2.15 use boxed dispatch.</a>
+<a name="2073"><span class="lineNum">    2073 </span>            : ///</a>
+<a name="2074"><span class="lineNum">    2074 </span>            : /// @param self The input tensor.</a>
+<a name="2075"><span class="lineNum">    2075 </span>            : /// @return The result tensor.</a>
+<a name="2076"><span class="lineNum">    2076 </span><span class="lineCov">          1 : inline torch::stable::Tensor median(const torch::stable::Tensor&amp; self) {</span></a>
+<a name="2077"><span class="lineNum">    2077 </span>            : #if TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_16_0</a>
+<a name="2078"><span class="lineNum">    2078 </span>            :   AtenTensorHandle ret0 = nullptr;</a>
+<a name="2079"><span class="lineNum">    2079 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(aoti_torch_aten_median(self.get(), &amp;ret0));</a>
+<a name="2080"><span class="lineNum">    2080 </span>            :   return torch::stable::Tensor(ret0);</a>
+<a name="2081"><span class="lineNum">    2081 </span>            : #elif TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_10_0</a>
+<a name="2082"><span class="lineNum">    2082 </span>            :   std::array&lt;StableIValue, 1&gt; stack{torch::stable::detail::from(self)};</a>
+<a name="2083"><span class="lineNum">    2083 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(torch_call_dispatcher(</a>
+<a name="2084"><span class="lineNum">    2084 </span>            :       &quot;aten::median&quot;, &quot;&quot;, stack.data(), TORCH_ABI_VERSION));</a>
+<a name="2085"><span class="lineNum">    2085 </span>            :   return torch::stable::detail::to&lt;torch::stable::Tensor&gt;(stack[0]);</a>
+<a name="2086"><span class="lineNum">    2086 </span>            : #endif</a>
+<a name="2087"><span class="lineNum">    2087 </span>            : }</a>
+<a name="2088"><span class="lineNum">    2088 </span>            : </a>
+<a name="2089"><span class="lineNum">    2089 </span>            : /// Stable version of the median.dim op.</a>
+<a name="2090"><span class="lineNum">    2090 </span>            : ///</a>
+<a name="2091"><span class="lineNum">    2091 </span>            : /// Computes the median along a dimension.</a>
+<a name="2092"><span class="lineNum">    2092 </span>            : ///</a>
+<a name="2093"><span class="lineNum">    2093 </span>            : /// Minimum compatible version: PyTorch 2.10.</a>
+<a name="2094"><span class="lineNum">    2094 </span>            : /// Build time minimum version: PyTorch 2.16.</a>
+<a name="2095"><span class="lineNum">    2095 </span>            : ///</a>
+<a name="2096"><span class="lineNum">    2096 </span>            : /// @note Targeting PyTorch 2.16 or later via TORCH_TARGET_VERSION reduces</a>
+<a name="2097"><span class="lineNum">    2097 </span>            : ///       host-side call overhead by using a typed C shim. Targets from 2.10</a>
+<a name="2098"><span class="lineNum">    2098 </span>            : ///       through 2.15 use boxed dispatch.</a>
+<a name="2099"><span class="lineNum">    2099 </span>            : ///</a>
+<a name="2100"><span class="lineNum">    2100 </span>            : /// @param self The input tensor.</a>
+<a name="2101"><span class="lineNum">    2101 </span>            : /// @param dim The dimension to reduce.</a>
+<a name="2102"><span class="lineNum">    2102 </span>            : /// @param keepdim Whether to retain the reduced dimension. Defaults to false.</a>
+<a name="2103"><span class="lineNum">    2103 </span>            : /// @return The median values and their indices.</a>
+<a name="2104"><span class="lineNum">    2104 </span><span class="lineCov">          1 : inline std::tuple&lt;torch::stable::Tensor, torch::stable::Tensor&gt; median(</span></a>
+<a name="2105"><span class="lineNum">    2105 </span>            :     const torch::stable::Tensor&amp; self,</a>
+<a name="2106"><span class="lineNum">    2106 </span>            :     int64_t dim,</a>
+<a name="2107"><span class="lineNum">    2107 </span>            :     bool keepdim = false) {</a>
+<a name="2108"><span class="lineNum">    2108 </span>            : #if TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_16_0</a>
+<a name="2109"><span class="lineNum">    2109 </span>            :   AtenTensorHandle ret0 = nullptr;</a>
+<a name="2110"><span class="lineNum">    2110 </span>            :   AtenTensorHandle ret1 = nullptr;</a>
+<a name="2111"><span class="lineNum">    2111 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(</a>
+<a name="2112"><span class="lineNum">    2112 </span>            :       aoti_torch_aten_median_dim(self.get(), dim, keepdim, &amp;ret0, &amp;ret1));</a>
+<a name="2113"><span class="lineNum">    2113 </span>            :   return std::make_tuple(</a>
+<a name="2114"><span class="lineNum">    2114 </span>            :       torch::stable::Tensor(ret0), torch::stable::Tensor(ret1));</a>
+<a name="2115"><span class="lineNum">    2115 </span>            : #elif TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_10_0</a>
+<a name="2116"><span class="lineNum">    2116 </span>            :   std::array&lt;StableIValue, 3&gt; stack{</a>
+<a name="2117"><span class="lineNum">    2117 </span>            :       torch::stable::detail::from(self),</a>
+<a name="2118"><span class="lineNum">    2118 </span>            :       torch::stable::detail::from(dim),</a>
+<a name="2119"><span class="lineNum">    2119 </span>            :       torch::stable::detail::from(keepdim)};</a>
+<a name="2120"><span class="lineNum">    2120 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(torch_call_dispatcher(</a>
+<a name="2121"><span class="lineNum">    2121 </span>            :       &quot;aten::median&quot;, &quot;dim&quot;, stack.data(), TORCH_ABI_VERSION));</a>
+<a name="2122"><span class="lineNum">    2122 </span>            :   return std::make_tuple(</a>
+<a name="2123"><span class="lineNum">    2123 </span>            :       torch::stable::detail::to&lt;torch::stable::Tensor&gt;(stack[0]),</a>
+<a name="2124"><span class="lineNum">    2124 </span>            :       torch::stable::detail::to&lt;torch::stable::Tensor&gt;(stack[1]));</a>
+<a name="2125"><span class="lineNum">    2125 </span>            : #endif</a>
+<a name="2126"><span class="lineNum">    2126 </span>            : }</a>
+<a name="2127"><span class="lineNum">    2127 </span>            : </a>
+<a name="2128"><span class="lineNum">    2128 </span>            : /// Stable version of the index_fill_.int_Tensor op.</a>
+<a name="2129"><span class="lineNum">    2129 </span>            : ///</a>
+<a name="2130"><span class="lineNum">    2130 </span>            : /// Fills indexed positions along a dimension in place.</a>
+<a name="2131"><span class="lineNum">    2131 </span>            : ///</a>
+<a name="2132"><span class="lineNum">    2132 </span>            : /// Minimum compatible version: PyTorch 2.10.</a>
+<a name="2133"><span class="lineNum">    2133 </span>            : /// Build time minimum version: PyTorch 2.16.</a>
+<a name="2134"><span class="lineNum">    2134 </span>            : ///</a>
+<a name="2135"><span class="lineNum">    2135 </span>            : /// @note Targeting PyTorch 2.16 or later via TORCH_TARGET_VERSION reduces</a>
+<a name="2136"><span class="lineNum">    2136 </span>            : ///       host-side call overhead by using a typed C shim. Targets from 2.10</a>
+<a name="2137"><span class="lineNum">    2137 </span>            : ///       through 2.15 use boxed dispatch.</a>
+<a name="2138"><span class="lineNum">    2138 </span>            : ///</a>
+<a name="2139"><span class="lineNum">    2139 </span>            : /// @note Following torch::stable::fill_, this wrapper returns the tensor</a>
+<a name="2140"><span class="lineNum">    2140 </span>            : ///       handle by value. The ATen C++ API returns a mutable tensor reference.</a>
+<a name="2141"><span class="lineNum">    2141 </span>            : ///</a>
+<a name="2142"><span class="lineNum">    2142 </span>            : /// @param self The tensor to modify.</a>
+<a name="2143"><span class="lineNum">    2143 </span>            : /// @param dim The dimension to index.</a>
+<a name="2144"><span class="lineNum">    2144 </span>            : /// @param index The indices to fill.</a>
+<a name="2145"><span class="lineNum">    2145 </span>            : /// @param value The zero-dimensional tensor containing the fill value.</a>
+<a name="2146"><span class="lineNum">    2146 </span>            : /// @return The modified input tensor.</a>
+<a name="2147"><span class="lineNum">    2147 </span><span class="lineCov">          1 : inline torch::stable::Tensor index_fill_(</span></a>
+<a name="2148"><span class="lineNum">    2148 </span>            :     const torch::stable::Tensor&amp; self,</a>
+<a name="2149"><span class="lineNum">    2149 </span>            :     int64_t dim,</a>
+<a name="2150"><span class="lineNum">    2150 </span>            :     const torch::stable::Tensor&amp; index,</a>
+<a name="2151"><span class="lineNum">    2151 </span>            :     const torch::stable::Tensor&amp; value) {</a>
+<a name="2152"><span class="lineNum">    2152 </span>            : #if TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_16_0</a>
+<a name="2153"><span class="lineNum">    2153 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(aoti_torch_aten_index_fill__int_Tensor(</a>
+<a name="2154"><span class="lineNum">    2154 </span>            :       self.get(), dim, index.get(), value.get()));</a>
+<a name="2155"><span class="lineNum">    2155 </span>            :   return self;</a>
+<a name="2156"><span class="lineNum">    2156 </span>            : #elif TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_10_0</a>
+<a name="2157"><span class="lineNum">    2157 </span>            :   std::array&lt;StableIValue, 4&gt; stack{</a>
+<a name="2158"><span class="lineNum">    2158 </span>            :       torch::stable::detail::from(self),</a>
+<a name="2159"><span class="lineNum">    2159 </span>            :       torch::stable::detail::from(dim),</a>
+<a name="2160"><span class="lineNum">    2160 </span>            :       torch::stable::detail::from(index),</a>
+<a name="2161"><span class="lineNum">    2161 </span>            :       torch::stable::detail::from(value)};</a>
+<a name="2162"><span class="lineNum">    2162 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(torch_call_dispatcher(</a>
+<a name="2163"><span class="lineNum">    2163 </span>            :       &quot;aten::index_fill_&quot;, &quot;int_Tensor&quot;, stack.data(), TORCH_ABI_VERSION));</a>
+<a name="2164"><span class="lineNum">    2164 </span>            :   (void)torch::stable::detail::to&lt;torch::stable::Tensor&gt;(stack[0]);</a>
+<a name="2165"><span class="lineNum">    2165 </span>            :   return self;</a>
+<a name="2166"><span class="lineNum">    2166 </span>            : #endif</a>
+<a name="2167"><span class="lineNum">    2167 </span>            : }</a>
+<a name="2168"><span class="lineNum">    2168 </span>            : </a>
+<a name="2169"><span class="lineNum">    2169 </span>            : #endif // TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_10_0</a>
+<a name="2170"><span class="lineNum">    2170 </span>            : </a>
+<a name="2171"><span class="lineNum">    2171 </span>            : #if TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_16_0</a>
+<a name="2172"><span class="lineNum">    2172 </span>            : </a>
+<a name="2173"><span class="lineNum">    2173 </span>            : /// Stable version of the index_fill_.int_Scalar op.</a>
+<a name="2174"><span class="lineNum">    2174 </span>            : ///</a>
+<a name="2175"><span class="lineNum">    2175 </span>            : /// Fills indexed positions along a dimension in place. The fill value is</a>
+<a name="2176"><span class="lineNum">    2176 </span>            : /// passed as a double. Use the tensor overload for complex values or</a>
+<a name="2177"><span class="lineNum">    2177 </span>            : /// integers that cannot be represented exactly as double.</a>
+<a name="2178"><span class="lineNum">    2178 </span>            : ///</a>
+<a name="2179"><span class="lineNum">    2179 </span>            : /// Minimum compatible version: PyTorch 2.16.</a>
+<a name="2180"><span class="lineNum">    2180 </span>            : /// Build time minimum version: PyTorch 2.16.</a>
+<a name="2181"><span class="lineNum">    2181 </span>            : ///</a>
+<a name="2182"><span class="lineNum">    2182 </span>            : /// @note The value parameter is typed as double</a>
+<a name="2183"><span class="lineNum">    2183 </span>            : ///       API uses double for the Scalar parameter.</a>
+<a name="2184"><span class="lineNum">    2184 </span>            : ///</a>
+<a name="2185"><span class="lineNum">    2185 </span>            : /// @note Following torch::stable::fill_, this wrapper returns the tensor</a>
+<a name="2186"><span class="lineNum">    2186 </span>            : ///       handle by value. The ATen C++ API returns a mutable tensor reference.</a>
+<a name="2187"><span class="lineNum">    2187 </span>            : ///</a>
+<a name="2188"><span class="lineNum">    2188 </span>            : /// @param self The tensor to modify.</a>
+<a name="2189"><span class="lineNum">    2189 </span>            : /// @param dim The dimension to index.</a>
+<a name="2190"><span class="lineNum">    2190 </span>            : /// @param index The indices to fill.</a>
+<a name="2191"><span class="lineNum">    2191 </span>            : /// @param value The real fill value.</a>
+<a name="2192"><span class="lineNum">    2192 </span>            : /// @return The modified input tensor.</a>
+<a name="2193"><span class="lineNum">    2193 </span><span class="lineCov">          1 : inline torch::stable::Tensor index_fill_(</span></a>
+<a name="2194"><span class="lineNum">    2194 </span>            :     const torch::stable::Tensor&amp; self,</a>
+<a name="2195"><span class="lineNum">    2195 </span>            :     int64_t dim,</a>
+<a name="2196"><span class="lineNum">    2196 </span>            :     const torch::stable::Tensor&amp; index,</a>
+<a name="2197"><span class="lineNum">    2197 </span>            :     double value) {</a>
+<a name="2198"><span class="lineNum">    2198 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(aoti_torch_aten_index_fill__int_Scalar(</a>
+<a name="2199"><span class="lineNum">    2199 </span>            :       self.get(), dim, index.get(), value));</a>
+<a name="2200"><span class="lineNum">    2200 </span>            :   return self;</a>
+<a name="2201"><span class="lineNum">    2201 </span>            : }</a>
+<a name="2202"><span class="lineNum">    2202 </span>            : </a>
+<a name="2203"><span class="lineNum">    2203 </span>            : /// Stable version of the add.Tensor op.</a>
+<a name="2204"><span class="lineNum">    2204 </span>            : ///</a>
+<a name="2205"><span class="lineNum">    2205 </span>            : /// Adds the other tensor to self, scaled by alpha: self + alpha * other.</a>
+<a name="2206"><span class="lineNum">    2206 </span>            : /// Unlike at::add, alpha is a double rather than a Scalar. Adding two</a>
+<a name="2207"><span class="lineNum">    2207 </span>            : /// integral or boolean tensors is not supported.</a>
+<a name="2208"><span class="lineNum">    2208 </span>            : ///</a>
+<a name="2209"><span class="lineNum">    2209 </span>            : /// Minimum compatible version: PyTorch 2.16.</a>
+<a name="2210"><span class="lineNum">    2210 </span>            : /// Build time minimum version: PyTorch 2.16.</a>
+<a name="2211"><span class="lineNum">    2211 </span>            : ///</a>
+<a name="2212"><span class="lineNum">    2212 </span>            : /// @param self The input tensor.</a>
+<a name="2213"><span class="lineNum">    2213 </span>            : /// @param other The tensor to add.</a>
+<a name="2214"><span class="lineNum">    2214 </span>            : /// @param alpha The scaling factor for other. Defaults to 1.0.</a>
+<a name="2215"><span class="lineNum">    2215 </span>            : /// @return The result of self + alpha * other.</a>
+<a name="2216"><span class="lineNum">    2216 </span><span class="lineCov">          1 : inline torch::stable::Tensor add(</span></a>
+<a name="2217"><span class="lineNum">    2217 </span>            :     const torch::stable::Tensor&amp; self,</a>
+<a name="2218"><span class="lineNum">    2218 </span>            :     const torch::stable::Tensor&amp; other,</a>
+<a name="2219"><span class="lineNum">    2219 </span>            :     double alpha = 1.0) {</a>
+<a name="2220"><span class="lineNum">    2220 </span>            :   AtenTensorHandle ret0;</a>
+<a name="2221"><span class="lineNum">    2221 </span>            :   STABLE_TORCH_ERROR_CODE_CHECK(</a>
+<a name="2222"><span class="lineNum">    2222 </span>            :       aoti_torch_aten_add_Tensor(self.get(), other.get(), alpha, &amp;ret0));</a>
+<a name="2223"><span class="lineNum">    2223 </span>            :   return torch::stable::Tensor(ret0);</a>
+<a name="2224"><span class="lineNum">    2224 </span>            : }</a>
+<a name="2225"><span class="lineNum">    2225 </span>            : </a>
+<a name="2226"><span class="lineNum">    2226 </span>            : #endif // TORCH_FEATURE_VERSION &gt;= TORCH_VERSION_2_16_0</a>
+<a name="2227"><span class="lineNum">    2227 </span>            : </a>
+<a name="2228"><span class="lineNum">    2228 </span>            : HIDDEN_NAMESPACE_END(torch, stable)</a>
 </pre>
       </td>
     </tr>

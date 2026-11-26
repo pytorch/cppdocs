@@ -966,6 +966,137 @@ Returns:
 
 A new padded tensor.
 
+inline torch::stable::Tensor torch::stable::roll(const torch::stable::Tensor &self, torch::headeronly::IntHeaderOnlyArrayRef shifts, torch::headeronly::IntHeaderOnlyArrayRef dims = {})
+
+Stable version of the roll op.
+
+Shifts elements along the specified dimensions.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.16.
+
+Note
+
+Targeting PyTorch 2.16 or later via TORCH_TARGET_VERSION reduces host-side call overhead by using a typed C shim. Targets from 2.10 through 2.15 use boxed dispatch.
+
+Parameters:
+
+- **self** - The input tensor.
+- **shifts** - The shifts to apply.
+- **dims** - The dimensions to roll. An empty list rolls the flattened tensor.
+
+Returns:
+
+The rolled tensor.
+
+inline torch::stable::Tensor torch::stable::repeat_interleave(const torch::stable::Tensor &self, int64_t repeats, std::optional<int64_t> dim = std::nullopt, std::optional<int64_t> output_size = std::nullopt)
+
+Stable version of the repeat_interleave.self_int op.
+
+Repeats each element along a dimension.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.16.
+
+Note
+
+Targeting PyTorch 2.16 or later via TORCH_TARGET_VERSION reduces host-side call overhead by using a typed C shim. Targets from 2.10 through 2.15 use boxed dispatch.
+
+Parameters:
+
+- **self** - The input tensor.
+- **repeats** - The number of repeats per element.
+- **dim** - The dimension to repeat. Defaults to the flattened input.
+- **output_size** - The optional output size along the repeated dimension.
+
+Returns:
+
+The tensor with repeated elements.
+
+inline torch::stable::Tensor torch::stable::repeat_interleave(const torch::stable::Tensor &repeats, std::optional<int64_t> output_size = std::nullopt)
+
+Stable version of the repeat_interleave.Tensor op.
+
+Returns indices repeated according to the counts.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.16.
+
+Note
+
+Targeting PyTorch 2.16 or later via TORCH_TARGET_VERSION reduces host-side call overhead by using a typed C shim. Targets from 2.10 through 2.15 use boxed dispatch.
+
+Parameters:
+
+- **repeats** - The repeat counts.
+- **output_size** - The optional total output size.
+
+Returns:
+
+The result tensor.
+
+inline torch::stable::Tensor torch::stable::repeat_interleave(const torch::stable::Tensor &self, const torch::stable::Tensor &repeats, std::optional<int64_t> dim = std::nullopt, std::optional<int64_t> output_size = std::nullopt)
+
+Stable version of the repeat_interleave.self_Tensor op.
+
+Repeats elements according to the supplied counts.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.16.
+
+Note
+
+Targeting PyTorch 2.16 or later via TORCH_TARGET_VERSION reduces host-side call overhead by using a typed C shim. Targets from 2.10 through 2.15 use boxed dispatch.
+
+Parameters:
+
+- **self** - The input tensor.
+- **repeats** - The repeat counts.
+- **dim** - The optional dimension to repeat.
+- **output_size** - The optional output size along the repeated dimension.
+
+Returns:
+
+The result tensor.
+
+inline torch::stable::Tensor torch::stable::expand(const torch::stable::Tensor &self, torch::headeronly::IntHeaderOnlyArrayRef size, bool implicit = false)
+
+Stable version of the expand op.
+
+Returns a broadcasted view of the input tensor. Exposed as a free function, consistent with other stable tensor operations.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.16.
+
+Note
+
+Targeting PyTorch 2.16 or later via TORCH_TARGET_VERSION reduces host-side call overhead by using a typed C shim. Targets from 2.10 through 2.15 use boxed dispatch.
+
+Parameters:
+
+- **self** - The input tensor.
+- **size** - The target sizes.
+- **implicit** - Whether the expansion is implicit. Defaults to false.
+
+Returns:
+
+The expanded view.
+
+inline torch::stable::Tensor torch::stable::nonzero(const torch::stable::Tensor &self)
+
+Stable version of the nonzero op.
+
+Finds the indices of nonzero elements.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.16.
+
+Note
+
+Targeting PyTorch 2.16 or later via TORCH_TARGET_VERSION reduces host-side call overhead by using a typed C shim. Targets from 2.10 through 2.15 use boxed dispatch.
+
+Parameters:
+
+**self** - The input tensor.
+
+Returns:
+
+A tensor of nonzero indices.
+
 ## Device and Type Conversion
 
 inline torch::stable::Tensor torch::stable::to(const torch::stable::Tensor &self, std::optional<torch::headeronly::ScalarType> dtype = std::nullopt, std::optional<torch::headeronly::Layout> layout = std::nullopt, std::optional<torch::stable::Device> device = std::nullopt, std::optional<bool> pin_memory = std::nullopt, bool non_blocking = false, bool copy = false, std::optional<torch::headeronly::MemoryFormat> memory_format = std::nullopt)
@@ -1082,6 +1213,60 @@ Parameters:
 Returns:
 
 The destination tensor with copied values.
+
+inline torch::stable::Tensor torch::stable::index_fill_(const torch::stable::Tensor &self, int64_t dim, const torch::stable::Tensor &index, const torch::stable::Tensor &value)
+
+Stable version of the index_fill_.int_Tensor op.
+
+Fills indexed positions along a dimension in place.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.16.
+
+Note
+
+Targeting PyTorch 2.16 or later via TORCH_TARGET_VERSION reduces host-side call overhead by using a typed C shim. Targets from 2.10 through 2.15 use boxed dispatch.
+
+Note
+
+Following torch::stable::fill_, this wrapper returns the tensor handle by value. The ATen C++ API returns a mutable tensor reference.
+
+Parameters:
+
+- **self** - The tensor to modify.
+- **dim** - The dimension to index.
+- **index** - The indices to fill.
+- **value** - The zero-dimensional tensor containing the fill value.
+
+Returns:
+
+The modified input tensor.
+
+inline torch::stable::Tensor torch::stable::index_fill_(const torch::stable::Tensor &self, int64_t dim, const torch::stable::Tensor &index, double value)
+
+Stable version of the index_fill_.int_Scalar op.
+
+Fills indexed positions along a dimension in place. The fill value is passed as a double. Use the tensor overload for complex values or integers that cannot be represented exactly as double.
+
+Minimum compatible version: PyTorch 2.16. Build time minimum version: PyTorch 2.16.
+
+Note
+
+The value parameter is typed as double API uses double for the Scalar parameter.
+
+Note
+
+Following torch::stable::fill_, this wrapper returns the tensor handle by value. The ATen C++ API returns a mutable tensor reference.
+
+Parameters:
+
+- **self** - The tensor to modify.
+- **dim** - The dimension to index.
+- **index** - The indices to fill.
+- **value** - The real fill value.
+
+Returns:
+
+The modified input tensor.
 
 ## Mathematical Operations
 
@@ -1433,3 +1618,130 @@ Parameters:
 Returns:
 
 A 1-D tensor of the selected elements.
+
+inline torch::stable::Tensor torch::stable::all(const torch::stable::Tensor &self)
+
+Stable version of the all op.
+
+Tests whether all elements evaluate to true.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.16.
+
+Note
+
+Targeting PyTorch 2.16 or later via TORCH_TARGET_VERSION reduces host-side call overhead by using a typed C shim. Targets from 2.10 through 2.15 use boxed dispatch.
+
+Parameters:
+
+**self** - The input tensor.
+
+Returns:
+
+The scalar result tensor.
+
+inline torch::stable::Tensor torch::stable::all(const torch::stable::Tensor &self, int64_t dim, bool keepdim = false)
+
+Stable version of the all.dim op.
+
+Tests whether all elements along a dimension evaluate to true.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.16.
+
+Note
+
+Targeting PyTorch 2.16 or later via TORCH_TARGET_VERSION reduces host-side call overhead by using a typed C shim. Targets from 2.10 through 2.15 use boxed dispatch.
+
+Parameters:
+
+- **self** - The input tensor.
+- **dim** - The dimension to reduce.
+- **keepdim** - Whether to retain the reduced dimension.
+
+Returns:
+
+The result tensor.
+
+inline torch::stable::Tensor torch::stable::all(const torch::stable::Tensor &self, std::optional<torch::headeronly::IntHeaderOnlyArrayRef> dim, bool keepdim = false)
+
+Stable version of the all.dims op.
+
+Tests whether all elements along the given dimensions evaluate to true.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.16.
+
+Note
+
+Targeting PyTorch 2.16 or later via TORCH_TARGET_VERSION reduces host-side call overhead by using a typed C shim. Targets from 2.10 through 2.15 use boxed dispatch.
+
+Parameters:
+
+- **self** - The input tensor.
+- **dim** - The dimensions to reduce. Nullopt reduces every dimension.
+- **keepdim** - Whether to retain the reduced dimensions.
+
+Returns:
+
+The result tensor.
+
+inline bool torch::stable::equal(const torch::stable::Tensor &self, const torch::stable::Tensor &other)
+
+Stable version of the equal op.
+
+Checks whether two tensors have the same shape and elements.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.16.
+
+Note
+
+Targeting PyTorch 2.16 or later via TORCH_TARGET_VERSION reduces host-side call overhead by using a typed C shim. Targets from 2.10 through 2.15 use boxed dispatch.
+
+Parameters:
+
+- **self** - The input tensor.
+- **other** - The tensor to compare with self.
+
+Returns:
+
+Whether the tensors are equal.
+
+inline std::tuple<torch::stable::Tensor, torch::stable::Tensor> torch::stable::median(const torch::stable::Tensor &self, int64_t dim, bool keepdim = false)
+
+Stable version of the median.dim op.
+
+Computes the median along a dimension.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.16.
+
+Note
+
+Targeting PyTorch 2.16 or later via TORCH_TARGET_VERSION reduces host-side call overhead by using a typed C shim. Targets from 2.10 through 2.15 use boxed dispatch.
+
+Parameters:
+
+- **self** - The input tensor.
+- **dim** - The dimension to reduce.
+- **keepdim** - Whether to retain the reduced dimension. Defaults to false.
+
+Returns:
+
+The median values and their indices.
+
+inline torch::stable::Tensor torch::stable::median(const torch::stable::Tensor &self)
+
+Stable version of the median op.
+
+Computes the median of all elements.
+
+Minimum compatible version: PyTorch 2.10. Build time minimum version: PyTorch 2.16.
+
+Note
+
+Targeting PyTorch 2.16 or later via TORCH_TARGET_VERSION reduces host-side call overhead by using a typed C shim. Targets from 2.10 through 2.15 use boxed dispatch.
+
+Parameters:
+
+**self** - The input tensor.
+
+Returns:
+
+The result tensor.
