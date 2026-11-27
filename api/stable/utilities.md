@@ -7,7 +7,7 @@ tensors and CUDA operations.
 
 class DeviceGuard
 
-A stable ABI version of [c10::DeviceGuard](../c10/guards.html#PyTorchclassc10_1_1_device_guard).
+A stable ABI version of [c10::DeviceGuard](../aten/tensor.html#PyTorchclassc10_1_1_device_guard).
 
 RAII class that sets the current device to the specified device index on construction and restores the previous device on destruction.
 
@@ -189,6 +189,20 @@ my_kernel<<<blocks, threads, 0, stream>>>(args...);
 Note
 
 When using C shim APIs, the `TORCH_ERROR_CODE_CHECK` macro is required to properly check error codes and throw appropriate exceptions. `nativeHandle()`, along with all our highlevel C++ utility APIs, does this check for you.
+
+## CUDA BLAS Handle
+
+void *torch::stable::accelerator::getCurrentCUDABlasHandle(bool setup = true)
+
+Returns a borrowed BLAS handle for the current device. PyTorch owns the handle.
+See `at::cuda::getCurrentCUDABlasHandle` for the behavior of `setup`.
+
+Include `<torch/csrc/stable/accelerator.h>` and define `USE_CUDA` when compiling
+the extension. This API requires PyTorch 2.16 or newer headers.
+
+Targets from PyTorch 2.10 through 2.15 support `setup=true`. Passing
+`setup=false` requires a PyTorch 2.16 or newer target. Targets of PyTorch 2.16
+or newer also require a PyTorch 2.16 or newer runtime.
 
 ## CUDA Error Checking Macros
 
